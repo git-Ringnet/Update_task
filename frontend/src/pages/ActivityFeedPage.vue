@@ -61,24 +61,36 @@
                 </div>
                 
                 <!-- Project Name + Status Dot -->
-                <div class="flex flex-wrap items-center gap-2 mt-1">
-                  <span class="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0" :class="statusDotClass(act.project?.health)"></span>
-                  <span class="font-bold text-gray-900 text-sm group-hover:text-emerald-700 transition-colors">
+                <div class="flex flex-wrap items-start gap-2 mt-1 min-w-0">
+                  <span class="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0 mt-1.5" :class="statusDotClass(act.project?.health)"></span>
+                  <span class="font-bold text-gray-900 text-sm group-hover:text-emerald-700 transition-colors break-words flex-1 min-w-0">
                     {{ act.project?.title || 'Dự án' }}
                   </span>
                 </div>
 
                 <!-- Customer Details -->
-                <div v-if="act.project?.customer" class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">
+                <div v-if="act.project?.customer" class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1 break-words">
                   Khách hàng: <span class="text-gray-500 font-semibold">{{ act.project.customer.name }}</span>
                 </div>
 
                 <!-- Description / Log Content -->
-                <p class="text-sm text-gray-600 mt-2.5 leading-relaxed whitespace-pre-line font-medium">
+                <p class="text-sm text-gray-600 mt-2.5 leading-relaxed whitespace-pre-line font-medium break-words">
                   {{ act.content }}
                 </p>
               </div>
             </div>
+          </div>
+
+          <!-- Load more container -->
+          <div v-if="activities.length > displayLimit" class="pt-4 flex justify-center bg-[#f8faf9] mb-4">
+            <button
+              @click="displayLimit += 15"
+              type="button"
+              class="px-5 py-2.5 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 font-extrabold text-xs rounded-xl shadow-3xs transition-all cursor-pointer flex items-center gap-1.5 focus:outline-none"
+            >
+              <i class="fa-solid fa-angles-down text-[10px]"></i>
+              <span>Xem thêm hoạt động (Còn {{ activities.length - displayLimit }} hoạt động)</span>
+            </button>
           </div>
 
         </div>
@@ -100,6 +112,7 @@ import BottomNav from '../components/BottomNav.vue'
 const router = useRouter()
 const activities = ref([])
 const isLoading = ref(true)
+const displayLimit = ref(15)
 
 const fetchActivities = async () => {
   isLoading.value = true
@@ -117,8 +130,9 @@ const fetchActivities = async () => {
 // Group comments by date headers (Hôm nay, Hôm qua, or specific date string)
 const groupedActivities = computed(() => {
   const groups = {}
+  const sliced = activities.value.slice(0, displayLimit.value)
   
-  activities.value.forEach(item => {
+  sliced.forEach(item => {
     if (!item.created_at) return
     const date = new Date(item.created_at)
     const today = new Date()

@@ -77,13 +77,13 @@
                     :style="{ animationDelay: `${index * 45}ms` }"
                   >
                     <!-- Title & Customer -->
-                    <td class="py-4 px-6">
+                    <td class="py-4 px-6 max-w-xs md:max-w-md">
                       <router-link :to="`/projects/${project.id}`" class="block group-hover:text-emerald-700">
-                        <div class="font-bold text-gray-900 text-base leading-snug font-heading flex items-center gap-2">
-                          <span class="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0" :class="statusDotClass(project.health)"></span>
-                          <span>{{ project.title }}</span>
+                        <div class="font-bold text-gray-900 text-base leading-snug font-heading flex items-start gap-2">
+                          <span class="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0 mt-1.5" :class="statusDotClass(project.health)"></span>
+                          <span class="break-words min-w-0 flex-1">{{ project.title }}</span>
                         </div>
-                        <div class="text-xs text-gray-500 font-medium mt-0.5 pl-4">
+                        <div class="text-xs text-gray-500 font-medium mt-0.5 pl-4 break-words">
                           {{ project.customer ? project.customer.name : 'Chưa phân khách hàng' }}
                         </div>
                       </router-link>
@@ -169,12 +169,12 @@
               <!-- Left: Checkbox + Title + Project Subtitle -->
               <div class="flex items-center gap-3.5 min-w-0">
                 <button
-                  @click.stop="toggleTaskDone(task)"
+                  @click.stop="toggleTaskSelect(task)"
                   type="button"
-                  class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0"
-                  :class="task.status === 'done' ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-gray-300 hover:border-emerald-500'"
+                  class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0 cursor-pointer"
+                  :class="task.status === 'done' || selectedTaskIds.includes(task.id) ? 'border-emerald-600 bg-emerald-600 text-white shadow-3xs' : 'border-gray-300 hover:border-emerald-500'"
                 >
-                  <i v-if="task.status === 'done'" class="fa-solid fa-check text-[10px]"></i>
+                  <i v-if="task.status === 'done' || selectedTaskIds.includes(task.id)" class="fa-solid fa-check text-[10px]"></i>
                 </button>
 
                 <div class="min-w-0">
@@ -244,7 +244,7 @@
               <div class="bg-gray-100/80 p-3 rounded-2xl rounded-tl-none max-w-xs">
                 <div class="flex items-center justify-between gap-2 mb-1">
                   <span class="font-bold text-xs text-gray-900">{{ comment.user ? comment.user.name : 'Thành viên' }}</span>
-                  <span class="text-[10px] text-gray-400">Vừa xong</span>
+                  <span class="text-[10px] text-gray-400">{{ formatRelativeTime(comment.created_at) }}</span>
                 </div>
                 <p class="text-xs text-gray-800 leading-relaxed">{{ comment.content }}</p>
               </div>
@@ -331,13 +331,50 @@
       </div>
     </div>
 
+    <!-- Floating Bulk Task Completion Bar -->
+    <transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="transform translate-y-8 opacity-0"
+      enter-to-class="transform translate-y-0 opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="transform translate-y-0 opacity-100"
+      leave-to-class="transform translate-y-8 opacity-0"
+    >
+      <div
+        v-if="selectedTaskIds.length > 0"
+        class="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 bg-white/95 backdrop-blur-md px-6 py-4 rounded-2xl shadow-xl border border-emerald-100/80 flex items-center gap-6 w-[90%] max-w-md justify-between"
+      >
+        <span class="text-sm font-semibold text-emerald-800">
+          Đã chọn <strong class="text-emerald-950 font-bold">{{ selectedTaskIds.length }}</strong> công việc
+        </span>
+        <div class="flex items-center gap-3">
+          <button
+            @click="selectedTaskIds = []"
+            type="button"
+            class="text-xs font-semibold text-gray-500 hover:text-gray-700 px-3 py-2 rounded-xl transition-colors cursor-pointer focus:outline-none"
+          >
+            Hủy chọn
+          </button>
+          <button
+            @click="goToBulkTaskComplete"
+            type="button"
+            class="px-4 py-2 bg-[#2d8a39] hover:bg-[#236e2d] text-white font-semibold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer focus:outline-none"
+          >
+            <i class="fa-solid fa-pen-to-square"></i>
+            <span>Cập nhật</span>
+          </button>
+        </div>
+      </div>
+    </transition>
+
     <!-- Bottom Navigation Bar -->
     <BottomNav />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
 import BottomNav from '../components/BottomNav.vue'
@@ -347,6 +384,7 @@ import { useProjectStore } from '../stores/project'
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toast'
 
+const router = useRouter()
 const projectStore = useProjectStore()
 const authStore = useAuthStore()
 const toast = useToastStore()
@@ -364,6 +402,8 @@ const isTaskModalOpen = ref(false)
 const selectedTask = ref(null)
 const taskComments = ref([])
 const newCommentText = ref('')
+
+const selectedTaskIds = ref([])
 
 const taskForm = reactive({
   project_id: '',
@@ -424,20 +464,38 @@ const handleTogglePin = async (projectId) => {
   }
 }
 
-const toggleTaskDone = async (task) => {
-  const newStatus = task.status === 'done' ? 'todo' : 'done'
-  task.status = newStatus
-  try {
-    await axios.patch(`/api/tasks/${task.id}/status`, { 
-      status: newStatus,
-      user_id: authStore.user?.id || 3
-    })
-    toast.success(newStatus === 'done' ? 'Đã hoàn thành công việc!' : 'Đã mở lại công việc!')
-    fetchData(true)
-  } catch (err) {
-    console.error('Failed to toggle task status:', err)
-    toast.error('Cập nhật trạng thái công việc thất bại!')
+const toggleTaskSelect = async (task) => {
+  if (task.status === 'done') {
+    // Unchecking a completed task -> immediately set to todo on server
+    try {
+      await axios.patch(`/api/tasks/${task.id}/status`, { 
+        status: 'todo',
+        user_id: authStore.user?.id || 3
+      })
+      toast.success('Đã mở lại công việc!')
+      fetchData(true)
+    } catch (err) {
+      console.error('Failed to toggle task status:', err)
+      toast.error('Cập nhật trạng thái công việc thất bại!')
+      fetchData(true)
+    }
+  } else {
+    // Toggle selection for bulk complete
+    const idx = selectedTaskIds.value.indexOf(task.id)
+    if (idx > -1) {
+      selectedTaskIds.value.splice(idx, 1)
+    } else {
+      selectedTaskIds.value.push(task.id)
+    }
   }
+}
+
+const goToBulkTaskComplete = () => {
+  if (selectedTaskIds.value.length === 0) return
+  router.push({
+    path: '/tasks/complete',
+    query: { ids: selectedTaskIds.value.join(',') }
+  })
 }
 
 const handleCreateProject = async (data) => {

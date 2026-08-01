@@ -12,12 +12,12 @@
           <span>Quay lại danh sách</span>
         </router-link>
 
-        <div class="flex items-center justify-between gap-4 border-b border-gray-100 pb-5">
+        <div class="flex items-center justify-between gap-4 border-b border-gray-100 pb-5 min-w-0">
           <!-- Title & Subtitle -->
-          <div>
-            <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight font-heading flex items-center gap-3">
-              <span class="w-5 h-5 rounded-full inline-block flex-shrink-0" :class="statusDotClass(customer.status)"></span>
-              <span>{{ customer.name || 'Trung Nguyên Coffee' }}</span>
+          <div class="min-w-0 flex-1">
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight font-heading flex items-start gap-3">
+              <span class="w-5 h-5 rounded-full inline-block flex-shrink-0 mt-1.5" :class="statusDotClass(customer.status)"></span>
+              <span class="break-words min-w-0 flex-1">{{ customer.name }}</span>
             </h1>
             <p class="text-gray-500 text-sm mt-1 font-semibold">
               {{ formatType(customer.type) }}
@@ -36,7 +36,7 @@
 
         <div class="divide-y divide-gray-100">
           <router-link
-            v-for="p in relatedProjects"
+            v-for="p in displayedProjects"
             :key="p.id"
             :to="`/projects/${p.id}`"
             class="py-3.5 flex items-center justify-between gap-4 hover:bg-emerald-50/30 px-2 rounded-xl transition-colors group"
@@ -57,6 +57,18 @@
             </div>
           </router-link>
 
+          <!-- Load more projects button -->
+          <div v-if="relatedProjects.length > displayLimit" class="pt-4 flex justify-center">
+            <button
+              @click="displayLimit += 10"
+              type="button"
+              class="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none"
+            >
+              <i class="fa-solid fa-angles-down text-[10px]"></i>
+              <span>Xem thêm dự án (Còn {{ relatedProjects.length - displayLimit }})</span>
+            </button>
+          </div>
+
           <!-- Empty Projects State -->
           <div v-if="relatedProjects.length === 0" class="py-8 text-center text-gray-400 text-sm">
             Chưa có dự án nào cho khách hàng này.
@@ -72,7 +84,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
@@ -89,8 +101,14 @@ const customer = ref({
 })
 
 const relatedProjects = ref([])
+const displayLimit = ref(10)
+
+const displayedProjects = computed(() => {
+  return relatedProjects.value.slice(0, displayLimit.value)
+})
 
 const fetchCustomerDetail = async () => {
+  displayLimit.value = 10
   try {
     const res = await axios.get(`/api/customers/${customerId}`)
     if (res.data) {

@@ -10,15 +10,15 @@
 
     <!-- Login card container -->
     <div
-      class="relative z-10 w-full max-w-md bg-white rounded-3xl border border-emerald-100 shadow-2xl p-8 sm:p-10 transition-all duration-300 hover:shadow-emerald-100/40">
+      class="relative z-10 w-full max-w-[400px] bg-white rounded-3xl border border-emerald-100/80 shadow-2xl p-8 sm:p-9 transition-all duration-300 hover:shadow-emerald-100/40">
 
       <!-- Brand Logo / Identity Header -->
-      <div class="text-center mb-8">
+      <div class="text-center mb-6">
         <div class="inline-block transform hover:scale-105 transition-transform duration-200">
           <CactusLogo />
         </div>
-        <h2 class="text-2xl font-extrabold text-gray-900 font-heading mt-4">Hệ thống Quản lý dự án</h2>
-        <p class="text-gray-400 text-sm mt-1 font-medium">Đăng nhập để quản lý công việc và dự án</p>
+        <h2 class="text-2xl font-extrabold text-gray-900 font-heading mt-4 leading-tight">Hệ thống Quản lý</h2>
+        <p class="text-gray-400 text-xs mt-1 font-bold">Xương Rồng Project Management</p>
       </div>
 
       <!-- General Error Message Alert Banner -->
@@ -33,82 +33,48 @@
         </div>
       </transition>
 
-      <!-- Login Credentials Form -->
-      <form @submit.prevent="handleLogin" class="space-y-4">
-        <!-- Username input -->
-        <div>
-          <label for="username" class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Tên đăng
-            nhập / Email</label>
-          <div class="relative">
-            <input id="username" v-model="username" required type="text" placeholder="an@xuongrong.vn hoặc Minh"
-              class="w-full pl-10 pr-4 py-3 bg-gray-50/70 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all shadow-3xs" />
-            <span class="absolute left-3.5 top-3.5 text-gray-400 text-sm">
-              <i class="fa-regular fa-user"></i>
-            </span>
-          </div>
+      <!-- App Features Checklist Intro -->
+      <div class="my-6 space-y-3 bg-[#fbfdfc] border border-emerald-50/60 p-4.5 rounded-2xl text-left shadow-3xs">
+        <div class="flex items-center gap-3 text-xs text-gray-600 font-bold">
+          <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 text-[10px]">
+            <i class="fa-solid fa-check"></i>
+          </span>
+          <span>Quản lý dự án & công việc tập trung</span>
         </div>
-
-        <!-- Password input -->
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <label for="password" class="block text-xs font-bold text-gray-600 uppercase tracking-wider">Mật
-              khẩu</label>
-            <a href="#" class="text-xs font-semibold text-emerald-700 hover:text-emerald-900 transition-colors">Quên mật
-              khẩu?</a>
-          </div>
-          <div class="relative">
-            <input id="password" v-model="password" required type="password" placeholder="••••••••"
-              class="w-full pl-10 pr-4 py-3 bg-gray-50/70 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all shadow-3xs" />
-            <span class="absolute left-3.5 top-3.5 text-gray-400 text-sm">
-              <i class="fa-solid fa-lock"></i>
-            </span>
-          </div>
+        <div class="flex items-center gap-3 text-xs text-gray-600 font-bold">
+          <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 text-[10px]">
+            <i class="fa-solid fa-check"></i>
+          </span>
+          <span>Cập nhật hoạt động tiến độ realtime</span>
         </div>
-
-        <!-- Remember Me Checkbox -->
-        <div class="flex items-center">
-          <input id="remember-me" type="checkbox"
-            class="h-4 w-4 rounded text-emerald-600 border-gray-300 accent-emerald-600 cursor-pointer focus:ring-emerald-500" />
-          <label for="remember-me" class="ml-2 block text-xs font-semibold text-gray-500 cursor-pointer select-none">
-            Ghi nhớ đăng nhập
-          </label>
+        <div class="flex items-center gap-3 text-xs text-gray-600 font-bold">
+          <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 text-[10px]">
+            <i class="fa-solid fa-check"></i>
+          </span>
+          <span>Trao đổi thảo luận nhóm tức thời</span>
         </div>
+      </div>
 
-        <!-- Submit Button -->
-        <button type="submit" :disabled="authStore.isLoading"
-          class="w-full py-3 bg-[#2d8a39] hover:bg-[#236e2d] disabled:bg-gray-300 text-white font-bold text-sm rounded-xl shadow-xs transition-colors duration-150 flex items-center justify-center gap-2 cursor-pointer focus:outline-none">
-          <template v-if="authStore.isLoading">
-            <span class="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
-            <span>Đang xử lý...</span>
-          </template>
-          <template v-else>
-            <span>Đăng nhập</span>
-          </template>
-        </button>
-      </form>
-
-      <!-- Social Logins Section -->
+      <!-- Social Logins Section (Google Only) -->
       <div class="mt-6">
-        <div class="relative flex py-2 items-center">
-          <div class="flex-grow border-t border-gray-100"></div>
-          <span class="flex-shrink mx-4 text-xs font-bold text-gray-400 uppercase tracking-wider select-none">Hoặc đăng
-            nhập
-            bằng</span>
-          <div class="flex-grow border-t border-gray-100"></div>
-        </div>
-
         <!-- Real Google sign-in button container -->
         <div class="mt-4 flex justify-center">
-          <div id="google-signin-btn" class="w-full"></div>
+          <div id="google-signin-btn" class="flex justify-center w-full"></div>
         </div>
 
         <!-- Fallback test logins link -->
-        <div class="mt-4 text-center">
+        <div class="mt-6 text-center">
           <button @click="showGooglePicker = true" type="button"
-            class="text-xs font-bold text-emerald-700 hover:text-emerald-950 transition-colors">
+            class="text-xs font-bold text-emerald-700 hover:text-emerald-950 transition-colors focus:outline-none cursor-pointer">
             Đăng nhập nhanh bằng tài khoản test (Demo)
           </button>
         </div>
+      </div>
+
+      <!-- Footer Info Note -->
+      <div class="mt-6 pt-5 border-t border-gray-100 text-[10px] text-gray-400 font-bold text-center select-none">
+        <i class="fa-solid fa-shield-halved text-emerald-600 mr-1"></i>
+        Đăng nhập bảo mật qua Google OAuth 2.0
       </div>
 
     </div>
@@ -181,8 +147,6 @@ import CactusLogo from '../components/CactusLogo.vue'
 const authStore = useAuthStore()
 const router = useRouter()
 
-const username = ref('')
-const password = ref('')
 const error = ref('')
 
 const showGooglePicker = ref(false)
@@ -215,9 +179,10 @@ onMounted(() => {
         {
           theme: 'outline',
           size: 'large',
-          width: '100%',
+          width: '320',
           text: 'signin_with',
-          shape: 'pill'
+          shape: 'pill',
+          alignment: 'center'
         }
       )
     } else {
@@ -245,16 +210,6 @@ const googleAccounts = [
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=120'
   }
 ]
-
-const handleLogin = async () => {
-  error.value = ''
-  try {
-    await authStore.login(username.value, password.value)
-    router.push('/projects')
-  } catch (err) {
-    error.value = err
-  }
-}
 
 const handleGoogleSelect = async (account) => {
   error.value = ''

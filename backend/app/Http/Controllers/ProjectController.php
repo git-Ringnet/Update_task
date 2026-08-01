@@ -11,10 +11,21 @@ class ProjectController extends Controller
 {
     public function index(Request $request)
     {
+        $userId = auth()->id() ?? $request->user_id;
+
         $query = Project::with(['customer', 'lead', 'tasks'])
-            ->withCount(['tasks', 'comments'])
-            ->orderBy('is_pinned', 'desc')
-            ->orderBy('last_activity_at', 'desc');
+            ->withCount(['tasks', 'comments']);
+
+        if ($userId) {
+            $query->select('projects.*')
+                ->leftJoin('pinned_projects', function ($join) use ($userId) {
+                    $join->on('pinned_projects.project_id', '=', 'projects.id')
+                         ->where('pinned_projects.user_id', '=', $userId);
+                })
+                ->orderByRaw('CASE WHEN pinned_projects.id IS NOT NULL THEN 1 ELSE 0 END DESC');
+        }
+
+        $query->orderBy('last_activity_at', 'desc');
 
         if ($request->has('tracking_status')) {
             $status = $request->tracking_status;
@@ -181,11 +192,31 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function togglePin($id)
+    public function togglePin($id, Request $request)
     {
         $project = Project::findOrFail($id);
-        $project->is_pinned = !$project->is_pinned;
-        $project->save();
+        $userId = auth()->id() ?? $request->user_id ?? \App\Models\User::first()->id;
+
+        $exists = \Illuminate\Support\Facades\DB::table('pinned_projects')
+            ->where('user_id', $userId)
+            ->where('project_id', $id)
+            ->exists();
+
+        if ($exists) {
+            \Illuminate\Support\Facades\DB::table('pinned_projects')
+                ->where('user_id', $userId)
+                ->where('project_id', $id)
+                ->delete();
+        } else {
+            \Illuminate\Support\Facades\DB::table('pinned_projects')->insert([
+                'user_id' => $userId,
+                'project_id' => $id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        $project = Project::with(['customer', 'lead'])->findOrFail($id);
 
         return response()->json([
             'message' => 'Cập nhật ghim thành công',

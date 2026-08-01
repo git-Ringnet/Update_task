@@ -50,4 +50,16 @@ class Project extends Model
     {
         return $this->hasMany(Milestone::class)->orderBy('created_at', 'asc');
     }
+
+    public function getIsPinnedAttribute()
+    {
+        $userId = auth()->id() ?? request()->user_id;
+        if (!$userId) {
+            return false;
+        }
+        return \Illuminate\Support\Facades\DB::table('pinned_projects')
+            ->where('user_id', $userId)
+            ->where('project_id', $this->id)
+            ->exists();
+    }
 }

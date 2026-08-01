@@ -53,10 +53,63 @@
         </div>
       </transition-group>
     </div>
+
+    <!-- Beautiful Confirm Dialog Container -->
+    <transition
+      enter-active-class="transition duration-300 ease-out animate-fade-in"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div v-if="confirmStore.isOpen" class="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-gray-950/60 backdrop-blur-xs" @click="confirmStore.cancel"></div>
+
+        <!-- Dialog Box -->
+        <div class="relative bg-white rounded-3xl p-6 shadow-2xl border border-gray-100 w-full max-w-sm text-left animate-fade-in-up">
+          <div class="flex items-start gap-4">
+            <!-- Warning Icon -->
+            <span class="flex-shrink-0 w-11 h-11 rounded-full bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-triangle-exclamation animate-bounce"></i>
+            </span>
+
+            <div class="flex-1 min-w-0">
+              <h3 class="text-base font-extrabold text-gray-900 font-heading leading-snug">
+                {{ confirmStore.title }}
+              </h3>
+              <p class="text-xs font-semibold text-gray-500 mt-1.5 leading-relaxed break-words">
+                {{ confirmStore.message }}
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-6 flex items-center justify-end gap-2.5">
+            <button
+              @click="confirmStore.cancel"
+              type="button"
+              class="px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 font-extrabold text-xs rounded-xl shadow-3xs transition-colors cursor-pointer focus:outline-none"
+            >
+              Hủy
+            </button>
+            <button
+              @click="confirmStore.confirm"
+              type="button"
+              class="px-4.5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-3xs hover:shadow-2xs transition-all cursor-pointer focus:outline-none"
+            >
+              Đồng ý
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
 import { useToastStore } from './stores/toast'
+import { useConfirmStore } from './stores/confirm'
 const toastStore = useToastStore()
+const confirmStore = useConfirmStore()
 </script>

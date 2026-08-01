@@ -163,15 +163,15 @@
 
                 <!-- Relationship Rows -->
                 <tr
-                  v-for="(c, index) in customers"
+                  v-for="(c, index) in displayedCustomers"
                   :key="c.id"
                   @click="$router.push(`/customers/${c.id}`)"
                   class="hover:bg-emerald-50/20 transition-colors group animate-fade-in-up cursor-pointer"
                   :style="{ animationDelay: `${index * 45}ms` }"
                 >
                   <!-- Name & Category Subtitle -->
-                  <td class="py-4 px-6">
-                    <div class="font-bold text-gray-900 text-base leading-snug font-heading group-hover:text-emerald-700 transition-colors">
+                  <td class="py-4 px-6 max-w-[250px] md:max-w-md">
+                    <div class="font-bold text-gray-900 text-base leading-snug font-heading group-hover:text-emerald-700 transition-colors break-words">
                       {{ c.name }}
                     </div>
                     <div class="text-xs text-gray-500 font-medium mt-0.5">
@@ -208,10 +208,10 @@
                   </td>
 
                   <!-- Action Buttons -->
-                  <td class="py-4 px-4 text-right align-middle" @click.stop>
+                  <td class="py-4 px-4 text-right align-middle">
                     <div class="flex items-center justify-end gap-2">
                       <button 
-                        @click="startEditCustomer(c)" 
+                        @click.stop="startEditCustomer(c)" 
                         type="button" 
                         class="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
                         title="Chỉnh sửa"
@@ -219,7 +219,7 @@
                         <i class="fa-solid fa-pen text-sm"></i>
                       </button>
                       <button 
-                        @click="handleDeleteCustomer(c.id)" 
+                        @click.stop="handleDeleteCustomer(c.id)" 
                         type="button" 
                         class="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                         title="Xóa"
@@ -233,6 +233,18 @@
 
               </tbody>
             </table>
+          </div>
+
+          <!-- Load more container -->
+          <div v-if="customers.length > displayLimit" class="p-4 border-t border-gray-100 flex justify-center bg-white">
+            <button
+              @click="displayLimit += 15"
+              type="button"
+              class="px-5 py-2.5 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 font-extrabold text-xs rounded-xl shadow-3xs transition-all cursor-pointer flex items-center gap-1.5 focus:outline-none"
+            >
+              <i class="fa-solid fa-angles-down text-[10px]"></i>
+              <span>Xem thêm mối quan hệ (Còn {{ customers.length - displayLimit }} đối tác)</span>
+            </button>
           </div>
 
           <!-- Bottom Footer Bar matching mockup 6 -->
@@ -322,16 +334,18 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
 import BottomNav from '../components/BottomNav.vue'
 import HealthStatusSelector from '../components/HealthStatusSelector.vue'
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toast'
+import { useConfirmStore } from '../stores/confirm'
 
 const authStore = useAuthStore()
 const toast = useToastStore()
+const confirmStore = useConfirmStore()
 
 const customers = ref([])
 const counts = ref({ all: 0, customer: 0, vendor: 0, internal: 0, other: 0 })
@@ -339,6 +353,11 @@ const activeType = ref('all')
 const isLoading = ref(false)
 const isModalOpen = ref(false)
 const editingCustomerId = ref(null)
+
+const displayLimit = ref(15)
+const displayedCustomers = computed(() => {
+  return customers.value.slice(0, displayLimit.value)
+})
 
 const startCreateCustomer = () => {
   editingCustomerId.value = null
@@ -359,7 +378,11 @@ const startEditCustomer = (c) => {
 }
 
 const handleDeleteCustomer = async (customerId) => {
-  if (!confirm('Bạn có chắc chắn muốn xóa mối quan hệ này?')) return
+  const confirmed = await confirmStore.show({
+    title: 'Xóa mối quan hệ',
+    message: 'Bạn có chắc chắn muốn xóa mối quan hệ này?'
+  })
+  if (!confirmed) return
   try {
     await axios.delete(`/api/customers/${customerId}`)
     toast.success('Đã xóa mối quan hệ thành công!')
@@ -412,6 +435,7 @@ const fetchCustomers = async (isSilent = false) => {
 }
 
 const setTab = (type) => {
+  displayLimit.value = 15
   activeType.value = type
   fetchCustomers()
 }

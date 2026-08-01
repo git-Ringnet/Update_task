@@ -19,11 +19,11 @@
           <span>Quay lại dự án</span>
         </router-link>
 
-        <div class="flex items-start justify-between gap-4">
-          <div>
-            <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight font-heading flex items-center gap-3">
-              <span class="w-4 h-4 rounded-full inline-block flex-shrink-0 animate-pulse" :class="statusDotClass(project.health)"></span>
-              <span>{{ project.title }}</span>
+        <div class="flex items-start justify-between gap-4 min-w-0">
+          <div class="min-w-0 flex-1">
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight font-heading flex items-start gap-3">
+              <span class="w-4 h-4 rounded-full inline-block flex-shrink-0 animate-pulse mt-1.5" :class="statusDotClass(project.health)"></span>
+              <span class="break-words min-w-0 flex-1">{{ project.title }}</span>
             </h1>
             
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-sm text-gray-500">
@@ -136,7 +136,7 @@
             <!-- Activity Logs Feed -->
             <div class="space-y-4">
               <div
-                v-for="log in activityLogs"
+                v-for="log in displayedComments"
                 :key="log.id"
                 class="flex items-start gap-4 py-3 border-b border-gray-50 last:border-0"
               >
@@ -158,15 +158,27 @@
                   :src="log.user ? (log.user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120') : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'" 
                   class="w-7 h-7 rounded-full object-cover border border-gray-200 flex-shrink-0 shadow-3xs" 
                 />
-                <div class="flex-1">
+                <div class="flex-1 min-w-0">
                   <span class="font-bold text-gray-900 text-sm mr-3">{{ log.user ? log.user.name : 'Hệ thống' }}</span>
-                  <span class="text-sm text-gray-700 font-medium leading-relaxed">{{ log.content }}</span>
+                  <span class="text-sm text-gray-700 font-medium leading-relaxed break-words block mt-1">{{ log.content }}</span>
                 </div>
               </div>
 
               <!-- Empty activity state -->
               <div v-if="activityLogs.length === 0" class="py-8 text-center text-gray-400 text-xs font-medium">
                 Chưa có cập nhật hoạt động nào cho dự án này.
+              </div>
+
+              <!-- Load more updates button -->
+              <div v-if="activityLogs.length > commentsLimit" class="pt-2 flex justify-center">
+                <button
+                  @click="commentsLimit += 10"
+                  type="button"
+                  class="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none"
+                >
+                  <i class="fa-solid fa-angles-down text-[10px]"></i>
+                  <span>Xem thêm cập nhật (Còn {{ activityLogs.length - commentsLimit }})</span>
+                </button>
               </div>
             </div>
           </div>
@@ -248,8 +260,8 @@
 
                 <!-- Display mode with Hover edit/delete buttons -->
                 <div v-else class="min-w-0 flex-1 group">
-                  <div class="flex items-center gap-2">
-                    <div class="font-bold text-gray-900 text-sm leading-snug">{{ ms.title }}</div>
+                  <div class="flex items-start gap-2 min-w-0 flex-wrap sm:flex-nowrap">
+                    <div class="font-bold text-gray-900 text-sm leading-snug break-words min-w-0 flex-1">{{ ms.title }}</div>
                     
                     <!-- Edit & Delete hover controls -->
                     <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
@@ -325,7 +337,7 @@
 
             <div class="space-y-3">
               <div
-                v-for="task in project.tasks"
+                v-for="task in displayedTasks"
                 :key="task.id"
                 class="p-2.5 rounded-xl hover:bg-gray-50 transition-colors group"
               >
@@ -358,11 +370,11 @@
                   <div class="flex items-start gap-2.5 min-w-0">
                     <input 
                       type="checkbox" 
-                      :checked="task.status === 'done'" 
-                      @change="toggleTaskStatus(task)"
+                      :checked="task.status === 'done' || selectedTaskIds.includes(task.id)" 
+                      @change="toggleTaskSelect(task)"
                       class="rounded text-emerald-600 accent-emerald-600 cursor-pointer w-4 h-4 mt-0.5 flex-shrink-0" 
                     />
-                    <span class="text-sm font-semibold text-gray-800 leading-snug break-words" :class="{ 'line-through text-gray-400 font-medium': task.status === 'done' }">
+                    <span class="text-sm font-semibold text-gray-800 leading-snug break-words flex-1 min-w-0" :class="{ 'line-through text-gray-400 font-medium': task.status === 'done' }">
                       {{ task.title }}
                     </span>
                   </div>
@@ -406,6 +418,18 @@
               <div v-if="!project.tasks || project.tasks.length === 0" class="py-6 text-center text-gray-400 text-xs font-medium border border-dashed border-gray-200 rounded-xl">
                 Chưa có công việc nào cho dự án này.
               </div>
+
+              <!-- Load more tasks button -->
+              <div v-if="project.tasks && project.tasks.length > tasksLimit" class="pt-2 flex justify-center">
+                <button
+                  @click="tasksLimit += 10"
+                  type="button"
+                  class="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none"
+                >
+                  <i class="fa-solid fa-angles-down text-[10px]"></i>
+                  <span>Xem thêm công việc (Còn {{ project.tasks.length - tasksLimit }})</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -425,11 +449,48 @@
       @submit="handleUpdateProjectSubmit"
       @customer-created="fetchCustomers"
     />
+
+    <!-- Task Completion Note Modal -->
+    <!-- Floating Bulk Task Completion Bar -->
+    <transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="transform translate-y-8 opacity-0"
+      enter-to-class="transform translate-y-0 opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="transform translate-y-0 opacity-100"
+      leave-to-class="transform translate-y-8 opacity-0"
+    >
+      <div
+        v-if="selectedTaskIds.length > 0"
+        class="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 bg-white/95 backdrop-blur-md px-6 py-4 rounded-2xl shadow-xl border border-emerald-100/80 flex items-center gap-6 w-[90%] max-w-md justify-between"
+      >
+        <span class="text-sm font-semibold text-emerald-800">
+          Đã chọn <strong class="text-emerald-950 font-bold">{{ selectedTaskIds.length }}</strong> công việc
+        </span>
+        <div class="flex items-center gap-3">
+          <button
+            @click="selectedTaskIds = []"
+            type="button"
+            class="text-xs font-semibold text-gray-500 hover:text-gray-700 px-3 py-2 rounded-xl transition-colors cursor-pointer focus:outline-none"
+          >
+            Hủy chọn
+          </button>
+          <button
+            @click="goToBulkTaskComplete"
+            type="button"
+            class="px-4 py-2 bg-[#2d8a39] hover:bg-[#236e2d] text-white font-semibold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer focus:outline-none"
+          >
+            <i class="fa-solid fa-pen-to-square"></i>
+            <span>Cập nhật</span>
+          </button>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
@@ -437,10 +498,12 @@ import BottomNav from '../components/BottomNav.vue'
 import ProjectModal from '../components/ProjectModal.vue'
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toast'
+import { useConfirmStore } from '../stores/confirm'
 
 const authStore = useAuthStore()
 const router = useRouter()
 const toast = useToastStore()
+const confirmStore = useConfirmStore()
 
 const route = useRoute()
 const projectId = route.params.id || 1
@@ -490,8 +553,24 @@ const editingTaskData = reactive({
 
 const updateContentText = ref('')
 
+const selectedTaskIds = ref([])
+
+const tasksLimit = ref(10)
+const commentsLimit = ref(10)
+
+const displayedTasks = computed(() => {
+  if (!project.value || !project.value.tasks) return []
+  return project.value.tasks.slice(0, tasksLimit.value)
+})
+
+const displayedComments = computed(() => {
+  return activityLogs.value.slice(0, commentsLimit.value)
+})
+
 // Load data
 const fetchProjectDetail = async () => {
+  tasksLimit.value = 10
+  commentsLimit.value = 10
   try {
     const res = await axios.get(`/api/projects/${projectId}`)
     if (res.data) {
@@ -556,23 +635,39 @@ const handleQuickUpdate = async () => {
   }
 }
 
-const toggleTaskStatus = async (task) => {
-  const newStatus = task.status === 'done' ? 'todo' : 'done'
-  // Optimistic update
-  task.status = newStatus
-  try {
-    await axios.patch(`/api/tasks/${task.id}/status`, { 
-      status: newStatus,
-      user_id: authStore.user?.id || 3
-    })
-    toast.success(newStatus === 'done' ? 'Đã hoàn thành công việc!' : 'Đã mở lại công việc!')
-    await fetchProjectDetail()
-    await fetchComments()
-  } catch (err) {
-    console.error('Failed to toggle task status:', err)
-    toast.error('Cập nhật trạng thái công việc thất bại!')
-    await fetchProjectDetail()
+const toggleTaskSelect = async (task) => {
+  if (task.status === 'done') {
+    // Unchecking a completed task -> immediately set to todo on server
+    try {
+      await axios.patch(`/api/tasks/${task.id}/status`, { 
+        status: 'todo',
+        user_id: authStore.user?.id || 3
+      })
+      toast.success('Đã mở lại công việc!')
+      await fetchProjectDetail()
+      await fetchComments()
+    } catch (err) {
+      console.error('Failed to toggle task status:', err)
+      toast.error('Cập nhật trạng thái công việc thất bại!')
+      await fetchProjectDetail()
+    }
+  } else {
+    // Toggle selection for bulk complete
+    const idx = selectedTaskIds.value.indexOf(task.id)
+    if (idx > -1) {
+      selectedTaskIds.value.splice(idx, 1)
+    } else {
+      selectedTaskIds.value.push(task.id)
+    }
   }
+}
+
+const goToBulkTaskComplete = () => {
+  if (selectedTaskIds.value.length === 0) return
+  router.push({
+    path: '/tasks/complete',
+    query: { ids: selectedTaskIds.value.join(',') }
+  })
 }
 
 const handleAddMilestone = async () => {
@@ -652,7 +747,11 @@ const handleUpdateMilestone = async (id) => {
 }
 
 const handleDeleteMilestone = async (id) => {
-  if (!confirm('Bạn có chắc chắn muốn xóa cột mốc này?')) return
+  const confirmed = await confirmStore.show({
+    title: 'Xóa cột mốc',
+    message: 'Bạn có chắc chắn muốn xóa cột mốc này?'
+  })
+  if (!confirmed) return
   try {
     await axios.delete(`/api/milestones/${id}`)
     toast.success('Đã xóa cột mốc!')
@@ -696,7 +795,11 @@ const handleUpdateTask = async (task) => {
 }
 
 const handleDeleteTask = async (id) => {
-  if (!confirm('Bạn có chắc chắn muốn xóa công việc này?')) return
+  const confirmed = await confirmStore.show({
+    title: 'Xóa công việc',
+    message: 'Bạn có chắc chắn muốn xóa công việc này?'
+  })
+  if (!confirmed) return
   try {
     await axios.delete(`/api/tasks/${id}`)
     toast.success('Đã xóa công việc!')
@@ -743,7 +846,11 @@ const canDeleteProject = computed(() => {
 
 const handleDeleteProject = async () => {
   if (!canDeleteProject.value) return
-  if (!confirm(`Bạn có chắc chắn muốn xóa dự án "${project.value.title}" không?`)) return
+  const confirmed = await confirmStore.show({
+    title: 'Xóa dự án',
+    message: `Bạn có chắc chắn muốn xóa dự án "${project.value.title}" không?`
+  })
+  if (!confirmed) return
   try {
     await axios.delete(`/api/projects/${projectId}`)
     toast.success('Xóa dự án thành công!')

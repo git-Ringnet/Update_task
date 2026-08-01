@@ -61,11 +61,13 @@ export const useProjectStore = defineStore('project', {
         project.is_pinned = !project.is_pinned
       }
       try {
-        await axios.patch(`/api/projects/${projectId}/pin`)
+        const res = await axios.patch(`/api/projects/${projectId}/pin`)
         await this.fetchProjects(true)
+        return res.data.project?.is_pinned ?? false
       } catch (err) {
         console.error('Failed to toggle pin:', err)
         await this.fetchProjects(true)
+        throw err
       }
     },
 

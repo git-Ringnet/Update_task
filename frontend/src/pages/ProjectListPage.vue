@@ -161,7 +161,7 @@
 
                 <!-- Project List Rows with Smooth Staggered Fade In -->
                 <tr
-                  v-for="(project, index) in projectStore.projects"
+                  v-for="(project, index) in displayedProjects"
                   :key="project.id"
                   class="hover:bg-emerald-50/20 transition-colors group animate-fade-in-up cursor-pointer"
                   :class="{ 
@@ -174,29 +174,31 @@
                   @click="goToProjectDetail(project.id, $event)"
                 >
                   <!-- Checkbox Selection -->
-                  <td class="py-4 px-6 text-center align-middle select-none w-12" @click.stop @mousedown.stop>
+                  <td class="py-4 px-6 text-center align-middle select-none w-12">
                     <input
                       type="checkbox"
                       :checked="selectedProjectIds.includes(project.id)"
                       @change="toggleProjectSelection(project.id)"
+                      @click.stop
+                      @mousedown.stop
                       class="rounded text-emerald-600 accent-emerald-600 cursor-pointer w-4.5 h-4.5"
                     />
                   </td>
 
                   <!-- Title & Customer -->
-                  <td class="py-4 px-6">
+                  <td class="py-4 px-6 max-w-[250px] md:max-w-md">
                     <div class="block group-hover:text-emerald-700">
-                      <div class="font-bold text-gray-900 text-base leading-snug font-heading">
+                      <div class="font-bold text-gray-900 text-base leading-snug font-heading break-words">
                         {{ project.title }}
                       </div>
-                      <div class="text-xs text-gray-500 font-medium mt-0.5">
+                      <div class="text-xs text-gray-500 font-medium mt-0.5 break-words">
                         {{ project.customer ? project.customer.name : 'Chưa phân khách hàng' }}
                       </div>
                     </div>
                   </td>
 
                   <!-- Health Status Selector (1 Dot default, click opens 3 dots) -->
-                  <td class="py-4 px-6 text-center align-middle" @click.stop @mousedown.stop>
+                  <td class="py-4 px-6 text-center align-middle">
                     <HealthStatusSelector
                       :model-value="project.health"
                       @change="(newColor) => handleHealthChange(project.id, newColor)"
@@ -270,9 +272,10 @@
                   </td>
 
                   <!-- Pin column: FontAwesome fa-thumbtack -->
-                  <td class="py-4 px-4 text-center align-middle" @click.stop @mousedown.stop>
+                  <td class="py-4 px-4 text-center align-middle">
                     <button
-                      @click="handleTogglePin(project.id)"
+                      @click.stop="handleTogglePin(project.id)"
+                      @mousedown.stop
                       type="button"
                       class="p-1.5 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none"
                       :title="project.is_pinned ? 'Bỏ ghim' : 'Ghim dự án'"
@@ -285,9 +288,10 @@
                   </td>
 
                   <!-- Actions column -->
-                  <td class="py-4 px-4 text-center align-middle relative" @click.stop @mousedown.stop>
+                  <td class="py-4 px-4 text-center align-middle relative">
                     <button
                       @click.stop="toggleActionMenu(project.id)"
+                      @mousedown.stop
                       type="button"
                       class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
                     >
@@ -297,6 +301,8 @@
                     <!-- Actions Dropdown -->
                     <div
                       v-if="openActionMenuId === project.id"
+                      @click.stop
+                      @mousedown.stop
                       class="absolute right-2 top-full mt-1 w-36 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1.5 text-left ring-1 ring-black/5"
                     >
                       <!-- Edit button -->
@@ -326,6 +332,18 @@
 
               </tbody>
             </table>
+          </div>
+
+          <!-- Load more container -->
+          <div v-if="projectStore.projects.length > displayLimit" class="p-4 border-t border-gray-100 flex justify-center bg-white">
+            <button
+              @click="displayLimit += 15"
+              type="button"
+              class="px-5 py-2.5 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 font-extrabold text-xs rounded-xl shadow-3xs transition-all cursor-pointer flex items-center gap-1.5 focus:outline-none"
+            >
+              <i class="fa-solid fa-angles-down text-[10px]"></i>
+              <span>Xem thêm dự án (Còn {{ projectStore.projects.length - displayLimit }} dự án)</span>
+            </button>
           </div>
 
           <!-- Bottom Footer Banner matching mockup -->
@@ -374,7 +392,7 @@
     >
       <div
         v-if="selectedProjectIds.length > 0"
-        class="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 bg-white/95 backdrop-blur-md px-6 py-4 rounded-2xl shadow-xl border border-emerald-100/80 flex items-center gap-6 animate-fade-in-up w-[90%] max-w-md justify-between"
+        class="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 bg-white/95 backdrop-blur-md px-6 py-4 rounded-2xl shadow-xl border border-emerald-100/80 flex items-center gap-6 w-[90%] max-w-md justify-between"
       >
         <span class="text-sm font-semibold text-emerald-800">
           Đã chọn <strong class="text-emerald-950 font-bold">{{ selectedProjectIds.length }}</strong> dự án
@@ -414,10 +432,12 @@ import ProjectModal from '../components/ProjectModal.vue'
 import BottomNav from '../components/BottomNav.vue'
 import { useProjectStore } from '../stores/project'
 import { useToastStore } from '../stores/toast'
+import { useConfirmStore } from '../stores/confirm'
 
 const projectStore = useProjectStore()
 const router = useRouter()
 const toast = useToastStore()
+const confirmStore = useConfirmStore()
 
 const openActionMenuId = ref(null)
 const openLeadMenuId = ref(null)
@@ -471,7 +491,11 @@ const canDeleteProject = (project) => {
 
 const handleDeleteProject = async (project) => {
   if (!canDeleteProject(project)) return
-  if (!confirm(`Bạn có chắc chắn muốn xóa dự án "${project.title}" không?`)) return
+  const confirmed = await confirmStore.show({
+    title: 'Xóa dự án',
+    message: `Bạn có chắc chắn muốn xóa dự án "${project.title}" không?`
+  })
+  if (!confirmed) return
   try {
     await projectStore.deleteProject(project.id)
     toast.success('Xóa dự án thành công!')
@@ -496,6 +520,11 @@ const isModalOpen = ref(false)
 const selectedProjectIds = ref([])
 const isDragging = ref(false)
 const dragStartVal = ref(true)
+
+const displayLimit = ref(15)
+const displayedProjects = computed(() => {
+  return projectStore.projects.slice(0, displayLimit.value)
+})
 
 const isAllSelected = computed(() => {
   if (projectStore.projects.length === 0) return false
@@ -562,6 +591,7 @@ const goToBulkUpdate = () => {
 let pollTimer = null
 
 const setTab = (status) => {
+  displayLimit.value = 15
   if (projectStore.activeStatus === status) {
     projectStore.activeStatus = null
   } else {
@@ -571,6 +601,7 @@ const setTab = (status) => {
 }
 
 const handleSearch = (query) => {
+  displayLimit.value = 15
   projectStore.searchQuery = query
   projectStore.fetchProjects()
 }
@@ -587,8 +618,12 @@ const handleHealthChange = async (projectId, newColor) => {
 
 const handleTogglePin = async (projectId) => {
   try {
-    await projectStore.togglePin(projectId)
-    toast.success('Đã ghim/hủy ghim dự án!')
+    const isPinned = await projectStore.togglePin(projectId)
+    if (isPinned) {
+      toast.success('Đã ghim dự án lên đầu!')
+    } else {
+      toast.success('Đã bỏ ghim dự án!')
+    }
   } catch (err) {
     console.error('Failed to toggle project pin:', err)
     toast.error('Thay đổi ghim thất bại!')

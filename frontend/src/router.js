@@ -5,6 +5,7 @@ import ProjectUpdatePage from './pages/ProjectUpdatePage.vue'
 import CustomerListPage from './pages/CustomerListPage.vue'
 import CustomerDetailPage from './pages/CustomerDetailPage.vue'
 import TaskListPage from './pages/TaskListPage.vue'
+import TaskCompletePage from './pages/TaskCompletePage.vue'
 import ActivityFeedPage from './pages/ActivityFeedPage.vue'
 import LoginPage from './pages/LoginPage.vue'
 import { useAuthStore } from './stores/auth'
@@ -18,6 +19,7 @@ const routes = [
   { path: '/customers', name: 'customers', component: CustomerListPage },
   { path: '/customers/:id', name: 'customer-detail', component: CustomerDetailPage },
   { path: '/tasks', name: 'tasks', component: TaskListPage },
+  { path: '/tasks/complete', name: 'tasks-complete', component: TaskCompletePage },
   { path: '/feed', name: 'feed', component: ActivityFeedPage },
 ]
 
