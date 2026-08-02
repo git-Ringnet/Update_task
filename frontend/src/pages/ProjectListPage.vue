@@ -98,7 +98,7 @@
 
         <!-- Table Card Container -->
         <div class="bg-white rounded-2xl border border-gray-100 shadow-xs select-none">
-          <div class="overflow-visible">
+          <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-left border-collapse">
               <thead>
                 <tr class="border-b border-gray-100 text-xs font-bold text-gray-400 uppercase tracking-wider bg-gray-50/50">
@@ -332,6 +332,191 @@
 
               </tbody>
             </table>
+          </div>
+
+          <!-- Giao diện Điện thoại: Danh sách Card (Ẩn trên Desktop) -->
+          <div class="block md:hidden divide-y divide-gray-100 bg-white rounded-t-2xl overflow-hidden">
+            <!-- Loading state -->
+            <template v-if="projectStore.isLoading && projectStore.projects.length === 0">
+              <div v-for="i in 3" :key="'skeleton-card-' + i" class="p-4 animate-pulse space-y-3">
+                <div class="flex items-center justify-between">
+                  <div class="h-4 bg-gray-200 rounded-md w-2/3"></div>
+                  <div class="w-4 h-4 bg-gray-200 rounded-md"></div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="w-3.5 h-3.5 bg-gray-200 rounded-full"></div>
+                  <div class="w-6 h-6 rounded-full bg-gray-200"></div>
+                  <div class="h-3 bg-gray-100 rounded-md w-20"></div>
+                </div>
+              </div>
+            </template>
+
+            <!-- Empty state -->
+            <div v-else-if="projectStore.projects.length === 0" class="py-12 text-center text-gray-400 text-sm">
+              Không tìm thấy dự án nào trong mục này.
+            </div>
+
+            <!-- Card List -->
+            <div
+              v-for="(project, index) in displayedProjects"
+              :key="'card-' + project.id"
+              class="p-4 hover:bg-emerald-50/20 active:bg-emerald-50/30 transition-colors flex flex-col gap-2.5 relative cursor-pointer"
+              :class="{
+                'bg-emerald-50/10': selectedProjectIds.includes(project.id),
+                'relative z-30': openActionMenuId === project.id || openLeadMenuId === project.id
+              }"
+              @click="goToProjectDetail(project.id, $event)"
+            >
+              <!-- Row 1: Checkbox + Title + Pin -->
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex items-start gap-3 min-w-0">
+                  <!-- Checkbox Selection -->
+                  <div class="flex-shrink-0 pt-0.5" @click.stop>
+                    <input
+                      type="checkbox"
+                      :checked="selectedProjectIds.includes(project.id)"
+                      @change="toggleProjectSelection(project.id)"
+                      class="rounded text-emerald-600 accent-emerald-600 cursor-pointer w-4.5 h-4.5"
+                    />
+                  </div>
+                  <!-- Title & Customer -->
+                  <div class="min-w-0">
+                    <h3 class="font-bold text-gray-900 text-base leading-snug break-words font-heading group-hover:text-emerald-700">
+                      {{ project.title }}
+                    </h3>
+                    <p class="text-xs text-gray-500 font-semibold mt-0.5 break-words">
+                      {{ project.customer ? project.customer.name : 'Chưa phân khách hàng' }}
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Pin Button -->
+                <div class="flex-shrink-0" @click.stop>
+                  <button
+                    @click="handleTogglePin(project.id)"
+                    type="button"
+                    class="p-1.5 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none"
+                    :title="project.is_pinned ? 'Bỏ ghim' : 'Ghim dự án'"
+                  >
+                    <i 
+                      class="fa-solid fa-thumbtack text-base"
+                      :class="project.is_pinned ? 'text-emerald-600' : 'text-gray-300 -rotate-45'"
+                    ></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Row 2: Status selector + Assignee/Lead + Time + Action menu -->
+              <div class="flex items-center justify-between gap-3 pt-1">
+                <!-- Status & Lead & Time -->
+                <div class="flex flex-wrap items-center gap-3 text-xs text-gray-500 min-w-0">
+                  <!-- Health status dot -->
+                  <div @click.stop>
+                    <HealthStatusSelector
+                      :model-value="project.health"
+                      @change="(newColor) => handleHealthChange(project.id, newColor)"
+                    />
+                  </div>
+
+                  <!-- Divider -->
+                  <span class="text-gray-300">•</span>
+
+                  <!-- Lead Info -->
+                  <div class="flex items-center gap-1.5 min-w-0 relative" @click.stop="toggleLeadMenu(project.id)">
+                    <div class="relative inline-flex items-center gap-1.5 py-0.5 hover:bg-emerald-50/70 rounded-lg cursor-pointer">
+                      <img
+                        :src="project.lead ? (project.lead.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120') : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'"
+                        :alt="project.lead ? project.lead.name : 'Chưa giao'"
+                        class="w-5.5 h-5.5 rounded-full object-cover border border-emerald-100"
+                      />
+                      <span class="font-bold text-gray-700 truncate max-w-[85px]">
+                        {{ project.lead ? project.lead.name : 'Chưa giao' }}
+                      </span>
+                    </div>
+
+                    <!-- Lead Dropdown Selection for Card -->
+                    <div
+                      v-if="openLeadMenuId === project.id"
+                      @click.stop
+                      class="absolute left-0 bottom-full mb-1.5 w-44 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1.5 text-left ring-1 ring-black/5 max-h-48 overflow-y-auto"
+                    >
+                      <div class="px-3 py-1 text-[9px] font-bold text-gray-400 uppercase tracking-wider select-none border-b border-gray-100 mb-1">
+                        Chuyển lead dự án
+                      </div>
+                      
+                      <!-- Unassigned -->
+                      <button
+                        @click.stop="handleUpdateLead(project.id, null)"
+                        type="button"
+                        class="w-full text-left px-3.5 py-1.5 hover:bg-emerald-50 text-gray-500 hover:text-emerald-900 text-xs font-semibold transition-colors flex items-center gap-2 cursor-pointer"
+                      >
+                        <i class="fa-solid fa-user-slash text-[10px]"></i>
+                        <span>Không giao</span>
+                      </button>
+
+                      <!-- User list -->
+                      <button
+                        v-for="u in projectStore.users"
+                        :key="u.id"
+                        @click.stop="handleUpdateLead(project.id, u.id)"
+                        type="button"
+                        class="w-full text-left px-3 py-1.5 hover:bg-emerald-50 text-gray-700 hover:text-emerald-900 text-xs font-semibold transition-colors flex items-center gap-2 cursor-pointer"
+                      >
+                        <img :src="u.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'" class="w-4 h-4 rounded-full object-cover" />
+                        <span class="truncate flex-1">{{ u.name }}</span>
+                        <i v-if="project.lead && project.lead.id === u.id" class="fa-solid fa-check text-[9px] text-emerald-600"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Divider -->
+                  <span class="text-gray-300">•</span>
+
+                  <!-- Time -->
+                  <span class="font-medium truncate text-[11px]">
+                    {{ formatRelativeTime(project.last_activity_at || project.updated_at) }}
+                  </span>
+                </div>
+
+                <!-- Actions Menu Button -->
+                <div class="flex-shrink-0 relative" @click.stop>
+                  <button
+                    @click="toggleActionMenu(project.id)"
+                    type="button"
+                    class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
+                  >
+                    <i class="fa-solid fa-ellipsis text-base"></i>
+                  </button>
+
+                  <!-- Actions Dropdown inside Card -->
+                  <div
+                    v-if="openActionMenuId === project.id"
+                    class="absolute right-0 bottom-full mb-1.5 w-32 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1.5 text-left ring-1 ring-black/5"
+                  >
+                    <!-- Edit button -->
+                    <button
+                      @click="handleEditProject(project)"
+                      type="button"
+                      class="w-full text-left px-3.5 py-1.5 hover:bg-emerald-50 text-gray-700 hover:text-emerald-900 text-xs font-bold transition-colors flex items-center gap-2 cursor-pointer"
+                    >
+                      <i class="fa-solid fa-pen text-emerald-600 text-xs"></i>
+                      <span>Sửa</span>
+                    </button>
+
+                    <!-- Delete button -->
+                    <button
+                      @click="handleDeleteProject(project)"
+                      type="button"
+                      :disabled="!canDeleteProject(project)"
+                      class="w-full text-left px-3.5 py-1.5 text-rose-600 hover:bg-rose-50 text-xs font-bold transition-colors flex items-center gap-2.5 cursor-pointer disabled:opacity-40"
+                    >
+                      <i class="fa-solid fa-trash-can text-rose-500 text-xs"></i>
+                      <span>Xóa</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Load more container -->

@@ -6,112 +6,84 @@
 
       <!-- Main Container -->
       <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+
         <!-- Page Title -->
         <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight mb-6 font-heading">Mối quan hệ</h1>
 
         <!-- Status Filter Tabs & Action Button -->
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          
+
           <!-- Filter Tabs -->
           <div class="flex flex-wrap items-center gap-3">
             <!-- Tất cả -->
-            <button
-              @click="setTab('all')"
-              type="button"
+            <button @click="setTab('all')" type="button"
               class="px-4 py-2 rounded-xl font-medium text-sm transition-all duration-150 flex items-center gap-2"
               :class="activeType === 'all'
                 ? 'bg-emerald-100 text-emerald-800 shadow-2xs font-semibold'
-                : 'bg-gray-100/80 text-gray-600 hover:bg-gray-200/70'"
-            >
+                : 'bg-gray-100/80 text-gray-600 hover:bg-gray-200/70'">
               <span>Tất cả</span>
-              <span 
-                class="px-2 py-0.5 rounded-md text-xs font-bold"
-                :class="activeType === 'all' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'"
-              >
+              <span class="px-2 py-0.5 rounded-md text-xs font-bold"
+                :class="activeType === 'all' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'">
                 {{ counts.all || 0 }}
               </span>
             </button>
 
             <!-- Khách hàng -->
-            <button
-              @click="setTab('customer')"
-              type="button"
+            <button @click="setTab('customer')" type="button"
               class="px-4 py-2 rounded-xl font-medium text-sm transition-all duration-150 flex items-center gap-2"
               :class="activeType === 'customer'
                 ? 'bg-emerald-100 text-emerald-800 shadow-2xs font-semibold'
-                : 'bg-gray-100/80 text-gray-600 hover:bg-gray-200/70'"
-            >
+                : 'bg-gray-100/80 text-gray-600 hover:bg-gray-200/70'">
               <span>Khách hàng</span>
-              <span 
-                class="px-2 py-0.5 rounded-md text-xs font-bold"
-                :class="activeType === 'customer' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'"
-              >
+              <span class="px-2 py-0.5 rounded-md text-xs font-bold"
+                :class="activeType === 'customer' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'">
                 {{ counts.customer || 0 }}
               </span>
             </button>
 
             <!-- Vendor / Partner -->
-            <button
-              @click="setTab('vendor')"
-              type="button"
+            <button @click="setTab('vendor')" type="button"
               class="px-4 py-2 rounded-xl font-medium text-sm transition-all duration-150 flex items-center gap-2"
               :class="activeType === 'vendor'
                 ? 'bg-emerald-100 text-emerald-800 shadow-2xs font-semibold'
-                : 'bg-gray-100/80 text-gray-600 hover:bg-gray-200/70'"
-            >
+                : 'bg-gray-100/80 text-gray-600 hover:bg-gray-200/70'">
               <span>Vendor / Partner</span>
-              <span 
-                class="px-2 py-0.5 rounded-md text-xs font-bold"
-                :class="activeType === 'vendor' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'"
-              >
+              <span class="px-2 py-0.5 rounded-md text-xs font-bold"
+                :class="activeType === 'vendor' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'">
                 {{ counts.vendor || 0 }}
               </span>
             </button>
 
             <!-- Nội bộ -->
-            <button
-              @click="setTab('internal')"
-              type="button"
+            <button @click="setTab('internal')" type="button"
               class="px-4 py-2 rounded-xl font-medium text-sm transition-all duration-150 flex items-center gap-2"
               :class="activeType === 'internal'
                 ? 'bg-emerald-100 text-emerald-800 shadow-2xs font-semibold'
-                : 'bg-gray-100/80 text-gray-600 hover:bg-gray-200/70'"
-            >
+                : 'bg-gray-100/80 text-gray-600 hover:bg-gray-200/70'">
               <span>Nội bộ</span>
-              <span 
-                class="px-2 py-0.5 rounded-md text-xs font-bold"
-                :class="activeType === 'internal' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'"
-              >
+              <span class="px-2 py-0.5 rounded-md text-xs font-bold"
+                :class="activeType === 'internal' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'">
                 {{ counts.internal || 0 }}
               </span>
             </button>
 
             <!-- Khác -->
-            <button
-              @click="setTab('other')"
-              type="button"
+            <button @click="setTab('other')" type="button"
               class="px-4 py-2 rounded-xl font-medium text-sm transition-all duration-150 flex items-center gap-2"
               :class="activeType === 'other'
                 ? 'bg-emerald-100 text-emerald-800 shadow-2xs font-semibold'
-                : 'bg-gray-100/80 text-gray-600 hover:bg-gray-200/70'"
-            >
+                : 'bg-gray-100/80 text-gray-600 hover:bg-gray-200/70'">
               <span>Khác</span>
-              <span 
-                class="px-2 py-0.5 rounded-md text-xs font-bold"
-                :class="activeType === 'other' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'"
-              >
+              <span class="px-2 py-0.5 rounded-md text-xs font-bold"
+                :class="activeType === 'other' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'">
                 {{ counts.other || 0 }}
               </span>
             </button>
           </div>
 
           <!-- Add Button -->
-          <button
-            @click="startCreateCustomer()"
-            type="button"
-            class="px-5 py-2.5 bg-[#2d8a39] hover:bg-[#236e2d] text-white font-semibold text-sm rounded-xl shadow-xs transition-colors flex items-center gap-2 flex-shrink-0"
-          >
+          <button @click="startCreateCustomer()" type="button"
+            class="px-5 py-2.5 bg-[#2d8a39] hover:bg-[#236e2d] text-white font-semibold text-sm rounded-xl shadow-xs transition-colors flex items-center gap-2 flex-shrink-0">
             <i class="fa-solid fa-plus text-xs"></i>
             <span>Thêm mối quan hệ</span>
           </button>
@@ -119,10 +91,11 @@
 
         <!-- Table Card Container -->
         <div class="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden">
-          <div class="overflow-x-auto">
+          <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-left border-collapse">
               <thead>
-                <tr class="border-b border-gray-100 text-xs font-bold text-gray-400 uppercase tracking-wider bg-gray-50/50">
+                <tr
+                  class="border-b border-gray-100 text-xs font-bold text-gray-400 uppercase tracking-wider bg-gray-50/50">
                   <th scope="col" class="py-3.5 px-6">MỐI QUAN HỆ</th>
                   <th scope="col" class="py-3.5 px-6 text-center">TÌNH TRẠNG</th>
                   <th scope="col" class="py-3.5 px-6">SỐ DỰ ÁN</th>
@@ -162,16 +135,13 @@
                 </tr>
 
                 <!-- Relationship Rows -->
-                <tr
-                  v-for="(c, index) in displayedCustomers"
-                  :key="c.id"
-                  @click="$router.push(`/customers/${c.id}`)"
+                <tr v-for="(c, index) in displayedCustomers" :key="c.id" @click="$router.push(`/customers/${c.id}`)"
                   class="hover:bg-emerald-50/20 transition-colors group animate-fade-in-up cursor-pointer"
-                  :style="{ animationDelay: `${index * 45}ms` }"
-                >
+                  :style="{ animationDelay: `${index * 45}ms` }">
                   <!-- Name & Category Subtitle -->
                   <td class="py-4 px-6 max-w-[250px] md:max-w-md">
-                    <div class="font-bold text-gray-900 text-base leading-snug font-heading group-hover:text-emerald-700 transition-colors break-words">
+                    <div
+                      class="font-bold text-gray-900 text-base leading-snug font-heading group-hover:text-emerald-700 transition-colors break-words">
                       {{ c.name }}
                     </div>
                     <div class="text-xs text-gray-500 font-medium mt-0.5">
@@ -181,10 +151,8 @@
 
                   <!-- Status (Centered color dot) -->
                   <td class="py-4 px-6 text-center align-middle">
-                    <HealthStatusSelector
-                      :model-value="c.status"
-                      @change="(newColor) => handleStatusChange(c.id, newColor)"
-                    />
+                    <HealthStatusSelector :model-value="c.status"
+                      @change="(newColor) => handleStatusChange(c.id, newColor)" />
                   </td>
 
                   <!-- Projects count -->
@@ -210,23 +178,18 @@
                   <!-- Action Buttons -->
                   <td class="py-4 px-4 text-right align-middle">
                     <div class="flex items-center justify-end gap-2">
-                      <button 
-                        @click.stop="startEditCustomer(c)" 
-                        type="button" 
+                      <button @click.stop="startEditCustomer(c)" type="button"
                         class="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
-                        title="Chỉnh sửa"
-                      >
+                        title="Chỉnh sửa">
                         <i class="fa-solid fa-pen text-sm"></i>
                       </button>
-                      <button 
-                        @click.stop="handleDeleteCustomer(c.id)" 
-                        type="button" 
+                      <button @click.stop="handleDeleteCustomer(c.id)" type="button"
                         class="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                        title="Xóa"
-                      >
+                        title="Xóa">
                         <i class="fa-solid fa-trash-can text-sm"></i>
                       </button>
-                      <i class="fa-solid fa-chevron-right text-gray-300 group-hover:text-gray-600 text-sm transition-colors ml-1"></i>
+                      <i
+                        class="fa-solid fa-chevron-right text-gray-300 group-hover:text-gray-600 text-sm transition-colors ml-1"></i>
                     </div>
                   </td>
                 </tr>
@@ -235,20 +198,106 @@
             </table>
           </div>
 
+          <!-- Giao diện Điện thoại: Danh sách Card Khách hàng (Ẩn trên Desktop) -->
+          <div class="block md:hidden divide-y divide-gray-100 bg-white rounded-t-2xl overflow-hidden">
+            <!-- Skeleton loading state -->
+            <template v-if="isLoading && customers.length === 0">
+              <div v-for="i in 3" :key="'skeleton-card-' + i" class="p-4 animate-pulse space-y-3">
+                <div class="flex items-center justify-between">
+                  <div class="h-4 bg-gray-200 rounded-md w-2/3"></div>
+                  <div class="w-10 h-4 bg-gray-200 rounded-md"></div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="w-3.5 h-3.5 bg-gray-200 rounded-full"></div>
+                  <div class="h-3 bg-gray-100 rounded-md w-20"></div>
+                </div>
+              </div>
+            </template>
+
+            <!-- Empty state -->
+            <div v-else-if="customers.length === 0" class="py-12 text-center text-gray-400 text-sm">
+              Không tìm thấy mối quan hệ nào trong mục này.
+            </div>
+
+            <!-- Customer Card List -->
+            <div v-for="(c, index) in displayedCustomers" :key="'card-' + c.id"
+              @click="$router.push(`/customers/${c.id}`)"
+              class="p-4 hover:bg-emerald-50/20 active:bg-emerald-50/30 transition-colors flex flex-col gap-2.5 relative cursor-pointer">
+              <!-- Row 1: Name + Category & Edit/Delete Buttons -->
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <h3
+                    class="font-bold text-gray-900 text-base leading-snug break-words font-heading group-hover:text-emerald-700">
+                    {{ c.name }}
+                  </h3>
+                  <p class="text-xs text-gray-500 font-semibold mt-0.5">
+                    {{ formatType(c.type) }}
+                  </p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center gap-1.5 flex-shrink-0" @click.stop>
+                  <button @click="startEditCustomer(c)" type="button"
+                    class="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                    title="Chỉnh sửa">
+                    <i class="fa-solid fa-pen text-sm"></i>
+                  </button>
+                  <button @click="handleDeleteCustomer(c.id)" type="button"
+                    class="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                    title="Xóa">
+                    <i class="fa-solid fa-trash-can text-sm"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Row 2: Statusselector + Projects count + Time -->
+              <div class="flex items-center justify-between gap-3 pt-1 text-xs text-gray-500">
+                <div class="flex flex-wrap items-center gap-3 min-w-0">
+                  <!-- Health status selector -->
+                  <div @click.stop>
+                    <HealthStatusSelector :model-value="c.status"
+                      @change="(newColor) => handleStatusChange(c.id, newColor)" />
+                  </div>
+
+                  <!-- Divider -->
+                  <span class="text-gray-300">•</span>
+
+                  <!-- Projects count -->
+                  <span class="font-bold text-gray-800">
+                    {{ c.projects_count || 0 }} dự án
+                  </span>
+
+                  <!-- Divider -->
+                  <span class="text-gray-300">•</span>
+
+                  <!-- Last update time -->
+                  <span class="font-medium truncate text-[11px]">
+                    Cập nhật {{ formatRelativeTime(c.last_activity_at || c.updated_at) }} (by {{ c.updater ?
+                      c.updater.name :
+                    'Minh' }})
+                  </span>
+                </div>
+
+                <!-- Right chevron -->
+                <div class="flex-shrink-0 text-gray-300">
+                  <i class="fa-solid fa-chevron-right text-xs"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Load more container -->
           <div v-if="customers.length > displayLimit" class="p-4 border-t border-gray-100 flex justify-center bg-white">
-            <button
-              @click="displayLimit += 15"
-              type="button"
-              class="px-5 py-2.5 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 font-extrabold text-xs rounded-xl shadow-3xs transition-all cursor-pointer flex items-center gap-1.5 focus:outline-none"
-            >
+            <button @click="displayLimit += 15" type="button"
+              class="px-5 py-2.5 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 font-extrabold text-xs rounded-xl shadow-3xs transition-all cursor-pointer flex items-center gap-1.5 focus:outline-none">
               <i class="fa-solid fa-angles-down text-[10px]"></i>
               <span>Xem thêm mối quan hệ (Còn {{ customers.length - displayLimit }} đối tác)</span>
             </button>
           </div>
 
           <!-- Bottom Footer Bar matching mockup 6 -->
-          <div class="bg-[#f2faf3] px-6 py-3.5 border-t border-emerald-100/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-medium text-emerald-800">
+          <div
+            class="bg-[#f2faf3] px-6 py-3.5 border-t border-emerald-100/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-medium text-emerald-800">
             <div class="flex items-center gap-6 flex-wrap">
               <span class="flex items-center gap-1.5">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
@@ -264,11 +313,8 @@
               </span>
             </div>
 
-            <button
-              @click="scrollToTop"
-              type="button"
-              class="flex items-center gap-1.5 text-emerald-700 hover:text-emerald-900 font-semibold transition-colors"
-            >
+            <button @click="scrollToTop" type="button"
+              class="flex items-center gap-1.5 text-emerald-700 hover:text-emerald-900 font-semibold transition-colors">
               <i class="fa-solid fa-arrow-up text-xs"></i>
               <span>Lên đầu trang</span>
             </button>
@@ -296,12 +342,15 @@
           <form @submit.prevent="handleCreateCustomer" class="space-y-4">
             <div>
               <label class="block text-xs font-semibold text-gray-700 mb-1">Tên đối tác / Khách hàng *</label>
-              <input v-model="form.name" required type="text" class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-3xs" placeholder="VD: Dell Technologies" />
+              <input v-model="form.name" required type="text"
+                class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-3xs"
+                placeholder="VD: Dell Technologies" />
             </div>
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="block text-xs font-semibold text-gray-700 mb-1">Phân loại *</label>
-                <select v-model="form.type" required class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white font-semibold focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all">
+                <select v-model="form.type" required
+                  class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white font-semibold focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all">
                   <option value="customer">Khách hàng</option>
                   <option value="vendor">Vendor / Partner</option>
                   <option value="internal">Nội bộ</option>
@@ -310,7 +359,8 @@
               </div>
               <div>
                 <label class="block text-xs font-semibold text-gray-700 mb-1">Tình trạng *</label>
-                <select v-model="form.status" required class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white font-semibold focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all">
+                <select v-model="form.status" required
+                  class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white font-semibold focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all">
                   <option value="green">🟢 Xanh (Đang tốt)</option>
                   <option value="yellow">🟡 Vàng (Thiếu quan tâm)</option>
                   <option value="red">🔴 Đỏ (Bỏ mặc)</option>
@@ -318,8 +368,10 @@
               </div>
             </div>
             <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
-              <button type="button" @click="isModalOpen = false" class="px-4 py-2 text-sm text-gray-600 font-semibold cursor-pointer">Hủy</button>
-              <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-3xs cursor-pointer">
+              <button type="button" @click="isModalOpen = false"
+                class="px-4 py-2 text-sm text-gray-600 font-semibold cursor-pointer">Hủy</button>
+              <button type="submit"
+                class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-3xs cursor-pointer">
                 {{ editingCustomerId ? 'Lưu thay đổi' : 'Tạo ngay' }}
               </button>
             </div>

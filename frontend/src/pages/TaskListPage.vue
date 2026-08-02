@@ -27,7 +27,7 @@
 
           <!-- Section 1 Table Card Container -->
           <div class="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden">
-            <div class="overflow-x-auto">
+            <div class="hidden md:block overflow-x-auto">
               <table class="w-full text-left border-collapse">
                 <thead>
                   <tr class="border-b border-gray-100 text-xs font-bold text-gray-400 uppercase tracking-wider bg-gray-50/50">
@@ -119,6 +119,90 @@
                 </tbody>
               </table>
             </div>
+
+            <!-- Giao diện Điện thoại: Danh sách Dự án đang lead (Ẩn trên Desktop) -->
+            <div class="block md:hidden divide-y divide-gray-100 bg-white">
+              <!-- Skeleton loading state -->
+              <template v-if="isLoading && leadProjects.length === 0">
+                <div v-for="i in 2" :key="'skeleton-lead-card-' + i" class="p-4 animate-pulse space-y-3">
+                  <div class="flex items-center justify-between">
+                    <div class="h-4 bg-gray-200 rounded-md w-2/3"></div>
+                    <div class="w-4 h-4 bg-gray-200 rounded-md"></div>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <div class="w-3.5 h-3.5 bg-gray-200 rounded-full"></div>
+                    <div class="h-3 bg-gray-100 rounded-md w-20"></div>
+                  </div>
+                </div>
+              </template>
+
+              <!-- Empty state -->
+              <div v-else-if="leadProjects.length === 0" class="p-8 text-center text-gray-400 text-sm">
+                Bạn chưa làm lead dự án nào.
+              </div>
+
+              <!-- Card List -->
+              <div
+                v-for="(project, index) in leadProjects"
+                :key="'lead-card-' + project.id"
+                class="p-4 hover:bg-emerald-50/20 active:bg-emerald-50/30 transition-colors flex flex-col gap-2.5 relative cursor-pointer group"
+                @click="$router.push(`/projects/${project.id}`)"
+              >
+                <!-- Row 1: Title + Pin -->
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <h3 class="font-bold text-gray-900 text-base leading-snug break-words font-heading group-hover:text-emerald-700 flex items-start gap-2">
+                      <span class="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0 mt-1.5" :class="statusDotClass(project.health)"></span>
+                      <span class="break-words min-w-0 flex-1">{{ project.title }}</span>
+                    </h3>
+                    <p class="text-xs text-gray-500 font-semibold mt-0.5 pl-4 break-words">
+                      {{ project.customer ? project.customer.name : 'Chưa phân khách hàng' }}
+                    </p>
+                  </div>
+
+                  <!-- Pin Button -->
+                  <div class="flex-shrink-0" @click.stop>
+                    <button
+                      @click="handleTogglePin(project.id)"
+                      type="button"
+                      class="p-1.5 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none"
+                    >
+                      <i 
+                        class="fa-solid fa-thumbtack text-base"
+                        :class="project.is_pinned ? 'text-emerald-600' : 'text-gray-300 -rotate-45'"
+                      ></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Row 2: Status indicator + Last activity time -->
+                <div class="flex items-center justify-between gap-3 pt-1 text-xs text-gray-500 pl-4">
+                  <div class="flex items-center gap-3">
+                    <!-- Health status selector -->
+                    <div @click.stop class="flex items-center">
+                      <HealthStatusSelector
+                        :model-value="project.health"
+                        @change="(newColor) => handleHealthChange(project.id, newColor)"
+                      />
+                    </div>
+
+                    <!-- Divider -->
+                    <span class="text-gray-300">•</span>
+
+                    <!-- Time -->
+                    <span class="font-medium text-[11px]">
+                      Cập nhật {{ formatRelativeTime(project.last_activity_at || project.updated_at) }}
+                    </span>
+                  </div>
+
+                  <!-- Right chevron -->
+                  <div class="flex-shrink-0 text-gray-300">
+                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -212,8 +296,8 @@
     <!-- Task Detail Drawer with Realtime Discussion (Replacing Zalo chat) -->
     <div v-if="selectedTask" class="fixed inset-0 z-50 overflow-hidden">
       <div class="fixed inset-0 bg-gray-900/40 backdrop-blur-xs" @click="selectedTask = null"></div>
-      <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
-        <div class="w-screen max-w-md bg-white shadow-2xl flex flex-col justify-between border-l border-gray-100">
+      <div class="absolute inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10">
+        <div class="w-screen sm:max-w-md bg-white shadow-2xl flex flex-col justify-between border-l border-gray-100">
           
           <!-- Drawer Header -->
           <div class="p-6 border-b border-gray-100 bg-emerald-50/40 flex items-center justify-between">

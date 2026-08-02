@@ -28,11 +28,14 @@ const router = createRouter({
   routes,
 })
 
+let isInitialCheckDone = false
+
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
 
   // Verify auth on initial load or reload if token is present
-  if (authStore.token && !authStore.user) {
+  if (authStore.token && !isInitialCheckDone) {
+    isInitialCheckDone = true
     await authStore.checkAuth()
   }
 
