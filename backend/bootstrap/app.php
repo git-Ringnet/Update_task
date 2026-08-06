@@ -12,6 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // CORS must run before everything else (including auth)
+        $middleware->prepend(\App\Http\Middleware\CorsMiddleware::class);
+
         $middleware->validateCsrfTokens(except: [
             'api/*',
         ]);
