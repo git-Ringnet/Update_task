@@ -8,10 +8,12 @@ import TaskListPage from './pages/TaskListPage.vue'
 import TaskCompletePage from './pages/TaskCompletePage.vue'
 import ActivityFeedPage from './pages/ActivityFeedPage.vue'
 import LoginPage from './pages/LoginPage.vue'
+import ViewListPage from './pages/ViewListPage.vue'
+import PeopleListPage from './pages/PeopleListPage.vue'
 import { useAuthStore } from './stores/auth'
 
 const routes = [
-  { path: '/', redirect: '/projects' },
+  { path: '/', redirect: '/views' },
   { path: '/login', name: 'login', component: LoginPage },
   { path: '/projects', name: 'projects', component: ProjectListPage },
   { path: '/projects/update', name: 'projects-update', component: ProjectUpdatePage },
@@ -21,6 +23,8 @@ const routes = [
   { path: '/tasks', name: 'tasks', component: TaskListPage },
   { path: '/tasks/complete', name: 'tasks-complete', component: TaskCompletePage },
   { path: '/feed', name: 'feed', component: ActivityFeedPage },
+  { path: '/views', name: 'views', component: ViewListPage },
+  { path: '/people', name: 'people', component: PeopleListPage },
 ]
 
 const router = createRouter({
@@ -43,7 +47,7 @@ router.beforeEach(async (to, from, next) => {
 
   if (to.name === 'login') {
     if (isAuth) {
-      next('/projects')
+      next('/views')
     } else {
       next()
     }

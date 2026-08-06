@@ -143,12 +143,13 @@ Route::middleware('auth.token')->group(function () {
     });
 
     Route::get('/users', function () {
-        return response()->json(User::all());
+        return response()->json(User::withCount('ledProjects')->get());
     });
 
     // Projects
     Route::get('/projects', [ProjectController::class, 'index']);
     Route::post('/projects', [ProjectController::class, 'store']);
+    Route::post('/projects/reorder', [ProjectController::class, 'reorder']);
     Route::get('/projects/{id}', [ProjectController::class, 'show']);
     Route::put('/projects/{id}', [ProjectController::class, 'update']);
     Route::patch('/projects/{id}/health', [ProjectController::class, 'updateHealth']);

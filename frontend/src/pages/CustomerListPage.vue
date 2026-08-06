@@ -5,7 +5,7 @@
       <Navbar />
 
       <!-- Main Container -->
-      <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         <!-- Page Title -->
         <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight mb-6 font-heading">Mối quan hệ</h1>
@@ -380,8 +380,7 @@
       </div>
     </div>
 
-    <!-- Bottom Navigation Bar -->
-    <BottomNav />
+
   </div>
 </template>
 
@@ -389,7 +388,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
-import BottomNav from '../components/BottomNav.vue'
+
 import HealthStatusSelector from '../components/HealthStatusSelector.vue'
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toast'

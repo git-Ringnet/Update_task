@@ -3,14 +3,18 @@
     <!-- Navbar Component -->
     <Navbar />
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <main class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       
       <!-- Back Link & Top Header -->
       <div>
-        <router-link to="/customers" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-emerald-700 font-medium mb-3 transition-colors">
+        <button
+          @click="goBack"
+          type="button"
+          class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-emerald-700 font-medium mb-3 transition-colors cursor-pointer focus:outline-none"
+        >
           <i class="fa-solid fa-arrow-left text-xs"></i>
-          <span>Quay lại danh sách</span>
-        </router-link>
+          <span>Quay lại</span>
+        </button>
 
         <div class="flex items-center justify-between gap-4 border-b border-gray-100 pb-5 min-w-0">
           <!-- Title & Subtitle -->
@@ -78,20 +82,27 @@
 
     </main>
 
-    <!-- Bottom Navigation Bar -->
-    <BottomNav />
+
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
-import BottomNav from '../components/BottomNav.vue'
 
 const route = useRoute()
+const router = useRouter()
 const customerId = route.params.id || 1
+
+const goBack = () => {
+  if (window.history.state && window.history.state.back) {
+    router.back()
+  } else {
+    router.push('/views')
+  }
+}
 
 const customer = ref({
   name: 'Trung Nguyên Coffee',

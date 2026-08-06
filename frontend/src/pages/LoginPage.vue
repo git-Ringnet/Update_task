@@ -161,7 +161,7 @@ const handleGoogleCallback = async (response) => {
       id_token: response.credential
     })
     authStore.setAuth(res.data.user, res.data.token)
-    router.push('/projects')
+    router.push('/views')
   } catch (err) {
     error.value = err.response?.data?.message || 'Đăng nhập Google thất bại'
   }
@@ -216,7 +216,7 @@ const handleGoogleSelect = async (account) => {
   showGooglePicker.value = false
   try {
     await authStore.googleLogin(account.email, account.name, account.avatar)
-    router.push('/projects')
+    router.push('/views')
   } catch (err) {
     error.value = err
   }
@@ -233,7 +233,7 @@ const handleCustomGoogle = async () => {
   showGooglePicker.value = false
   try {
     await authStore.googleLogin(email, name, avatar)
-    router.push('/projects')
+    router.push('/views')
   } catch (err) {
     error.value = err
   }

@@ -13,7 +13,7 @@ class ProjectController extends Controller
     {
         $userId = auth()->id() ?? $request->user_id;
 
-        $query = Project::with(['customer', 'lead', 'tasks'])
+        $query = Project::with(['customer', 'lead', 'tasks', 'latestComment.user'])
             ->withCount(['tasks', 'comments']);
 
         if ($userId) {
@@ -25,7 +25,8 @@ class ProjectController extends Controller
                 ->orderByRaw('CASE WHEN pinned_projects.id IS NOT NULL THEN 1 ELSE 0 END DESC');
         }
 
-        $query->orderBy('last_activity_at', 'desc');
+        $query->orderBy('sort_order', 'asc')
+              ->orderBy('last_activity_at', 'desc');
 
         if ($request->has('tracking_status')) {
             $status = $request->tracking_status;
@@ -77,15 +78,18 @@ class ProjectController extends Controller
             'lead_id' => 'nullable|exists:users,id',
             'health' => 'required|in:green,yellow,red',
             'is_pinned' => 'boolean',
+            'tracking_status' => 'sometimes|in:following,not_following,completed',
         ]);
 
-        // Map health to tracking_status
-        if ($validated['health'] === 'yellow') {
-            $validated['tracking_status'] = 'following';
-        } elseif ($validated['health'] === 'red') {
-            $validated['tracking_status'] = 'not_following';
-        } elseif ($validated['health'] === 'green') {
-            $validated['tracking_status'] = 'completed';
+        // Map health to tracking_status only if not provided
+        if (!isset($validated['tracking_status'])) {
+            if ($validated['health'] === 'yellow') {
+                $validated['tracking_status'] = 'following';
+            } elseif ($validated['health'] === 'red') {
+                $validated['tracking_status'] = 'not_following';
+            } elseif ($validated['health'] === 'green') {
+                $validated['tracking_status'] = 'completed';
+            }
         }
 
         $validated['last_activity_at'] = Carbon::now();
@@ -111,12 +115,13 @@ class ProjectController extends Controller
             'lead_id' => 'nullable|exists:users,id',
             'health' => 'sometimes|in:green,yellow,red',
             'is_pinned' => 'boolean',
+            'tracking_status' => 'sometimes|in:following,not_following,completed',
         ]);
 
         $project = Project::findOrFail($id);
         $oldHealth = $project->health;
 
-        if (isset($validated['health'])) {
+        if (isset($validated['health']) && !isset($validated['tracking_status'])) {
             if ($validated['health'] === 'yellow') {
                 $validated['tracking_status'] = 'following';
             } elseif ($validated['health'] === 'red') {
@@ -126,9 +131,37 @@ class ProjectController extends Controller
             }
         }
 
+        if (isset($validated['tracking_status']) && !isset($validated['health'])) {
+            if ($validated['tracking_status'] === 'following') {
+                $validated['health'] = 'yellow';
+            } elseif ($validated['tracking_status'] === 'not_following') {
+                $validated['health'] = 'red';
+            } elseif ($validated['tracking_status'] === 'completed') {
+                $validated['health'] = 'green';
+            }
+        }
+
         $validated['last_activity_at'] = Carbon::now();
 
         $project->update($validated);
+
+        if (isset($validated['is_pinned'])) {
+            $userId = auth()->id() ?? $request->user_id ?? \App\Models\User::first()->id ?? null;
+            if ($userId) {
+                if ($validated['is_pinned']) {
+                    \Illuminate\Support\Facades\DB::table('pinned_projects')->updateOrInsert(
+                        ['user_id' => $userId, 'project_id' => $id],
+                        ['updated_at' => now(), 'created_at' => now()]
+                    );
+                } else {
+                    \Illuminate\Support\Facades\DB::table('pinned_projects')
+                        ->where('user_id', $userId)
+                        ->where('project_id', $id)
+                        ->delete();
+                }
+            }
+        }
+
         $project->load(['customer', 'lead']);
 
         if (isset($validated['health']) && $validated['health'] !== $oldHealth) {
@@ -207,6 +240,8 @@ class ProjectController extends Controller
                 ->where('user_id', $userId)
                 ->where('project_id', $id)
                 ->delete();
+            $project->is_pinned = 0;
+            $project->save();
         } else {
             \Illuminate\Support\Facades\DB::table('pinned_projects')->insert([
                 'user_id' => $userId,
@@ -214,6 +249,8 @@ class ProjectController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            $project->is_pinned = 1;
+            $project->save();
         }
 
         $project = Project::with(['customer', 'lead'])->findOrFail($id);
@@ -241,5 +278,19 @@ class ProjectController extends Controller
         $project->delete();
 
         return response()->json(['message' => 'Đã xóa dự án']);
+    }
+
+    public function reorder(Request $request)
+    {
+        $request->validate([
+            'project_ids' => 'required|array',
+            'project_ids.*' => 'integer|exists:projects,id',
+        ]);
+
+        foreach ($request->project_ids as $index => $id) {
+            Project::where('id', $id)->update(['sort_order' => $index + 1]);
+        }
+
+        return response()->json(['message' => 'Cập nhật thứ tự dự án thành công']);
     }
 }

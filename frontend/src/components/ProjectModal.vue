@@ -35,35 +35,27 @@
           <div class="relative" ref="dropdownRef">
             <label class="block text-sm font-semibold text-gray-700 mb-1">Khách hàng <span class="text-rose-500">*</span></label>
             
-            <!-- Selection Box -->
-            <div
-              @click="toggleDropdown"
-              class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white flex items-center justify-between cursor-pointer select-none"
-              :class="isOpenDropdown ? 'ring-2 ring-emerald-500/20 border-emerald-500' : ''"
-            >
-              <span :class="selectedCustomerName ? 'text-gray-900 font-medium' : 'text-gray-400'">
-                {{ selectedCustomerName || '-- Chọn khách hàng --' }}
+            <!-- Autocomplete Input Box -->
+            <div class="relative">
+              <input
+                v-model="searchQuery"
+                @focus="isOpenDropdown = true"
+                @input="isOpenDropdown = true"
+                type="text"
+                placeholder="-- Gõ để tìm kiếm khách hàng --"
+                class="w-full px-3.5 py-2 pr-10 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white"
+                :class="isOpenDropdown ? 'ring-2 ring-emerald-500/20 border-emerald-500' : ''"
+              />
+              <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer pointer-events-none">
+                <i class="fa-solid fa-chevron-down text-xs transition-transform duration-200" :class="isOpenDropdown ? 'rotate-180' : ''"></i>
               </span>
-              <i class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200" :class="isOpenDropdown ? 'rotate-180' : ''"></i>
             </div>
 
             <!-- Dropdown Options Panel -->
             <div
               v-if="isOpenDropdown"
-              class="absolute left-0 right-0 mt-1.5 bg-white border border-gray-150 rounded-xl shadow-lg z-50 p-2.5 space-y-2.5 animate-fade-in-up"
+              class="absolute left-0 right-0 mt-1.5 bg-white border border-gray-100 rounded-xl shadow-lg z-50 p-2.5 space-y-2 animate-fade-in-up"
             >
-              <!-- Search box -->
-              <div class="relative">
-                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[11px]"></i>
-                <input
-                  v-model="searchQuery"
-                  type="text"
-                  placeholder="Tìm tên hoặc mã khách hàng..."
-                  class="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-emerald-500"
-                  @click.stop
-                />
-              </div>
-
               <!-- Options List -->
               <div class="max-h-44 overflow-y-auto space-y-0.5 scrollbar-thin">
                 <button
@@ -128,7 +120,7 @@
               >
                 <input type="radio" v-model="form.health" value="red" class="hidden" />
                 <span class="w-3.5 h-3.5 rounded-full bg-rose-500 health-dot-red flex-shrink-0"></span>
-                <span class="text-xs">Không theo</span>
+                <span class="text-xs">Bỏ theo</span>
               </label>
 
               <!-- Hoàn thành (Xanh) -->
@@ -289,11 +281,14 @@ watch(() => props.isOpen, (newVal) => {
       form.customer_id = props.editProject.customer_id
       form.lead_id = props.editProject.lead_id
       form.health = props.editProject.health
+      const c = props.customers.find(item => item.id === form.customer_id)
+      searchQuery.value = c ? `${c.name} ${c.code ? `(${c.code})` : ''}` : ''
     } else {
       form.title = ''
       form.customer_id = ''
       form.lead_id = null
       form.health = 'yellow'
+      searchQuery.value = ''
     }
   }
 })
@@ -303,30 +298,26 @@ const isOpenDropdown = ref(false)
 const searchQuery = ref('')
 const dropdownRef = ref(null)
 
-const toggleDropdown = () => {
-  isOpenDropdown.value = !isOpenDropdown.value
-  if (isOpenDropdown.value) {
-    searchQuery.value = ''
-  }
-}
-
 // Filter customers by query string
 const filteredCustomers = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
   if (!q) return props.customers
+
+  const c = props.customers.find(item => item.id === form.customer_id)
+  const currentSelectedName = c ? `${c.name} ${c.code ? `(${c.code})` : ''}`.toLowerCase() : ''
+  
+  if (q === currentSelectedName) {
+    return props.customers
+  }
+
   return props.customers.filter(c => {
     return c.name.toLowerCase().includes(q) || (c.code && c.code.toLowerCase().includes(q))
   })
 })
 
-// Get selected customer name
-const selectedCustomerName = computed(() => {
-  const c = props.customers.find(item => item.id === form.customer_id)
-  return c ? `${c.name} ${c.code ? `(${c.code})` : ''}` : ''
-})
-
 const selectCustomer = (c) => {
   form.customer_id = c.id
+  searchQuery.value = `${c.name} ${c.code ? `(${c.code})` : ''}`
   isOpenDropdown.value = false
 }
 
@@ -361,6 +352,7 @@ const handleCreateCustomer = async () => {
     
     // Automatically select the new customer in our form
     form.customer_id = newCust.id
+    searchQuery.value = `${newCust.name} ${newCust.code ? `(${newCust.code})` : ''}`
     
     // Emit notification to parent to reload lookup data
     emit('customer-created', newCust)
@@ -375,6 +367,8 @@ const handleCreateCustomer = async () => {
 const handleClickOutside = (event) => {
   if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
     isOpenDropdown.value = false
+    const c = props.customers.find(item => item.id === form.customer_id)
+    searchQuery.value = c ? `${c.name} ${c.code ? `(${c.code})` : ''}` : ''
   }
 }
 

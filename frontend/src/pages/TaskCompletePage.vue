@@ -3,7 +3,7 @@
     <div>
       <!-- Custom Header matching bulk update page -->
       <header class="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-2xs">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <!-- Left: Logo -->
           <router-link to="/tasks" class="flex items-center gap-2 group">
             <CactusLogo />
@@ -30,8 +30,17 @@
       </header>
 
       <!-- Main Container -->
-      <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+      <main class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Back Button -->
+        <button
+          @click="goBack"
+          type="button"
+          class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-emerald-700 font-medium mb-4 transition-colors cursor-pointer focus:outline-none"
+        >
+          <i class="fa-solid fa-arrow-left text-xs"></i>
+          <span>Quay lại</span>
+        </button>
+
         <!-- Header Info (Progress & Keyboard hints) -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-6">
           <div>
@@ -95,16 +104,16 @@
             class="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs hover:shadow-xs transition-shadow flex flex-col md:flex-row md:items-start justify-between gap-4"
           >
             <!-- Left section: task name, project tag -->
-            <div class="flex items-start gap-3.5 min-w-0 md:w-1/3">
-              <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center flex-shrink-0 text-sm shadow-3xs font-extrabold">
+            <div class="flex items-start gap-3.5 min-w-0 md:w-1/3 flex-shrink-0">
+              <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center flex-shrink-0 text-sm shadow-3xs font-extrabold mt-0.5">
                 <i class="fa-solid fa-list-check"></i>
               </div>
-              <div class="min-w-0">
-                <h3 class="font-extrabold text-gray-900 text-sm leading-snug break-words group-hover:text-emerald-700">
+              <div class="min-w-0 flex-1">
+                <h3 class="font-extrabold text-gray-900 text-sm leading-snug break-all min-w-0">
                   {{ task.title }}
                 </h3>
-                <div class="flex items-center gap-1.5 mt-1.5">
-                  <span class="px-2 py-0.5 bg-gray-100 border border-gray-200 text-gray-500 font-extrabold rounded text-[10px] tracking-wide uppercase">
+                <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                  <span class="px-2 py-0.5 bg-gray-100 border border-gray-200 text-gray-500 font-extrabold rounded text-[10px] tracking-wide uppercase break-all max-w-full inline-block">
                     {{ task.project ? task.project.title : 'Dự án' }}
                   </span>
                 </div>
@@ -146,8 +155,7 @@
       </main>
     </div>
 
-    <!-- Bottom Navigation Bar -->
-    <BottomNav />
+
   </div>
 </template>
 
@@ -156,7 +164,7 @@ import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import CactusLogo from '../components/CactusLogo.vue'
-import BottomNav from '../components/BottomNav.vue'
+
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toast'
 
@@ -164,6 +172,14 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const toast = useToastStore()
+
+const goBack = () => {
+  if (window.history.state && window.history.state.back) {
+    router.back()
+  } else {
+    router.push('/tasks')
+  }
+}
 
 const currentUser = computed(() => authStore.user || {
   name: 'Minh',
@@ -252,6 +268,14 @@ const saveComplete = async (taskId) => {
     const pad = (n) => String(n).padStart(2, '0')
     savedTimes[taskId] = `${pad(now.getHours())}:${pad(now.getMinutes())}`
     toast.success('Đã hoàn thành công việc!')
+
+    // Automatically navigate back to home screen when all tasks are completed!
+    const allSaved = tasks.value.every(t => isSaved[t.id])
+    if (allSaved) {
+      setTimeout(() => {
+        router.push('/views')
+      }, 500)
+    }
   } catch (err) {
     console.error('Failed to complete task:', err)
     toast.error('Hoàn thành công việc thất bại!')
@@ -274,8 +298,10 @@ const handleFinishAll = async () => {
     toast.success('Đã hoàn thành toàn bộ công việc được chọn!')
   }
 
-  // Navigate back to tasks page
-  router.push('/tasks')
+  // Navigate back to home screen
+  setTimeout(() => {
+    router.push('/views')
+  }, 400)
 }
 
 // Global keyboard shortcut listeners

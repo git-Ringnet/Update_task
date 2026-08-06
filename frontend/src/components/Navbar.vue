@@ -1,84 +1,146 @@
 <template>
-  <header class="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-2xs">
-    <!-- Top Header: Only Logo on Left & Profile Dropdown on Right -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <!-- Left: Logo Mascot -->
-      <router-link to="/" class="flex items-center gap-2 group">
-        <CactusLogo />
-      </router-link>
+  <header class="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-2xs py-2">
+    <!-- Navbar Container: Centered workspace dropdown -->
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-center relative" ref="dropdownRef">
+      
+      <!-- Top Center Dropdown Trigger -->
+      <button
+        @click="toggleDropdown"
+        type="button"
+        class="bg-white px-6 py-2.5 rounded-full border border-gray-200/80 hover:border-emerald-300 shadow-3xs hover:shadow-2xs flex items-center gap-2 transition-all duration-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:ring-offset-1 text-sm font-bold text-gray-900"
+      >
+        <span>🌵</span>
+        <span>Xương Rồng</span>
+        <i 
+          class="fa-solid fa-chevron-down text-xs text-gray-400 ml-1 transition-transform duration-200"
+          :class="{ 'rotate-180': isDropdownOpen }"
+        ></i>
+      </button>
 
-      <!-- Right: User Profile Dropdown -->
-      <div class="relative" ref="dropdownRef">
-        <button
-          @click="toggleDropdown"
-          type="button"
-          class="flex items-center gap-2.5 p-1 rounded-full hover:bg-gray-50 transition-colors focus:outline-none group"
+      <!-- Dropdown Menu -->
+      <transition
+        enter-active-class="transition duration-150 ease-out"
+        enter-from-class="transform scale-95 opacity-0 -translate-y-1"
+        enter-to-class="transform scale-100 opacity-100 translate-y-0"
+        leave-active-class="transition duration-100 ease-in"
+        leave-from-class="transform scale-100 opacity-100 translate-y-0"
+        leave-to-class="transform scale-95 opacity-0 -translate-y-1"
+      >
+        <div
+          v-if="isDropdownOpen"
+          class="absolute top-14 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 p-3 z-50 ring-1 ring-black/5"
         >
-          <img
-            :src="currentUser.avatar"
-            :alt="currentUser.name"
-            class="w-9 h-9 rounded-full object-cover border-2 border-emerald-400/70 shadow-2xs group-hover:scale-105 transition-transform"
-          />
-          <span class="text-base font-bold text-gray-900 font-heading">{{ currentUser.name }}</span>
-          <i 
-            class="fa-solid fa-chevron-down text-xs text-gray-400 group-hover:text-gray-600 transition-transform duration-200"
-            :class="{ 'rotate-180': isDropdownOpen }"
-          ></i>
-        </button>
-
-        <!-- Dropdown Menu -->
-        <transition
-          enter-active-class="transition duration-150 ease-out"
-          enter-from-class="transform scale-95 opacity-0 -translate-y-1"
-          enter-to-class="transform scale-100 opacity-100 translate-y-0"
-          leave-active-class="transition duration-100 ease-in"
-          leave-from-class="transform scale-100 opacity-100 translate-y-0"
-          leave-to-class="transform scale-95 opacity-0 -translate-y-1"
-        >
-          <div
-            v-if="isDropdownOpen"
-            class="absolute right-0 top-12 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 ring-1 ring-black/5"
-          >
-            <!-- User Info Header -->
-            <div class="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
-              <img
-                :src="currentUser.avatar"
-                class="w-10 h-10 rounded-full object-cover border border-emerald-300"
-              />
+          <!-- WORKSPACE SECTION -->
+          <div class="space-y-1">
+            
+            <!-- Trang chủ Item (Formerly Views) -->
+            <button
+              @click="navigate('/views')"
+              type="button"
+              class="w-full text-left p-2 hover:bg-emerald-50/60 rounded-xl transition-colors flex items-start gap-2.5 cursor-pointer group"
+            >
+              <span class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-sm group-hover:bg-white transition-colors border border-transparent group-hover:border-emerald-100 flex-shrink-0">
+                <i class="fa-solid fa-house text-gray-600 group-hover:text-emerald-600"></i>
+              </span>
               <div class="min-w-0">
-                <div class="font-bold text-gray-900 text-sm truncate font-heading">{{ currentUser.name }}</div>
-                <div class="text-xs text-gray-500 truncate">{{ currentUser.email }}</div>
+                <div class="text-xs font-bold text-gray-900 leading-snug group-hover:text-emerald-800">
+                  Trang chủ
+                </div>
+                <div class="text-[10px] text-gray-400 truncate mt-0.5">
+                  Bộ lọc, chế độ xem tùy chỉnh
+                </div>
               </div>
-            </div>
+            </button>
 
-            <!-- Menu Options -->
-            <div class="py-1">
-              <button
-                @click="openEditProfile"
-                type="button"
-                class="w-full px-4 py-2.5 text-left text-sm font-medium text-gray-700 hover:bg-emerald-50/60 hover:text-emerald-800 transition-colors flex items-center gap-2.5"
-              >
-                <i class="fa-solid fa-user-pen text-emerald-600 text-sm"></i>
-                <span>Chỉnh sửa thông tin</span>
-              </button>
-            </div>
+            <!-- Projects Item -->
+            <button
+              @click="navigate('/projects')"
+              type="button"
+              class="w-full text-left p-2 hover:bg-emerald-50/60 rounded-xl transition-colors flex items-start gap-2.5 cursor-pointer group"
+            >
+              <span class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-sm group-hover:bg-white transition-colors border border-transparent group-hover:border-emerald-100 flex-shrink-0">
+                <i class="fa-regular fa-folder text-gray-600 group-hover:text-emerald-600"></i>
+              </span>
+              <div class="min-w-0">
+                <div class="text-xs font-bold text-gray-900 leading-snug group-hover:text-emerald-800">
+                  Dự án
+                </div>
+                <div class="text-[10px] text-gray-400 truncate mt-0.5">
+                  Tất cả dự án & sáng kiến
+                </div>
+              </div>
+            </button>
 
-            <!-- Divider & Logout -->
-            <div class="border-t border-gray-100 pt-1 mt-1">
-              <button
-                @click="handleLogout"
-                type="button"
-                class="w-full px-4 py-2.5 text-left text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors flex items-center gap-2.5"
-              >
-                <i class="fa-solid fa-right-from-bracket text-rose-500 text-sm"></i>
-                <span>Đăng xuất</span>
-              </button>
-            </div>
+            <!-- Relationships Item -->
+            <button
+              @click="navigate('/customers')"
+              type="button"
+              class="w-full text-left p-2 hover:bg-emerald-50/60 rounded-xl transition-colors flex items-start gap-2.5 cursor-pointer group"
+            >
+              <span class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-sm group-hover:bg-white transition-colors border border-transparent group-hover:border-emerald-100 flex-shrink-0">
+                <i class="fa-solid fa-users text-gray-600 group-hover:text-emerald-600"></i>
+              </span>
+              <div class="min-w-0">
+                <div class="text-xs font-bold text-gray-900 leading-snug group-hover:text-emerald-800">
+                  Mối quan hệ
+                </div>
+                <div class="text-[10px] text-gray-400 truncate mt-0.5">
+                  Khách hàng, đối tác, nội bộ
+                </div>
+              </div>
+            </button>
 
+            <!-- People Item -->
+            <button
+              @click="navigate('/people')"
+              type="button"
+              class="w-full text-left p-2 hover:bg-emerald-50/60 rounded-xl transition-colors flex items-start gap-2.5 cursor-pointer group"
+            >
+              <span class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-sm group-hover:bg-white transition-colors border border-transparent group-hover:border-emerald-100 flex-shrink-0">
+                <i class="fa-regular fa-user text-gray-600 group-hover:text-emerald-600"></i>
+              </span>
+              <div class="min-w-0">
+                <div class="text-xs font-bold text-gray-900 leading-snug group-hover:text-emerald-800">
+                  Thành viên
+                </div>
+                <div class="text-[10px] text-gray-400 truncate mt-0.5">
+                  Thành viên hệ thống & vai trò
+                </div>
+              </div>
+            </button>
           </div>
-        </transition>
 
-      </div>
+          <!-- Divider -->
+          <div class="border-t border-gray-100 my-2"></div>
+
+          <!-- TOOLS SECTION -->
+          <div class="space-y-0.5">
+            <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider pl-2.5 mb-1 select-none">
+              CÔNG CỤ
+            </div>
+
+            <!-- Settings -->
+            <button
+              @click="openEditProfile"
+              type="button"
+              class="w-full text-left px-2.5 py-2 hover:bg-emerald-50/60 rounded-lg transition-colors flex items-center gap-2.5 cursor-pointer text-xs font-bold text-gray-700 hover:text-emerald-800"
+            >
+              <i class="fa-solid fa-gear text-sm text-gray-400"></i>
+              <span>Cài đặt tài khoản</span>
+            </button>
+
+            <!-- Logout -->
+            <button
+              @click="handleLogout"
+              type="button"
+              class="w-full text-left px-2.5 py-2 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-2.5 cursor-pointer text-xs font-bold text-rose-600 hover:text-rose-700"
+            >
+              <i class="fa-solid fa-right-from-bracket text-sm text-rose-500"></i>
+              <span>Đăng xuất</span>
+            </button>
+          </div>
+        </div>
+      </transition>
     </div>
 
     <!-- Edit Profile Modal -->
@@ -163,10 +225,22 @@ import CactusLogo from './CactusLogo.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()
+import { useToastStore } from '../stores/toast'
+const toastStore = useToastStore()
 
 const isDropdownOpen = ref(false)
 const isProfileModalOpen = ref(false)
 const dropdownRef = ref(null)
+
+const navigate = (path) => {
+  isDropdownOpen.value = false
+  router.push(path)
+}
+
+const triggerImport = () => {
+  isDropdownOpen.value = false
+  toastStore.success('Hệ thống nhập dữ liệu Excel đã sẵn sàng!')
+}
 
 const currentUser = computed(() => authStore.user || {
   name: 'Minh',
@@ -200,6 +274,7 @@ const handleSaveProfile = () => {
     localStorage.setItem('user', JSON.stringify(authStore.user))
   }
   isProfileModalOpen.value = false
+  toastStore.success('Đã cập nhật thông tin tài khoản!')
 }
 
 const handleLogout = async () => {

@@ -18,6 +18,7 @@ class Project extends Model
         'health',
         'tracking_status',
         'is_pinned',
+        'sort_order',
         'last_activity_at',
     ];
 
@@ -46,6 +47,11 @@ class Project extends Model
         return $this->hasMany(Comment::class);
     }
 
+    public function latestComment()
+    {
+        return $this->hasOne(Comment::class)->latestOfMany();
+    }
+
     public function milestones(): HasMany
     {
         return $this->hasMany(Milestone::class)->orderBy('created_at', 'asc');
@@ -53,6 +59,10 @@ class Project extends Model
 
     public function getIsPinnedAttribute()
     {
+        if (!empty($this->attributes['is_pinned'])) {
+            return true;
+        }
+
         $userId = auth()->id() ?? request()->user_id;
         if (!$userId) {
             return false;

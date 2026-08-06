@@ -29,8 +29,11 @@ export const useProjectStore = defineStore('project', {
           params.tracking_status = this.activeStatus
         }
         const res = await axios.get('/api/projects', { params })
-        this.projects = res.data.projects
-        this.counts = res.data.counts
+        const newProjects = res.data.projects || []
+        if (JSON.stringify(newProjects) !== JSON.stringify(this.projects)) {
+          this.projects = newProjects
+        }
+        this.counts = res.data.counts || this.counts
       } catch (err) {
         console.error('Failed to fetch projects:', err)
       } finally {

@@ -3,489 +3,548 @@
     <!-- Navbar Component -->
     <Navbar />
 
-    <!-- Full-page loading spinner to prevent mock lead flicker -->
-    <div v-if="!project" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 flex flex-col items-center justify-center gap-4">
+    <!-- Full-page loading spinner -->
+    <div v-if="!project"
+      class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-24 flex flex-col items-center justify-center gap-4">
       <div class="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
       <span class="text-gray-500 font-semibold text-sm">Đang tải chi tiết dự án...</span>
     </div>
 
     <!-- Real Content -->
-    <main v-else class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      
-      <!-- Back Link & Header Title -->
+    <main v-else class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+      <!-- Top Back Link -->
       <div>
-        <router-link to="/projects" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-emerald-700 font-medium mb-3 transition-colors">
+        <button @click="goBack" type="button"
+          class="inline-flex items-center gap-2 text-sm font-bold text-gray-700 hover:text-emerald-700 transition-colors cursor-pointer select-none focus:outline-none">
           <i class="fa-solid fa-arrow-left text-xs"></i>
-          <span>Quay lại dự án</span>
-        </router-link>
+          <span>Quay lại danh sách dự án</span>
+        </button>
+      </div>
 
-        <div class="flex items-start justify-between gap-4 min-w-0">
-          <div class="min-w-0 flex-1">
-            <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight font-heading flex items-start gap-3">
-              <span class="w-4 h-4 rounded-full inline-block flex-shrink-0 animate-pulse mt-1.5" :class="statusDotClass(project.health)"></span>
-              <span class="break-words min-w-0 flex-1">{{ project.title }}</span>
-            </h1>
-            
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-sm text-gray-500">
-              <p>Khách hàng: <strong class="text-gray-800 font-bold">{{ project.customer ? project.customer.name : 'Chưa phân khách hàng' }}</strong></p>
-              
-              <!-- Compact Inline Lead Selector (Saves space, highly interactive) -->
-              <span class="text-gray-300">|</span>
-              <div class="relative inline-block" ref="leadDropdownRef">
-                <span class="text-gray-400 font-medium">Lead phụ trách:</span>
-                <button
-                  @click.stop="toggleLeadSelect"
-                  type="button"
-                  class="inline-flex items-center gap-1.5 ml-1.5 px-2.5 py-1 hover:bg-emerald-50 border border-dashed border-emerald-300 hover:border-emerald-500 rounded-xl text-emerald-800 font-bold transition-all cursor-pointer text-xs"
-                >
-                  <img
-                    :src="project.lead ? (project.lead.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120') : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'"
-                    class="w-5 h-5 rounded-full object-cover border border-emerald-100 shadow-3xs"
-                  />
-                  <span>{{ project.lead ? project.lead.name : 'Chưa giao' }}</span>
-                  <i class="fa-solid fa-chevron-down text-[9px] text-emerald-600 transition-transform" :class="{ 'rotate-180': isLeadSelectOpen }"></i>
-                </button>
-                
-                <!-- Lead Dropdown Selection -->
-                <div
-                  v-if="isLeadSelectOpen"
-                  class="absolute left-24 top-full mt-1.5 w-44 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1.5 text-left ring-1 ring-black/5 max-h-48 overflow-y-auto"
-                >
-                  <div class="px-3 py-1 text-[9px] font-bold text-gray-400 uppercase tracking-wider select-none border-b border-gray-100 mb-1">
-                    Chuyển Lead Dự Án
-                  </div>
-                  <button
-                    v-for="u in users"
-                    :key="u.id"
-                    @click.stop="updateLead(u.id)"
-                    type="button"
-                    class="w-full text-left px-3 py-1.5 hover:bg-emerald-50 text-gray-700 hover:text-emerald-900 text-xs font-bold transition-colors flex items-center gap-2 cursor-pointer"
-                  >
-                    <img :src="u.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'" class="w-5 h-5 rounded-full object-cover border border-emerald-100" />
-                    <span class="truncate flex-1">{{ u.name }}</span>
-                    <i v-if="project.lead && project.lead.id === u.id" class="fa-solid fa-check text-[10px] text-emerald-600"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+      <!-- Top Header Row: Project Title & Health Badge (Left) | Action Button Cards (Right) -->
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
 
-          <!-- Operations Menu -->
-          <div class="relative animate-fade-in-up" ref="actionMenuDropdownRef">
-            <button
-              @click.stop="toggleActionMenu"
-              type="button"
-              class="text-gray-400 hover:text-gray-600 p-2 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer"
-            >
-              <i class="fa-solid fa-ellipsis text-lg"></i>
-            </button>
+        <!-- Left: Project Title & Health Status Badge -->
+        <div class="flex items-center gap-3.5 flex-wrap min-w-0 flex-1">
+          <h1 class="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-900 tracking-tight font-heading break-all min-w-0">
+            {{ project.title }}
+          </h1>
 
-            <!-- Actions Dropdown -->
-            <div
-              v-if="isActionMenuOpen"
-              class="absolute right-0 mt-1 w-36 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1.5 text-left ring-1 ring-black/5"
-            >
-              <!-- Edit button -->
-              <button
-                @click.stop="handleEditProject"
-                type="button"
-                class="w-full text-left px-3.5 py-2 hover:bg-emerald-50 text-gray-700 hover:text-emerald-900 text-xs font-bold transition-colors flex items-center gap-2.5 cursor-pointer select-none"
-              >
-                <i class="fa-solid fa-pen text-emerald-600"></i>
-                <span>Chỉnh sửa</span>
-              </button>
+          <!-- Health Pill Badge -->
+          <span class="px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider shadow-3xs flex-shrink-0"
+            :class="healthBadgeClass(project.health)">
+            {{ healthLabelText(project.health) }}
+          </span>
+        </div>
 
-              <!-- Delete button -->
-              <button
-                @click.stop="handleDeleteProject"
-                type="button"
-                :disabled="!canDeleteProject"
-                class="w-full text-left px-3.5 py-2 text-rose-600 hover:bg-rose-50 text-xs font-bold transition-colors flex items-center gap-2.5 cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                :title="canDeleteProject ? 'Xóa dự án' : 'Không thể xóa dự án đã có cập nhật hoặc nhiệm vụ'"
-              >
-                <i class="fa-solid fa-trash-can" :class="canDeleteProject ? 'text-rose-500' : 'text-rose-300'"></i>
-                <span>Xóa dự án</span>
-              </button>
+        <!-- Right: Action Cards (Cập nhật dự án | Mời thành viên) -->
+        <div class="flex items-center gap-3.5">
+          <!-- Cập nhật dự án Card -->
+          <button @click="handleEditProject" type="button"
+            class="bg-white border border-gray-200 hover:border-amber-300 hover:bg-amber-50/40 rounded-2xl px-5 py-3.5 flex items-center gap-4 shadow-3xs cursor-pointer transition-all hover:scale-[1.01] select-none">
+            <span class="w-8 h-8 rounded-xl bg-amber-100/70 text-amber-700 flex items-center justify-center text-sm">
+              <i class="fa-solid fa-pencil"></i>
+            </span>
+            <span class="text-sm font-extrabold text-gray-900">Cập nhật dự án</span>
+            <i class="fa-solid fa-chevron-right text-xs text-gray-400 ml-1"></i>
+          </button>
+
+          <!-- Mời thành viên Card -->
+          <button @click="openInviteModal" type="button"
+            class="bg-white border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/40 rounded-2xl px-5 py-3.5 flex items-center gap-4 shadow-3xs cursor-pointer transition-all hover:scale-[1.01] select-none">
+            <span class="w-8 h-8 rounded-xl bg-purple-100/70 text-purple-700 flex items-center justify-center text-sm">
+              <i class="fa-solid fa-user-plus"></i>
+            </span>
+            <span class="text-sm font-extrabold text-gray-900">Mời thành viên</span>
+            <i class="fa-solid fa-chevron-right text-xs text-gray-400 ml-1"></i>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Metadata Row (4 Cards): KHÁCH HÀNG | LEAD | TEAM | BẮT ĐẦU -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <!-- Customer Card -->
+        <div
+          class="bg-white border border-gray-200/80 rounded-2xl p-4 flex items-center gap-3.5 shadow-3xs select-none">
+          <span
+            class="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center text-lg flex-shrink-0">
+            <i class="fa-solid fa-bullseye"></i>
+          </span>
+          <div class="min-w-0">
+            <div class="text-[10px] font-black text-gray-400 uppercase tracking-wider">KHÁCH HÀNG</div>
+            <div class="text-sm sm:text-base font-extrabold text-gray-900 truncate mt-0.5">
+              {{ project.customer ? project.customer.name : 'Chưa phân khách hàng' }}
             </div>
           </div>
         </div>
+
+        <!-- Lead Card (With inline lead dropdown trigger) -->
+        <div
+          class="bg-white border border-gray-200/80 rounded-2xl p-4 flex items-center gap-3.5 shadow-3xs cursor-pointer hover:bg-emerald-50/20 transition-colors relative select-none"
+          ref="leadDropdownRef" @click.stop="toggleLeadSelect">
+          <span
+            class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-lg flex-shrink-0">
+            <i class="fa-solid fa-user"></i>
+          </span>
+          <div class="min-w-0 flex-1">
+            <div class="text-[10px] font-black text-gray-400 uppercase tracking-wider">LEAD</div>
+            <div class="text-sm sm:text-base font-extrabold text-gray-900 truncate mt-0.5 flex items-center gap-1.5">
+              <span>{{ project.lead ? project.lead.name : 'Chưa giao' }}</span>
+              <i class="fa-solid fa-chevron-down text-xs text-gray-400"></i>
+            </div>
+          </div>
+
+          <!-- Lead dropdown menu -->
+          <div v-if="isLeadSelectOpen"
+            class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-48 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1.5 text-left ring-1 ring-black/5 max-h-48 overflow-y-auto">
+            <div
+              class="px-3 py-1 text-[9px] font-bold text-gray-400 uppercase tracking-wider select-none border-b border-gray-100 mb-1">
+              Chuyển Lead Dự Án
+            </div>
+            <button v-for="u in users" :key="u.id" @click.stop="updateLead(u.id)" type="button"
+              class="w-full text-left px-3 py-1.5 hover:bg-emerald-50 text-gray-700 hover:text-emerald-900 text-xs font-bold transition-colors flex items-center gap-2 cursor-pointer">
+              <img
+                :src="u.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'"
+                class="w-5 h-5 rounded-full object-cover border border-emerald-100" />
+              <span class="truncate flex-1">{{ u.name }}</span>
+              <i v-if="project.lead && project.lead.id === u.id"
+                class="fa-solid fa-check text-[10px] text-emerald-600"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Team Card (Click to open invite modal) -->
+        <div
+          @click="openInviteModal"
+          class="bg-white border border-gray-200/80 rounded-2xl p-4 flex items-center gap-3.5 shadow-3xs cursor-pointer hover:bg-blue-50/20 transition-colors select-none">
+          <span
+            class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg flex-shrink-0">
+            <i class="fa-solid fa-users"></i>
+          </span>
+          <div class="min-w-0 flex-1">
+            <div class="text-[10px] font-black text-gray-400 uppercase tracking-wider">TEAM</div>
+            <div class="text-sm sm:text-base font-extrabold text-gray-900 truncate mt-0.5 flex items-center gap-1.5">
+              <span>{{ projectTeamMembers.length }} người</span>
+              <i class="fa-solid fa-user-plus text-xs text-blue-400"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Started Date Card -->
+        <div
+          class="bg-white border border-gray-200/80 rounded-2xl p-4 flex items-center gap-3.5 shadow-3xs select-none">
+          <span
+            class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg flex-shrink-0">
+            <i class="fa-solid fa-calendar-days"></i>
+          </span>
+          <div class="min-w-0">
+            <div class="text-[10px] font-black text-gray-400 uppercase tracking-wider">BẮT ĐẦU</div>
+            <div class="text-sm sm:text-base font-extrabold text-gray-900 truncate mt-0.5">
+              {{ formatDate(project.created_at) }}
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      <!-- MAIN GRID: LEFT (Cập nhật) & RIGHT (Cột mốc + Tasks) -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        <!-- LEFT COLUMN (2 Cols wide) - Cập nhật hoạt động thực tế -->
-        <div class="lg:col-span-2 space-y-6">
-          
-          <!-- CARD: CẬP NHẬT (Log Activity & Chat) -->
-          <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-xs">
-            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">CẬP NHẬT HOẠT ĐỘNG</h3>
+      <!-- MAIN CONTENT 2-COLUMN GRID (Left: HOẠT ĐỘNG & MỐC THỜI GIAN | Right: CÔNG VIỆC) -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
-            <!-- Input quick update -->
-            <form @submit.prevent="handleQuickUpdate" class="mb-6">
-              <div class="relative">
-                <input
-                  v-model="updateContentText"
-                  type="text"
-                  placeholder="Gõ cập nhật nhanh... (Enter để lưu)"
-                  class="w-full px-4 py-3 bg-white border border-emerald-500 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 shadow-2xs"
+        <!-- LEFT COLUMN: HOẠT ĐỘNG + MỐC THỜI GIAN -->
+        <div class="space-y-6">
+
+          <!-- CARD: HOẠT ĐỘNG -->
+          <div class="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-3xs space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-bullhorn text-rose-500 text-sm"></i>
+                <h3 class="text-xs font-black text-gray-900 uppercase tracking-wider">HOẠT ĐỘNG</h3>
+              </div>
+            </div>
+
+            <!-- Quick Comment Form with File & Image Attachments -->
+            <form @submit.prevent="handleQuickUpdate" class="space-y-2">
+              <input v-model="updateContentText" type="text" placeholder="Gõ cập nhật nhanh... (Enter để lưu)"
+                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-colors" />
+              
+              <!-- Attachment Controls -->
+              <div class="flex items-center gap-2">
+                <input 
+                  id="detail-img-input"
+                  type="file" 
+                  accept="image/*" 
+                  multiple 
+                  class="hidden" 
+                  @change="handleDetailFileSelect($event, true)"
                 />
+                <label 
+                  for="detail-img-input"
+                  class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-[11px] font-bold cursor-pointer transition-colors border border-emerald-200/60 select-none shadow-3xs"
+                >
+                  <i class="fa-solid fa-image text-emerald-600"></i>
+                  <span>Ảnh</span>
+                </label>
+
+                <input 
+                  id="detail-file-input"
+                  type="file" 
+                  accept="*" 
+                  multiple 
+                  class="hidden" 
+                  @change="handleDetailFileSelect($event, false)"
+                />
+                <label 
+                  for="detail-file-input"
+                  class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold cursor-pointer transition-colors border border-slate-200 select-none shadow-3xs"
+                >
+                  <i class="fa-solid fa-paperclip text-slate-500"></i>
+                  <span>File</span>
+                </label>
+              </div>
+
+              <!-- Attached Files Preview Grid -->
+              <div v-if="detailAttachedFiles.length > 0" class="flex items-center gap-2 flex-wrap pt-1">
+                <div v-for="(file, fIdx) in detailAttachedFiles" :key="fIdx" class="relative group">
+                  <div v-if="file.isImage" class="relative w-12 h-12 rounded-lg overflow-hidden border border-gray-200 shadow-3xs">
+                    <img :src="file.url" class="w-full h-full object-cover" />
+                    <button @click="removeDetailAttachment(fIdx)" type="button" class="absolute top-0.5 right-0.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[8px]">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                  <div v-else class="flex items-center gap-1.5 px-2 py-1 bg-gray-100 border border-gray-200 rounded-lg text-[11px] font-bold text-gray-700">
+                    <i class="fa-solid fa-file-lines text-emerald-600 text-[10px]"></i>
+                    <span class="max-w-[100px] truncate">{{ file.name }}</span>
+                    <button @click="removeDetailAttachment(fIdx)" type="button" class="text-gray-400 hover:text-rose-500 ml-1">
+                      <i class="fa-solid fa-xmark text-[9px]"></i>
+                    </button>
+                  </div>
+                </div>
               </div>
             </form>
 
-            <!-- Activity Logs Feed -->
-            <div class="space-y-4">
-              <div
-                v-for="log in displayedComments"
-                :key="log.id"
-                class="flex items-start gap-4 py-3 border-b border-gray-50 last:border-0"
-              >
-                <!-- Types color highlight indicator -->
-                <div 
-                  class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5"
-                  :class="{
-                    'bg-emerald-100 text-emerald-700': log.type === 'comment',
-                    'bg-amber-100 text-amber-700': log.type === 'health_update',
-                    'bg-blue-100 text-blue-700': log.type === 'status_change'
-                  }"
-                >
-                  <i v-if="log.type === 'comment'" class="fa-solid fa-comment-dots"></i>
-                  <i v-else-if="log.type === 'health_update'" class="fa-solid fa-circle-info"></i>
-                  <i v-else class="fa-solid fa-rotate"></i>
-                </div>
-                <span class="text-xs font-semibold text-gray-400 w-24 flex-shrink-0 pt-1">{{ formatRelativeTime(log.created_at) }}</span>
-                <img 
-                  :src="log.user ? (log.user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120') : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'" 
-                  class="w-7 h-7 rounded-full object-cover border border-gray-200 flex-shrink-0 shadow-3xs" 
-                />
+            <!-- Activities Feed Items with Parsed Compact Attachments -->
+            <div class="space-y-3.5">
+              <div v-for="log in displayedComments" :key="log.id" class="flex items-start gap-3">
+                <img
+                  :src="log.user ? (log.user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120') : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'"
+                  class="w-7 h-7 rounded-full object-cover border border-gray-100 flex-shrink-0 mt-0.5" />
                 <div class="flex-1 min-w-0">
-                  <span class="font-bold text-gray-900 text-sm mr-3">{{ log.user ? log.user.name : 'Hệ thống' }}</span>
-                  <span class="text-sm text-gray-700 font-medium leading-relaxed break-words block mt-1">{{ log.content }}</span>
+                  <div class="text-xs text-gray-700 leading-normal">
+                    <strong class="font-black text-gray-900">{{ log.user ? log.user.name : 'Hệ thống' }}</strong>
+                    <span v-if="parseCommentText(log.content)" class="ml-1.5 font-medium text-gray-700 whitespace-pre-line">{{ parseCommentText(log.content) }}</span>
+                  </div>
+
+                  <!-- Render Compact Image Pills -->
+                  <div v-if="parseCommentImages(log.content).length > 0" class="flex flex-wrap gap-1.5 mt-1.5">
+                    <button 
+                      v-for="(img, imgIdx) in parseCommentImages(log.content)" 
+                      :key="imgIdx" 
+                      type="button"
+                      @click.stop="openImagePreview(img.url)"
+                      class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100/90 border border-emerald-200/80 text-emerald-800 rounded-lg text-xs font-bold transition-colors cursor-pointer max-w-full select-none shadow-3xs"
+                      :title="img.name"
+                    >
+                      <i class="fa-solid fa-image text-emerald-600 text-[11px]"></i>
+                      <span class="truncate max-w-[150px]">{{ img.name }}</span>
+                      <i class="fa-solid fa-expand text-[9px] text-emerald-500 ml-0.5"></i>
+                    </button>
+                  </div>
+
+                  <!-- Render Compact File Pills -->
+                  <div v-if="parseCommentFiles(log.content).length > 0" class="flex flex-wrap gap-1.5 mt-1.5">
+                    <a 
+                      v-for="(file, fIdx) in parseCommentFiles(log.content)" 
+                      :key="fIdx" 
+                      :href="file.url" 
+                      :download="file.name" 
+                      target="_blank"
+                      @click.stop
+                      class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 hover:bg-slate-200/90 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer max-w-full select-none shadow-3xs"
+                      :title="file.name"
+                    >
+                      <i class="fa-solid fa-paperclip text-slate-500 text-[11px]"></i>
+                      <span class="truncate max-w-[150px]">{{ file.name }}</span>
+                      <i class="fa-solid fa-download text-[9px] text-slate-400 ml-0.5"></i>
+                    </a>
+                  </div>
+
+                  <span class="text-[10px] font-bold text-gray-400 mt-1 block">{{ formatRelativeTime(log.created_at) }}</span>
                 </div>
               </div>
 
-              <!-- Empty activity state -->
-              <div v-if="activityLogs.length === 0" class="py-8 text-center text-gray-400 text-xs font-medium">
-                Chưa có cập nhật hoạt động nào cho dự án này.
-              </div>
-
-              <!-- Load more updates button -->
-              <div v-if="activityLogs.length > commentsLimit" class="pt-2 flex justify-center">
-                <button
-                  @click="commentsLimit += 10"
-                  type="button"
-                  class="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none"
-                >
-                  <i class="fa-solid fa-angles-down text-[10px]"></i>
-                  <span>Xem thêm cập nhật (Còn {{ activityLogs.length - commentsLimit }})</span>
-                </button>
+              <!-- Empty Activity Feed State -->
+              <div v-if="activityLogs.length === 0" class="py-6 text-center text-gray-400 text-xs font-semibold">
+                Chưa có cập nhật hoạt động nào.
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- RIGHT COLUMN (1 Col wide) - Cột mốc & Tasks -->
-        <div class="space-y-6">
-          
-          <!-- CARD 3: CỘT MỐC (Milestones Timeline) -->
-          <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-xs">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">CỘT MỐC</h3>
-              <button 
-                @click="isAddMilestoneOpen = !isAddMilestoneOpen" 
-                type="button" 
-                class="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <i class="fa-solid fa-plus text-[10px]"></i>
-                <span>Thêm cột mốc</span>
+          <!-- CARD: MỐC THỜI GIAN -->
+          <div class="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-3xs space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-flag text-emerald-600 text-sm"></i>
+                <h3 class="text-xs font-black text-gray-900 uppercase tracking-wider">MỐC THỜI GIAN</h3>
+              </div>
+              <button @click="isAddMilestoneOpen = !isAddMilestoneOpen" type="button"
+                class="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1">
+                <span>+ Thêm mốc</span>
               </button>
             </div>
 
             <!-- Add Milestone Inline Form -->
-            <form v-if="isAddMilestoneOpen" @submit.prevent="handleAddMilestone" class="mb-5 p-3.5 bg-gray-50 border border-gray-200 rounded-xl space-y-2.5 animate-fade-in-up">
-              <div>
-                <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Tên cột mốc *</label>
-                <input 
-                  v-model="newMilestone.title" 
-                  type="text" 
-                  required
-                  placeholder="VD: Nghiệm thu đợt 1" 
-                  class="w-full px-2.5 py-1.5 border border-gray-200 bg-white rounded-lg text-xs focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all" 
-                />
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Hạn chót (Có hoặc không đều được)</label>
-                <input 
-                  v-model="newMilestone.due_date" 
-                  type="date" 
-                  class="w-full px-2.5 py-1.5 border border-gray-200 bg-white rounded-lg text-xs focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all" 
-                />
-              </div>
+            <form v-if="isAddMilestoneOpen" @submit.prevent="handleAddMilestone"
+              class="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-2 animate-fade-in-up">
+              <input v-model="newMilestone.title" type="text" required placeholder="Tên cột mốc..."
+                class="w-full px-2.5 py-1.5 border border-gray-200 bg-white rounded-lg text-xs font-semibold focus:outline-none focus:border-emerald-500" />
+              <input v-model="newMilestone.due_date" type="date"
+                class="w-full px-2.5 py-1.5 border border-gray-200 bg-white rounded-lg text-xs font-semibold focus:outline-none focus:border-emerald-500" />
               <div class="flex items-center justify-end gap-2 pt-1">
-                <button @click="isAddMilestoneOpen = false" type="button" class="px-2.5 py-1 text-xs font-semibold text-gray-500 hover:text-gray-700 cursor-pointer">Hủy</button>
-                <button type="submit" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-3xs cursor-pointer">Lưu mốc</button>
+                <button @click="isAddMilestoneOpen = false" type="button"
+                  class="px-2 py-1 text-xs font-semibold text-gray-500 hover:text-gray-700">Hủy</button>
+                <button type="submit"
+                  class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-3xs">Lưu</button>
               </div>
             </form>
 
-            <!-- Milestones Connected Line Timeline -->
-            <div 
-              v-if="project.milestones && project.milestones.length > 0"
-              class="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-emerald-500"
-            >
-              <div 
-                v-for="ms in project.milestones" 
-                :key="ms.id" 
-                class="relative flex items-start justify-between gap-2"
-              >
-                <!-- Tích xanh marker -->
-                <span class="absolute -left-6 top-0.5 w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] ring-4 ring-white shadow-3xs">
+            <!-- Milestones List Timeline -->
+            <div v-if="project.milestones && project.milestones.length > 0"
+              class="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-emerald-600/80">
+              <div v-for="ms in project.milestones" :key="ms.id"
+                class="relative flex items-start justify-between gap-2">
+                <!-- Marker -->
+                <span
+                  class="absolute -left-6.5 top-0.5 w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[8px] ring-4 ring-white shadow-3xs flex-shrink-0">
                   <i class="fa-solid fa-check"></i>
                 </span>
-                
-                <!-- Editing form inline -->
-                <div v-if="editingMilestoneId === ms.id" class="w-full space-y-2.5 p-3.5 bg-gray-50 border border-gray-200 rounded-xl animate-fade-in-up">
-                  <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tên cột mốc *</label>
-                    <input v-model="editingMilestoneData.title" type="text" required class="w-full px-2.5 py-1.5 border border-gray-200 bg-white rounded-lg text-xs focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all" />
-                  </div>
-                  <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Hạn chót</label>
-                    <input v-model="editingMilestoneData.due_date" type="date" class="w-full px-2.5 py-1.5 border border-gray-200 bg-white rounded-lg text-xs focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all" />
-                  </div>
-                  <div class="flex items-center justify-end gap-2 text-xs pt-1">
-                    <button @click="cancelEditMilestone" type="button" class="px-2 py-1 text-gray-500 hover:text-gray-700 font-semibold cursor-pointer">Hủy</button>
-                    <button @click="handleUpdateMilestone(ms.id)" type="button" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-3xs cursor-pointer">Lưu</button>
-                  </div>
-                </div>
 
-                <!-- Display mode with Hover edit/delete buttons -->
-                <div v-else class="min-w-0 flex-1 group">
-                  <div class="flex items-start gap-2 min-w-0 flex-wrap sm:flex-nowrap">
-                    <div class="font-bold text-gray-900 text-sm leading-snug break-words min-w-0 flex-1">{{ ms.title }}</div>
-                    
-                    <!-- Edit & Delete hover controls -->
-                    <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
-                      <button @click.stop="startEditMilestone(ms)" type="button" class="text-gray-400 hover:text-emerald-600 text-xs p-0.5 cursor-pointer" title="Sửa cột mốc">
-                        <i class="fa-solid fa-pen"></i>
-                      </button>
-                      <button @click.stop="handleDeleteMilestone(ms.id)" type="button" class="text-gray-400 hover:text-rose-600 text-xs p-0.5 cursor-pointer" title="Xóa cột mốc">
-                        <i class="fa-solid fa-trash-can"></i>
-                      </button>
+                <div class="min-w-0 flex-1 group/ms">
+                  <div class="flex items-start gap-2 justify-between">
+                    <div class="font-extrabold text-gray-900 text-xs leading-normal break-words min-w-0 flex-1">
+                      {{ ms.title }}
                     </div>
+                    <button @click.stop="handleDeleteMilestone(ms.id)"
+                      class="opacity-0 group-hover/ms:opacity-100 transition-opacity text-gray-400 hover:text-rose-600 p-0.5 cursor-pointer flex-shrink-0">
+                      <i class="fa-solid fa-trash-can text-[9px]"></i>
+                    </button>
                   </div>
-                  
-                  <div class="text-[10px] text-gray-400 font-semibold mt-1">
-                    {{ ms.creator ? ms.creator.name : 'Lead' }} 
-                    <span v-if="ms.due_date"> • Hạn: {{ formatDate(ms.due_date) }}</span>
+                  <div class="text-[9px] text-gray-400 font-bold mt-0.5">
+                    Hạn: {{ ms.due_date ? formatDate(ms.due_date) : 'Chưa đặt hạn' }}
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Empty Milestones state -->
-            <div v-else class="py-6 text-center text-gray-400 text-xs font-medium border border-dashed border-gray-200 rounded-xl">
-              Chưa có cột mốc nào. Nhấp "+ Thêm cột mốc" để tạo.
+            <!-- Dotted Empty Milestones State (Matches Mockup) -->
+            <div v-else
+              class="border-2 border-dashed border-gray-200/90 rounded-2xl p-8 text-center space-y-1.5 select-none bg-gray-50/30">
+              <div
+                class="w-10 h-10 mx-auto rounded-xl bg-gray-100 text-gray-400 flex items-center justify-center text-lg mb-1">
+                <i class="fa-regular fa-flag"></i>
+              </div>
+              <div class="text-sm font-extrabold text-gray-900">Chưa có cột mốc nào</div>
+              <div class="text-xs text-gray-500 font-medium">Tạo cột mốc để theo dõi tiến độ dự án</div>
             </div>
           </div>
 
-          <!-- CARD 4: TASKS (Công việc với Assignee) -->
-          <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-xs">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">TASKS</h3>
-              <button 
-                @click="isAddTaskOpen = !isAddTaskOpen" 
-                type="button" 
-                class="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <i class="fa-solid fa-plus text-[10px]"></i>
-                <span>Thêm task</span>
+        </div>
+
+        <!-- RIGHT COLUMN: CÔNG VIỆC -->
+        <div class="space-y-6">
+
+          <!-- CARD: CÔNG VIỆC -->
+          <div class="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-3xs space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-square-check text-emerald-600 text-sm"></i>
+                <h3 class="text-xs font-black text-gray-900 uppercase tracking-wider">CÔNG VIỆC</h3>
+              </div>
+              <button @click="isAddTaskOpen = !isAddTaskOpen" type="button"
+                class="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1">
+                <span>+ Thêm công việc</span>
               </button>
             </div>
 
             <!-- Add Task Inline Form -->
-            <form v-if="isAddTaskOpen" @submit.prevent="handleAddTask" class="mb-5 p-3.5 bg-gray-50 border border-gray-200 rounded-xl space-y-2.5 animate-fade-in-up">
-              <div>
-                <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Tên công việc *</label>
-                <input 
-                  v-model="newTask.title" 
-                  type="text" 
-                  required
-                  placeholder="VD: Cấu hình hệ thống tổng đài" 
-                  class="w-full px-2.5 py-1.5 border border-gray-200 bg-white rounded-lg text-xs focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all" 
-                />
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Giao việc cho (Assignee)</label>
-                <select v-model="newTask.assignee_id" class="w-full px-2.5 py-1.5 border border-gray-200 bg-white rounded-lg text-xs focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all">
-                  <option value="">-- Chọn thành viên --</option>
-                  <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }}</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Hạn chót</label>
-                <input 
-                  v-model="newTask.due_date" 
-                  type="date" 
-                  class="w-full px-2.5 py-1.5 border border-gray-200 bg-white rounded-lg text-xs focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all" 
-                />
-              </div>
+            <form v-if="isAddTaskOpen" @submit.prevent="handleAddTask"
+              class="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-2 animate-fade-in-up">
+              <input v-model="newTask.title" type="text" required placeholder="Tên công việc..."
+                class="w-full px-2.5 py-1.5 border border-gray-200 bg-white rounded-lg text-xs font-semibold focus:outline-none focus:border-emerald-500" />
+              <select v-model="newTask.assignee_id"
+                class="w-full px-2.5 py-1.5 border border-gray-200 bg-white rounded-lg text-xs font-semibold focus:outline-none focus:border-emerald-500">
+                <option value="">-- Giao cho ai --</option>
+                <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }}</option>
+              </select>
               <div class="flex items-center justify-end gap-2 pt-1">
-                <button @click="isAddTaskOpen = false" type="button" class="px-2.5 py-1 text-xs font-semibold text-gray-500 hover:text-gray-700 cursor-pointer">Hủy</button>
-                <button type="submit" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-3xs cursor-pointer">Thêm task</button>
+                <button @click="isAddTaskOpen = false" type="button"
+                  class="px-2 py-1 text-xs font-semibold text-gray-500 hover:text-gray-700">Hủy</button>
+                <button type="submit"
+                  class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-3xs">Lưu</button>
               </div>
             </form>
 
-            <div class="space-y-3">
-              <div
-                v-for="task in displayedTasks"
-                :key="task.id"
-                class="p-2.5 rounded-xl hover:bg-gray-50 transition-colors group"
-              >
-                <!-- Editing mode inline -->
-                <div v-if="editingTaskId === task.id" class="space-y-2.5 p-3.5 bg-gray-50 border border-gray-200 rounded-xl animate-fade-in-up">
-                  <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tên công việc *</label>
-                    <input v-model="editingTaskData.title" type="text" required class="w-full px-2.5 py-1.5 border border-gray-200 bg-white rounded-lg text-xs focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all" />
-                  </div>
-                  <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Giao việc cho (Assignee)</label>
-                    <select v-model="editingTaskData.assignee_id" class="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all">
-                      <option value="">-- Chưa giao --</option>
-                      <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }}</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Hạn chót</label>
-                    <input v-model="editingTaskData.due_date" type="date" class="w-full px-2.5 py-1.5 border border-gray-200 bg-white rounded-lg text-xs focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all" />
-                  </div>
-                  <div class="flex items-center justify-end gap-2 text-xs pt-1">
-                    <button @click="cancelEditTask" type="button" class="px-2 py-1 text-gray-500 hover:text-gray-700 font-semibold cursor-pointer">Hủy</button>
-                    <button @click="handleUpdateTask(task)" type="button" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-3xs cursor-pointer">Lưu</button>
-                  </div>
-                </div>
+            <!-- Tasks List -->
+            <div v-if="project.tasks && project.tasks.length > 0" class="space-y-3">
+              <div v-for="task in displayedTasks" :key="task.id"
+                class="flex items-start gap-3 hover:bg-gray-50/50 p-2 rounded-xl transition-colors group/task border border-gray-100">
+                <!-- Task checkbox -->
+                <input type="checkbox" :checked="task.status === 'done'" @change="toggleTaskSelect(task)"
+                  class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 focus:ring-emerald-500 cursor-pointer mt-0.5 flex-shrink-0" />
 
-                <!-- Display Mode -->
-                <div v-else class="w-full space-y-1">
-                  <!-- Row 1: Checkbox & Task Title -->
-                  <div class="flex items-start gap-2.5 min-w-0">
-                    <input 
-                      type="checkbox" 
-                      :checked="task.status === 'done' || selectedTaskIds.includes(task.id)" 
-                      @change="toggleTaskSelect(task)"
-                      class="rounded text-emerald-600 accent-emerald-600 cursor-pointer w-4 h-4 mt-0.5 flex-shrink-0" 
-                    />
-                    <span class="text-sm font-semibold text-gray-800 leading-snug break-words flex-1 min-w-0" :class="{ 'line-through text-gray-400 font-medium': task.status === 'done' }">
-                      {{ task.title }}
+                <div class="flex-1 min-w-0">
+                  <span class="text-xs font-bold leading-normal break-words"
+                    :class="task.status === 'done' ? 'text-gray-400 line-through' : 'text-gray-900'">
+                    {{ task.title }}
+                  </span>
+
+                  <div class="flex items-center gap-2 mt-1">
+                    <span v-if="task.assignee"
+                      class="text-[9px] text-gray-400 font-bold bg-gray-100 px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                      <img :src="task.assignee.avatar" class="w-3 h-3 rounded-full object-cover" />
+                      <span>{{ task.assignee.name }}</span>
+                    </span>
+                    <span v-if="task.due_date" class="text-[9px] text-gray-400 font-bold">
+                      Hạn: {{ formatDate(task.due_date) }}
                     </span>
                   </div>
+                </div>
 
-                  <!-- Row 2: Assignee, Due Date & Actions -->
-                  <div class="flex items-center justify-between pl-6.5 text-[11px] text-gray-500 font-medium">
-                    <div class="flex items-center gap-3">
-                      <!-- Assignee -->
-                      <div class="flex items-center gap-1.5">
-                        <template v-if="task.assignee">
-                          <img
-                            :src="task.assignee.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'"
-                            class="w-5 h-5 rounded-full object-cover border border-emerald-100 shadow-3xs"
-                          />
-                          <span class="font-bold text-gray-600 text-xs">{{ task.assignee.name }}</span>
-                        </template>
-                        <span v-else class="text-[10px] text-gray-400 italic">Chưa giao</span>
-                      </div>
-
-                      <!-- Date calendar -->
-                      <div v-if="task.due_date" class="flex items-center gap-1 text-gray-400 font-bold bg-gray-100/70 px-1.5 py-0.5 rounded">
-                        <i class="fa-regular fa-calendar text-[10px]"></i>
-                        <span>{{ formatDate(task.due_date) }}</span>
-                      </div>
-                    </div>
-
-                    <!-- Edit & Delete hover controls -->
-                    <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
-                      <button @click.stop="startEditTask(task)" type="button" class="text-gray-400 hover:text-emerald-600 text-xs p-0.5 cursor-pointer" title="Sửa công việc">
-                        <i class="fa-solid fa-pen text-[10px]"></i>
-                      </button>
-                      <button @click.stop="handleDeleteTask(task.id)" type="button" class="text-gray-400 hover:text-rose-600 text-xs p-0.5 cursor-pointer" title="Xóa công việc">
-                        <i class="fa-solid fa-trash-can text-[10px]"></i>
-                      </button>
-                    </div>
-                  </div>
+                <!-- Hover Controls -->
+                <div
+                  class="opacity-0 group-hover/task:opacity-100 transition-opacity flex items-center gap-1.5 flex-shrink-0">
+                  <button @click.stop="handleDeleteTask(task.id)"
+                    class="text-gray-400 hover:text-rose-600 p-0.5 cursor-pointer">
+                    <i class="fa-solid fa-trash-can text-[10px]"></i>
+                  </button>
                 </div>
               </div>
+            </div>
 
-              <!-- Empty state for tasks -->
-              <div v-if="!project.tasks || project.tasks.length === 0" class="py-6 text-center text-gray-400 text-xs font-medium border border-dashed border-gray-200 rounded-xl">
-                Chưa có công việc nào cho dự án này.
+            <!-- Dotted Empty Tasks State (Matches Mockup) -->
+            <div v-else
+              class="border-2 border-dashed border-gray-200/90 rounded-2xl p-14 text-center space-y-2 select-none bg-gray-50/30">
+              <div
+                class="w-16 h-16 mx-auto rounded-2xl bg-emerald-50/70 text-emerald-600 flex items-center justify-center text-3xl mb-2 shadow-3xs">
+                <i class="fa-regular fa-clipboard"></i>
               </div>
-
-              <!-- Load more tasks button -->
-              <div v-if="project.tasks && project.tasks.length > tasksLimit" class="pt-2 flex justify-center">
-                <button
-                  @click="tasksLimit += 10"
-                  type="button"
-                  class="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none"
-                >
-                  <i class="fa-solid fa-angles-down text-[10px]"></i>
-                  <span>Xem thêm công việc (Còn {{ project.tasks.length - tasksLimit }})</span>
-                </button>
-              </div>
+              <div class="text-sm font-extrabold text-gray-900">Chưa có công việc nào</div>
+              <div class="text-xs text-gray-500 font-medium">Thêm công việc đầu tiên để bắt đầu</div>
             </div>
           </div>
         </div>
       </div>
     </main>
 
-    <!-- Bottom Navigation Bar -->
-    <BottomNav />
-
     <!-- Project Modal for editing -->
-    <ProjectModal
-      :is-open="isModalOpen"
-      :customers="customers"
-      :users="users"
-      :edit-project="project"
-      @close="handleCloseModal"
-      @submit="handleUpdateProjectSubmit"
-      @customer-created="fetchCustomers"
-    />
+    <ProjectModal :is-open="isModalOpen" :customers="customers" :users="users" :edit-project="project"
+      @close="handleCloseModal" @submit="handleUpdateProjectSubmit" @customer-created="fetchCustomers" />
 
-    <!-- Task Completion Note Modal -->
     <!-- Floating Bulk Task Completion Bar -->
-    <transition
-      enter-active-class="transition duration-300 ease-out"
-      enter-from-class="transform translate-y-8 opacity-0"
-      enter-to-class="transform translate-y-0 opacity-100"
-      leave-active-class="transition duration-200 ease-in"
-      leave-from-class="transform translate-y-0 opacity-100"
-      leave-to-class="transform translate-y-8 opacity-0"
-    >
-      <div
-        v-if="selectedTaskIds.length > 0"
-        class="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 bg-white/95 backdrop-blur-md px-6 py-4 rounded-2xl shadow-xl border border-emerald-100/80 flex items-center gap-6 w-[90%] max-w-md justify-between"
-      >
+    <transition enter-active-class="transition duration-300 ease-out"
+      enter-from-class="transform translate-y-8 opacity-0" enter-to-class="transform translate-y-0 opacity-100"
+      leave-active-class="transition duration-200 ease-in" leave-from-class="transform translate-y-0 opacity-100"
+      leave-to-class="transform translate-y-8 opacity-0">
+      <div v-if="selectedTaskIds.length > 0"
+        class="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 bg-white/95 backdrop-blur-md px-6 py-4 rounded-2xl shadow-xl border border-emerald-100/80 flex items-center gap-6 w-[90%] max-w-md justify-between">
         <span class="text-sm font-semibold text-emerald-800">
           Đã chọn <strong class="text-emerald-950 font-bold">{{ selectedTaskIds.length }}</strong> công việc
         </span>
         <div class="flex items-center gap-3">
-          <button
-            @click="selectedTaskIds = []"
-            type="button"
-            class="text-xs font-semibold text-gray-500 hover:text-gray-700 px-3 py-2 rounded-xl transition-colors cursor-pointer focus:outline-none"
-          >
+          <button @click="selectedTaskIds = []" type="button"
+            class="text-xs font-semibold text-gray-500 hover:text-gray-700 px-3 py-2 rounded-xl transition-colors cursor-pointer focus:outline-none">
             Hủy chọn
           </button>
-          <button
-            @click="goToBulkTaskComplete"
-            type="button"
-            class="px-4 py-2 bg-[#2d8a39] hover:bg-[#236e2d] text-white font-semibold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer focus:outline-none"
-          >
+          <button @click="goToBulkTaskComplete" type="button"
+            class="px-4 py-2 bg-[#2d8a39] hover:bg-[#236e2d] text-white font-semibold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer focus:outline-none">
             <i class="fa-solid fa-pen-to-square"></i>
             <span>Cập nhật</span>
           </button>
         </div>
       </div>
     </transition>
+
+    <!-- Invite Member Modal -->
+    <transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0 scale-95"
+      enter-to-class="opacity-100 scale-100"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100 scale-100"
+      leave-to-class="opacity-0 scale-95"
+    >
+      <div v-if="isInviteModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs select-none" @click.self="isInviteModalOpen = false">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-md border border-gray-200 shadow-2xl space-y-5 animate-fade-in-up">
+          <!-- Modal Header -->
+          <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-purple-100/80 text-purple-700 flex items-center justify-center text-lg shadow-3xs">
+                <i class="fa-solid fa-user-plus"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-extrabold text-gray-900">Mời thành viên vào team</h3>
+                <p class="text-xs text-gray-500 font-semibold mt-0.5">Chọn người dùng để thêm vào dự án này</p>
+              </div>
+            </div>
+            <button @click="isInviteModalOpen = false" type="button" class="text-gray-400 hover:text-gray-600 p-1.5 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+              <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+          </div>
+
+          <!-- Users List with Checkboxes -->
+          <div class="space-y-2 max-h-64 overflow-y-auto pr-1 scrollbar-thin">
+            <div
+              v-for="u in users"
+              :key="u.id"
+              @click="toggleUserForTeam(u.id)"
+              class="flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer select-none"
+              :class="selectedUserIdsForTeam.includes(u.id) ? 'bg-purple-50/60 border-purple-200 shadow-3xs' : 'bg-gray-50/50 border-gray-100 hover:bg-gray-100/50'"
+            >
+              <div class="flex items-center gap-3 min-w-0">
+                <img :src="u.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'" class="w-8 h-8 rounded-full object-cover border border-purple-100 flex-shrink-0" />
+                <div class="min-w-0">
+                  <div class="text-xs font-extrabold text-gray-900 truncate">{{ u.name }}</div>
+                  <div class="text-[10px] text-gray-500 font-bold truncate">{{ u.email || 'Thành viên dự án' }}</div>
+                </div>
+              </div>
+
+              <div class="w-5 h-5 rounded-lg border flex items-center justify-center transition-colors flex-shrink-0"
+                :class="selectedUserIdsForTeam.includes(u.id) ? 'bg-purple-600 border-purple-600 text-white' : 'border-gray-300 bg-white'"
+              >
+                <i v-if="selectedUserIdsForTeam.includes(u.id)" class="fa-solid fa-check text-[10px]"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal Actions -->
+          <div class="flex items-center justify-end gap-3 pt-2 border-t border-gray-100">
+            <button @click="isInviteModalOpen = false" type="button" class="px-4 py-2.5 text-xs font-bold text-gray-500 hover:text-gray-700 transition-colors cursor-pointer">
+              Hủy
+            </button>
+            <button @click="handleSaveTeamMembers" type="button" class="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-extrabold rounded-xl shadow-3xs transition-colors flex items-center gap-2 cursor-pointer">
+              <i class="fa-solid fa-user-check"></i>
+              <span>Cập nhật team ({{ selectedUserIdsForTeam.length }})</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Image Lightbox Modal -->
+    <div v-if="activePreviewImage" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md" @click="activePreviewImage = null">
+      <div class="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl shadow-2xl" @click.stop>
+        <img :src="activePreviewImage" class="max-w-full max-h-[85vh] object-contain rounded-2xl" />
+        <button 
+          @click="activePreviewImage = null" 
+          type="button" 
+          class="absolute top-3 right-3 w-9 h-9 bg-slate-900/80 hover:bg-slate-900 text-white rounded-full flex items-center justify-center transition-colors shadow-lg cursor-pointer"
+        >
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -494,7 +553,7 @@ import { ref, reactive, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
-import BottomNav from '../components/BottomNav.vue'
+
 import ProjectModal from '../components/ProjectModal.vue'
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toast'
@@ -502,6 +561,13 @@ import { useConfirmStore } from '../stores/confirm'
 
 const authStore = useAuthStore()
 const router = useRouter()
+const goBack = () => {
+  if (window.history.state && window.history.state.back) {
+    router.back()
+  } else {
+    router.push('/views')
+  }
+}
 const toast = useToastStore()
 const confirmStore = useConfirmStore()
 
@@ -567,6 +633,54 @@ const displayedComments = computed(() => {
   return activityLogs.value.slice(0, commentsLimit.value)
 })
 
+// Team management states
+const isInviteModalOpen = ref(false)
+const projectTeamMembers = ref([])
+const selectedUserIdsForTeam = ref([])
+
+const loadProjectTeam = () => {
+  const saved = localStorage.getItem(`project_team_${projectId}`)
+  if (saved) {
+    try {
+      projectTeamMembers.value = JSON.parse(saved)
+      return
+    } catch (e) {}
+  }
+  if (project.value && project.value.lead_id) {
+    projectTeamMembers.value = [project.value.lead_id]
+  } else {
+    projectTeamMembers.value = [1]
+  }
+}
+
+const openInviteModal = () => {
+  if (projectTeamMembers.value.length === 0) {
+    loadProjectTeam()
+  }
+  selectedUserIdsForTeam.value = [...projectTeamMembers.value]
+  isInviteModalOpen.value = true
+}
+
+const toggleUserForTeam = (userId) => {
+  const idx = selectedUserIdsForTeam.value.indexOf(userId)
+  if (idx > -1) {
+    selectedUserIdsForTeam.value.splice(idx, 1)
+  } else {
+    selectedUserIdsForTeam.value.push(userId)
+  }
+}
+
+const handleSaveTeamMembers = () => {
+  if (selectedUserIdsForTeam.value.length === 0) {
+    toast.error('Vui lòng chọn ít nhất 1 thành viên cho team!')
+    return
+  }
+  projectTeamMembers.value = [...selectedUserIdsForTeam.value]
+  localStorage.setItem(`project_team_${projectId}`, JSON.stringify(projectTeamMembers.value))
+  toast.success(`Đã cập nhật team! Hiện có ${projectTeamMembers.value.length} thành viên.`)
+  isInviteModalOpen.value = false
+}
+
 // Load data
 const fetchProjectDetail = async () => {
   tasksLimit.value = 10
@@ -575,6 +689,7 @@ const fetchProjectDetail = async () => {
     const res = await axios.get(`/api/projects/${projectId}`)
     if (res.data) {
       project.value = res.data
+      loadProjectTeam()
     }
   } catch (err) {
     console.error('Failed to fetch project detail:', err)
@@ -616,15 +731,136 @@ const updateLead = async (userId) => {
   }
 }
 
+const detailAttachedFiles = ref([])
+const activePreviewImage = ref(null)
+
+const openImagePreview = (url) => {
+  activePreviewImage.value = url
+}
+
+const compressImage = (file) => {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+        const maxDim = 1200
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width)
+            width = maxDim
+          } else {
+            width = Math.round((width * maxDim) / height)
+            height = maxDim
+          }
+        }
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, width, height)
+        const dataUrl = canvas.toDataURL(file.type.includes('png') ? 'image/png' : 'image/jpeg', 0.75)
+        resolve(dataUrl)
+      }
+      img.onerror = () => resolve(e.target.result)
+      img.src = e.target.result
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
+const handleDetailFileSelect = async (event, isImageOnly = false) => {
+  const files = event.target.files
+  if (!files || files.length === 0) return
+
+  for (const file of Array.from(files)) {
+    const isImg = file.type.startsWith('image/')
+    let fileUrl = ''
+    if (isImg) {
+      fileUrl = await compressImage(file)
+    } else {
+      fileUrl = await new Promise((resolve) => {
+        const reader = new FileReader()
+        reader.onload = (e) => resolve(e.target.result)
+        reader.readAsDataURL(file)
+      })
+    }
+
+    detailAttachedFiles.value.push({
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      url: fileUrl,
+      isImage: isImg
+    })
+  }
+
+  event.target.value = ''
+}
+
+const removeDetailAttachment = (fIdx) => {
+  detailAttachedFiles.value.splice(fIdx, 1)
+}
+
+const parseCommentText = (content) => {
+  if (!content) return ''
+  return content
+    .replace(/!\[.*?\]\((.*?)\)/g, '')
+    .replace(/📎\s*\[(.*?)\]\((.*?)\)/g, '')
+    .trim()
+}
+
+const parseCommentImages = (content) => {
+  if (!content) return []
+  const matches = []
+  const regex = /!\[(.*?)\]\((.*?)\)/g
+  let m
+  while ((m = regex.exec(content)) !== null) {
+    matches.push({ name: m[1] || 'Hình ảnh', url: m[2] })
+  }
+  return matches
+}
+
+const parseCommentFiles = (content) => {
+  if (!content) return []
+  const matches = []
+  const regex = /📎\s*\[(.*?)\]\((.*?)\)/g
+  let m
+  while ((m = regex.exec(content)) !== null) {
+    matches.push({ name: m[1] || 'Tài liệu', url: m[2] })
+  }
+  return matches
+}
+
 const handleQuickUpdate = async () => {
-  if (!updateContentText.value.trim()) return
-  const text = updateContentText.value
+  const text = updateContentText.value?.trim() || ''
+  const files = detailAttachedFiles.value || []
+
+  if (!text && files.length === 0) return
+
+  let finalContent = text
+  if (files.length > 0) {
+    const fileMarkdown = files.map(f => {
+      if (f.isImage) {
+        return `![${f.name}](${f.url})`
+      } else {
+        return `📎 [${f.name}](${f.url})`
+      }
+    }).join('\n')
+    
+    finalContent = finalContent ? `${finalContent}\n\n${fileMarkdown}` : fileMarkdown
+  }
+
   updateContentText.value = ''
+  detailAttachedFiles.value = []
+
   try {
     await axios.post('/api/comments', {
       project_id: projectId,
       user_id: authStore.user?.id || 3,
-      content: text,
+      content: finalContent,
       type: 'comment'
     })
     toast.success('Gửi cập nhật hoạt động thành công!')
@@ -639,7 +875,7 @@ const toggleTaskSelect = async (task) => {
   if (task.status === 'done') {
     // Unchecking a completed task -> immediately set to todo on server
     try {
-      await axios.patch(`/api/tasks/${task.id}/status`, { 
+      await axios.patch(`/api/tasks/${task.id}/status`, {
         status: 'todo',
         user_id: authStore.user?.id || 3
       })
@@ -883,11 +1119,44 @@ const handleMouseUp = (e) => {
 }
 
 // Helpers
+const healthBadgeClass = (status) => {
+  if (status === 'red') return 'bg-[#fff1f2] text-rose-800 border border-rose-200'
+  if (status === 'green') return 'bg-[#ecfdf5] text-emerald-800 border border-emerald-200'
+  return 'bg-[#fffbeb] text-amber-800 border border-amber-200'
+}
+
+const healthLabelText = (status) => {
+  if (status === 'green') return 'Hoàn thành'
+  if (status === 'red') return 'Bỏ theo'
+  return 'Đang theo'
+}
+
 const statusDotClass = (status) => {
   if (status === 'yellow') return 'bg-amber-400 health-dot-yellow'
   if (status === 'red') return 'bg-rose-500 health-dot-red'
   if (status === 'green') return 'bg-emerald-500 health-dot-green'
   return 'bg-gray-400'
+}
+
+const healthLabel = (status) => {
+  if (status === 'yellow') return 'AT RISK'
+  if (status === 'red') return 'NEEDS CARE'
+  if (status === 'green') return 'GREAT!'
+  return 'UNKNOWN'
+}
+
+const healthDescription = (status) => {
+  if (status === 'yellow') return 'Some items need attention.'
+  if (status === 'red') return 'Urgent action required.'
+  if (status === 'green') return 'Everyone\'s happy and things are moving.'
+  return 'No status available.'
+}
+
+const healthCardClass = (status) => {
+  if (status === 'yellow') return 'bg-[#fffbeb] border-amber-250/80 text-amber-900'
+  if (status === 'red') return 'bg-[#fff5f5] border-rose-250/80 text-rose-900'
+  if (status === 'green') return 'bg-[#eef8f0] border-emerald-250/85 text-emerald-900'
+  return 'bg-gray-50 border-gray-250 text-gray-600'
 }
 
 const formatDate = (dateStr) => {

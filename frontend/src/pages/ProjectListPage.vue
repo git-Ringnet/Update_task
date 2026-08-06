@@ -1,108 +1,74 @@
 <template>
-  <div class="min-h-screen bg-[#f8faf9] flex flex-col justify-between pb-24">
+  <div class="min-h-screen bg-white flex flex-col justify-between pb-24">
     <div>
       <!-- Navbar Component -->
       <Navbar @search="handleSearch" />
 
       <!-- Main Container -->
-      <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
         
-        <!-- Page Title -->
-        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight mb-6 font-heading">Dự án</h1>
-
-        <!-- Status Filter Tabs & Action Button -->
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <!-- Premium Header Area -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+          <div>
+            <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight leading-none font-heading">
+              Dự án
+            </h1>
+          </div>
           
-          <!-- Filter Tabs -->
-          <div class="flex items-center gap-3">
-            <!-- Đang theo -->
+          <div class="flex items-center gap-2">
+            <!-- Add Project Button -->
             <button
-              @click="setTab('following')"
+              @click="isModalOpen = true"
               type="button"
-              class="px-4 py-2 rounded-xl font-medium text-sm transition-all duration-150 flex items-center gap-2"
-              :class="projectStore.activeStatus === 'following'
-                ? 'bg-emerald-100 text-emerald-800 shadow-2xs font-semibold'
-                : 'bg-gray-100/80 text-gray-600 hover:bg-gray-200/70'"
+              class="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm rounded-xl transition-colors flex items-center gap-2 shadow-2xs cursor-pointer"
             >
-              <span>Đang theo</span>
-              <span 
-                class="px-2 py-0.5 rounded-md text-xs font-bold transition-all"
-                :class="projectStore.activeStatus === 'following' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'"
-              >
-                <template v-if="projectStore.isLoading && !projectStore.counts.following">
-                  <span class="inline-block w-3 h-3 bg-white/40 rounded-full animate-pulse"></span>
-                </template>
-                <template v-else>
-                  {{ projectStore.counts.following }}
-                </template>
-              </span>
+              <i class="fa-solid fa-plus text-xs"></i>
+              <span>New Project</span>
             </button>
-
-            <!-- Không theo -->
+            
+            <!-- Search Toggle Button -->
             <button
-              @click="setTab('not_following')"
+              @click="isSearchOpen = !isSearchOpen"
               type="button"
-              class="px-4 py-2 rounded-xl font-medium text-sm transition-all duration-150 flex items-center gap-2"
-              :class="projectStore.activeStatus === 'not_following'
-                ? 'bg-emerald-100 text-emerald-800 shadow-2xs font-semibold'
-                : 'bg-gray-100/80 text-gray-600 hover:bg-gray-200/70'"
+              class="w-10 h-10 border border-gray-200 hover:bg-gray-50 rounded-xl flex items-center justify-center text-gray-600 transition-colors cursor-pointer"
             >
-              <span>Không theo</span>
-              <span 
-                class="px-2 py-0.5 rounded-md text-xs font-bold transition-all"
-                :class="projectStore.activeStatus === 'not_following' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'"
-              >
-                <template v-if="projectStore.isLoading && !projectStore.counts.not_following">
-                  <span class="inline-block w-3 h-3 bg-white/40 rounded-full animate-pulse"></span>
-                </template>
-                <template v-else>
-                  {{ projectStore.counts.not_following }}
-                </template>
-              </span>
-            </button>
-
-            <!-- Hoàn thành -->
-            <button
-              @click="setTab('completed')"
-              type="button"
-              class="px-4 py-2 rounded-xl font-medium text-sm transition-all duration-150 flex items-center gap-2"
-              :class="projectStore.activeStatus === 'completed'
-                ? 'bg-emerald-100 text-emerald-800 shadow-2xs font-semibold'
-                : 'bg-gray-100/80 text-gray-600 hover:bg-gray-200/70'"
-            >
-              <span>Hoàn thành</span>
-              <span 
-                class="px-2 py-0.5 rounded-md text-xs font-bold transition-all"
-                :class="projectStore.activeStatus === 'completed' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'"
-              >
-                <template v-if="projectStore.isLoading && !projectStore.counts.completed">
-                  <span class="inline-block w-3 h-3 bg-white/40 rounded-full animate-pulse"></span>
-                </template>
-                <template v-else>
-                  {{ projectStore.counts.completed }}
-                </template>
-              </span>
+              <i class="fa-solid fa-magnifying-glass"></i>
             </button>
           </div>
-
-          <!-- Add Project Button -->
-          <button
-            @click="isModalOpen = true"
-            type="button"
-            class="px-5 py-2.5 bg-[#2d8a39] hover:bg-[#236e2d] text-white font-semibold text-sm rounded-xl shadow-xs transition-colors flex items-center gap-2"
-          >
-            <i class="fa-solid fa-plus text-xs"></i>
-            <span>Thêm dự án</span>
-          </button>
         </div>
 
-        <!-- Table Card Container -->
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-xs select-none">
-          <div class="hidden md:block overflow-x-auto">
+        <!-- Search Bar Drawer -->
+        <transition
+          enter-active-class="transition duration-150 ease-out"
+          enter-from-class="transform opacity-0 -translate-y-2"
+          enter-to-class="transform opacity-100 translate-y-0"
+          leave-active-class="transition duration-100 ease-in"
+          leave-from-class="transform opacity-100 translate-y-0"
+          leave-to-class="transform opacity-0 -translate-y-2"
+        >
+          <div v-if="isSearchOpen" class="mb-8 bg-gray-50/50 p-4 border border-gray-200/60 rounded-2xl">
+            <div class="relative max-w-md">
+              <input
+                v-model="searchQueryLocal"
+                @input="handleSearchLocal"
+                type="text"
+                placeholder="Tìm kiếm dự án theo tên hoặc khách hàng..."
+                class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-white"
+              />
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                <i class="fa-solid fa-magnifying-glass text-sm"></i>
+              </span>
+            </div>
+          </div>
+        </transition>
+
+        <!-- Main Desktop Table Card Container -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-3xs select-none">
+          <div class="hidden md:block">
             <table class="w-full text-left border-collapse">
               <thead>
-                <tr class="border-b border-gray-100 text-xs font-bold text-gray-400 uppercase tracking-wider bg-gray-50/50">
-                  <th scope="col" class="py-3.5 px-6 text-center select-none w-12">
+                <tr class="border-b border-gray-100 text-xs font-black text-gray-450 uppercase tracking-wider bg-gray-50/50">
+                  <th scope="col" class="py-4 px-6 text-center select-none w-12">
                     <input
                       type="checkbox"
                       :checked="isAllSelected"
@@ -110,134 +76,144 @@
                       class="rounded text-emerald-600 accent-emerald-600 cursor-pointer w-4.5 h-4.5"
                     />
                   </th>
-                  <th scope="col" class="py-3.5 px-6">DỰ ÁN</th>
-                  <th scope="col" class="py-3.5 px-6 text-center">HEALTH</th>
-                  <th scope="col" class="py-3.5 px-6">LEAD HIỆN TẠI</th>
-                  <th scope="col" class="py-3.5 px-6">CẬP NHẬT</th>
-                  <th scope="col" class="py-3.5 px-4 text-center">
-                    <i class="fa-solid fa-thumbtack text-gray-400"></i>
-                  </th>
-                  <th scope="col" class="py-3.5 px-4 text-center">THAO TÁC</th>
+                  <th scope="col" class="py-4 px-6 w-44">Time</th>
+                  <th scope="col" class="py-4 px-6 w-56">Relationship</th>
+                  <th scope="col" class="py-4 px-6 min-w-[240px]">Project</th>
+                  <th scope="col" class="py-4 px-6 w-32 text-center">Health</th>
+                  <th scope="col" class="py-4 px-6 w-48 text-center">Lead</th>
+                  <th scope="col" class="py-4 px-6 min-w-[320px]">Update</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100 text-sm">
                 <!-- Skeleton Loading Rows -->
-                <template v-if="projectStore.isLoading">
+                <template v-if="projectStore.isLoading && displayedProjects.length === 0">
                   <tr v-for="i in 5" :key="'skeleton-' + i" class="animate-pulse">
-                    <td class="py-4 px-6 text-center align-middle">
-                      <div class="w-4 h-4 bg-gray-200 rounded-md mx-auto"></div>
+                    <td class="py-5 px-6 text-center align-middle">
+                      <div class="w-4.5 h-4.5 bg-gray-200 rounded-md mx-auto"></div>
                     </td>
-                    <td class="py-4 px-6">
-                      <div class="h-4 bg-gray-200/80 rounded-md w-3/4 mb-2"></div>
-                      <div class="h-3 bg-gray-100/90 rounded-md w-1/2"></div>
+                    <td class="py-5 px-6">
+                      <div class="h-4 bg-gray-200 rounded-md w-28"></div>
                     </td>
-                    <td class="py-4 px-6 text-center align-middle">
-                      <div class="w-4 h-4 bg-gray-200/80 rounded-full mx-auto"></div>
+                    <td class="py-5 px-6">
+                      <div class="h-4 bg-gray-200 rounded-md w-32"></div>
                     </td>
-                    <td class="py-4 px-6 align-middle">
-                      <div class="flex items-center gap-2.5">
-                        <div class="w-7 h-7 bg-gray-200/80 rounded-full"></div>
-                        <div class="h-3.5 bg-gray-200/80 rounded-md w-16"></div>
-                      </div>
+                    <td class="py-5 px-6">
+                      <div class="h-4 bg-gray-200 rounded-md w-40"></div>
                     </td>
-                    <td class="py-4 px-6 align-middle">
-                      <div class="h-3.5 bg-gray-200/80 rounded-md w-24"></div>
+                    <td class="py-5 px-6">
+                      <div class="h-4 bg-gray-200 rounded-full w-12"></div>
                     </td>
-                    <td class="py-4 px-4 text-center align-middle">
-                      <div class="w-5 h-5 bg-gray-100/80 rounded-md mx-auto"></div>
+                    <td class="py-5 px-6">
+                      <div class="h-4 bg-gray-200 rounded-md w-28"></div>
                     </td>
-                    <td class="py-4 px-4 text-center align-middle">
-                      <div class="w-7 h-5 bg-gray-100/80 rounded-md mx-auto"></div>
+                    <td class="py-5 px-6">
+                      <div class="h-4 bg-gray-200 rounded-md w-64"></div>
                     </td>
                   </tr>
                 </template>
 
                 <!-- Empty state -->
-                <tr v-else-if="projectStore.projects.length === 0">
-                  <td colspan="7" class="py-12 text-center text-gray-400">
+                <tr v-else-if="displayedProjects.length === 0">
+                  <td colspan="7" class="py-16 text-center text-gray-400 font-medium">
                     Không tìm thấy dự án nào trong mục này.
                   </td>
                 </tr>
 
-                <!-- Project List Rows with Smooth Staggered Fade In -->
+                <!-- Project List Rows -->
                 <tr
                   v-for="(project, index) in displayedProjects"
                   :key="project.id"
-                  class="hover:bg-emerald-50/20 transition-colors group animate-fade-in-up cursor-pointer"
+                  class="hover:bg-emerald-50/10 transition-colors group animate-fade-in-up cursor-pointer"
                   :class="{ 
-                    'bg-emerald-50/30 hover:bg-emerald-50/50': selectedProjectIds.includes(project.id),
-                    'relative z-30': openActionMenuId === project.id || openLeadMenuId === project.id
+                    'bg-emerald-50/20 hover:bg-emerald-50/30': selectedProjectIds.includes(project.id),
+                    'relative z-30': openLeadMenuId === project.id || openStatusMenuId === project.id
                   }"
-                  :style="{ animationDelay: `${index * 45}ms` }"
+                  :style="{ animationDelay: `${index * 35}ms` }"
                   @mousedown="handleMouseDown($event, project)"
                   @mouseenter="handleMouseEnter(project)"
                   @click="goToProjectDetail(project.id, $event)"
                 >
                   <!-- Checkbox Selection -->
-                  <td class="py-4 px-6 text-center align-middle select-none w-12">
+                  <td class="py-4 px-6 text-center align-middle select-none w-12" @click.stop>
                     <input
                       type="checkbox"
                       :checked="selectedProjectIds.includes(project.id)"
                       @change="toggleProjectSelection(project.id)"
-                      @click.stop
-                      @mousedown.stop
                       class="rounded text-emerald-600 accent-emerald-600 cursor-pointer w-4.5 h-4.5"
                     />
                   </td>
 
-                  <!-- Title & Customer -->
-                  <td class="py-4 px-6 max-w-[250px] md:max-w-md">
-                    <div class="block group-hover:text-emerald-700">
-                      <div class="font-bold text-gray-900 text-base leading-snug font-heading break-words">
-                        {{ project.title }}
+                  <!-- Time Column -->
+                  <td class="py-4 px-6 align-middle">
+                    <div class="min-w-[100px]">
+                      <div :class="formatTimeColumn(project.last_activity_at || project.updated_at).topBold ? 'font-bold text-gray-900 text-sm' : 'text-xs text-gray-400 font-semibold'">
+                        {{ formatTimeColumn(project.last_activity_at || project.updated_at).top }}
                       </div>
-                      <div class="text-xs text-gray-500 font-medium mt-0.5 break-words">
-                        {{ project.customer ? project.customer.name : 'Chưa phân khách hàng' }}
+                      <div :class="formatTimeColumn(project.last_activity_at || project.updated_at).bottomBold ? 'font-bold text-gray-900 text-sm mt-0.5' : 'text-xs text-gray-400 font-semibold mt-0.5'">
+                        {{ formatTimeColumn(project.last_activity_at || project.updated_at).bottom }}
                       </div>
                     </div>
                   </td>
 
-                  <!-- Health Status Selector (1 Dot default, click opens 3 dots) -->
-                  <td class="py-4 px-6 text-center align-middle">
-                    <HealthStatusSelector
-                      :model-value="project.health"
-                      @change="(newColor) => handleHealthChange(project.id, newColor)"
-                    />
+                  <!-- Relationship Column -->
+                  <td class="py-4 px-6 max-w-[220px]">
+                    <div class="flex items-center gap-2.5">
+                      <span class="w-7 h-7 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center font-extrabold text-[11px] shadow-3xs flex-shrink-0">
+                        {{ project.customer ? project.customer.name[0] : 'K' }}
+                      </span>
+                      <span class="text-gray-900 text-sm font-bold truncate">
+                        {{ project.customer ? project.customer.name : 'Chưa phân khách hàng' }}
+                      </span>
+                    </div>
                   </td>
 
-                  <!-- Lead hiện tại -->
-                  <td class="py-4 px-6 align-middle relative">
+                  <!-- Project Column -->
+                  <td class="py-4 px-6 max-w-[300px] min-w-[200px]">
+                    <div class="font-extrabold text-gray-900 text-sm leading-snug group-hover:text-emerald-700 transition-colors flex items-start gap-2 min-w-0">
+                      <span v-if="project.tracking_status === 'completed'" class="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0 mt-1" title="Hoàn thành"></span>
+                      <span v-else-if="project.tracking_status === 'following'" class="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0 mt-1" title="Đang theo"></span>
+                      <span v-else-if="project.tracking_status === 'not_following'" class="w-2.5 h-2.5 rounded-full bg-rose-500 flex-shrink-0 mt-1" title="Không theo"></span>
+                      <span class="break-all min-w-0 flex-1">{{ project.title }}</span>
+                    </div>
+                  </td>
+
+                  <!-- Health Selector (Smiley only) -->
+                  <td class="py-4 px-6 align-middle text-center">
+                    <div class="inline-flex justify-center">
+                      <HealthStatusSelector
+                        :model-value="project.health"
+                        @change="(newColor) => handleHealthChange(project.id, newColor)"
+                      />
+                    </div>
+                  </td>
+
+                  <!-- Lead Info -->
+                  <td class="py-4 px-6 align-middle relative text-center" @click.stop>
                     <div
-                      @mousedown.stop
-                      @click.stop="toggleLeadMenu(project.id)"
-                      class="inline-flex items-center gap-2 px-2.5 py-1.5 hover:bg-emerald-50/70 border border-transparent hover:border-emerald-200/50 rounded-xl transition-all cursor-pointer select-none group"
+                      @click="toggleLeadMenu(project.id)"
+                      class="inline-flex items-center gap-2 px-2.5 py-1.5 hover:bg-emerald-50/70 border border-transparent hover:border-emerald-100 rounded-xl transition-all cursor-pointer select-none font-bold justify-center"
                     >
-                      <template v-if="project.lead">
-                        <img
-                          :src="project.lead.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'"
-                          :alt="project.lead.name"
-                          class="w-6.5 h-6.5 rounded-full object-cover border border-emerald-200 shadow-3xs"
-                        />
-                        <span class="font-bold text-gray-800 text-sm group-hover:text-emerald-950 transition-colors border-b border-dashed border-gray-300 group-hover:border-emerald-600 pb-0.5">
-                          {{ project.lead.name }}
-                        </span>
-                      </template>
-                      <span v-else class="text-xs text-gray-400 font-semibold italic border-b border-dashed border-gray-300 pb-0.5">Chưa giao</span>
+                      <img
+                        :src="project.lead ? (project.lead.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120') : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'"
+                        :alt="project.lead ? project.lead.name : 'Chưa giao'"
+                        class="w-6.5 h-6.5 rounded-full object-cover border border-emerald-100 shadow-3xs"
+                      />
+                      <span class="text-gray-808 text-sm font-bold border-b border-dashed border-gray-300 pb-0.5">
+                        {{ project.lead ? project.lead.name : 'Chưa giao' }}
+                      </span>
                     </div>
 
                     <!-- Lead Dropdown Selection -->
                     <div
                       v-if="openLeadMenuId === project.id"
-                      @mousedown.stop @click.stop
-                      class="absolute left-6 top-full mt-1.5 w-48 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1.5 text-left ring-1 ring-black/5 max-h-48 overflow-y-auto"
+                      class="absolute left-1/2 -translate-x-1/2 w-48 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1.5 text-left ring-1 ring-black/5 max-h-48 overflow-y-auto"
+                      :class="index === 0 ? 'top-full mt-1.5' : 'bottom-full mb-1.5'"
                     >
                       <div class="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider select-none border-b border-gray-100 mb-1">
                         Chuyển lead dự án
                       </div>
-                      
-                      <!-- Unassigned Option -->
                       <button
-                        @click.stop="handleUpdateLead(project.id, null)"
+                        @click="handleUpdateLead(project.id, null)"
                         type="button"
                         class="w-full text-left px-3.5 py-2 hover:bg-emerald-50 text-gray-500 hover:text-emerald-900 text-xs font-bold transition-colors flex items-center gap-2.5 cursor-pointer"
                       >
@@ -246,275 +222,86 @@
                         </span>
                         <span>Không giao cho ai</span>
                       </button>
-
-                      <!-- User Options List -->
                       <button
                         v-for="u in projectStore.users"
                         :key="u.id"
-                        @click.stop="handleUpdateLead(project.id, u.id)"
+                        @click="handleUpdateLead(project.id, u.id)"
                         type="button"
                         class="w-full text-left px-3.5 py-2 hover:bg-emerald-50 text-gray-700 hover:text-emerald-900 text-xs font-bold transition-colors flex items-center gap-2.5 cursor-pointer"
                       >
-                        <img
-                          :src="u.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'"
-                          :alt="u.name"
-                          class="w-6 h-6 rounded-full object-cover border border-emerald-200"
-                        />
+                        <img :src="u.avatar" :alt="u.name" class="w-6 h-6 rounded-full object-cover" />
                         <span class="truncate flex-1">{{ u.name }}</span>
                         <i v-if="project.lead && project.lead.id === u.id" class="fa-solid fa-check text-[10px] text-emerald-600"></i>
                       </button>
                     </div>
                   </td>
 
-                  <!-- Cập nhật (Relative Time) -->
-                  <td class="py-4 px-6 text-gray-500 font-normal text-sm align-middle">
-                    {{ formatRelativeTime(project.last_activity_at || project.updated_at) }}
-                  </td>
-
-                  <!-- Pin column: FontAwesome fa-thumbtack -->
-                  <td class="py-4 px-4 text-center align-middle">
-                    <button
-                      @click.stop="handleTogglePin(project.id)"
-                      @mousedown.stop
-                      type="button"
-                      class="p-1.5 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none"
-                      :title="project.is_pinned ? 'Bỏ ghim' : 'Ghim dự án'"
-                    >
-                      <i 
-                        class="fa-solid fa-thumbtack text-base transition-transform group-hover:scale-110"
-                        :class="project.is_pinned ? 'text-emerald-600' : 'text-gray-300 hover:text-gray-500 -rotate-45'"
-                      ></i>
-                    </button>
-                  </td>
-
-                  <!-- Actions column -->
-                  <td class="py-4 px-4 text-center align-middle relative">
-                    <button
-                      @click.stop="toggleActionMenu(project.id)"
-                      @mousedown.stop
-                      type="button"
-                      class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
-                    >
-                      <i class="fa-solid fa-ellipsis text-base"></i>
-                    </button>
-
-                    <!-- Actions Dropdown -->
-                    <div
-                      v-if="openActionMenuId === project.id"
-                      @click.stop
-                      @mousedown.stop
-                      class="absolute right-2 top-full mt-1 w-36 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1.5 text-left ring-1 ring-black/5"
-                    >
-                      <!-- Edit button -->
-                      <button
-                        @click.stop="handleEditProject(project)"
-                        type="button"
-                        class="w-full text-left px-3.5 py-2 hover:bg-emerald-50 text-gray-700 hover:text-emerald-900 text-xs font-bold transition-colors flex items-center gap-2.5 cursor-pointer select-none"
-                      >
-                        <i class="fa-solid fa-pen text-emerald-600"></i>
-                        <span>Sửa</span>
-                      </button>
-
-                      <!-- Delete button -->
-                      <button
-                        @click.stop="handleDeleteProject(project)"
-                        type="button"
-                        :disabled="!canDeleteProject(project)"
-                        class="w-full text-left px-3.5 py-2 text-rose-600 hover:bg-rose-50 text-xs font-bold transition-colors flex items-center gap-2.5 cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                        :title="canDeleteProject(project) ? 'Xóa dự án' : 'Không thể xóa dự án đã có cập nhật hoặc nhiệm vụ'"
-                      >
-                        <i class="fa-solid fa-trash-can" :class="canDeleteProject(project) ? 'text-rose-500' : 'text-rose-300'"></i>
-                        <span>Xóa</span>
-                      </button>
+                  <!-- Update (Latest Comment) -->
+                  <td class="py-4 px-6 max-w-[450px]">
+                    <div v-if="getLatestComment(project)">
+                      <div class="font-bold text-gray-955 text-sm leading-snug break-words line-clamp-1 max-w-[400px]">
+                        {{ getLatestComment(project).content }}
+                      </div>
+                      <div class="text-xs text-gray-400 font-semibold mt-1">
+                        {{ getLatestComment(project).user ? getLatestComment(project).user.name : 'Thành viên' }}
+                      </div>
+                    </div>
+                    <div v-else>
+                      <div class="font-bold text-gray-400 text-sm leading-snug">
+                        Chưa có hoạt động nào mới.
+                      </div>
+                      <div class="text-xs text-gray-400 font-semibold mt-1">
+                        Hệ thống
+                      </div>
                     </div>
                   </td>
                 </tr>
-
               </tbody>
             </table>
           </div>
 
-          <!-- Giao diện Điện thoại: Danh sách Card (Ẩn trên Desktop) -->
-          <div class="block md:hidden divide-y divide-gray-100 bg-white rounded-t-2xl overflow-hidden">
-            <!-- Loading state -->
-            <template v-if="projectStore.isLoading && projectStore.projects.length === 0">
-              <div v-for="i in 3" :key="'skeleton-card-' + i" class="p-4 animate-pulse space-y-3">
-                <div class="flex items-center justify-between">
-                  <div class="h-4 bg-gray-200 rounded-md w-2/3"></div>
-                  <div class="w-4 h-4 bg-gray-200 rounded-md"></div>
-                </div>
-                <div class="flex items-center gap-3">
-                  <div class="w-3.5 h-3.5 bg-gray-200 rounded-full"></div>
-                  <div class="w-6 h-6 rounded-full bg-gray-200"></div>
-                  <div class="h-3 bg-gray-100 rounded-md w-20"></div>
-                </div>
+          <!-- Phone View: Mobile Card List -->
+          <div class="block md:hidden divide-y divide-gray-100 bg-white">
+            <template v-if="projectStore.isLoading && displayedProjects.length === 0">
+              <div v-for="i in 3" :key="'skeleton-card-' + i" class="p-5 animate-pulse space-y-3">
+                <div class="h-4 bg-gray-250 rounded-md w-2/3"></div>
               </div>
             </template>
 
-            <!-- Empty state -->
-            <div v-else-if="projectStore.projects.length === 0" class="py-12 text-center text-gray-400 text-sm">
+            <div v-else-if="displayedProjects.length === 0" class="py-12 text-center text-gray-400 font-medium">
               Không tìm thấy dự án nào trong mục này.
             </div>
 
-            <!-- Card List -->
             <div
-              v-for="(project, index) in displayedProjects"
+              v-for="project in displayedProjects"
               :key="'card-' + project.id"
-              class="p-4 hover:bg-emerald-50/20 active:bg-emerald-50/30 transition-colors flex flex-col gap-2.5 relative cursor-pointer"
-              :class="{
-                'bg-emerald-50/10': selectedProjectIds.includes(project.id),
-                'relative z-30': openActionMenuId === project.id || openLeadMenuId === project.id
-              }"
+              class="p-5 hover:bg-emerald-50/10 transition-colors flex flex-col gap-3 relative cursor-pointer"
+              :class="{ 'bg-emerald-50/20': selectedProjectIds.includes(project.id) }"
               @click="goToProjectDetail(project.id, $event)"
             >
-              <!-- Row 1: Checkbox + Title + Pin -->
               <div class="flex items-start justify-between gap-3">
-                <div class="flex items-start gap-3 min-w-0">
-                  <!-- Checkbox Selection -->
-                  <div class="flex-shrink-0 pt-0.5" @click.stop>
-                    <input
-                      type="checkbox"
-                      :checked="selectedProjectIds.includes(project.id)"
-                      @change="toggleProjectSelection(project.id)"
-                      class="rounded text-emerald-600 accent-emerald-600 cursor-pointer w-4.5 h-4.5"
-                    />
-                  </div>
-                  <!-- Title & Customer -->
-                  <div class="min-w-0">
-                    <h3 class="font-bold text-gray-900 text-base leading-snug break-words font-heading group-hover:text-emerald-700">
-                      {{ project.title }}
-                    </h3>
-                    <p class="text-xs text-gray-500 font-semibold mt-0.5 break-words">
-                      {{ project.customer ? project.customer.name : 'Chưa phân khách hàng' }}
-                    </p>
-                  </div>
+                <div>
+                  <h3 class="font-extrabold text-gray-900 text-sm leading-snug break-all min-w-0">
+                    {{ project.title }}
+                  </h3>
+                  <p class="text-xs text-gray-400 font-bold mt-0.5">
+                    {{ project.customer ? project.customer.name : 'Chưa phân khách hàng' }}
+                  </p>
                 </div>
-
-                <!-- Pin Button -->
-                <div class="flex-shrink-0" @click.stop>
-                  <button
-                    @click="handleTogglePin(project.id)"
-                    type="button"
-                    class="p-1.5 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none"
-                    :title="project.is_pinned ? 'Bỏ ghim' : 'Ghim dự án'"
-                  >
-                    <i 
-                      class="fa-solid fa-thumbtack text-base"
-                      :class="project.is_pinned ? 'text-emerald-600' : 'text-gray-300 -rotate-45'"
-                    ></i>
-                  </button>
-                </div>
+                <input
+                  type="checkbox"
+                  :checked="selectedProjectIds.includes(project.id)"
+                  @change="toggleProjectSelection(project.id)"
+                  @click.stop
+                  class="rounded text-emerald-600 accent-emerald-600 cursor-pointer w-4 h-4 mt-1"
+                />
               </div>
 
-              <!-- Row 2: Status selector + Assignee/Lead + Time + Action menu -->
-              <div class="flex items-center justify-between gap-3 pt-1">
-                <!-- Status & Lead & Time -->
-                <div class="flex flex-wrap items-center gap-3 text-xs text-gray-500 min-w-0">
-                  <!-- Health status dot -->
-                  <div @click.stop>
-                    <HealthStatusSelector
-                      :model-value="project.health"
-                      @change="(newColor) => handleHealthChange(project.id, newColor)"
-                    />
-                  </div>
-
-                  <!-- Divider -->
-                  <span class="text-gray-300">•</span>
-
-                  <!-- Lead Info -->
-                  <div class="flex items-center gap-1.5 min-w-0 relative" @click.stop="toggleLeadMenu(project.id)">
-                    <div class="relative inline-flex items-center gap-1.5 py-0.5 hover:bg-emerald-50/70 rounded-lg cursor-pointer">
-                      <img
-                        :src="project.lead ? (project.lead.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120') : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'"
-                        :alt="project.lead ? project.lead.name : 'Chưa giao'"
-                        class="w-5.5 h-5.5 rounded-full object-cover border border-emerald-100"
-                      />
-                      <span class="font-bold text-gray-700 truncate max-w-[85px]">
-                        {{ project.lead ? project.lead.name : 'Chưa giao' }}
-                      </span>
-                    </div>
-
-                    <!-- Lead Dropdown Selection for Card -->
-                    <div
-                      v-if="openLeadMenuId === project.id"
-                      @click.stop
-                      class="absolute left-0 bottom-full mb-1.5 w-44 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1.5 text-left ring-1 ring-black/5 max-h-48 overflow-y-auto"
-                    >
-                      <div class="px-3 py-1 text-[9px] font-bold text-gray-400 uppercase tracking-wider select-none border-b border-gray-100 mb-1">
-                        Chuyển lead dự án
-                      </div>
-                      
-                      <!-- Unassigned -->
-                      <button
-                        @click.stop="handleUpdateLead(project.id, null)"
-                        type="button"
-                        class="w-full text-left px-3.5 py-1.5 hover:bg-emerald-50 text-gray-500 hover:text-emerald-900 text-xs font-semibold transition-colors flex items-center gap-2 cursor-pointer"
-                      >
-                        <i class="fa-solid fa-user-slash text-[10px]"></i>
-                        <span>Không giao</span>
-                      </button>
-
-                      <!-- User list -->
-                      <button
-                        v-for="u in projectStore.users"
-                        :key="u.id"
-                        @click.stop="handleUpdateLead(project.id, u.id)"
-                        type="button"
-                        class="w-full text-left px-3 py-1.5 hover:bg-emerald-50 text-gray-700 hover:text-emerald-900 text-xs font-semibold transition-colors flex items-center gap-2 cursor-pointer"
-                      >
-                        <img :src="u.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'" class="w-4 h-4 rounded-full object-cover" />
-                        <span class="truncate flex-1">{{ u.name }}</span>
-                        <i v-if="project.lead && project.lead.id === u.id" class="fa-solid fa-check text-[9px] text-emerald-600"></i>
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Divider -->
-                  <span class="text-gray-300">•</span>
-
-                  <!-- Time -->
-                  <span class="font-medium truncate text-[11px]">
-                    {{ formatRelativeTime(project.last_activity_at || project.updated_at) }}
-                  </span>
-                </div>
-
-                <!-- Actions Menu Button -->
-                <div class="flex-shrink-0 relative" @click.stop>
-                  <button
-                    @click="toggleActionMenu(project.id)"
-                    type="button"
-                    class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
-                  >
-                    <i class="fa-solid fa-ellipsis text-base"></i>
-                  </button>
-
-                  <!-- Actions Dropdown inside Card -->
-                  <div
-                    v-if="openActionMenuId === project.id"
-                    class="absolute right-0 bottom-full mb-1.5 w-32 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1.5 text-left ring-1 ring-black/5"
-                  >
-                    <!-- Edit button -->
-                    <button
-                      @click="handleEditProject(project)"
-                      type="button"
-                      class="w-full text-left px-3.5 py-1.5 hover:bg-emerald-50 text-gray-700 hover:text-emerald-900 text-xs font-bold transition-colors flex items-center gap-2 cursor-pointer"
-                    >
-                      <i class="fa-solid fa-pen text-emerald-600 text-xs"></i>
-                      <span>Sửa</span>
-                    </button>
-
-                    <!-- Delete button -->
-                    <button
-                      @click="handleDeleteProject(project)"
-                      type="button"
-                      :disabled="!canDeleteProject(project)"
-                      class="w-full text-left px-3.5 py-1.5 text-rose-600 hover:bg-rose-50 text-xs font-bold transition-colors flex items-center gap-2.5 cursor-pointer disabled:opacity-40"
-                    >
-                      <i class="fa-solid fa-trash-can text-rose-500 text-xs"></i>
-                      <span>Xóa</span>
-                    </button>
-                  </div>
-                </div>
+              <div class="flex items-center text-xs text-gray-500 pt-1 border-t border-gray-50">
+                <HealthStatusSelector
+                  :model-value="project.health"
+                  @change="(newColor) => handleHealthChange(project.id, newColor)"
+                />
               </div>
             </div>
           </div>
@@ -524,29 +311,10 @@
             <button
               @click="displayLimit += 15"
               type="button"
-              class="px-5 py-2.5 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 font-extrabold text-xs rounded-xl shadow-3xs transition-all cursor-pointer flex items-center gap-1.5 focus:outline-none"
+              class="px-5 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1.5 focus:outline-none"
             >
               <i class="fa-solid fa-angles-down text-[10px]"></i>
               <span>Xem thêm dự án (Còn {{ projectStore.projects.length - displayLimit }} dự án)</span>
-            </button>
-          </div>
-
-          <!-- Bottom Footer Banner matching mockup -->
-          <div class="bg-[#f2faf3] px-6 py-3 border-t border-emerald-100/60 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs font-medium text-emerald-800">
-            <div class="flex items-center gap-2">
-              <i class="fa-regular fa-lightbulb text-emerald-600 text-sm"></i>
-              <span>
-                Nhấp vào <span class="text-rose-500 font-bold">🔴</span> <span class="text-amber-500 font-bold">🟡</span> <span class="text-emerald-500 font-bold">🟢</span> để cập nhật tình trạng dự án
-              </span>
-            </div>
-
-            <button
-              @click="scrollToTop"
-              type="button"
-              class="flex items-center gap-1.5 text-emerald-700 hover:text-emerald-900 font-semibold transition-colors"
-            >
-              <i class="fa-solid fa-arrow-up text-xs"></i>
-              <span>Lên đầu trang</span>
             </button>
           </div>
 
@@ -566,7 +334,7 @@
       @customer-created="projectStore.fetchAuxData()"
     />
 
-    <!-- Floating Action Bar for Bulk Update -->
+    <!-- Floating Bulk Update Action Bar matching mockup exactly -->
     <transition
       enter-active-class="transition duration-300 ease-out"
       enter-from-class="transform translate-y-10 opacity-0"
@@ -577,56 +345,159 @@
     >
       <div
         v-if="selectedProjectIds.length > 0"
-        class="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 bg-white/95 backdrop-blur-md px-6 py-4 rounded-2xl shadow-xl border border-emerald-100/80 flex items-center gap-6 w-[90%] max-w-md justify-between"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white/95 backdrop-blur-md px-5 py-3 rounded-2xl shadow-xl border border-gray-200 flex items-center gap-4 w-[95%] max-w-4xl justify-between"
       >
-        <span class="text-sm font-semibold text-emerald-800">
-          Đã chọn <strong class="text-emerald-950 font-bold">{{ selectedProjectIds.length }}</strong> dự án
-        </span>
-        <div class="flex items-center gap-3">
-          <button
-            @click="selectedProjectIds = []"
-            type="button"
-            class="text-xs font-semibold text-gray-500 hover:text-gray-700 px-3 py-2 rounded-xl transition-colors"
-          >
-            Hủy chọn
-          </button>
-          <button
-            @click="goToBulkUpdate"
-            type="button"
-            class="px-4 py-2 bg-[#2d8a39] hover:bg-[#236e2d] text-white font-semibold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5"
-          >
-            <i class="fa-solid fa-pen-to-square"></i>
-            <span>Cập nhật</span>
-          </button>
+        <!-- Selection Counter Badge -->
+        <div class="bg-[#1f5728] text-white px-4 py-2.5 rounded-xl flex items-center justify-between gap-3 text-sm font-extrabold flex-shrink-0">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-square-check text-base"></i>
+            <div class="flex flex-col items-start leading-tight">
+              <span>{{ selectedProjectIds.length }} selected</span>
+              <button @click="selectedProjectIds = []" type="button" class="text-[10px] text-emerald-250 hover:text-white underline cursor-pointer">Clear</button>
+            </div>
+          </div>
         </div>
+
+        <!-- Bulk Action Buttons Group -->
+        <div class="flex items-center flex-wrap gap-2 flex-1 justify-end">
+          
+          <!-- Bulk Update Health Option -->
+          <div class="relative">
+            <button
+              @click="toggleBulkMenu('health')"
+              type="button"
+              class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-bold text-xs rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+            >
+              <i class="fa-solid fa-heart-pulse text-emerald-600"></i>
+              <span>Update Health</span>
+            </button>
+            <div v-if="activeBulkMenu === 'health'" class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-2 flex flex-col gap-1.5 min-w-[140px]">
+              <button @click="bulkUpdateHealth('green')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-emerald-50 text-xs font-bold rounded-lg text-emerald-800"><i class="fa-solid fa-face-smile text-emerald-600"></i> Healthy</button>
+              <button @click="bulkUpdateHealth('yellow')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-amber-50 text-xs font-bold rounded-lg text-amber-800"><i class="fa-solid fa-face-meh text-amber-500"></i> At Risk</button>
+              <button @click="bulkUpdateHealth('red')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-rose-50 text-xs font-bold rounded-lg text-rose-800"><i class="fa-solid fa-face-frown text-rose-500"></i> Needs Care</button>
+            </div>
+          </div>
+
+          <!-- Bulk Move Lead Option -->
+          <div class="relative">
+            <button
+              @click="toggleBulkMenu('lead')"
+              type="button"
+              class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-bold text-xs rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+            >
+              <i class="fa-solid fa-user-pen text-blue-600"></i>
+              <span>Move Lead</span>
+            </button>
+            <div v-if="activeBulkMenu === 'lead'" class="absolute bottom-full mb-2 right-0 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1.5 flex flex-col gap-0.5 max-h-48 overflow-y-auto min-w-[160px]">
+              <div class="px-3 py-1 text-[9px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 mb-1">Chuyển lead cho</div>
+              <button @click="bulkUpdateLead(null)" class="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 text-xs font-bold text-gray-500 text-left"><i class="fa-solid fa-user-slash"></i> Không giao</button>
+              <button v-for="u in projectStore.users" :key="u.id" @click="bulkUpdateLead(u.id)" class="flex items-center gap-2 px-3 py-1.5 hover:bg-emerald-50 text-xs font-bold text-gray-700 text-left"><img :src="u.avatar" class="w-4 h-4 rounded-full" /> {{ u.name }}</button>
+            </div>
+          </div>
+
+          <!-- Bulk Status Update (Update Status) -->
+          <div class="relative">
+            <button
+              @click="toggleBulkMenu('status')"
+              type="button"
+              class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-bold text-xs rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+            >
+              <i class="fa-solid fa-box-archive text-purple-600"></i>
+              <span>Update Status</span>
+            </button>
+            <div v-if="activeBulkMenu === 'status'" class="absolute bottom-full mb-2 right-0 bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-2 flex flex-col gap-1 min-w-[140px]">
+              <button @click="bulkUpdateStatus('completed')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-emerald-50 text-xs font-bold rounded-lg text-emerald-800"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0"></span> Hoàn thành</button>
+              <button @click="bulkUpdateStatus('following')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-amber-50 text-xs font-bold rounded-lg text-amber-800"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0"></span> Đang theo</button>
+              <button @click="bulkUpdateStatus('not_following')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-rose-50 text-xs font-bold rounded-lg text-rose-800"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 flex-shrink-0"></span> Không theo</button>
+            </div>
+          </div>
+
+          <!-- Bulk Post Update Option -->
+          <div>
+            <button
+              @click="goToBulkUpdate"
+              type="button"
+              class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-bold text-xs rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+            >
+              <i class="fa-solid fa-message text-emerald-600"></i>
+              <span>Post Update</span>
+            </button>
+          </div>
+
+        </div>
+
       </div>
     </transition>
-
-    <!-- Bottom Navigation Bar -->
-    <BottomNav />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
 import HealthStatusSelector from '../components/HealthStatusSelector.vue'
 import ProjectModal from '../components/ProjectModal.vue'
-import BottomNav from '../components/BottomNav.vue'
 import { useProjectStore } from '../stores/project'
 import { useToastStore } from '../stores/toast'
 import { useConfirmStore } from '../stores/confirm'
+import { useAuthStore } from '../stores/auth'
 
 const projectStore = useProjectStore()
+const authStore = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 const toast = useToastStore()
 const confirmStore = useConfirmStore()
 
+const statusDotClass = (health) => {
+  if (health === 'yellow') return 'bg-amber-400'
+  if (health === 'red') return 'bg-rose-500'
+  if (health === 'green') return 'bg-emerald-500'
+  return 'bg-gray-400'
+}
+
+const getLatestComment = (project) => {
+  if (!project.comments || project.comments.length === 0) return null
+  const sorted = [...project.comments].sort((a, b) => b.id - a.id)
+  return sorted[0]
+}
+
+const formatTimeColumn = (dateStr) => {
+  if (!dateStr) return { top: 'Today', bottom: '' }
+  const date = new Date(dateStr)
+  const today = new Date()
+  const yesterday = new Date()
+  yesterday.setDate(today.getDate() - 1)
+
+  const pad = (n) => String(n).padStart(2, '0')
+  const hours = date.getHours()
+  const minutes = pad(date.getMinutes())
+  const ampm = hours >= 12 ? 'PM' : 'AM'
+  const displayHours = hours % 12 || 12
+  const timeStr = `${displayHours}:${minutes} ${ampm}`
+
+  if (date.toDateString() === today.toDateString()) {
+    return { top: timeStr, bottom: 'Today', topBold: true }
+  } else if (date.toDateString() === yesterday.toDateString()) {
+    return { top: 'Yesterday', bottom: timeStr, bottomBold: true }
+  } else {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    const month = months[date.getMonth()]
+    const day = date.getDate()
+    return { top: `${month} ${day}`, bottom: timeStr, bottomBold: true }
+  }
+}
+
 const openActionMenuId = ref(null)
 const openLeadMenuId = ref(null)
+const openStatusMenuId = ref(null)
 const editingProject = ref(null)
+
+const isSearchOpen = ref(false)
+const searchQueryLocal = ref('')
+const isMoreMenuOpen = ref(false)
+const activeBulkMenu = ref(null)
 
 const toggleActionMenu = (projectId) => {
   if (openActionMenuId.value === projectId) {
@@ -691,9 +562,142 @@ const handleDeleteProject = async (project) => {
   }
 }
 
-const closeAllActionMenus = () => {
+const toggleStatusMenu = (projectId) => {
+  if (openStatusMenuId.value === projectId) {
+    openStatusMenuId.value = null
+  } else {
+    openStatusMenuId.value = projectId
+    openActionMenuId.value = null
+    openLeadMenuId.value = null
+  }
+}
+
+const handleUpdateStatus = async (projectId, status) => {
+  try {
+    await axios.put(`/api/projects/${projectId}`, { tracking_status: status })
+    toast.success('Đã cập nhật trạng thái dự án!')
+    await projectStore.fetchProjects(true)
+    openStatusMenuId.value = null
+  } catch (err) {
+    console.error('Failed to update project status:', err)
+    toast.error('Cập nhật trạng thái thất bại!')
+  }
+}
+
+const toggleBulkMenu = (menu) => {
+  activeBulkMenu.value = activeBulkMenu.value === menu ? null : menu
+}
+
+const bulkUpdateHealth = async (color) => {
+  try {
+    await Promise.all(selectedProjectIds.value.map(id => 
+      axios.patch(`/api/projects/${id}/health`, { health: color })
+    ))
+    toast.success(`Đã cập nhật sức khỏe cho ${selectedProjectIds.value.length} dự án!`)
+    await projectStore.fetchProjects(true)
+    selectedProjectIds.value = []
+    activeBulkMenu.value = null
+  } catch (err) {
+    console.error('Failed bulk update health:', err)
+    toast.error('Cập nhật thất bại!')
+  }
+}
+
+const bulkUpdateLead = async (userId) => {
+  try {
+    await Promise.all(selectedProjectIds.value.map(id => 
+      axios.put(`/api/projects/${id}`, { lead_id: userId })
+    ))
+    toast.success(`Đã chuyển lead cho ${selectedProjectIds.value.length} dự án!`)
+    await projectStore.fetchProjects(true)
+    selectedProjectIds.value = []
+    activeBulkMenu.value = null
+  } catch (err) {
+    console.error('Failed bulk update lead:', err)
+    toast.error('Chuyển lead thất bại!')
+  }
+}
+
+const bulkUpdateStatus = async (status) => {
+  try {
+    await Promise.all(selectedProjectIds.value.map(id => 
+      axios.put(`/api/projects/${id}`, { tracking_status: status })
+    ))
+    toast.success(`Đã cập nhật trạng thái cho ${selectedProjectIds.value.length} dự án!`)
+    await projectStore.fetchProjects(true)
+    selectedProjectIds.value = []
+    activeBulkMenu.value = null
+  } catch (err) {
+    console.error('Failed bulk update status:', err)
+    toast.error('Cập nhật trạng thái thất bại!')
+  }
+}
+
+const goToBulkUpdate = () => {
+  if (selectedProjectIds.value.length === 0) {
+    toast.error('Vui lòng chọn ít nhất một dự án!')
+    return
+  }
+  router.push(`/projects/update?ids=${selectedProjectIds.value.join(',')}`)
+}
+
+const statusBadgeClass = (status) => {
+  if (status === 'following') return 'bg-[#eef8f0] text-[#2d8a39] border-[#d8eedf]'
+  if (status === 'not_following') return 'bg-[#fff7ed] text-[#c2410c] border-[#ffedd5]'
+  if (status === 'completed') return 'bg-[#f3f4f6] text-[#374151] border-[#e5e7eb]'
+  return 'bg-gray-50 text-gray-600 border-gray-250'
+}
+
+const statusText = (status) => {
+  if (status === 'following') return 'Đang theo'
+  if (status === 'not_following') return 'Không theo'
+  if (status === 'completed') return 'Hoàn thành'
+  return status
+}
+
+const getProjectIconAndBg = (title) => {
+  const t = title.toLowerCase()
+  if (t.includes('máy chủ') || t.includes('server')) {
+    return { icon: 'fa-solid fa-server', text: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100' }
+  }
+  if (t.includes('sao lưu') || t.includes('backup') || t.includes('cloud') || t.includes('dữ liệu')) {
+    if (t.includes('báo cáo') || t.includes('phân tích')) {
+      return { icon: 'fa-solid fa-chart-line', text: 'text-teal-600', bg: 'bg-teal-50 border-teal-100' }
+    }
+    return { icon: 'fa-solid fa-cloud', text: 'text-blue-600', bg: 'bg-blue-50 border-blue-100' }
+  }
+  if (t.includes('wifi') || t.includes('mạng') || t.includes('network')) {
+    return { icon: 'fa-solid fa-wifi', text: 'text-amber-500', bg: 'bg-amber-50 border-amber-100' }
+  }
+  if (t.includes('camera') || t.includes('video') || t.includes('hình ảnh')) {
+    return { icon: 'fa-solid fa-video', text: 'text-purple-600', bg: 'bg-purple-50 border-purple-100' }
+  }
+  if (t.includes('bảo mật') || t.includes('security') || t.includes('shield') || t.includes('an toàn')) {
+    return { icon: 'fa-solid fa-shield-halved', text: 'text-rose-500', bg: 'bg-rose-50 border-rose-100' }
+  }
+  const hash = title.length % 5
+  if (hash === 0) return { icon: 'fa-solid fa-diagram-project', text: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-100' }
+  if (hash === 1) return { icon: 'fa-solid fa-list-check', text: 'text-cyan-600', bg: 'bg-cyan-50 border-cyan-100' }
+  if (hash === 2) return { icon: 'fa-solid fa-briefcase', text: 'text-slate-600', bg: 'bg-slate-50 border-slate-100' }
+  if (hash === 3) return { icon: 'fa-solid fa-cubes', text: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100' }
+  return { icon: 'fa-solid fa-laptop-code', text: 'text-fuchsia-600', bg: 'bg-fuchsia-50 border-fuchsia-100' }
+}
+
+const closeAllActionMenus = (e) => {
   openActionMenuId.value = null
   openLeadMenuId.value = null
+  openStatusMenuId.value = null
+  if (e && e.target) {
+    const floatingBar = document.querySelector('.fixed.bottom-6')
+    if (floatingBar && !floatingBar.contains(e.target)) {
+      activeBulkMenu.value = null
+    }
+    const moreMenuBtn = document.querySelector('.relative button')
+    const moreMenuDropdown = document.querySelector('.relative div')
+    if (moreMenuBtn && !moreMenuBtn.contains(e.target) && moreMenuDropdown && !moreMenuDropdown.contains(e.target)) {
+      isMoreMenuOpen.value = false
+    }
+  }
 }
 
 const goToProjectDetail = (projectId, event) => {
@@ -708,7 +712,12 @@ const dragStartVal = ref(true)
 
 const displayLimit = ref(15)
 const displayedProjects = computed(() => {
-  return projectStore.projects.slice(0, displayLimit.value)
+  let list = projectStore.projects
+  if (route.query.lead) {
+    const leadId = Number(route.query.lead)
+    list = list.filter(p => p.lead_id === leadId)
+  }
+  return list.slice(0, displayLimit.value)
 })
 
 const isAllSelected = computed(() => {
@@ -763,14 +772,6 @@ const handleMouseEnter = (project) => {
 
 const handleMouseUp = () => {
   isDragging.value = false
-}
-
-const goToBulkUpdate = () => {
-  if (selectedProjectIds.value.length === 0) return
-  router.push({
-    path: '/projects/update',
-    query: { ids: selectedProjectIds.value.join(',') }
-  })
 }
 
 let pollTimer = null
@@ -843,21 +844,25 @@ const scrollToTop = () => {
 }
 
 const formatRelativeTime = (dateStr) => {
-  if (!dateStr) return 'Vừa xong'
+  if (!dateStr) return 'vừa xong'
   const date = new Date(dateStr)
   const now = new Date()
-  const diffSec = Math.floor((now - date) / 1000)
+  const diffMs = now - date
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
 
-  if (diffSec < 60) return 'Vừa xong'
-  const diffMin = Math.floor(diffSec / 60)
-  if (diffMin < 60) return `${diffMin} phút trước`
-  const diffHours = Math.floor(diffMin / 60)
-  if (diffHours < 24) return `${diffHours} giờ trước`
-  const diffDays = Math.floor(diffHours / 24)
-  return `${diffDays} ngày trước`
+  if (diffMins < 1) return 'vừa xong'
+  if (diffMins < 60) return `${diffMins}m ago`
+  if (diffHours < 24) return `${diffHours}h ago`
+  if (diffDays < 7) return `${diffDays}d ago`
+  
+  const diffWeeks = Math.floor(diffDays / 7)
+  return `${diffWeeks}w ago`
 }
 
 onMounted(() => {
+  projectStore.activeStatus = null
   projectStore.fetchProjects()
   projectStore.fetchAuxData()
 

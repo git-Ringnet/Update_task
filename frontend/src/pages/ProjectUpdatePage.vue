@@ -3,7 +3,7 @@
     <div>
       <!-- Custom Header matching mockup -->
       <header class="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-2xs">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <!-- Left: Logo & Mascot -->
           <router-link to="/projects" class="flex items-center gap-2 group">
             <CactusLogo />
@@ -30,8 +30,17 @@
       </header>
 
       <!-- Main Container -->
-      <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+      <main class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Back Button -->
+        <button
+          @click="goBack"
+          type="button"
+          class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-emerald-700 font-medium mb-4 transition-colors cursor-pointer focus:outline-none"
+        >
+          <i class="fa-solid fa-arrow-left text-xs"></i>
+          <span>Quay lại</span>
+        </button>
+
         <!-- Header Info (Progress & Keyboard hints) -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-6">
           <div>
@@ -95,25 +104,25 @@
             class="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs hover:shadow-xs transition-shadow flex flex-col md:flex-row md:items-start justify-between gap-4"
           >
             <!-- Left section: project name, type icon, status -->
-            <div class="flex items-center gap-3.5 min-w-0 md:w-1/3">
+            <div class="flex items-start gap-3.5 min-w-0 md:w-1/3 flex-shrink-0">
               <!-- Rounded Type Icon -->
               <div 
-                class="w-10 h-10 rounded-full flex items-center justify-center text-base flex-shrink-0"
+                class="w-10 h-10 rounded-full flex items-center justify-center text-base flex-shrink-0 mt-0.5"
                 :class="getIconData(project.title).bg"
               >
                 <i :class="getIconData(project.title).icon"></i>
               </div>
 
               <!-- Title & Status -->
-              <div class="min-w-0">
-                <div class="font-bold text-gray-900 text-base leading-snug font-heading truncate">
+              <div class="min-w-0 flex-1">
+                <div class="font-bold text-gray-900 text-base leading-snug font-heading break-all min-w-0">
                   {{ project.title }}
                 </div>
                 <!-- Status dot indicator -->
-                <div class="flex items-center gap-1.5 mt-0.5">
-                  <span class="w-2 h-2 rounded-full inline-block" :class="statusDotClass(project.health)"></span>
-                  <span class="text-xs text-gray-500 font-semibold uppercase tracking-wider">
-                    {{ statusText(project.health) }}
+                <div class="flex items-center gap-1.5 mt-1">
+                  <span class="w-2 h-2 rounded-full inline-block flex-shrink-0" :class="statusDotClass(project.tracking_status)"></span>
+                  <span class="text-xs text-gray-500 font-bold uppercase tracking-wider">
+                    {{ statusText(project.tracking_status) }}
                   </span>
                 </div>
               </div>
@@ -123,14 +132,93 @@
             <div class="flex-1 min-w-0 space-y-2.5">
               <textarea
                 v-model="updateTexts[project.id]"
+                @input="isSaved[project.id] = false"
                 rows="2"
                 placeholder="Nhập nội dung cập nhật hoạt động hôm nay..."
                 class="w-full px-4 py-2.5 bg-gray-50/70 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-colors shadow-3xs resize"
                 @keydown.enter.exact.prevent="saveUpdate(project.id)"
+                @keydown.ctrl.enter.prevent="handleFinishAll"
               ></textarea>
-              <div class="text-[11px] text-gray-400 font-bold select-none flex items-center gap-1">
-                <i class="fa-regular fa-lightbulb text-emerald-600 text-xs"></i>
-                <span>Ấn Enter để lưu riêng cập nhật này, Ctrl + Enter để lưu tất cả</span>
+
+              <!-- Attachment Buttons & Controls -->
+              <div class="flex items-center justify-between gap-3 flex-wrap">
+                <div class="flex items-center gap-2">
+                  <!-- Hidden File Input for Images -->
+                  <input 
+                    :id="'img-input-' + project.id"
+                    type="file" 
+                    accept="image/*" 
+                    multiple 
+                    class="hidden" 
+                    @change="handleFileSelect(project.id, $event, true)"
+                  />
+                  <label 
+                    :for="'img-input-' + project.id"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold cursor-pointer transition-colors border border-emerald-200/60 select-none shadow-3xs"
+                  >
+                    <i class="fa-solid fa-image text-emerald-600"></i>
+                    <span>Thêm hình ảnh</span>
+                  </label>
+
+                  <!-- Hidden File Input for Documents -->
+                  <input 
+                    :id="'file-input-' + project.id"
+                    type="file" 
+                    accept="*" 
+                    multiple 
+                    class="hidden" 
+                    @change="handleFileSelect(project.id, $event, false)"
+                  />
+                  <label 
+                    :for="'file-input-' + project.id"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer transition-colors border border-slate-200 select-none shadow-3xs"
+                  >
+                    <i class="fa-solid fa-paperclip text-slate-500"></i>
+                    <span>Đính kèm file</span>
+                  </label>
+                </div>
+
+                <div class="text-[11px] text-gray-400 font-bold select-none flex items-center gap-1.5">
+                  <i class="fa-regular fa-lightbulb text-emerald-600 text-[13px]"></i>
+                  <span>Enter để lưu riêng, Ctrl + Enter để lưu tất cả</span>
+                </div>
+              </div>
+
+              <!-- Attached Files Preview Grid -->
+              <div v-if="attachedFiles[project.id]?.length > 0" class="flex items-center gap-2.5 flex-wrap pt-2 border-t border-gray-100">
+                <div 
+                  v-for="(file, fIdx) in attachedFiles[project.id]" 
+                  :key="fIdx"
+                  class="relative group"
+                >
+                  <!-- Image Preview Thumbnail -->
+                  <div v-if="file.isImage" class="relative w-16 h-16 rounded-xl overflow-hidden border border-gray-200 shadow-3xs group">
+                    <img :src="file.url" class="w-full h-full object-cover" />
+                    <button 
+                      @click="removeAttachment(project.id, fIdx)"
+                      type="button" 
+                      class="absolute top-1 right-1 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] shadow-md hover:bg-rose-600 transition-colors cursor-pointer"
+                      title="Xóa hình ảnh"
+                    >
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+
+                  <!-- Document File Pill -->
+                  <div v-else class="flex items-center gap-2 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 shadow-3xs">
+                    <i class="fa-solid fa-file-lines text-emerald-600"></i>
+                    <span class="max-w-[120px] truncate">{{ file.name }}</span>
+                    <span class="text-[10px] text-gray-400">({{ formatFileSize(file.size) }})</span>
+                    <button 
+                      @click="removeAttachment(project.id, fIdx)"
+                      type="button" 
+                      class="text-gray-400 hover:text-rose-500 ml-1 cursor-pointer"
+                      title="Xóa file"
+                    >
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -153,8 +241,7 @@
       </main>
     </div>
 
-    <!-- Bottom Navigation Bar -->
-    <BottomNav />
+
   </div>
 </template>
 
@@ -163,7 +250,7 @@ import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import CactusLogo from '../components/CactusLogo.vue'
-import BottomNav from '../components/BottomNav.vue'
+
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toast'
 
@@ -171,6 +258,14 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const toast = useToastStore()
+
+const goBack = () => {
+  if (window.history.state && window.history.state.back) {
+    router.back()
+  } else {
+    router.push('/views')
+  }
+}
 
 const currentUser = computed(() => authStore.user || {
   name: 'Minh',
@@ -185,9 +280,92 @@ const isLoading = ref(true)
 
 // Reactive structures to store user updates
 const updateTexts = reactive({})
+const attachedFiles = reactive({})
 const savedTimes = reactive({})
 const isSaved = reactive({})
 const isSaving = reactive({})
+
+const compressImage = (file) => {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+        const maxDim = 1200
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width)
+            width = maxDim
+          } else {
+            width = Math.round((width * maxDim) / height)
+            height = maxDim
+          }
+        }
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, width, height)
+        const dataUrl = canvas.toDataURL(file.type.includes('png') ? 'image/png' : 'image/jpeg', 0.75)
+        resolve(dataUrl)
+      }
+      img.onerror = () => resolve(e.target.result)
+      img.src = e.target.result
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
+const handleFileSelect = async (projectId, event, isImageOnly = false) => {
+  const files = event.target.files
+  if (!files || files.length === 0) return
+
+  if (!attachedFiles[projectId]) {
+    attachedFiles[projectId] = []
+  }
+
+  for (const file of Array.from(files)) {
+    const isImg = file.type.startsWith('image/')
+    let fileUrl = ''
+    if (isImg) {
+      fileUrl = await compressImage(file)
+    } else {
+      fileUrl = await new Promise((resolve) => {
+        const reader = new FileReader()
+        reader.onload = (e) => resolve(e.target.result)
+        reader.readAsDataURL(file)
+      })
+    }
+
+    attachedFiles[projectId].push({
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      url: fileUrl,
+      isImage: isImg
+    })
+    isSaved[projectId] = false
+  }
+
+  event.target.value = ''
+}
+
+const removeAttachment = (projectId, fileIndex) => {
+  if (attachedFiles[projectId]) {
+    attachedFiles[projectId].splice(fileIndex, 1)
+    isSaved[projectId] = false
+  }
+}
+
+const formatFileSize = (bytes) => {
+  if (!bytes) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+}
 
 // Icons mapping helper for dynamic design aesthetics
 const getIconData = (title) => {
@@ -210,17 +388,17 @@ const getIconData = (title) => {
   return { icon: 'fa-solid fa-folder-open text-gray-500', bg: 'bg-gray-100' }
 }
 
-const statusDotClass = (health) => {
-  if (health === 'yellow') return 'bg-amber-400'
-  if (health === 'red') return 'bg-rose-500'
-  if (health === 'green') return 'bg-emerald-500'
+const statusDotClass = (status) => {
+  if (status === 'completed') return 'bg-emerald-500'
+  if (status === 'following') return 'bg-amber-400'
+  if (status === 'not_following') return 'bg-rose-500'
   return 'bg-gray-400'
 }
 
-const statusText = (health) => {
-  if (health === 'yellow') return 'Đang theo'
-  if (health === 'red') return 'Không theo'
-  if (health === 'green') return 'Hoàn thành'
+const statusText = (status) => {
+  if (status === 'completed') return 'Hoàn thành'
+  if (status === 'following') return 'Đang theo'
+  if (status === 'not_following') return 'Không theo'
   return 'Không rõ'
 }
 
@@ -253,6 +431,7 @@ const loadProjects = async () => {
     // Initialize state mapping
     projects.value.forEach(p => {
       updateTexts[p.id] = ''
+      attachedFiles[p.id] = []
       savedTimes[p.id] = null
       isSaved[p.id] = false
       isSaving[p.id] = false
@@ -265,16 +444,31 @@ const loadProjects = async () => {
 }
 
 const saveUpdate = async (projectId) => {
-  if (isSaving[projectId] || isSaved[projectId]) return
-  const content = updateTexts[projectId]?.trim()
-  if (!content) return
+  if (isSaving[projectId]) return
+  let text = updateTexts[projectId]?.trim() || ''
+  const files = attachedFiles[projectId] || []
+
+  if (!text && files.length === 0) return
+
+  let finalContent = text
+  if (files.length > 0) {
+    const fileMarkdown = files.map(f => {
+      if (f.isImage) {
+        return `![${f.name}](${f.url})`
+      } else {
+        return `📎 [${f.name}](${f.url})`
+      }
+    }).join('\n')
+    
+    finalContent = finalContent ? `${finalContent}\n\n${fileMarkdown}` : fileMarkdown
+  }
 
   isSaving[projectId] = true
   try {
     await axios.post('/api/comments', {
       project_id: projectId,
-      user_id: authStore.user?.id || 3, // dynamic user ID
-      content: content
+      user_id: authStore.user?.id || 3,
+      content: finalContent
     })
     toast.success('Đã lưu cập nhật dự án!')
 
@@ -283,6 +477,14 @@ const saveUpdate = async (projectId) => {
     const now = new Date()
     const pad = (n) => String(n).padStart(2, '0')
     savedTimes[projectId] = `${pad(now.getHours())}:${pad(now.getMinutes())}`
+
+    // Automatically navigate back to home screen when all projects are updated!
+    const allSaved = projects.value.every(p => isSaved[p.id])
+    if (allSaved) {
+      setTimeout(() => {
+        router.push('/views')
+      }, 500)
+    }
   } catch (err) {
     console.error('Failed to save project update:', err)
     toast.error('Lưu cập nhật thất bại!')
@@ -292,11 +494,12 @@ const saveUpdate = async (projectId) => {
 }
 
 const handleFinishAll = async () => {
-  // Automatically submit any unsaved updates with text
+  // Automatically submit any unsaved updates with text or files
   const savePromises = []
   projects.value.forEach(p => {
-    const content = updateTexts[p.id]?.trim()
-    if (content && !isSaved[p.id]) {
+    const text = updateTexts[p.id]?.trim() || ''
+    const files = attachedFiles[p.id] || []
+    if ((text || files.length > 0) && !isSaved[p.id]) {
       savePromises.push(saveUpdate(p.id))
     }
   })
@@ -306,8 +509,10 @@ const handleFinishAll = async () => {
     toast.success('Đã lưu toàn bộ cập nhật!')
   }
 
-  // Navigate back to project list
-  router.push('/projects')
+  // Navigate back to home screen
+  setTimeout(() => {
+    router.push('/views')
+  }, 400)
 }
 
 // Global keyboard shortcut listeners

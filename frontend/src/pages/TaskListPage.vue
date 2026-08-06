@@ -5,7 +5,7 @@
       <Navbar />
 
       <!-- Main Container -->
-      <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <main class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
         <!-- Page Title -->
         <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight font-heading">Công việc</h1>
@@ -451,8 +451,7 @@
       </div>
     </transition>
 
-    <!-- Bottom Navigation Bar -->
-    <BottomNav />
+
   </div>
 </template>
 
@@ -461,7 +460,7 @@ import { ref, reactive, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
-import BottomNav from '../components/BottomNav.vue'
+
 import HealthStatusSelector from '../components/HealthStatusSelector.vue'
 import ProjectModal from '../components/ProjectModal.vue'
 import { useProjectStore } from '../stores/project'
