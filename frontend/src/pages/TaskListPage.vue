@@ -346,7 +346,7 @@
               />
               <button
                 type="submit"
-                class="p-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors"
+                class="p-2.5 bg-[#10b981] text-white rounded-xl hover:bg-emerald-600 transition-colors"
               >
                 <i class="fa-solid fa-paper-plane text-sm"></i>
               </button>

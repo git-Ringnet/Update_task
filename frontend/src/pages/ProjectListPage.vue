@@ -20,10 +20,10 @@
             <button
               @click="isModalOpen = true"
               type="button"
-              class="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm rounded-xl transition-colors flex items-center gap-2 shadow-2xs cursor-pointer"
+              class="px-5 py-2.5 bg-[#10b981] hover:bg-emerald-600 text-white font-bold text-sm rounded-xl transition-colors flex items-center gap-2 shadow-2xs cursor-pointer"
             >
               <i class="fa-solid fa-plus text-xs"></i>
-              <span>New Project</span>
+              <span>Tạo dự án</span>
             </button>
             
             <!-- Search Toggle Button -->
@@ -306,16 +306,47 @@
             </div>
           </div>
 
-          <!-- Load more container -->
-          <div v-if="projectStore.projects.length > displayLimit" class="p-4 border-t border-gray-100 flex justify-center bg-white">
-            <button
-              @click="displayLimit += 15"
-              type="button"
-              class="px-5 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1.5 focus:outline-none"
-            >
-              <i class="fa-solid fa-angles-down text-[10px]"></i>
-              <span>Xem thêm dự án (Còn {{ projectStore.projects.length - displayLimit }} dự án)</span>
-            </button>
+          <!-- Pagination -->
+          <div v-if="totalPages > 1" class="p-4 border-t border-gray-100 flex items-center justify-between bg-white">
+            <div class="text-xs text-gray-500 font-semibold">
+              Trang {{ currentPage }} / {{ totalPages }} ({{ projectStore.projects.length }} dự án)
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                @click="goToPage(currentPage - 1)"
+                :disabled="currentPage === 1"
+                type="button"
+                class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+                :class="currentPage === 1 ? 'text-gray-400' : 'text-gray-700'"
+              >
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              
+              <div class="flex items-center gap-1">
+                <template v-for="page in totalPages" :key="page">
+                  <button
+                    v-if="page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)"
+                    @click="goToPage(page)"
+                    type="button"
+                    class="w-8 h-8 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                    :class="page === currentPage ? 'bg-emerald-600 text-white' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'"
+                  >
+                    {{ page }}
+                  </button>
+                  <span v-else-if="page === currentPage - 2 || page === currentPage + 2" class="px-1 text-gray-400">...</span>
+                </template>
+              </div>
+              
+              <button
+                @click="goToPage(currentPage + 1)"
+                :disabled="currentPage === totalPages"
+                type="button"
+                class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+                :class="currentPage === totalPages ? 'text-gray-400' : 'text-gray-700'"
+              >
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
           </div>
 
         </div>
@@ -710,15 +741,39 @@ const selectedProjectIds = ref([])
 const isDragging = ref(false)
 const dragStartVal = ref(true)
 
-const displayLimit = ref(15)
+// Pagination state
+const displayLimit = ref(20)
+const currentPage = ref(1)
+const itemsPerPage = 20
+
 const displayedProjects = computed(() => {
   let list = projectStore.projects
   if (route.query.lead) {
     const leadId = Number(route.query.lead)
     list = list.filter(p => p.lead_id === leadId)
   }
-  return list.slice(0, displayLimit.value)
+  
+  // Calculate pagination
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return list.slice(start, end)
 })
+
+const totalPages = computed(() => {
+  let list = projectStore.projects
+  if (route.query.lead) {
+    const leadId = Number(route.query.lead)
+    list = list.filter(p => p.lead_id === leadId)
+  }
+  return Math.ceil(list.length / itemsPerPage)
+})
+
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
 
 const isAllSelected = computed(() => {
   if (projectStore.projects.length === 0) return false

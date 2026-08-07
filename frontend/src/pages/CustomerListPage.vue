@@ -83,7 +83,7 @@
 
           <!-- Add Button -->
           <button @click="startCreateCustomer()" type="button"
-            class="px-5 py-2.5 bg-[#2d8a39] hover:bg-[#236e2d] text-white font-semibold text-sm rounded-xl shadow-xs transition-colors flex items-center gap-2 flex-shrink-0">
+            class="px-5 py-2.5 bg-[#10b981] hover:bg-emerald-600 text-white font-bold text-sm rounded-xl shadow-2xs transition-colors flex items-center gap-2 flex-shrink-0">
             <i class="fa-solid fa-plus text-xs"></i>
             <span>Thêm mối quan hệ</span>
           </button>
@@ -371,7 +371,7 @@
               <button type="button" @click="isModalOpen = false"
                 class="px-4 py-2 text-sm text-gray-600 font-semibold cursor-pointer">Hủy</button>
               <button type="submit"
-                class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-3xs cursor-pointer">
+                class="px-5 py-2 bg-[#10b981] hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold shadow-3xs cursor-pointer">
                 {{ editingCustomerId ? 'Lưu thay đổi' : 'Tạo ngay' }}
               </button>
             </div>

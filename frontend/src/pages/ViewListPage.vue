@@ -22,6 +22,7 @@
             @click="isModalOpen = true"
             type="button"
             class="w-full bg-[#10b981] hover:bg-emerald-600 text-white font-extrabold text-sm rounded-xl p-3.5 flex items-center justify-center gap-2.5 transition-colors shadow-3xs cursor-pointer focus:outline-none select-none"
+            title="Tạo dự án mới (Ctrl + K)"
           >
             <i class="fa-solid fa-square-plus text-base"></i>
             <span>Tạo dự án</span>
@@ -33,6 +34,7 @@
             type="button"
             class="w-full bg-[#f1f5f9] hover:bg-[#e2e8f0] border border-gray-200 text-slate-800 font-extrabold text-sm rounded-xl p-3.5 flex items-center justify-between transition-colors shadow-3xs cursor-pointer focus:outline-none select-none"
             :class="isGroupedByCustomer ? 'ring-2 ring-emerald-500/30 border-emerald-500 bg-emerald-50/40 text-emerald-950' : ''"
+            title="Chuyển đổi chế độ xem (Ctrl + B)"
           >
             <div class="flex items-center gap-2.5">
               <i class="fa-solid fa-right-left text-xs" :class="isGroupedByCustomer ? 'text-emerald-600' : 'text-slate-500'"></i>
@@ -47,11 +49,46 @@
           <div class="relative shadow-3xs rounded-xl overflow-hidden">
             <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
             <input
+              ref="searchInputRef"
               v-model="projectStore.searchQuery"
               type="text"
-              placeholder="Tìm kiếm gì đó"
+              placeholder="Tìm kiếm gì đó (Ctrl + F)"
               class="w-full bg-white border border-gray-200 rounded-xl pl-10 pr-4 py-3.5 text-sm font-bold focus:outline-none focus:border-emerald-500 placeholder-gray-400"
             />
+          </div>
+
+          <!-- Keyboard Shortcuts Hint -->
+          <div class="bg-white border border-gray-200 rounded-xl p-3 shadow-3xs">
+            <div class="flex items-center gap-2 mb-2">
+              <i class="fa-solid fa-keyboard text-emerald-600 text-sm"></i>
+              <span class="text-xs font-black text-gray-900 uppercase tracking-wider">Phím tắt</span>
+            </div>
+            <div class="space-y-1.5 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="text-gray-600 font-semibold">Tạo dự án mới</span>
+                <kbd class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl + K</kbd>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-gray-600 font-semibold">Tìm kiếm</span>
+                <kbd class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl + F</kbd>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-gray-600 font-semibold">Chọn tất cả</span>
+                <kbd class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl + A</kbd>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-gray-600 font-semibold">Bỏ chọn tất cả</span>
+                <kbd class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl + Shift + A</kbd>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-gray-600 font-semibold">Chuyển đổi view</span>
+                <kbd class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl + B</kbd>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-gray-600 font-semibold">Đóng/Thoát</span>
+                <kbd class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">ESC</kbd>
+              </div>
+            </div>
           </div>
         </aside>
 
@@ -73,7 +110,11 @@
           </div>
 
           <!-- Grouped by Customer Mode (Matches Mockup) -->
-          <div v-else-if="isGroupedByCustomer" class="space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto pr-1 scrollbar-none">
+          <div 
+            v-else-if="isGroupedByCustomer" 
+            ref="scrollContainerGrouped"
+            class="space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto pr-1 scrollbar-none"
+          >
             <div v-for="group in projectsByCustomer" :key="group.name" class="space-y-2.5">
               <!-- Customer Header -->
               <div class="flex items-center gap-2 pt-1 select-none">
@@ -96,6 +137,7 @@
                 <div
                   v-for="(project, pIdx) in group.projects"
                   :key="project.id"
+                  :data-project-id="project.id"
                   draggable="true"
                   @dragstart="onGroupedDragStart($event, project, group, pIdx)"
                   @dragover.prevent="onGroupedDragOver($event, pIdx)"
@@ -117,8 +159,7 @@
                   <input
                     type="checkbox"
                     :checked="isSelected(project.id)"
-                    @click.stop
-                    @change="toggleProjectSelect(project.id)"
+                    @click.stop="toggleProjectSelect(project.id)"
                     class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer flex-shrink-0"
                   />
 
@@ -168,7 +209,11 @@
           </div>
 
           <!-- Default Cards list -->
-          <div v-else class="space-y-3.5 max-h-[calc(100vh-200px)] overflow-y-auto pr-1 scrollbar-none">
+          <div 
+            v-else 
+            ref="scrollContainerDefault"
+            class="space-y-3.5 max-h-[calc(100vh-200px)] overflow-y-auto pr-1 scrollbar-none"
+          >
             <transition-group
               enter-active-class="transition duration-300 ease-out"
               enter-from-class="opacity-0 translate-y-2"
@@ -180,6 +225,7 @@
               <div
                 v-for="(project, index) in displayedProjects"
                 :key="project.id"
+                :data-project-id="project.id"
                 draggable="true"
                 @dragstart="onDragStart($event, project, index)"
                 @dragover.prevent="onDragOver($event, index)"
@@ -201,8 +247,7 @@
                 <input
                   type="checkbox"
                   :checked="isSelected(project.id)"
-                  @click.stop
-                  @change="toggleProjectSelect(project.id)"
+                  @click.stop="toggleProjectSelect(project.id)"
                   class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer flex-shrink-0"
                 />
 
@@ -250,6 +295,18 @@
             <!-- Empty projects state -->
             <div v-if="displayedProjects.length === 0" class="bg-white border border-gray-200 rounded-2xl py-12 text-center text-gray-450 text-sm font-semibold shadow-3xs select-none">
               Không tìm thấy dự án nào trong mục này.
+            </div>
+
+            <!-- Load More Button -->
+            <div v-if="displayedProjects.length < projectStore.projects.length" class="flex justify-center pt-2">
+              <button
+                @click="loadMore"
+                type="button"
+                class="px-5 py-2.5 bg-white hover:bg-emerald-50 border border-gray-200 hover:border-emerald-500 text-gray-700 hover:text-emerald-700 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-3xs focus:outline-none"
+              >
+                <i class="fa-solid fa-angles-down text-[10px]"></i>
+                <span>Xem thêm dự án (Còn {{ projectStore.projects.length - displayedProjects.length }} dự án)</span>
+              </button>
             </div>
           </div>
         </section>
@@ -367,6 +424,9 @@
       </div>
 
     </main>
+
+    <!-- Drag Selection Box -->
+    <div v-if="selectionBox.visible" :style="getSelectionBoxStyle"></div>
 
     <!-- Floating Dark Modal Bulk Option Bar at Eye Level -->
     <transition
@@ -518,7 +578,7 @@
               </button>
               <button
                 type="submit"
-                class="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-bold rounded-xl shadow-2xs transition-colors cursor-pointer"
+                class="px-5 py-2 bg-[#10b981] hover:bg-emerald-600 text-white text-sm font-bold rounded-xl shadow-2xs transition-colors cursor-pointer"
               >
                 Lưu thay đổi
               </button>
@@ -615,7 +675,7 @@
               type="button"
               @click="saveNewView"
               :disabled="!newViewName.trim()"
-              class="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:bg-emerald-300 text-white font-bold text-xs rounded-xl transition-colors shadow-2xs cursor-pointer"
+              class="px-5 py-2 bg-[#10b981] hover:bg-emerald-600 disabled:bg-emerald-300 text-white font-bold text-xs rounded-xl transition-colors shadow-2xs cursor-pointer"
             >
               Tạo View
             </button>
@@ -728,6 +788,11 @@ const openLeadMenuId = ref(null)
 const editingProject = ref(null)
 const isModalOpen = ref(false)
 
+// Search input ref for keyboard shortcuts
+const searchInputRef = ref(null)
+const scrollContainerDefault = ref(null)
+const scrollContainerGrouped = ref(null)
+
 // Profile dropdown & modal states
 const isProfileDropdownOpen = ref(false)
 const isProfileModalOpen = ref(false)
@@ -789,6 +854,9 @@ const goToProjectDetail = (projectId, event) => {
   router.push(`/projects/${projectId}`)
 }
 
+// Pagination for ViewListPage (Infinite Scroll)
+const displayLimit = ref(20)
+
 // Compute filtering logic
 const displayedProjects = computed(() => {
   let list = [...projectStore.projects]
@@ -809,9 +877,18 @@ const displayedProjects = computed(() => {
     }
   }
 
-  // Sort pinned projects to the top
-  return list.sort((a, b) => (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0))
+  // Backend already sorts by: pinned -> sort_order -> last_activity_at DESC
+  // So we keep the order from backend (20 latest projects)
+  // No need to sort again here
+  
+  // Apply limit for pagination (load 20 initially, then load more)
+  return list.slice(0, displayLimit.value)
 })
+
+// Load more function
+const loadMore = () => {
+  displayLimit.value += 20
+}
 
 // Switcher view mode (Grouped by Customer)
 const isGroupedByCustomer = ref(false)
@@ -850,14 +927,13 @@ const projectsByCustomer = computed(() => {
     groups[custName].push(p)
   })
 
-  // Map to array and sort each customer's projects (pinned projects first)
+  // Map to array - keep original order from backend (already sorted by last_activity_at)
   const result = Object.keys(groups).map(custName => {
-    const sortedProjects = [...groups[custName]].sort((a, b) => (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0))
     const isPinned = pinnedCustomerNames.value.includes(custName)
     return {
       name: custName,
       is_pinned: isPinned,
-      projects: sortedProjects
+      projects: groups[custName] // Keep backend order
     }
   })
 
@@ -992,50 +1068,64 @@ const togglePinProject = async (project) => {
     const isCurrentlyPinned = project.is_pinned == 1 || project.is_pinned === true
     const nextVal = isCurrentlyPinned ? 0 : 1
     
-    // Update local object immediately for instant UI feedback
+    // Optimistic update - Update UI immediately
     project.is_pinned = nextVal
     
-    // Synchronize with store array so re-computes preserve state
+    // Synchronize with store array
     const storeP = projectStore.projects.find(p => p.id === project.id)
     if (storeP) storeP.is_pinned = nextVal
 
-    await axios.put(`/api/projects/${project.id}`, { is_pinned: nextVal })
+    // Fire and forget - don't wait for response
+    axios.put(`/api/projects/${project.id}`, { is_pinned: nextVal }).catch(err => {
+      // Only revert on error
+      console.error(err)
+      project.is_pinned = isCurrentlyPinned
+      if (storeP) storeP.is_pinned = isCurrentlyPinned
+      toast.error('Thao tác thất bại!')
+    })
+    
+    // Show success immediately
     toast.success(nextVal ? 'Đã ghim dự án!' : 'Đã bỏ ghim dự án!')
   } catch (err) {
     console.error(err)
-    // Revert local state if API fails
-    project.is_pinned = project.is_pinned ? 0 : 1
-    const storeP = projectStore.projects.find(p => p.id === project.id)
-    if (storeP) storeP.is_pinned = project.is_pinned
     toast.error('Thao tác thất bại!')
   }
 }
 
 const getProjectStatusStyle = (project) => {
-  const health = project.health
-  const status = project.tracking_status
+  const health = project.health || 'green'
+  const status = project.tracking_status || 'following'
   
-  if (health === 'green' || status === 'completed') {
-    return {
-      cardBg: 'bg-[#ecfdf5] border-emerald-200/80',
-      borderClass: 'border-t-4 border-t-emerald-500',
-      badgeText: 'Hoàn thành',
-      badgeClass: 'bg-emerald-100/90 text-emerald-800 font-bold'
-    }
-  } else if (health === 'red' || status === 'not_following' || status === 'unfollowing') {
-    return {
-      cardBg: 'bg-[#fff1f2] border-rose-200/80',
-      borderClass: 'border-t-4 border-t-rose-500',
-      badgeText: 'Bỏ theo',
-      badgeClass: 'bg-rose-100/90 text-rose-800 font-bold'
-    }
-  } else {
-    return {
-      cardBg: 'bg-[#fffbeb] border-amber-200/80',
-      borderClass: 'border-t-4 border-t-amber-500',
-      badgeText: 'Đang theo',
-      badgeClass: 'bg-amber-100/90 text-amber-800 font-bold'
-    }
+  // Card color based on HEALTH (Sức khỏe)
+  let cardBg = ''
+  let borderClass = ''
+  
+  if (health === 'green') {
+    cardBg = 'bg-[#ecfdf5] border-emerald-200/80'
+    borderClass = 'border-t-4 border-t-emerald-500'
+  } else if (health === 'red') {
+    cardBg = 'bg-[#fff1f2] border-rose-200/80'
+    borderClass = 'border-t-4 border-t-rose-500'
+  } else { // yellow
+    cardBg = 'bg-[#fffbeb] border-amber-200/80'
+    borderClass = 'border-t-4 border-t-amber-500'
+  }
+  
+  // Badge text based on TRACKING_STATUS (Trạng thái) - no colors
+  let badgeText = ''
+  if (status === 'completed') {
+    badgeText = 'Hoàn thành'
+  } else if (status === 'not_following') {
+    badgeText = 'Bỏ theo'
+  } else { // following
+    badgeText = 'Đang theo'
+  }
+  
+  return {
+    cardBg,
+    borderClass,
+    badgeText,
+    badgeClass: 'bg-gray-100/90 text-gray-700 font-bold'
   }
 }
 
@@ -1090,6 +1180,7 @@ const formatActivityTime = (dateTimeStr) => {
 }
 
 const handleSearch = (query) => {
+  displayLimit.value = 20 // Reset limit on search
   projectStore.searchQuery = query
 }
 
@@ -1141,16 +1232,94 @@ const handleCreateProject = async (data) => {
 }
 
 const handleGlobalKeydown = (event) => {
+  // ESC key - Always handle first for closing modals/popups
+  if (event.key === 'Escape') {
+    // Close modals first
+    if (isModalOpen.value) {
+      isModalOpen.value = false
+      event.preventDefault()
+      return
+    }
+    if (isViewModalOpen.value) {
+      isViewModalOpen.value = false
+      event.preventDefault()
+      return
+    }
+    if (isProfileModalOpen.value) {
+      isProfileModalOpen.value = false
+      event.preventDefault()
+      return
+    }
+    
+    // Blur search input
+    if (document.activeElement === searchInputRef.value) {
+      searchInputRef.value?.blur()
+      event.preventDefault()
+      return
+    }
+    
+    return
+  }
+
+  // Check if user is typing in an input field (but allow Ctrl shortcuts)
   const active = document.activeElement
-  if (active && (
+  const isTyping = active && (
     active.tagName === 'INPUT' || 
     active.tagName === 'TEXTAREA' || 
     active.tagName === 'SELECT' || 
     active.isContentEditable
-  )) {
+  )
+  
+  // Ctrl/Cmd + K: Open create project modal
+  if ((event.ctrlKey || event.metaKey) && (event.key === 'k' || event.key === 'K') && !event.shiftKey) {
+    event.preventDefault()
+    event.stopPropagation()
+    isModalOpen.value = true
+    return
+  }
+  
+  // Ctrl/Cmd + F: Focus search input
+  if ((event.ctrlKey || event.metaKey) && (event.key === 'f' || event.key === 'F')) {
+    event.preventDefault()
+    event.stopPropagation()
+    searchInputRef.value?.focus()
+    return
+  }
+  
+  // Ctrl/Cmd + A: Select all displayed projects (not when typing unless in search)
+  if ((event.ctrlKey || event.metaKey) && (event.key === 'a' || event.key === 'A') && !event.shiftKey) {
+    // Allow normal Ctrl+A in input fields
+    if (isTyping) {
+      return
+    }
+    event.preventDefault()
+    event.stopPropagation()
+    toggleSelectAll()
+    return
+  }
+  
+  // Ctrl/Cmd + Shift + A: Deselect all
+  if ((event.ctrlKey || event.metaKey) && event.shiftKey && (event.key === 'a' || event.key === 'A')) {
+    event.preventDefault()
+    event.stopPropagation()
+    selectedProjectIds.value = []
+    return
+  }
+  
+  // Ctrl/Cmd + B: Toggle project/customer view
+  if ((event.ctrlKey || event.metaKey) && (event.key === 'b' || event.key === 'B') && !event.shiftKey) {
+    event.preventDefault()
+    event.stopPropagation()
+    toggleCustomerGroup()
+    return
+  }
+  
+  // Don't handle single-key shortcuts if user is typing
+  if (isTyping) {
     return
   }
 
+  // Single key shortcuts (only when not typing)
   const key = event.key.toLowerCase()
   if (key === '1') {
     setViewFilter('high_impact')
@@ -1170,6 +1339,113 @@ const closeAllDropdowns = (e) => {
 
 // Checkboxes and multi-select
 const selectedProjectIds = ref([])
+
+// Drag selection box functionality (Windows-style)
+const isSelecting = ref(false)
+const selectionBox = ref({
+  startX: 0,
+  startY: 0,
+  currentX: 0,
+  currentY: 0,
+  visible: false
+})
+const selectionContainerRef = ref(null)
+
+const getSelectionBoxStyle = computed(() => {
+  if (!selectionBox.value.visible) return { display: 'none' }
+  
+  const left = Math.min(selectionBox.value.startX, selectionBox.value.currentX)
+  const top = Math.min(selectionBox.value.startY, selectionBox.value.currentY)
+  const width = Math.abs(selectionBox.value.currentX - selectionBox.value.startX)
+  const height = Math.abs(selectionBox.value.currentY - selectionBox.value.startY)
+  
+  return {
+    position: 'fixed',
+    left: `${left}px`,
+    top: `${top}px`,
+    width: `${width}px`,
+    height: `${height}px`,
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    border: '1px solid rgba(59, 130, 246, 0.6)',
+    pointerEvents: 'none',
+    zIndex: 9999
+  }
+})
+
+const startSelection = (event) => {
+  // Only start on left mouse button and not on interactive elements
+  if (event.button !== 0) return
+  
+  const target = event.target
+  // Don't start selection if clicking on interactive elements
+  if (target.closest('input, button, a, .cursor-pointer, [draggable="true"]')) {
+    return
+  }
+  
+  isSelecting.value = true
+  selectionBox.value = {
+    startX: event.clientX,
+    startY: event.clientY,
+    currentX: event.clientX,
+    currentY: event.clientY,
+    visible: true
+  }
+  
+  // Prevent text selection
+  event.preventDefault()
+}
+
+const updateSelection = (event) => {
+  if (!isSelecting.value) return
+  
+  selectionBox.value.currentX = event.clientX
+  selectionBox.value.currentY = event.clientY
+  
+  // Check which project cards intersect with selection box
+  checkProjectIntersections()
+}
+
+const endSelection = () => {
+  if (!isSelecting.value) return
+  
+  isSelecting.value = false
+  selectionBox.value.visible = false
+}
+
+const checkProjectIntersections = () => {
+  if (!isSelecting.value) return
+  
+  const boxLeft = Math.min(selectionBox.value.startX, selectionBox.value.currentX)
+  const boxRight = Math.max(selectionBox.value.startX, selectionBox.value.currentX)
+  const boxTop = Math.min(selectionBox.value.startY, selectionBox.value.currentY)
+  const boxBottom = Math.max(selectionBox.value.startY, selectionBox.value.currentY)
+  
+  // Get all project card elements
+  const projectCards = document.querySelectorAll('[data-project-id]')
+  const newSelectedIds = []
+  
+  projectCards.forEach(card => {
+    const rect = card.getBoundingClientRect()
+    
+    // Check if selection box intersects with project card
+    const intersects = !(
+      rect.right < boxLeft ||
+      rect.left > boxRight ||
+      rect.bottom < boxTop ||
+      rect.top > boxBottom
+    )
+    
+    if (intersects) {
+      const projectId = parseInt(card.getAttribute('data-project-id'))
+      if (!newSelectedIds.includes(projectId)) {
+        newSelectedIds.push(projectId)
+      }
+    }
+  })
+  
+  selectedProjectIds.value = newSelectedIds
+}
+
 const toggleProjectSelect = (id) => {
   const idx = selectedProjectIds.value.indexOf(id)
   if (idx > -1) {
@@ -1359,6 +1635,20 @@ const goToBulkUpdate = () => {
 
 let pollTimer = null
 
+// Infinite scroll handler
+const handleScroll = (event) => {
+  const container = event.target
+  if (!container) return
+  
+  const { scrollTop, scrollHeight, clientHeight } = container
+  // Load more when scrolled to bottom (with 100px threshold)
+  if (scrollTop + clientHeight >= scrollHeight - 100) {
+    if (displayedProjects.value.length < projectStore.projects.length) {
+      loadMore()
+    }
+  }
+}
+
 onMounted(async () => {
   projectStore.activeStatus = null
   loadCustomViews()
@@ -1368,6 +1658,21 @@ onMounted(async () => {
 
   window.addEventListener('keydown', handleGlobalKeydown)
   window.addEventListener('click', closeAllDropdowns)
+  
+  // Drag selection events
+  window.addEventListener('mousedown', startSelection)
+  window.addEventListener('mousemove', updateSelection)
+  window.addEventListener('mouseup', endSelection)
+  
+  // Infinite scroll - wait for refs to be available
+  setTimeout(() => {
+    if (scrollContainerDefault.value) {
+      scrollContainerDefault.value.addEventListener('scroll', handleScroll)
+    }
+    if (scrollContainerGrouped.value) {
+      scrollContainerGrouped.value.addEventListener('scroll', handleScroll)
+    }
+  }, 100)
 
   pollTimer = setInterval(() => {
     projectStore.fetchProjects(true)
@@ -1379,5 +1684,18 @@ onUnmounted(() => {
   if (pollTimer) clearInterval(pollTimer)
   window.removeEventListener('keydown', handleGlobalKeydown)
   window.removeEventListener('click', closeAllDropdowns)
+  
+  // Clean up drag selection events
+  window.removeEventListener('mousedown', startSelection)
+  window.removeEventListener('mousemove', updateSelection)
+  window.removeEventListener('mouseup', endSelection)
+  
+  // Clean up infinite scroll
+  if (scrollContainerDefault.value) {
+    scrollContainerDefault.value.removeEventListener('scroll', handleScroll)
+  }
+  if (scrollContainerGrouped.value) {
+    scrollContainerGrouped.value.removeEventListener('scroll', handleScroll)
+  }
 })
 </script>

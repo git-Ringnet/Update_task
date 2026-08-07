@@ -306,7 +306,7 @@
                 <button @click="isAddMilestoneOpen = false" type="button"
                   class="px-2 py-1 text-xs font-semibold text-gray-500 hover:text-gray-700">Hủy</button>
                 <button type="submit"
-                  class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-3xs">Lưu</button>
+                  class="px-3 py-1 bg-[#10b981] hover:bg-emerald-600 text-white text-xs font-bold rounded-lg shadow-3xs">Lưu</button>
               </div>
             </form>
 
@@ -382,7 +382,7 @@
                 <button @click="isAddTaskOpen = false" type="button"
                   class="px-2 py-1 text-xs font-semibold text-gray-500 hover:text-gray-700">Hủy</button>
                 <button type="submit"
-                  class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-3xs">Lưu</button>
+                  class="px-3 py-1 bg-[#10b981] hover:bg-emerald-600 text-white text-xs font-bold rounded-lg shadow-3xs">Lưu</button>
               </div>
             </form>
 

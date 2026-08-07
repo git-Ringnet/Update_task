@@ -23,11 +23,13 @@
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-1">Tên dự án <span class="text-rose-500">*</span></label>
             <input
+              ref="titleInputRef"
               v-model="form.title"
               type="text"
               required
               placeholder="VD: Dự án camera cho Nội thất Hòa Phát"
               class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+              @keydown="handleTitleKeydown"
             />
           </div>
 
@@ -38,11 +40,13 @@
             <!-- Autocomplete Input Box -->
             <div class="relative">
               <input
+                ref="customerInputRef"
                 v-model="searchQuery"
                 @focus="isOpenDropdown = true"
-                @input="isOpenDropdown = true"
+                @input="isOpenDropdown = true; highlightedIndex = 0"
+                @keydown="handleCustomerKeydown"
                 type="text"
-                placeholder="-- Gõ để tìm kiếm khách hàng --"
+                placeholder="-- Gõ để tìm kiếm khách hàng (Enter để tạo mới) --"
                 class="w-full px-3.5 py-2 pr-10 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white"
                 :class="isOpenDropdown ? 'ring-2 ring-emerald-500/20 border-emerald-500' : ''"
               />
@@ -57,28 +61,35 @@
               class="absolute left-0 right-0 mt-1.5 bg-white border border-gray-100 rounded-xl shadow-lg z-50 p-2.5 space-y-2 animate-fade-in-up"
             >
               <!-- Options List -->
-              <div class="max-h-44 overflow-y-auto space-y-0.5 scrollbar-thin">
+              <div class="max-h-44 overflow-y-auto space-y-0.5 scrollbar-thin customer-dropdown-list">
                 <button
-                  v-for="c in filteredCustomers"
+                  v-for="(c, index) in filteredCustomers"
                   :key="c.id"
                   type="button"
                   @click="selectCustomer(c)"
-                  class="w-full text-left px-3 py-2 rounded-lg text-xs font-semibold hover:bg-emerald-50 hover:text-emerald-950 transition-colors flex items-center justify-between cursor-pointer"
+                  @mouseenter="highlightedIndex = index"
+                  :class="[
+                    'w-full text-left px-3 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer',
+                    highlightedIndex === index ? 'bg-emerald-100 text-emerald-950 highlighted-customer' : 'hover:bg-emerald-50 hover:text-emerald-950'
+                  ]"
                 >
                   <span class="truncate pr-4">{{ c.name }} {{ c.code ? `(${c.code})` : '' }}</span>
                   <i v-if="form.customer_id === c.id" class="fa-solid fa-check text-[10px] text-emerald-600 flex-shrink-0"></i>
                 </button>
 
-                <!-- No matches -->
+                <!-- No matches - Quick create hint -->
                 <div v-if="filteredCustomers.length === 0" class="py-3 px-2 text-center">
-                  <div class="text-xs text-gray-400 font-medium">Không tìm thấy khách hàng nào.</div>
+                  <div class="text-xs text-gray-400 font-medium mb-1">Không tìm thấy "{{ searchQuery }}"</div>
+                  <div class="text-[11px] text-emerald-700 font-bold">
+                    <kbd class="px-1.5 py-0.5 bg-emerald-100 rounded text-[10px]">Enter</kbd> để tạo khách hàng mới
+                  </div>
                   <button
                     type="button"
                     @click="openCustomerModal"
-                    class="mt-2 text-emerald-700 hover:text-emerald-900 text-xs font-bold inline-flex items-center gap-1 cursor-pointer focus:outline-none border-b border-dashed border-emerald-300 hover:border-emerald-700 pb-0.5"
+                    class="mt-2 text-gray-600 hover:text-gray-900 text-xs font-bold inline-flex items-center gap-1 cursor-pointer focus:outline-none border-b border-dashed border-gray-300 hover:border-gray-700 pb-0.5"
                   >
                     <Plus class="w-3.5 h-3.5" />
-                    Thêm khách hàng mới
+                    Hoặc thêm thủ công
                   </button>
                 </div>
               </div>
@@ -90,7 +101,7 @@
             <label class="block text-sm font-semibold text-gray-700 mb-1">Lead hiện tại</label>
             <select
               v-model="form.lead_id"
-              class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white"
+              class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white cursor-pointer"
             >
               <option :value="null">-- Chọn lead --</option>
               <option v-for="u in users" :key="u.id" :value="u.id">
@@ -99,37 +110,67 @@
             </select>
           </div>
 
-          <!-- Trạng thái Dự án (Health Color) -->
+          <!-- Health - Chỉ icon -->
           <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">Trạng thái Dự án (Health)</label>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Health</label>
             <div class="grid grid-cols-3 gap-3">
-              <!-- Đang theo (Vàng) -->
+              <!-- Green (Happy) -->
               <label 
-                class="flex items-center justify-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all"
-                :class="form.health === 'yellow' ? 'border-amber-400 bg-amber-50/80 font-bold text-amber-900 ring-2 ring-amber-400/20' : 'border-gray-200 hover:bg-gray-50 text-gray-700'"
+                class="flex items-center justify-center p-3 rounded-xl border cursor-pointer transition-all"
+                :class="form.health === 'green' ? 'border-emerald-400 bg-emerald-50/80 ring-2 ring-emerald-400/20 scale-105' : 'border-gray-200 hover:bg-gray-50'"
+              >
+                <input type="radio" v-model="form.health" value="green" class="hidden" />
+                <i class="fa-solid fa-face-smile text-3xl text-emerald-600"></i>
+              </label>
+
+              <!-- Yellow (Neutral) -->
+              <label 
+                class="flex items-center justify-center p-3 rounded-xl border cursor-pointer transition-all"
+                :class="form.health === 'yellow' ? 'border-amber-400 bg-amber-50/80 ring-2 ring-amber-400/20 scale-105' : 'border-gray-200 hover:bg-gray-50'"
               >
                 <input type="radio" v-model="form.health" value="yellow" class="hidden" />
-                <span class="w-3.5 h-3.5 rounded-full bg-amber-400 health-dot-yellow flex-shrink-0"></span>
+                <i class="fa-solid fa-face-meh text-3xl text-amber-500"></i>
+              </label>
+
+              <!-- Red (Sad) -->
+              <label 
+                class="flex items-center justify-center p-3 rounded-xl border cursor-pointer transition-all"
+                :class="form.health === 'red' ? 'border-rose-400 bg-rose-50/80 ring-2 ring-rose-400/20 scale-105' : 'border-gray-200 hover:bg-gray-50'"
+              >
+                <input type="radio" v-model="form.health" value="red" class="hidden" />
+                <i class="fa-solid fa-face-frown text-3xl text-rose-500"></i>
+              </label>
+            </div>
+          </div>
+
+          <!-- Trạng thái Dự án (Tracking Status) - Không có màu -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Trạng thái</label>
+            <div class="grid grid-cols-3 gap-3">
+              <!-- Đang theo -->
+              <label 
+                class="flex items-center justify-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all"
+                :class="form.tracking_status === 'following' ? 'border-gray-400 bg-gray-100 font-bold text-gray-900 ring-2 ring-gray-400/20' : 'border-gray-200 hover:bg-gray-50 text-gray-700'"
+              >
+                <input type="radio" v-model="form.tracking_status" value="following" class="hidden" />
                 <span class="text-xs">Đang theo</span>
               </label>
 
-              <!-- Không theo (Đỏ) -->
+              <!-- Bỏ theo -->
               <label 
                 class="flex items-center justify-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all"
-                :class="form.health === 'red' ? 'border-rose-400 bg-rose-50/80 font-bold text-rose-900 ring-2 ring-rose-400/20' : 'border-gray-200 hover:bg-gray-50 text-gray-700'"
+                :class="form.tracking_status === 'not_following' ? 'border-gray-400 bg-gray-100 font-bold text-gray-900 ring-2 ring-gray-400/20' : 'border-gray-200 hover:bg-gray-50 text-gray-700'"
               >
-                <input type="radio" v-model="form.health" value="red" class="hidden" />
-                <span class="w-3.5 h-3.5 rounded-full bg-rose-500 health-dot-red flex-shrink-0"></span>
+                <input type="radio" v-model="form.tracking_status" value="not_following" class="hidden" />
                 <span class="text-xs">Bỏ theo</span>
               </label>
 
-              <!-- Hoàn thành (Xanh) -->
+              <!-- Hoàn thành -->
               <label 
                 class="flex items-center justify-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all"
-                :class="form.health === 'green' ? 'border-emerald-400 bg-emerald-50/80 font-bold text-emerald-900 ring-2 ring-emerald-400/20' : 'border-gray-200 hover:bg-gray-50 text-gray-700'"
+                :class="form.tracking_status === 'completed' ? 'border-gray-400 bg-gray-100 font-bold text-gray-900 ring-2 ring-gray-400/20' : 'border-gray-200 hover:bg-gray-50 text-gray-700'"
               >
-                <input type="radio" v-model="form.health" value="green" class="hidden" />
-                <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 health-dot-green flex-shrink-0"></span>
+                <input type="radio" v-model="form.tracking_status" value="completed" class="hidden" />
                 <span class="text-xs">Hoàn thành</span>
               </label>
             </div>
@@ -146,8 +187,11 @@
             </button>
             <button
               type="submit"
-              :disabled="isSubmitting || !form.customer_id"
-              class="px-5 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+              :disabled="!isFormValid || isSubmitting"
+              :class="[
+                'px-5 py-2 text-sm font-medium text-white rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer',
+                isFormValid && !isSubmitting ? 'bg-[#10b981] hover:bg-emerald-600' : 'bg-gray-300 cursor-not-allowed'
+              ]"
             >
               <Plus class="w-4 h-4" v-if="!editProject" />
               <span>{{ editProject ? 'Lưu thay đổi' : 'Tạo dự án' }}</span>
@@ -248,7 +292,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { X, Plus } from 'lucide-vue-next'
 import axios from 'axios'
 import { useAuthStore } from '../stores/auth'
@@ -264,32 +308,71 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'submit', 'customer-created'])
 
+// Refs for keyboard navigation
+const titleInputRef = ref(null)
+const customerInputRef = ref(null)
+const highlightedIndex = ref(-1)
+
 // Project Form States
 const isSubmitting = ref(false)
 const form = reactive({
   title: '',
   customer_id: '',
   lead_id: null,
-  health: 'yellow',
+  health: 'green',
+  tracking_status: 'following',
   is_pinned: false,
 })
 
-watch(() => props.isOpen, (newVal) => {
+// Global keydown handler for the modal
+const handleModalKeydown = (event) => {
+  // If Enter is pressed and form is valid, submit
+  if (event.key === 'Enter' && isFormValid.value && !isSubmitting.value) {
+    // Don't submit if dropdown is open or if we're in customer input and dropdown should handle it
+    if (isOpenDropdown.value) return
+    
+    // Don't submit if focus is on title input (let it focus customer instead)
+    if (document.activeElement === titleInputRef.value) return
+    
+    // Submit the form
+    event.preventDefault()
+    handleSubmit()
+  }
+}
+
+watch(() => props.isOpen, async (newVal) => {
   if (newVal) {
+    console.log('ProjectModal opened, users:', props.users, 'current user:', authStore.user)
+    
     if (props.editProject) {
       form.title = props.editProject.title
       form.customer_id = props.editProject.customer_id
       form.lead_id = props.editProject.lead_id
       form.health = props.editProject.health
+      form.tracking_status = props.editProject.tracking_status || 'following'
       const c = props.customers.find(item => item.id === form.customer_id)
       searchQuery.value = c ? `${c.name} ${c.code ? `(${c.code})` : ''}` : ''
     } else {
       form.title = ''
       form.customer_id = ''
-      form.lead_id = null
-      form.health = 'yellow'
+      // Default lead to current user
+      form.lead_id = authStore.user?.id || null
+      console.log('Setting default lead_id to:', form.lead_id)
+      form.health = 'green'
+      form.tracking_status = 'following'
       searchQuery.value = ''
     }
+    
+    // Auto-focus title input when modal opens
+    await nextTick()
+    titleInputRef.value?.focus()
+    highlightedIndex.value = -1
+    
+    // Add global keydown listener
+    window.addEventListener('keydown', handleModalKeydown)
+  } else {
+    // Remove global keydown listener when modal closes
+    window.removeEventListener('keydown', handleModalKeydown)
   }
 })
 
@@ -319,6 +402,114 @@ const selectCustomer = (c) => {
   form.customer_id = c.id
   searchQuery.value = `${c.name} ${c.code ? `(${c.code})` : ''}`
   isOpenDropdown.value = false
+  highlightedIndex.value = -1
+  
+  // Blur customer input after selection so next Enter will submit form
+  customerInputRef.value?.blur()
+}
+
+// Keyboard navigation for customer dropdown
+const handleCustomerKeydown = (event) => {
+  if (!isOpenDropdown.value && event.key !== 'Enter') {
+    isOpenDropdown.value = true
+    return
+  }
+
+  if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    if (filteredCustomers.value.length > 0) {
+      highlightedIndex.value = Math.min(highlightedIndex.value + 1, filteredCustomers.value.length - 1)
+      scrollToHighlighted()
+    }
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    if (filteredCustomers.value.length > 0) {
+      highlightedIndex.value = Math.max(highlightedIndex.value - 1, 0)
+      scrollToHighlighted()
+    }
+  } else if (event.key === 'Enter') {
+    event.preventDefault()
+    
+    // If dropdown is closed and customer is already selected, submit the form
+    if (!isOpenDropdown.value && form.customer_id && form.title.trim()) {
+      handleSubmit()
+      return
+    }
+    
+    // If there's a highlighted customer, select it
+    if (highlightedIndex.value >= 0 && filteredCustomers.value[highlightedIndex.value]) {
+      selectCustomer(filteredCustomers.value[highlightedIndex.value])
+    }
+    // If no match found and user typed something, create new customer
+    else if (filteredCustomers.value.length === 0 && searchQuery.value.trim()) {
+      quickCreateCustomer()
+    }
+    // If there's exactly one match, select it
+    else if (filteredCustomers.value.length === 1) {
+      selectCustomer(filteredCustomers.value[0])
+    }
+  } else if (event.key === 'Escape') {
+    event.preventDefault()
+    isOpenDropdown.value = false
+    highlightedIndex.value = -1
+  }
+}
+
+const scrollToHighlighted = () => {
+  nextTick(() => {
+    const dropdown = document.querySelector('.customer-dropdown-list')
+    const highlighted = dropdown?.querySelector('.highlighted-customer')
+    if (highlighted && dropdown) {
+      const dropdownRect = dropdown.getBoundingClientRect()
+      const highlightedRect = highlighted.getBoundingClientRect()
+      
+      if (highlightedRect.bottom > dropdownRect.bottom) {
+        highlighted.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      } else if (highlightedRect.top < dropdownRect.top) {
+        highlighted.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      }
+    }
+  })
+}
+
+// Quick create customer from search query
+const quickCreateCustomer = async () => {
+  const name = searchQuery.value.trim()
+  if (!name) return
+  
+  isCreatingCustomer.value = true
+  try {
+    const res = await axios.post('/api/customers', {
+      name: name,
+      type: 'customer',
+      status: 'green',
+      user_id: authStore.user?.id
+    })
+    const newCust = res.data
+    
+    // Automatically select the new customer
+    form.customer_id = newCust.id
+    searchQuery.value = `${newCust.name} ${newCust.code ? `(${newCust.code})` : ''}`
+    isOpenDropdown.value = false
+    
+    // Blur customer input after quick creation so next Enter will submit form
+    customerInputRef.value?.blur()
+    
+    // Emit notification to parent to reload lookup data
+    emit('customer-created', newCust)
+  } catch (err) {
+    console.error('Failed to create customer:', err)
+  } finally {
+    isCreatingCustomer.value = false
+  }
+}
+
+// Handle Enter key on title input
+const handleTitleKeydown = (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault()
+    customerInputRef.value?.focus()
+  }
 }
 
 // Inline Customer modal states
@@ -367,6 +558,7 @@ const handleCreateCustomer = async () => {
 const handleClickOutside = (event) => {
   if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
     isOpenDropdown.value = false
+    highlightedIndex.value = -1
     const c = props.customers.find(item => item.id === form.customer_id)
     searchQuery.value = c ? `${c.name} ${c.code ? `(${c.code})` : ''}` : ''
   }
@@ -378,6 +570,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('keydown', handleModalKeydown)
 })
 
 const close = () => {
@@ -385,6 +578,8 @@ const close = () => {
 }
 
 const handleSubmit = async () => {
+  if (!form.title || !form.customer_id) return
+  
   isSubmitting.value = true
   try {
     emit('submit', { ...form })
@@ -395,4 +590,9 @@ const handleSubmit = async () => {
     isSubmitting.value = false
   }
 }
+
+// Check if form is valid for submission
+const isFormValid = computed(() => {
+  return form.title.trim() && form.customer_id
+})
 </script>
