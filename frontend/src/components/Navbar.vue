@@ -9,7 +9,6 @@
         type="button"
         class="bg-white px-6 py-2.5 rounded-full border border-gray-200/80 hover:border-emerald-300 shadow-3xs hover:shadow-2xs flex items-center gap-2 transition-all duration-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:ring-offset-1 text-sm font-bold text-gray-900"
       >
-        <span>🌵</span>
         <span>Xương Rồng</span>
         <i 
           class="fa-solid fa-chevron-down text-xs text-gray-400 ml-1 transition-transform duration-200"
@@ -221,7 +220,6 @@
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import CactusLogo from './CactusLogo.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()

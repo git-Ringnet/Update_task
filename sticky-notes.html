@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Ghi chú công việc</title>
+<style>
+  :root {
+    --bg: #efece5;
+    --ink: #23211d;
+    --sub: #6b675f;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 56px 32px;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(0,0,0,0.05) 1px, transparent 0);
+    background-size: 22px 22px;
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    color: var(--ink);
+  }
+
+  .board-title {
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--sub);
+    margin: 0 0 24px 4px;
+    font-weight: 600;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(220px, 260px));
+    gap: 28px 32px;
+    justify-content: start;
+  }
+
+  @media (max-width: 780px) {
+    .grid { grid-template-columns: repeat(2, minmax(180px, 1fr)); }
+  }
+  @media (max-width: 520px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  .note {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    padding: 30px 20px 20px;
+    border-radius: 2px;
+    isolation: isolate;
+    box-shadow:
+      0 0.5px 0 rgba(255,255,255,0.5) inset,
+      0 1px 1px rgba(0,0,0,0.12),
+      0 3px 3px -1px rgba(0,0,0,0.10),
+      0 8px 10px -4px rgba(0,0,0,0.20),
+      0 18px 24px -12px rgba(0,0,0,0.30);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    transform: rotate(var(--tilt, 0deg));
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  /* paper grain, laid on top of the colour so every note reads as fibrous paper
+     rather than a flat rectangle of colour — kept subtle so the colour stays vivid */
+  .note::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background-image:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='c'><feTurbulence type='fractalNoise' baseFrequency='0.012' numOctaves='4' seed='7' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.06 0'/></filter><rect width='100%25' height='100%25' filter='url(%23c)'/></svg>"),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    background-size: 260px 260px, 120px 120px;
+    mix-blend-mode: multiply;
+    opacity: 0.55;
+  }
+
+  /* soft wrinkle folds: several faint diagonal light/shadow creases, layered
+     so the sheet reads as crumpled/worn paper rather than a flat rectangle */
+  .note::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 26px 9px at 50% 0, rgba(0,0,0,0.18), rgba(0,0,0,0) 75%),
+      linear-gradient(112deg, rgba(255,255,255,0.26) 0%, rgba(255,255,255,0) 7%),
+      linear-gradient(112deg, rgba(0,0,0,0.09) 0%, rgba(0,0,0,0) 8%),
+      linear-gradient(258deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0) 14%),
+      linear-gradient(258deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 4%),
+      linear-gradient(34deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 20%),
+      linear-gradient(34deg, rgba(0,0,0,0.06) 0%, rgba(0,0,0,0) 5%),
+      linear-gradient(196deg, rgba(0,0,0,0.07) 0%, rgba(0,0,0,0) 26%),
+      linear-gradient(72deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 40%),
+      linear-gradient(150deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 45%),
+      radial-gradient(ellipse 140% 60% at 15% 100%, rgba(0,0,0,0.12), rgba(0,0,0,0) 60%),
+      radial-gradient(ellipse 70% 45% at 88% 92%, rgba(0,0,0,0.09), rgba(0,0,0,0) 55%),
+      radial-gradient(ellipse 60% 40% at 90% 8%, rgba(255,255,255,0.18), rgba(255,255,255,0) 60%),
+      radial-gradient(ellipse 50% 35% at 8% 20%, rgba(255,255,255,0.10), rgba(255,255,255,0) 55%);
+  }
+
+  /* mirror the crease pattern on some notes so no two sheets crumple identically
+     (the pin-dent gradient is symmetric, so mirroring keeps it centered) */
+  .note:nth-child(6n+2)::after,
+  .note:nth-child(6n+4)::after,
+  .note:nth-child(6n+5)::after { transform: scaleX(-1); }
+  .note:nth-child(6n+3)::after { filter: brightness(1.05); }
+
+  .note:hover {
+    transform: rotate(0deg) translateY(-4px) scale(1.015);
+    box-shadow:
+      0 0.5px 0 rgba(255,255,255,0.5) inset,
+      0 1px 1px rgba(0,0,0,0.12),
+      0 4px 4px -1px rgba(0,0,0,0.10),
+      0 12px 14px -6px rgba(0,0,0,0.22),
+      0 26px 30px -14px rgba(0,0,0,0.34);
+  }
+
+  /* content sits above the grain/wrinkle overlays */
+  .note > * { position: relative; z-index: 3; }
+
+  .note:nth-child(6n+1) { --tilt: -0.6deg; }
+  .note:nth-child(6n+2) { --tilt: 0.5deg; }
+  .note:nth-child(6n+3) { --tilt: -0.4deg; }
+  .note:nth-child(6n+4) { --tilt: 0.7deg; }
+  .note:nth-child(6n+5) { --tilt: -0.5deg; }
+  .note:nth-child(6n+6) { --tilt: 0.4deg; }
+
+  /* pin */
+  .pin {
+    position: absolute;
+    top: -9px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    box-shadow:
+      0 4px 5px -1px rgba(0,0,0,0.45),
+      0 2px 2px rgba(0,0,0,0.25),
+      inset -2px -2px 3px rgba(0,0,0,0.3),
+      inset 2px 2px 3px rgba(255,255,255,0.45);
+  }
+
+  /* tiny bright highlight to sell the metal dome */
+  .pin::before {
+    content: "";
+    position: absolute;
+    top: 2.5px;
+    left: 3px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.75);
+    filter: blur(0.3px);
+  }
+
+  /* star */
+  .star {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 17px;
+    height: 17px;
+    color: rgba(0,0,0,0.32);
+  }
+  .star svg { width: 100%; height: 100%; display: block; }
+
+  .note-title {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.28;
+    margin: 6px 0 0;
+  }
+
+  .note-sub {
+    font-size: 14px;
+    color: rgba(0,0,0,0.55);
+    margin-top: 10px;
+    font-weight: 400;
+  }
+
+
+  /* colour themes */
+  .yellow  { background: #f4c440; }
+  .yellow  .note-sub { color: rgba(0,0,0,0.5); }
+
+  .white   { background: #faf9f6; border: 1px solid rgba(0,0,0,0.06); }
+
+  .red     { background: #e57368; }
+  .red .note-title, .red .note-sub { color: #2c1410; }
+  .red .note-sub { color: rgba(30,10,5,0.6); }
+
+  .green   { background: #8bc48a; }
+  .green .note-title, .green .note-sub { color: #16301a; }
+  .green .note-sub { color: rgba(15,35,20,0.6); }
+
+  /* pin colors */
+  .pin-yellow { background: radial-gradient(circle at 35% 30%, #ffd76b, #d99a1c); }
+  .pin-grey   { background: radial-gradient(circle at 35% 30%, #cfcfcf, #9a9a9a); }
+  .pin-red    { background: radial-gradient(circle at 35% 30%, #ff7a6b, #c8351f); }
+  .pin-green  { background: radial-gradient(circle at 35% 30%, #8fe08f, #3f9a44); }
+
+</style>
+</head>
+<body>
+
+  <p class="board-title">Bảng ghi chú</p>
+
+  <div class="grid">
+
+    <div class="note yellow">
+      <span class="pin pin-yellow"></span>
+      <span class="star"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.7 7-6.3-3.9-6.3 3.9 1.7-7L2 9.2l7.1-.6L12 2z"/></svg></span>
+      <div>
+        <div class="note-title">Dự án<br>INDUS Coffee</div>
+        <div class="note-sub">Phương Đông</div>
+      </div>
+    </div>
+
+    <div class="note white">
+      <span class="pin pin-grey"></span>
+      <span class="star"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.7 7-6.3-3.9-6.3 3.9 1.7-7L2 9.2l7.1-.6L12 2z"/></svg></span>
+      <div>
+        <div class="note-title">Khảo sát Olam Gia Lai 3 máy ....</div>
+        <div class="note-sub">OlamGiaLai</div>
+      </div>
+    </div>
+
+    <div class="note red">
+      <span class="pin pin-red"></span>
+      <span class="star"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.7 7-6.3-3.9-6.3 3.9 1.7-7L2 9.2l7.1-.6L12 2z"/></svg></span>
+      <div>
+        <div class="note-title">Win server 2022 + tạo domai...</div>
+        <div class="note-sub">Outspan</div>
+      </div>
+    </div>
+
+    <div class="note green">
+      <span class="pin pin-green"></span>
+      <span class="star"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.7 7-6.3-3.9-6.3 3.9 1.7-7L2 9.2l7.1-.6L12 2z"/></svg></span>
+      <div>
+        <div class="note-title">Dự án Server + License</div>
+        <div class="note-sub">OlamKCX</div>
+      </div>
+    </div>
+
+    <div class="note white">
+      <span class="pin pin-grey"></span>
+      <span class="star"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.7 7-6.3-3.9-6.3 3.9 1.7-7L2 9.2l7.1-.6L12 2z"/></svg></span>
+      <div>
+        <div class="note-title">Khảo sát Olam Gia Lai 3 máy ....</div>
+        <div class="note-sub">OlamGiaLai</div>
+      </div>
+    </div>
+
+    <div class="note yellow">
+      <span class="pin pin-yellow"></span>
+      <span class="star"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.7 7-6.3-3.9-6.3 3.9 1.7-7L2 9.2l7.1-.6L12 2z"/></svg></span>
+      <div>
+        <div class="note-title">Khảo sát Olam Gia Lai 3 máy chấm công về báo lại cho Sơn</div>
+        <div class="note-sub">OlamHCM</div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

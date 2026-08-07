@@ -1,5 +1,6 @@
 <template>
-  <div class="min-h-screen bg-[#f8faf9] flex flex-col pb-12">
+  <div class="min-h-screen flex flex-col pb-12 transition-colors duration-200"
+       :class="viewMode === 'notes' ? 'sticky-board-bg' : 'bg-[#f8faf9]'">
     <!-- Navbar Component -->
     <Navbar @search="handleSearch" />
 
@@ -12,8 +13,9 @@
         <p class="text-[11px] text-gray-400 font-bold uppercase tracking-wider">You must think about how IT managers appear in the eyes of their audiences</p>
       </div>
 
-      <!-- Main Layout Grid: 12-col Grid (Left Panel 3 | Center Panel 5 | Right Panel 4) -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <!-- Main Layout Grid: 12-col Grid (Left Panel 3 | Center Panel 5 or 9 | Right Panel 4 or hidden) -->
+      <div class="grid grid-cols-1 gap-6 items-start"
+           :class="viewMode === 'notes' ? 'lg:grid-cols-12' : 'lg:grid-cols-12'">
         
         <!-- LEFT PANEL: Actions, Switcher & Search (Block 1) -->
         <aside class="lg:col-span-3 space-y-3.5 select-none">
@@ -32,17 +34,14 @@
           <button
             @click="toggleCustomerGroup"
             type="button"
-            class="w-full bg-[#f1f5f9] hover:bg-[#e2e8f0] border border-gray-200 text-slate-800 font-extrabold text-sm rounded-xl p-3.5 flex items-center justify-between transition-colors shadow-3xs cursor-pointer focus:outline-none select-none"
+            class="w-full bg-[#f1f5f9] hover:bg-[#e2e8f0] border border-gray-200 text-slate-800 font-extrabold text-sm rounded-xl p-3.5 flex items-center justify-center transition-colors shadow-3xs cursor-pointer focus:outline-none select-none"
             :class="isGroupedByCustomer ? 'ring-2 ring-emerald-500/30 border-emerald-500 bg-emerald-50/40 text-emerald-950' : ''"
             title="Chuyển đổi chế độ xem (Ctrl + B)"
           >
             <div class="flex items-center gap-2.5">
               <i class="fa-solid fa-right-left text-xs" :class="isGroupedByCustomer ? 'text-emerald-600' : 'text-slate-500'"></i>
-              <span>Project / Customer Switcher</span>
+              <span>Đổi kiểu xem</span>
             </div>
-            <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-md" :class="isGroupedByCustomer ? 'bg-emerald-200/80 text-emerald-900' : 'bg-gray-200 text-gray-600'">
-              {{ isGroupedByCustomer ? 'Theo Khách Hàng' : 'Mặc định' }}
-            </span>
           </button>
 
           <!-- Tìm kiếm gì đó -->
@@ -92,8 +91,9 @@
           </div>
         </aside>
 
-        <!-- CENTER PANEL: Projects List (Block 2 - Wider Column) -->
-        <section class="lg:col-span-5 space-y-3.5 select-none">
+        <!-- CENTER PANEL: Projects List (Block 2 - Wider Column, expands when notes view) -->
+        <section class="space-y-3.5 select-none"
+                 :class="viewMode === 'notes' ? 'lg:col-span-9' : 'lg:col-span-5'">
 
           <!-- Skeleton Loading State -->
           <div v-if="projectStore.isLoading && displayedProjects.length === 0" class="space-y-3 max-h-[calc(100vh-200px)]">
@@ -144,58 +144,46 @@
                   @dragleave="onGroupedDragLeave"
                   @drop="onGroupedDrop($event, group, pIdx)"
                   @dragend="onGroupedDragEnd"
-                  class="flex items-center gap-2.5 transition-all duration-150 rounded-2xl"
+                  class="flex items-center gap-2.5 transition-all duration-150 rounded-2xl group/project-row"
                   :class="{
                     'opacity-40 scale-[0.98]': draggedGroupedIndex === pIdx && draggedGroupId === group.name,
                     'ring-2 ring-emerald-500 bg-emerald-50/50 p-1': dragOverGroupedIndex === pIdx && dragOverGroupId === group.name && (draggedGroupedIndex !== pIdx || draggedGroupId !== group.name)
                   }"
                 >
-                  <!-- Drag Handle Icon -->
-                  <div class="cursor-grab active:cursor-grabbing text-gray-300 hover:text-emerald-600 p-1 flex-shrink-0 transition-colors select-none" title="Kéo giữ chuột để sắp xếp vị trí hàng">
-                    <i class="fa-solid fa-grip-vertical text-sm"></i>
-                  </div>
-
-                  <!-- Checkbox for multi-select -->
+                  <!-- Checkbox for multi-select (hidden by default, show on hover or when any checkbox is clicked) -->
                   <input
                     type="checkbox"
                     :checked="isSelected(project.id)"
                     @click.stop="toggleProjectSelect(project.id)"
-                    class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer flex-shrink-0"
+                    class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer flex-shrink-0 transition-opacity duration-200"
+                    :class="showAllCheckboxes ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100'"
                   />
 
                   <!-- Colored Project Rectangular Card (Identical to default mode) -->
                   <div
                     @click="goToProjectDetail(project.id, $event)"
-                    class="flex-1 rounded-2xl p-4 flex items-center justify-between gap-4 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden border min-w-0"
+                    class="flex-1 rounded-lg p-4 flex items-start justify-between gap-4 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden border min-w-0"
                     :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]"
                   >
                     <div class="min-w-0 flex-1">
-                      <div class="font-extrabold text-gray-900 text-sm sm:text-base leading-snug break-all min-w-0">
+                      <div class="font-extrabold text-gray-900 text-sm sm:text-base leading-snug break-words min-w-0">
                         {{ project.title }}
                       </div>
                     </div>
 
-                    <div class="flex flex-col items-end justify-between h-11 flex-shrink-0">
+                    <div class="flex-shrink-0">
                       <!-- Pin/Star Button -->
                       <button 
                         @click.stop="togglePinProject(project)" 
                         type="button" 
-                        class="-mt-1 -mr-1 p-1 cursor-pointer transition-colors"
+                        class="p-1 cursor-pointer transition-colors"
                         :title="Boolean(project.is_pinned) ? 'Bỏ ghim dự án' : 'Ghim dự án'"
                       >
                         <i 
-                          class="text-sm transition-colors" 
-                          :class="Boolean(project.is_pinned) ? 'fa-solid fa-star text-amber-500' : 'fa-regular fa-star text-gray-300 hover:text-amber-500'"
+                          class="text-lg transition-colors" 
+                          :class="Boolean(project.is_pinned) ? 'fa-solid fa-star text-gray-600' : 'fa-regular fa-star text-gray-500 hover:text-gray-700'"
                         ></i>
                       </button>
-
-                      <!-- Status Badge -->
-                      <span 
-                        class="text-xs font-black px-2.5 py-0.5 rounded-md"
-                        :class="[getProjectStatusStyle(project).badgeClass]"
-                      >
-                        {{ getProjectStatusStyle(project).badgeText }}
-                      </span>
                     </div>
                   </div>
                 </div>
@@ -205,6 +193,61 @@
             <!-- Empty state for grouped mode -->
             <div v-if="projectsByCustomer.length === 0" class="bg-white border border-gray-200 rounded-2xl py-12 text-center text-gray-450 text-sm font-semibold shadow-3xs select-none">
               Không tìm thấy dự án nào trong mục này.
+            </div>
+          </div>
+
+          <!-- Sticky Notes View (Grid Layout) -->
+          <div 
+            v-else-if="viewMode === 'notes'" 
+            ref="scrollContainerNotes"
+            class="overflow-y-auto pr-1 pt-4 pb-8 max-h-[calc(100vh-200px)] scrollbar-none"
+          >
+            <div class="sticky-grid">
+              <div
+                v-for="project in displayedProjects"
+                :key="project.id"
+                :data-project-id="project.id"
+                @click="goToProjectDetail(project.id, $event)"
+                class="note-card"
+                :class="getStickyNoteStyle(project)"
+              >
+                <!-- Pin top center -->
+                <span class="note-pin" :class="getStickyNotePinStyle(project)"></span>
+
+                <!-- Star icon (top right) -->
+                <button 
+                  @click.stop="togglePinProject(project)" 
+                  type="button" 
+                  class="note-star"
+                  :title="Boolean(project.is_pinned) ? 'Bỏ ghim dự án' : 'Ghim dự án'"
+                >
+                  <i 
+                    class="text-lg transition-colors" 
+                    :class="Boolean(project.is_pinned) ? 'fa-solid fa-star text-gray-600' : 'fa-regular fa-star text-gray-500 hover:text-gray-700'"
+                  ></i>
+                </button>
+
+                <!-- Content upper -->
+                <div>
+                  <div class="note-header-tag">DỰ ÁN</div>
+                  <h3 class="note-title-text">
+                    {{ project.title }}
+                  </h3>
+                </div>
+
+                <!-- Content lower (Divider & Customer Name) -->
+                <div>
+                  <div class="note-divider-line"></div>
+                  <div class="note-sub-text">
+                    {{ project.customer ? project.customer.name : 'Chưa phân khách hàng' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty state for notes mode -->
+            <div v-if="displayedProjects.length === 0" class="bg-white/80 backdrop-blur-xs border border-gray-200 rounded-2xl py-12 text-center text-gray-500 text-sm font-bold shadow-3xs select-none">
+              Không có dự án đã ghim nào.
             </div>
           </div>
 
@@ -232,61 +275,49 @@
                 @dragleave="onDragLeave($event)"
                 @drop="onDrop($event, index)"
                 @dragend="onDragEnd($event)"
-                class="flex items-center gap-2.5 transition-all duration-150 rounded-2xl"
+                class="flex items-center gap-2.5 transition-all duration-150 rounded-2xl group/project-row"
                 :class="{
                   'opacity-40 scale-[0.98]': draggedProjectIndex === index,
                   'ring-2 ring-emerald-500 bg-emerald-50/50 p-1': dragOverIndex === index && draggedProjectIndex !== index
                 }"
               >
-                <!-- Drag Handle Icon -->
-                <div class="cursor-grab active:cursor-grabbing text-gray-300 hover:text-emerald-600 p-1 flex-shrink-0 transition-colors select-none" title="Kéo giữ chuột để sắp xếp vị trí hàng">
-                  <i class="fa-solid fa-grip-vertical text-sm"></i>
-                </div>
-
-                <!-- Checkbox for multi-select (Outside on the left) -->
+                <!-- Checkbox for multi-select (hidden by default, show on hover or when any checkbox is clicked) -->
                 <input
                   type="checkbox"
                   :checked="isSelected(project.id)"
                   @click.stop="toggleProjectSelect(project.id)"
-                  class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer flex-shrink-0"
+                  class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer flex-shrink-0 transition-opacity duration-200"
+                  :class="showAllCheckboxes ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100'"
                 />
 
                 <!-- Card Container -->
                 <div
                   @click="goToProjectDetail(project.id, $event)"
-                  class="flex-1 rounded-2xl p-4 flex items-center justify-between gap-4 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden border min-w-0"
+                  class="flex-1 rounded-lg p-4 flex items-start justify-between gap-4 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden border min-w-0"
                   :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]"
                 >
                   <div class="min-w-0 flex-1">
-                    <div class="font-extrabold text-gray-900 text-sm sm:text-base leading-snug break-all min-w-0">
+                    <div class="font-extrabold text-gray-900 text-sm sm:text-base leading-snug break-words min-w-0">
                       {{ project.title }}
                     </div>
-                    <div class="text-xs text-gray-500 font-bold mt-1 uppercase tracking-wider">
+                    <div class="text-xs text-gray-700 font-bold mt-1 uppercase tracking-wider">
                       {{ project.customer ? project.customer.name : 'Chưa phân khách hàng' }}
                     </div>
                   </div>
 
-                  <div class="flex flex-col items-end justify-between h-11 flex-shrink-0">
+                  <div class="flex-shrink-0">
                     <!-- Pin/Star Button -->
                     <button 
                       @click.stop="togglePinProject(project)" 
                       type="button" 
-                      class="-mt-1 -mr-1 p-1 cursor-pointer transition-colors"
+                      class="p-1 cursor-pointer transition-colors"
                       :title="Boolean(project.is_pinned) ? 'Bỏ ghim dự án' : 'Ghim dự án'"
                     >
                       <i 
-                        class="text-sm transition-colors" 
-                        :class="Boolean(project.is_pinned) ? 'fa-solid fa-star text-amber-500' : 'fa-regular fa-star text-gray-300 hover:text-amber-500'"
+                        class="text-lg transition-colors" 
+                        :class="Boolean(project.is_pinned) ? 'fa-solid fa-star text-gray-600' : 'fa-regular fa-star text-gray-500 hover:text-gray-700'"
                       ></i>
                     </button>
-
-                    <!-- Status Badge -->
-                    <span 
-                      class="text-xs font-black px-2.5 py-0.5 rounded-md"
-                      :class="[getProjectStatusStyle(project).badgeClass]"
-                    >
-                      {{ getProjectStatusStyle(project).badgeText }}
-                    </span>
                   </div>
                 </div>
               </div>
@@ -298,21 +329,24 @@
             </div>
 
             <!-- Load More Button -->
-            <div v-if="displayedProjects.length < projectStore.projects.length" class="flex justify-center pt-2">
+            <div v-if="displayedProjects.length < projectStore.projects.filter(p => p.tracking_status === 'following').length" class="flex justify-center pt-2">
               <button
                 @click="loadMore"
                 type="button"
                 class="px-5 py-2.5 bg-white hover:bg-emerald-50 border border-gray-200 hover:border-emerald-500 text-gray-700 hover:text-emerald-700 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-3xs focus:outline-none"
               >
                 <i class="fa-solid fa-angles-down text-[10px]"></i>
-                <span>Xem thêm dự án (Còn {{ projectStore.projects.length - displayedProjects.length }} dự án)</span>
+                <span>Xem thêm dự án (Còn {{ projectStore.projects.filter(p => p.tracking_status === 'following').length - displayedProjects.length }} dự án)</span>
               </button>
             </div>
           </div>
         </section>
 
-        <!-- RIGHT PANEL: Hoạt động gần đây (Block 3) -->
-        <section class="lg:col-span-4 bg-white border border-gray-200 rounded-3xl p-5 shadow-3xs flex flex-col h-[calc(100vh-200px)] select-none">
+        <!-- RIGHT PANEL: Hoạt động gần đây (Block 3 - Hidden in notes view) -->
+        <section 
+          v-if="viewMode !== 'notes'"
+          class="lg:col-span-4 bg-white border border-gray-200 rounded-3xl p-5 shadow-3xs flex flex-col h-[calc(100vh-200px)] select-none"
+        >
           <h2 class="text-sm font-black text-gray-900 uppercase tracking-wider pb-3 flex items-center justify-between border-b border-gray-100 flex-shrink-0">
             <span>Hoạt động gần đây</span>
             <button @click="router.push('/feed')" type="button" class="text-xs text-emerald-700 hover:underline font-bold">Chi tiết →</button>
@@ -447,7 +481,7 @@
           </div>
           <div>
             <div class="text-xs font-bold text-slate-200 leading-none">Dự án được chọn</div>
-            <button @click="selectedProjectIds = []" type="button" class="text-[10px] text-emerald-400 hover:text-emerald-300 underline font-bold cursor-pointer leading-tight">Hủy chọn</button>
+            <button @click="selectedProjectIds = []; showAllCheckboxes = false" type="button" class="text-[10px] text-emerald-400 hover:text-emerald-300 underline font-bold cursor-pointer leading-tight">Hủy chọn</button>
           </div>
         </div>
 
@@ -462,13 +496,67 @@
               type="button"
               class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 font-bold text-xs rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs"
             >
-              <i class="fa-solid fa-user-pen text-blue-400"></i>
               <span>Move Lead</span>
             </button>
             <div v-if="activeBulkMenu === 'lead'" class="absolute top-full mt-2 right-0 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 py-1.5 flex flex-col gap-0.5 max-h-48 overflow-y-auto min-w-[170px]">
               <div class="px-3 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 mb-1">Chuyển lead cho</div>
               <button @click="bulkUpdateLead(null)" class="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-800 text-xs font-bold text-slate-400 text-left"><i class="fa-solid fa-user-slash"></i> Không giao</button>
               <button v-for="u in projectStore.users" :key="u.id" @click="bulkUpdateLead(u.id)" class="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-800 text-xs font-bold text-slate-200 text-left"><img :src="u.avatar" class="w-4 h-4 rounded-full" /> {{ u.name }}</button>
+            </div>
+          </div>
+
+          <!-- Bulk Health Update (Update Health) -->
+          <div class="relative">
+            <button
+              @click="toggleBulkMenu('health')"
+              type="button"
+              class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 font-bold text-xs rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs"
+            >
+              <span>Update Health</span>
+            </button>
+            <div v-if="activeBulkMenu === 'health'" class="absolute top-full mt-2 right-0 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 p-3 flex flex-col gap-3 min-w-[120px]">
+              <!-- Green - Happy Face -->
+              <button @click="bulkUpdateHealth('green')" class="flex items-center justify-center hover:opacity-80 transition-opacity cursor-pointer">
+                <div class="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center">
+                  <div class="flex flex-col items-center gap-1">
+                    <div class="flex gap-1.5">
+                      <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                      <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                    </div>
+                    <svg width="16" height="8" viewBox="0 0 16 8" class="mt-0.5">
+                      <path d="M 2 2 Q 8 6 14 2" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                </div>
+              </button>
+              
+              <!-- Yellow - Neutral Face -->
+              <button @click="bulkUpdateHealth('yellow')" class="flex items-center justify-center hover:opacity-80 transition-opacity cursor-pointer">
+                <div class="w-12 h-12 rounded-full bg-amber-400 flex items-center justify-center">
+                  <div class="flex flex-col items-center gap-1.5">
+                    <div class="flex gap-1.5">
+                      <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                      <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                    </div>
+                    <div class="w-5 h-0.5 bg-white rounded-full"></div>
+                  </div>
+                </div>
+              </button>
+              
+              <!-- Red - Sad Face -->
+              <button @click="bulkUpdateHealth('red')" class="flex items-center justify-center hover:opacity-80 transition-opacity cursor-pointer">
+                <div class="w-12 h-12 rounded-full bg-rose-500 flex items-center justify-center">
+                  <div class="flex flex-col items-center gap-1">
+                    <div class="flex gap-1.5">
+                      <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                      <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                    </div>
+                    <svg width="16" height="8" viewBox="0 0 16 8" class="mt-0.5">
+                      <path d="M 2 6 Q 8 2 14 6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
 
@@ -479,13 +567,18 @@
               type="button"
               class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 font-bold text-xs rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs"
             >
-              <i class="fa-solid fa-box-archive text-purple-400"></i>
               <span>Update Status</span>
             </button>
             <div v-if="activeBulkMenu === 'status'" class="absolute top-full mt-2 right-0 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 p-2 flex flex-col gap-1 min-w-[150px]">
-              <button @click="bulkUpdateStatus('completed')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-800 text-xs font-bold rounded-lg text-emerald-400 text-left"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0"></span> Hoàn thành</button>
-              <button @click="bulkUpdateStatus('following')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-800 text-xs font-bold rounded-lg text-amber-400 text-left"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0"></span> Đang theo</button>
-              <button @click="bulkUpdateStatus('not_following')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-800 text-xs font-bold rounded-lg text-rose-400 text-left"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 flex-shrink-0"></span> Bỏ theo</button>
+              <button @click="bulkUpdateStatus('completed')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-800 text-xs font-bold rounded-lg text-slate-200 text-left">
+                <span>Hoàn thành</span>
+              </button>
+              <button @click="bulkUpdateStatus('following')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-800 text-xs font-bold rounded-lg text-slate-200 text-left">
+                <span>Đang theo</span>
+              </button>
+              <button @click="bulkUpdateStatus('not_following')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-800 text-xs font-bold rounded-lg text-slate-200 text-left">
+                <span>Bỏ theo</span>
+              </button>
             </div>
           </div>
 
@@ -496,7 +589,6 @@
               type="button"
               class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-md"
             >
-              <i class="fa-solid fa-message text-white"></i>
               <span>Post Update</span>
             </button>
           </div>
@@ -761,7 +853,6 @@ const saveNewView = () => {
   localStorage.setItem('custom_views', JSON.stringify(customViews.value))
   activeViewId.value = viewId
   isViewModalOpen.value = false
-  toast.success('Tạo View mới thành công!')
 }
 
 const loadCustomViews = () => {
@@ -781,7 +872,6 @@ const deleteCustomView = (id) => {
   if (activeViewId.value === id) {
     activeViewId.value = 'all'
   }
-  toast.success('Đã xóa View!')
 }
 
 const openLeadMenuId = ref(null)
@@ -825,11 +915,9 @@ const openEditProfile = () => {
 const handleSaveProfile = async () => {
   try {
     await authStore.updateProfile(editForm)
-    toast.success('Cập nhật thông tin thành công!')
     isProfileModalOpen.value = false
   } catch (err) {
     console.error('Failed to update profile:', err)
-    toast.error('Cập nhật thông tin thất bại!')
   }
 }
 
@@ -837,10 +925,8 @@ const handleLogout = async () => {
   try {
     await authStore.logout()
     router.push('/login')
-    toast.success('Đăng xuất thành công!')
   } catch (err) {
     console.error('Failed to logout:', err)
-    toast.error('Đăng xuất thất bại!')
   }
 }
 
@@ -851,7 +937,15 @@ const handleCloseModal = () => {
 
 const goToProjectDetail = (projectId, event) => {
   if (event.ctrlKey || event.metaKey) return
-  router.push(`/projects/${projectId}`)
+  
+  // Double-click navigates to detail
+  if (event.detail === 2) {
+    router.push(`/projects/${projectId}`)
+    return
+  }
+  
+  // Single click toggles checkbox selection
+  toggleProjectSelect(projectId)
 }
 
 // Pagination for ViewListPage (Infinite Scroll)
@@ -861,12 +955,21 @@ const displayLimit = ref(20)
 const displayedProjects = computed(() => {
   let list = [...projectStore.projects]
 
+  // Filter to only show projects with tracking_status = 'following'
+  list = list.filter(p => p.tracking_status === 'following')
+
+  // In notes view, ONLY show pinned projects
+  if (viewMode.value === 'notes') {
+    list = list.filter(p => p.is_pinned == 1 || p.is_pinned === true)
+  }
+
   if (projectStore.searchQuery) {
-    const q = projectStore.searchQuery.toLowerCase()
-    list = list.filter(p => 
-      p.title.toLowerCase().includes(q) || 
-      (p.customer && p.customer.name.toLowerCase().includes(q))
-    )
+    const q = removeVietnameseAccents(projectStore.searchQuery)
+    list = list.filter(p => {
+      const title = removeVietnameseAccents(p.title)
+      const customerName = p.customer ? removeVietnameseAccents(p.customer.name) : ''
+      return title.includes(q) || customerName.includes(q)
+    })
   }
 
   // Filter based on active sidebar view
@@ -877,9 +980,18 @@ const displayedProjects = computed(() => {
     }
   }
 
+  // In notes view, prioritize pinned projects (though all should be pinned already)
+  if (viewMode.value === 'notes') {
+    list.sort((a, b) => {
+      const aPinned = a.is_pinned ? 1 : 0
+      const bPinned = b.is_pinned ? 1 : 0
+      return bPinned - aPinned
+    })
+  }
+
   // Backend already sorts by: pinned -> sort_order -> last_activity_at DESC
   // So we keep the order from backend (20 latest projects)
-  // No need to sort again here
+  // No need to sort again here for list/grouped views
   
   // Apply limit for pagination (load 20 initially, then load more)
   return list.slice(0, displayLimit.value)
@@ -890,15 +1002,32 @@ const loadMore = () => {
   displayLimit.value += 20
 }
 
+// Function to remove Vietnamese accents for fuzzy search
+const removeVietnameseAccents = (str) => {
+  if (!str) return ''
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+}
+
 // Switcher view mode (Grouped by Customer)
 const isGroupedByCustomer = ref(false)
+const viewMode = ref('list') // 'list', 'grouped', 'notes'
 
 const toggleCustomerGroup = () => {
-  isGroupedByCustomer.value = !isGroupedByCustomer.value
-  if (isGroupedByCustomer.value) {
-    toast.success('Đã xếp dự án theo Khách hàng')
+  // Cycle through view modes: list -> grouped -> notes -> list
+  if (viewMode.value === 'list') {
+    viewMode.value = 'grouped'
+    isGroupedByCustomer.value = true
+  } else if (viewMode.value === 'grouped') {
+    viewMode.value = 'notes'
+    isGroupedByCustomer.value = false
   } else {
-    toast.success('Đã hiển thị danh sách dự án mặc định')
+    viewMode.value = 'list'
+    isGroupedByCustomer.value = false
   }
 }
 
@@ -909,10 +1038,8 @@ const togglePinCustomer = (customerName) => {
   const idx = pinnedCustomerNames.value.indexOf(customerName)
   if (idx > -1) {
     pinnedCustomerNames.value.splice(idx, 1)
-    toast.success(`Đã bỏ ghim khách hàng ${customerName}`)
   } else {
     pinnedCustomerNames.value.push(customerName)
-    toast.success(`Đã ghim khách hàng ${customerName}`)
   }
   localStorage.setItem('pinned_customers', JSON.stringify(pinnedCustomerNames.value))
 }
@@ -943,13 +1070,13 @@ const projectsByCustomer = computed(() => {
 
 const getGroupedProjectCardStyle = (project) => {
   const health = project.health
-  const status = project.tracking_status
+  // Only use HEALTH to determine card color, NOT tracking_status!
 
-  if (health === 'green' || status === 'completed') {
+  if (health === 'green') {
     return 'bg-[#86efac] border-emerald-400 text-emerald-950 font-bold shadow-3xs'
-  } else if (health === 'red' || status === 'not_following' || status === 'unfollowing') {
+  } else if (health === 'red') {
     return 'bg-[#fca5a5] border-rose-400 text-rose-950 font-bold shadow-3xs'
-  } else if (health === 'yellow' || status === 'following') {
+  } else if (health === 'yellow') {
     return 'bg-[#fde047] border-amber-400 text-amber-950 font-bold shadow-3xs'
   } else {
     return 'bg-white border-gray-300 text-gray-900 font-bold shadow-3xs'
@@ -998,10 +1125,8 @@ const onDrop = async (event, dropIndex) => {
   try {
     const ids = projectStore.projects.map(p => p.id)
     await axios.post('/api/projects/reorder', { project_ids: ids })
-    toast.success('Đã cập nhật vị trí dự án!')
   } catch (err) {
     console.error('Failed to reorder projects:', err)
-    toast.error('Lưu vị trí thất bại!')
   }
 }
 
@@ -1055,10 +1180,8 @@ const onGroupedDrop = async (event, group, dropIdx) => {
   try {
     const ids = projectStore.projects.map(p => p.id)
     await axios.post('/api/projects/reorder', { project_ids: ids })
-    toast.success('Đã cập nhật vị trí dự án!')
   } catch (err) {
     console.error('Failed to reorder grouped projects:', err)
-    toast.error('Lưu vị trí thất bại!')
   }
 }
 
@@ -1081,52 +1204,52 @@ const togglePinProject = async (project) => {
       console.error(err)
       project.is_pinned = isCurrentlyPinned
       if (storeP) storeP.is_pinned = isCurrentlyPinned
-      toast.error('Thao tác thất bại!')
     })
-    
-    // Show success immediately
-    toast.success(nextVal ? 'Đã ghim dự án!' : 'Đã bỏ ghim dự án!')
   } catch (err) {
     console.error(err)
-    toast.error('Thao tác thất bại!')
   }
 }
 
 const getProjectStatusStyle = (project) => {
   const health = project.health || 'green'
-  const status = project.tracking_status || 'following'
   
-  // Card color based on HEALTH (Sức khỏe)
+  // Card color based on HEALTH (Sức khỏe) - Darker colors with thicker borders and less rounded corners
   let cardBg = ''
   let borderClass = ''
   
   if (health === 'green') {
-    cardBg = 'bg-[#ecfdf5] border-emerald-200/80'
-    borderClass = 'border-t-4 border-t-emerald-500'
+    cardBg = 'bg-[#86efac] border-[#4ade80]' // Darker green
+    borderClass = 'border-2' // Thicker border
   } else if (health === 'red') {
-    cardBg = 'bg-[#fff1f2] border-rose-200/80'
-    borderClass = 'border-t-4 border-t-rose-500'
+    cardBg = 'bg-[#fca5a5] border-[#f87171]' // Darker red
+    borderClass = 'border-2' // Thicker border
   } else { // yellow
-    cardBg = 'bg-[#fffbeb] border-amber-200/80'
-    borderClass = 'border-t-4 border-t-amber-500'
-  }
-  
-  // Badge text based on TRACKING_STATUS (Trạng thái) - no colors
-  let badgeText = ''
-  if (status === 'completed') {
-    badgeText = 'Hoàn thành'
-  } else if (status === 'not_following') {
-    badgeText = 'Bỏ theo'
-  } else { // following
-    badgeText = 'Đang theo'
+    cardBg = 'bg-[#fcd34d] border-[#fbbf24]' // Darker yellow
+    borderClass = 'border-2' // Thicker border
   }
   
   return {
     cardBg,
     borderClass,
-    badgeText,
-    badgeClass: 'bg-gray-100/90 text-gray-700 font-bold'
+    badgeText: '', // No badge text needed
+    badgeClass: '' // No badge class needed
   }
+}
+
+const getStickyNoteStyle = (project) => {
+  const health = project.health
+  if (health === 'green') return 'note-green'
+  if (health === 'red') return 'note-red'
+  if (health === 'white') return 'note-white'
+  return 'note-yellow'
+}
+
+const getStickyNotePinStyle = (project) => {
+  const health = project.health
+  if (health === 'green') return 'pin-green'
+  if (health === 'red') return 'pin-red'
+  if (health === 'white') return 'pin-grey'
+  return 'pin-yellow'
 }
 
 const isSelected = (id) => selectedProjectIds.value.includes(id)
@@ -1187,10 +1310,8 @@ const handleSearch = (query) => {
 const handleHealthChange = async (projectId, newColor) => {
   try {
     await projectStore.updateHealth(projectId, newColor)
-    toast.success('Đã cập nhật tình trạng sức khỏe dự án!')
   } catch (err) {
     console.error('Failed to update project health:', err)
-    toast.error('Cập nhật tình trạng sức khỏe thất bại!')
   }
 }
 
@@ -1205,12 +1326,10 @@ const toggleLeadMenu = (projectId) => {
 const handleUpdateLead = async (projectId, newLeadId) => {
   try {
     await axios.put(`/api/projects/${projectId}`, { lead_id: newLeadId })
-    toast.success('Đã chuyển lead dự án!')
     await projectStore.fetchProjects(true)
     openLeadMenuId.value = null
   } catch (err) {
     console.error('Failed to update project lead inline:', err)
-    toast.error('Chuyển lead dự án thất bại!')
   }
 }
 
@@ -1218,16 +1337,13 @@ const handleCreateProject = async (data) => {
   try {
     if (editingProject.value) {
       await axios.put(`/api/projects/${editingProject.value.id}`, data)
-      toast.success('Cập nhật dự án thành công!')
     } else {
       await projectStore.createProject(data)
-      toast.success('Tạo dự án mới thành công!')
     }
     await projectStore.fetchProjects(true)
     handleCloseModal()
   } catch (err) {
     console.error('Failed to save project:', err)
-    toast.error('Lưu dự án thất bại!')
   }
 }
 
@@ -1247,6 +1363,28 @@ const handleGlobalKeydown = (event) => {
     }
     if (isProfileModalOpen.value) {
       isProfileModalOpen.value = false
+      event.preventDefault()
+      return
+    }
+    
+    // Close bulk action menu if open
+    if (activeBulkMenu.value) {
+      activeBulkMenu.value = null
+      event.preventDefault()
+      return
+    }
+    
+    // Clear selections and hide checkboxes if any projects are selected
+    if (selectedProjectIds.value.length > 0) {
+      selectedProjectIds.value = []
+      showAllCheckboxes.value = false
+      event.preventDefault()
+      return
+    }
+    
+    // Clear search query if it has content
+    if (projectStore.searchQuery) {
+      projectStore.searchQuery = ''
       event.preventDefault()
       return
     }
@@ -1303,6 +1441,7 @@ const handleGlobalKeydown = (event) => {
     event.preventDefault()
     event.stopPropagation()
     selectedProjectIds.value = []
+    showAllCheckboxes.value = false
     return
   }
   
@@ -1339,6 +1478,7 @@ const closeAllDropdowns = (e) => {
 
 // Checkboxes and multi-select
 const selectedProjectIds = ref([])
+const showAllCheckboxes = ref(false)
 
 // Drag selection box functionality (Windows-style)
 const isSelecting = ref(false)
@@ -1444,14 +1584,24 @@ const checkProjectIntersections = () => {
   })
   
   selectedProjectIds.value = newSelectedIds
+  // Show all checkboxes when drag selecting
+  if (newSelectedIds.length > 0) {
+    showAllCheckboxes.value = true
+  }
 }
 
 const toggleProjectSelect = (id) => {
   const idx = selectedProjectIds.value.indexOf(id)
   if (idx > -1) {
     selectedProjectIds.value.splice(idx, 1)
+    // If no selections left, hide checkboxes again
+    if (selectedProjectIds.value.length === 0) {
+      showAllCheckboxes.value = false
+    }
   } else {
     selectedProjectIds.value.push(id)
+    // Show all checkboxes when any checkbox is clicked
+    showAllCheckboxes.value = true
   }
 }
 
@@ -1462,8 +1612,10 @@ const isAllSelected = computed(() => {
 const toggleSelectAll = () => {
   if (isAllSelected.value) {
     selectedProjectIds.value = []
+    showAllCheckboxes.value = false
   } else {
     selectedProjectIds.value = displayedProjects.value.map(p => p.id)
+    showAllCheckboxes.value = true
   }
 }
 
@@ -1552,33 +1704,35 @@ const toggleBulkMenu = (menu) => {
 }
 
 const bulkUpdateHealth = async (color) => {
-  let trackingStatus = 'following'
-  if (color === 'green') trackingStatus = 'completed'
-  if (color === 'red') trackingStatus = 'not_following'
-
-  // Optimistically update local project state so card background & badge change instantly!
-  selectedProjectIds.value.forEach(id => {
+  // Save selected IDs before clearing
+  const idsToUpdate = [...selectedProjectIds.value]
+  
+  // ONLY update health, do NOT change tracking_status!
+  // Optimistically update local project state
+  idsToUpdate.forEach(id => {
     const p = projectStore.projects.find(proj => proj.id === id)
     if (p) {
       p.health = color
-      p.tracking_status = trackingStatus
+      // Keep tracking_status as-is, do NOT modify it
     }
   })
 
+  // Optimistic update already done
+  selectedProjectIds.value = []
+  showAllCheckboxes.value = false
+  activeBulkMenu.value = null
+
   try {
-    await Promise.all(selectedProjectIds.value.map(id => 
+    // Fire and forget - update in background
+    await Promise.all(idsToUpdate.map(id => 
       axios.put(`/api/projects/${id}`, { 
-        health: color,
-        tracking_status: trackingStatus
+        health: color
       })
     ))
-    toast.success(`Đã cập nhật tình trạng sức khỏe cho ${selectedProjectIds.value.length} dự án!`)
-    await projectStore.fetchProjects(true)
-    selectedProjectIds.value = []
-    activeBulkMenu.value = null
   } catch (err) {
     console.error(err)
-    toast.error('Cập nhật thất bại!')
+    // On error, refresh to get correct state from server
+    await projectStore.fetchProjects(true)
   }
 }
 
@@ -1587,44 +1741,45 @@ const bulkUpdateLead = async (userId) => {
     await Promise.all(selectedProjectIds.value.map(id => 
       axios.put(`/api/projects/${id}`, { lead_id: userId })
     ))
-    toast.success(`Đã chuyển lead cho ${selectedProjectIds.value.length} dự án!`)
     await projectStore.fetchProjects(true)
     selectedProjectIds.value = []
+    showAllCheckboxes.value = false
     activeBulkMenu.value = null
   } catch (err) {
     console.error(err)
-    toast.error('Chuyển lead thất bại!')
   }
 }
 
 const bulkUpdateStatus = async (status) => {
-  let healthColor = 'yellow'
-  if (status === 'completed') healthColor = 'green'
-  if (status === 'not_following') healthColor = 'red'
-
-  // Optimistically update local project state so card background & badge change instantly!
-  selectedProjectIds.value.forEach(id => {
+  // Save selected IDs before clearing
+  const idsToUpdate = [...selectedProjectIds.value]
+  
+  // ONLY update tracking_status, do NOT change health!
+  // Optimistically update local project state
+  idsToUpdate.forEach(id => {
     const p = projectStore.projects.find(proj => proj.id === id)
     if (p) {
-      p.health = healthColor
       p.tracking_status = status
+      // Keep health as-is, do NOT modify it
     }
   })
 
+  // Optimistic update already done
+  selectedProjectIds.value = []
+  showAllCheckboxes.value = false
+  activeBulkMenu.value = null
+
   try {
-    await Promise.all(selectedProjectIds.value.map(id => 
+    // Fire and forget - update in background
+    await Promise.all(idsToUpdate.map(id => 
       axios.put(`/api/projects/${id}`, { 
-        tracking_status: status,
-        health: healthColor
+        tracking_status: status
       })
     ))
-    toast.success(`Đã cập nhật trạng thái cho ${selectedProjectIds.value.length} dự án!`)
-    await projectStore.fetchProjects(true)
-    selectedProjectIds.value = []
-    activeBulkMenu.value = null
   } catch (err) {
     console.error(err)
-    toast.error('Cập nhật thất bại!')
+    // On error, refresh to get correct state from server
+    await projectStore.fetchProjects(true)
   }
 }
 
@@ -1699,3 +1854,220 @@ onUnmounted(() => {
   }
 })
 </script>
+
+<style scoped>
+/* Sticky Board background with dot matrix grid */
+.sticky-board-bg {
+  background-color: #f6f4ef !important;
+  background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.04) 1px, transparent 0) !important;
+  background-size: 22px 22px !important;
+}
+
+/* Grid layout matching sticky-notes.html */
+.sticky-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 260px));
+  gap: 28px 32px;
+  justify-content: start;
+  padding-top: 16px;
+}
+
+@media (max-width: 780px) {
+  .sticky-grid {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+}
+@media (max-width: 520px) {
+  .sticky-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Note Card - 1:1 Aspect ratio square paper note with textures and shadows */
+.note-card {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  padding: 30px 20px 20px;
+  border-radius: 2px;
+  isolation: isolate;
+  box-shadow:
+    0 0.5px 0 rgba(255,255,255,0.6) inset,
+    0 1px 1px rgba(0,0,0,0.08),
+    0 3px 3px -1px rgba(0,0,0,0.07),
+    0 8px 10px -4px rgba(0,0,0,0.12),
+    0 18px 24px -12px rgba(0,0,0,0.18);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  user-select: none;
+}
+
+/* Paper grain texture SVG overlay (softened opacity for higher brightness) */
+.note-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='c'><feTurbulence type='fractalNoise' baseFrequency='0.012' numOctaves='4' seed='7' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.06 0'/></filter><rect width='100%25' height='100%25' filter='url(%23c)'/></svg>"),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 260px 260px, 120px 120px;
+  mix-blend-mode: multiply;
+  opacity: 0.22;
+}
+
+/* Crease and wrinkle shadows/lights overlay (brightened light gradients) */
+.note-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 26px 9px at 50% 0, rgba(0,0,0,0.09), rgba(0,0,0,0) 75%),
+    linear-gradient(112deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0) 8%),
+    linear-gradient(112deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0) 8%),
+    linear-gradient(258deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0) 14%),
+    linear-gradient(258deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 4%),
+    linear-gradient(34deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 20%),
+    linear-gradient(34deg, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0) 5%),
+    linear-gradient(196deg, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0) 26%),
+    linear-gradient(72deg, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0) 40%),
+    linear-gradient(150deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 45%),
+    radial-gradient(ellipse 140% 60% at 15% 100%, rgba(0,0,0,0.06), rgba(0,0,0,0) 60%),
+    radial-gradient(ellipse 70% 45% at 88% 92%, rgba(0,0,0,0.04), rgba(0,0,0,0) 55%),
+    radial-gradient(ellipse 60% 40% at 90% 8%, rgba(255,255,255,0.25), rgba(255,255,255,0) 60%),
+    radial-gradient(ellipse 50% 35% at 8% 20%, rgba(255,255,255,0.15), rgba(255,255,255,0) 55%);
+}
+
+.note-card:nth-child(6n+2)::after,
+.note-card:nth-child(6n+4)::after,
+.note-card:nth-child(6n+5)::after { transform: scaleX(-1); }
+.note-card:nth-child(6n+3)::after { filter: brightness(1.08); }
+
+.note-card:hover {
+  transform: rotate(0deg) translateY(-4px) scale(1.015) !important;
+  box-shadow:
+    0 0.5px 0 rgba(255,255,255,0.6) inset,
+    0 1px 1px rgba(0,0,0,0.08),
+    0 4px 4px -1px rgba(0,0,0,0.08),
+    0 12px 14px -6px rgba(0,0,0,0.15),
+    0 26px 30px -14px rgba(0,0,0,0.22);
+}
+
+.note-card > * {
+  position: relative;
+  z-index: 3;
+}
+
+/* Subtle tilts for natural sticky note look */
+.note-card:nth-child(6n+1) { --tilt: -0.6deg; }
+.note-card:nth-child(6n+2) { --tilt: 0.5deg; }
+.note-card:nth-child(6n+3) { --tilt: -0.4deg; }
+.note-card:nth-child(6n+4) { --tilt: 0.7deg; }
+.note-card:nth-child(6n+5) { --tilt: -0.5deg; }
+.note-card:nth-child(6n+6) { --tilt: 0.4deg; }
+
+/* Metallic dome pushpin at top center */
+.note-pin {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  z-index: 4;
+  box-shadow:
+    0 4px 5px -1px rgba(0,0,0,0.35),
+    0 2px 2px rgba(0,0,0,0.2),
+    inset -2px -2px 3px rgba(0,0,0,0.25),
+    inset 2px 2px 3px rgba(255,255,255,0.55);
+}
+
+.note-pin::before {
+  content: "";
+  position: absolute;
+  top: 2.5px;
+  left: 3px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.85);
+  filter: blur(0.3px);
+}
+
+/* Pin color gradients */
+.pin-yellow { background: radial-gradient(circle at 35% 30%, #ffe082, #e5a11c); }
+.pin-grey   { background: radial-gradient(circle at 35% 30%, #e0e0e0, #a6a6a6); }
+.pin-red    { background: radial-gradient(circle at 35% 30%, #ff8a80, #d32f2f); }
+.pin-green  { background: radial-gradient(circle at 35% 30%, #a5d6a7, #388e3c); }
+
+/* Star button at top right */
+.note-star {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+}
+.note-star:hover {
+  transform: scale(1.15);
+}
+
+/* Note inner content typography */
+.note-header-tag {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: rgba(0,0,0,0.45);
+  margin-bottom: 6px;
+}
+
+.note-title-text {
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.28;
+  margin: 0;
+  color: #23211d;
+  word-break: break-word;
+}
+
+.note-divider-line {
+  border-top: 1px solid rgba(0,0,0,0.12);
+  margin-bottom: 8px;
+}
+
+.note-sub-text {
+  font-size: 14px;
+  color: rgba(0,0,0,0.65);
+  font-weight: 600;
+}
+
+/* Note color themes (Brighter, vibrant pastel tones) */
+.note-yellow { background: #ffd643; }
+.note-yellow .note-sub-text { color: rgba(0,0,0,0.55); }
+
+.note-white  { background: #ffffff; border: 1px solid rgba(0,0,0,0.06); }
+.note-white .note-sub-text { color: rgba(0,0,0,0.55); }
+
+.note-red    { background: #ff8a80; }
+.note-red .note-title-text, .note-red .note-sub-text { color: #2c1410; }
+.note-red .note-sub-text { color: rgba(30,10,5,0.65); }
+
+.note-green  { background: #9de39b; }
+.note-green .note-title-text, .note-green .note-sub-text { color: #16301a; }
+.note-green .note-sub-text { color: rgba(15,35,20,0.65); }
+</style>

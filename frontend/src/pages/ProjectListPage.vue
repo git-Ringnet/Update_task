@@ -437,9 +437,18 @@
               <span>Update Status</span>
             </button>
             <div v-if="activeBulkMenu === 'status'" class="absolute bottom-full mb-2 right-0 bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-2 flex flex-col gap-1 min-w-[140px]">
-              <button @click="bulkUpdateStatus('completed')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-emerald-50 text-xs font-bold rounded-lg text-emerald-800"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0"></span> Hoàn thành</button>
-              <button @click="bulkUpdateStatus('following')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-amber-50 text-xs font-bold rounded-lg text-amber-800"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0"></span> Đang theo</button>
-              <button @click="bulkUpdateStatus('not_following')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-rose-50 text-xs font-bold rounded-lg text-rose-800"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 flex-shrink-0"></span> Không theo</button>
+              <button @click="bulkUpdateStatus('completed')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 text-xs font-bold rounded-lg text-gray-700 text-left">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
+                <span>Hoàn thành</span>
+              </button>
+              <button @click="bulkUpdateStatus('following')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 text-xs font-bold rounded-lg text-gray-700 text-left">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0"></span>
+                <span>Đang theo</span>
+              </button>
+              <button @click="bulkUpdateStatus('not_following')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 text-xs font-bold rounded-lg text-gray-700 text-left">
+                <span class="w-2.5 h-2.5 rounded-full bg-rose-500 flex-shrink-0"></span>
+                <span>Không theo</span>
+              </button>
             </div>
           </div>
 
@@ -620,17 +629,33 @@ const toggleBulkMenu = (menu) => {
 }
 
 const bulkUpdateHealth = async (color) => {
+  // Save selected IDs before clearing
+  const idsToUpdate = [...selectedProjectIds.value]
+  
+  // Optimistically update local project state
+  idsToUpdate.forEach(id => {
+    const p = projectStore.projects.find(proj => proj.id === id)
+    if (p) {
+      p.health = color
+    }
+  })
+
+  // Show success message immediately (optimistic update already done)
+  toast.success(`Đã cập nhật sức khỏe cho ${idsToUpdate.length} dự án!`)
+  selectedProjectIds.value = []
+  activeBulkMenu.value = null
+
   try {
-    await Promise.all(selectedProjectIds.value.map(id => 
+    // Fire and forget - update in background
+    await Promise.all(idsToUpdate.map(id => 
       axios.patch(`/api/projects/${id}/health`, { health: color })
     ))
-    toast.success(`Đã cập nhật sức khỏe cho ${selectedProjectIds.value.length} dự án!`)
-    await projectStore.fetchProjects(true)
-    selectedProjectIds.value = []
-    activeBulkMenu.value = null
+    // ❌ REMOVED: No need to fetch all projects again
   } catch (err) {
     console.error('Failed bulk update health:', err)
     toast.error('Cập nhật thất bại!')
+    // On error, refresh to get correct state from server
+    await projectStore.fetchProjects(true)
   }
 }
 

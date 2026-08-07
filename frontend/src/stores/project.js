@@ -51,10 +51,13 @@ export const useProjectStore = defineStore('project', {
         await axios.patch(`/api/projects/${projectId}/health`, {
           health: color
         })
-        await this.fetchProjects(true)
+        // ❌ REMOVED: No need to fetch all projects - we already updated optimistically
+        // await this.fetchProjects(true)
       } catch (err) {
         console.error('Failed to update health:', err)
+        // Only fetch on error to revert to server state
         await this.fetchProjects(true)
+        throw err
       }
     },
 

@@ -28,15 +28,9 @@ class ProjectController extends Controller
         $query->orderBy('sort_order', 'asc')
               ->orderBy('last_activity_at', 'desc');
 
+        // Filter by tracking_status (NOT health)
         if ($request->has('tracking_status')) {
-            $status = $request->tracking_status;
-            if ($status === 'following') {
-                $query->where('health', 'yellow');
-            } elseif ($status === 'not_following') {
-                $query->where('health', 'red');
-            } elseif ($status === 'completed') {
-                $query->where('health', 'green');
-            }
+            $query->where('tracking_status', $request->tracking_status);
         }
 
         if ($request->has('search') && !empty($request->search)) {
@@ -51,11 +45,11 @@ class ProjectController extends Controller
 
         $projects = $query->get();
 
-        // Calculate counts based on Health status
+        // Calculate counts based on tracking_status (NOT health)
         $counts = [
-            'following' => Project::where('health', 'yellow')->count(),
-            'not_following' => Project::where('health', 'red')->count(),
-            'completed' => Project::where('health', 'green')->count(),
+            'following' => Project::where('tracking_status', 'following')->count(),
+            'not_following' => Project::where('tracking_status', 'not_following')->count(),
+            'completed' => Project::where('tracking_status', 'completed')->count(),
         ];
 
         return response()->json([
@@ -121,27 +115,17 @@ class ProjectController extends Controller
         $project = Project::findOrFail($id);
         $oldHealth = $project->health;
 
-        if (isset($validated['health']) && !isset($validated['tracking_status'])) {
-            if ($validated['health'] === 'yellow') {
-                $validated['tracking_status'] = 'following';
-            } elseif ($validated['health'] === 'red') {
-                $validated['tracking_status'] = 'not_following';
-            } elseif ($validated['health'] === 'green') {
-                $validated['tracking_status'] = 'completed';
-            }
-        }
+        // ❌ REMOVED: Do NOT auto-sync health and tracking_status
+        // They are now completely independent fields
 
-        if (isset($validated['tracking_status']) && !isset($validated['health'])) {
-            if ($validated['tracking_status'] === 'following') {
-                $validated['health'] = 'yellow';
-            } elseif ($validated['tracking_status'] === 'not_following') {
-                $validated['health'] = 'red';
-            } elseif ($validated['tracking_status'] === 'completed') {
-                $validated['health'] = 'green';
-            }
+        // Only update last_activity_at if it's a meaningful change (not just status/health/pin toggle)
+        $shouldUpdateActivity = isset($validated['title']) 
+            || isset($validated['customer_id']) 
+            || isset($validated['lead_id']);
+        
+        if ($shouldUpdateActivity) {
+            $validated['last_activity_at'] = Carbon::now();
         }
-
-        $validated['last_activity_at'] = Carbon::now();
 
         $project->update($validated);
 
@@ -191,16 +175,13 @@ class ProjectController extends Controller
         $oldHealth = $project->health;
         $project->health = $request->health;
 
-        // Sync tracking_status
-        if ($request->health === 'yellow') {
-            $project->tracking_status = 'following';
-        } elseif ($request->health === 'red') {
-            $project->tracking_status = 'not_following';
-        } elseif ($request->health === 'green') {
-            $project->tracking_status = 'completed';
-        }
+        // ❌ REMOVED: Do NOT sync tracking_status when updating health
+        // Health and tracking_status are now independent
 
-        $project->last_activity_at = Carbon::now();
+        // ❌ REMOVED: Do NOT update last_activity_at for health changes
+        // This prevents the project from jumping to top of the list
+        // $project->last_activity_at = Carbon::now();
+        
         $project->save();
 
         // Create log comment for health update
