@@ -150,14 +150,14 @@
 
       </div>
 
-      <!-- MAIN CONTENT 2-COLUMN GRID (Left: HOẠT ĐỘNG & MỐC THỜI GIAN | Right: CÔNG VIỆC) -->
+      <!-- MAIN CONTENT 2-COLUMN GRID (Left: HOẠT ĐỘNG | Right: CỘT MỐC + CÔNG VIỆC) -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
-        <!-- LEFT COLUMN: HOẠT ĐỘNG + MỐC THỜI GIAN -->
+        <!-- LEFT COLUMN: HOẠT ĐỘNG -->
         <div class="space-y-6">
 
           <!-- CARD: HOẠT ĐỘNG -->
-          <div class="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-3xs space-y-4">
+          <div class="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-3xs space-y-4 h-[800px] overflow-y-auto">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <i class="fa-solid fa-bullhorn text-rose-500 text-sm"></i>
@@ -282,12 +282,17 @@
             </div>
           </div>
 
-          <!-- CARD: MỐC THỜI GIAN -->
-          <div class="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-3xs space-y-4">
+        </div>
+
+        <!-- RIGHT COLUMN: CỘT MỐC + CÔNG VIỆC -->
+        <div class="space-y-6">
+
+          <!-- CARD: CỘT MỐC -->
+          <div class="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-3xs space-y-4 h-[387px] overflow-y-auto">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <i class="fa-solid fa-flag text-emerald-600 text-sm"></i>
-                <h3 class="text-xs font-black text-gray-900 uppercase tracking-wider">MỐC THỜI GIAN</h3>
+                <h3 class="text-xs font-black text-gray-900 uppercase tracking-wider">CỘT MỐC</h3>
               </div>
               <button @click="isAddMilestoneOpen = !isAddMilestoneOpen" type="button"
                 class="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1">
@@ -350,13 +355,8 @@
             </div>
           </div>
 
-        </div>
-
-        <!-- RIGHT COLUMN: CÔNG VIỆC -->
-        <div class="space-y-6">
-
           <!-- CARD: CÔNG VIỆC -->
-          <div class="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-3xs space-y-4">
+          <div class="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-3xs space-y-4 h-[387px] overflow-y-auto">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <i class="fa-solid fa-square-check text-emerald-600 text-sm"></i>
