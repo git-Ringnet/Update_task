@@ -15,6 +15,6 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // No default users seeded
+        $this->call(InternalUsersSeeder::class);
     }
 }
