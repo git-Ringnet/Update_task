@@ -93,7 +93,7 @@
               v-model="loginForm.password" 
               :type="showPassword ? 'text' : 'password'" 
               required 
-              placeholder="Mật khẩu nội bộ (Mặc định: 123456)" 
+              placeholder="Mật khẩu nội bộ (Mặc định: Ringnet@123)" 
               class="w-full px-4 py-2.5 pr-10 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
             />
             
@@ -145,7 +145,7 @@ const passwordInputRef = ref(null)
 
 const loginForm = reactive({
   username: '',
-  password: '123456'
+  password: 'Ringnet@123'
 })
 
 // 8 Internal Team Members with Standard Unaccented Usernames
@@ -210,6 +210,7 @@ const isMemberSelected = (member) => {
 
 const selectMember = (member) => {
   loginForm.username = member.username
+  loginForm.password = 'Ringnet@123'
   error.value = ''
   nextTick(() => {
     passwordInputRef.value?.focus()
