@@ -31,6 +31,7 @@ class TaskController extends Controller
     {
         $validated = $request->validate([
             'project_id' => 'required|exists:projects,id',
+            'milestone_id' => 'nullable|exists:milestones,id',
             'assignee_id' => 'nullable|exists:users,id',
             'created_by' => 'nullable|exists:users,id',
             'title' => 'required|string|max:255',
@@ -88,6 +89,7 @@ class TaskController extends Controller
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
+            'milestone_id' => 'nullable|exists:milestones,id',
             'assignee_id' => 'nullable|exists:users,id',
             'title' => 'required|string|max:255',
             'due_date' => 'nullable|date',

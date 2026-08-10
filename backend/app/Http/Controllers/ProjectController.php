@@ -60,7 +60,7 @@ class ProjectController extends Controller
 
     public function show($id)
     {
-        $project = Project::with(['customer', 'lead', 'tasks.assignee', 'comments.user', 'milestones.creator'])->findOrFail($id);
+        $project = Project::with(['customer', 'lead', 'tasks.assignee', 'comments.user', 'milestones.creator', 'milestones.tasks.assignee'])->findOrFail($id);
         return response()->json($project);
     }
 
@@ -209,28 +209,33 @@ class ProjectController extends Controller
     public function togglePin($id, Request $request)
     {
         $project = Project::findOrFail($id);
-        $userId = auth()->id() ?? $request->user_id ?? \App\Models\User::first()->id;
+        $userId = auth()->id() ?? $request->user_id ?? \App\Models\User::first()->id ?? null;
 
-        $exists = \Illuminate\Support\Facades\DB::table('pinned_projects')
-            ->where('user_id', $userId)
-            ->where('project_id', $id)
-            ->exists();
-
-        if ($exists) {
-            \Illuminate\Support\Facades\DB::table('pinned_projects')
+        $exists = false;
+        if ($userId) {
+            $exists = \Illuminate\Support\Facades\DB::table('pinned_projects')
                 ->where('user_id', $userId)
                 ->where('project_id', $id)
-                ->delete();
-            $project->is_pinned = 0;
+                ->exists();
+        }
+
+        if ($exists) {
+            if ($userId) {
+                \Illuminate\Support\Facades\DB::table('pinned_projects')
+                    ->where('user_id', $userId)
+                    ->where('project_id', $id)
+                    ->delete();
+            }
+            $project->is_pinned = false;
             $project->save();
         } else {
-            \Illuminate\Support\Facades\DB::table('pinned_projects')->insert([
-                'user_id' => $userId,
-                'project_id' => $id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-            $project->is_pinned = 1;
+            if ($userId) {
+                \Illuminate\Support\Facades\DB::table('pinned_projects')->updateOrInsert(
+                    ['user_id' => $userId, 'project_id' => $id],
+                    ['created_at' => now(), 'updated_at' => now()]
+                );
+            }
+            $project->is_pinned = true;
             $project->save();
         }
 

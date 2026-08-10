@@ -29,9 +29,15 @@ export const useProjectStore = defineStore('project', {
           params.tracking_status = this.activeStatus
         }
         const res = await axios.get('/api/projects', { params })
-        const newProjects = res.data.projects || []
+        const rawProjects = res.data.projects || []
+        const newProjects = rawProjects.map(p => ({
+          ...p,
+          is_pinned: Boolean(p.is_pinned)
+        }))
+        
         if (JSON.stringify(newProjects) !== JSON.stringify(this.projects)) {
           this.projects = newProjects
+          this.sortProjects()
         }
         this.counts = res.data.counts || this.counts
       } catch (err) {
@@ -39,6 +45,22 @@ export const useProjectStore = defineStore('project', {
       } finally {
         this.isLoading = false
       }
+    },
+
+    sortProjects() {
+      this.projects.sort((a, b) => {
+        const aPinned = a.is_pinned ? 1 : 0
+        const bPinned = b.is_pinned ? 1 : 0
+        if (bPinned !== aPinned) {
+          return bPinned - aPinned
+        }
+        const aOrder = a.sort_order ?? 999999
+        const bOrder = b.sort_order ?? 999999
+        if (aOrder !== bOrder) {
+          return aOrder - bOrder
+        }
+        return new Date(b.last_activity_at || 0) - new Date(a.last_activity_at || 0)
+      })
     },
 
     async updateHealth(projectId, color) {
@@ -51,11 +73,8 @@ export const useProjectStore = defineStore('project', {
         await axios.patch(`/api/projects/${projectId}/health`, {
           health: color
         })
-        // ❌ REMOVED: No need to fetch all projects - we already updated optimistically
-        // await this.fetchProjects(true)
       } catch (err) {
         console.error('Failed to update health:', err)
-        // Only fetch on error to revert to server state
         await this.fetchProjects(true)
         throw err
       }
@@ -63,16 +82,26 @@ export const useProjectStore = defineStore('project', {
 
     async togglePin(projectId) {
       const project = this.projects.find(p => p.id === projectId)
-      if (project) {
-        project.is_pinned = !project.is_pinned
-      }
+      if (!project) return false
+
+      const isCurrentlyPinned = Boolean(project.is_pinned)
+      const nextState = !isCurrentlyPinned
+
+      // Instant optimistic update in 0ms
+      project.is_pinned = nextState
+      this.sortProjects()
+
       try {
         const res = await axios.patch(`/api/projects/${projectId}/pin`)
-        await this.fetchProjects(true)
-        return res.data.project?.is_pinned ?? false
+        if (res.data && res.data.project) {
+          project.is_pinned = Boolean(res.data.project.is_pinned)
+          this.sortProjects()
+        }
+        return project.is_pinned
       } catch (err) {
         console.error('Failed to toggle pin:', err)
-        await this.fetchProjects(true)
+        project.is_pinned = isCurrentlyPinned
+        this.sortProjects()
         throw err
       }
     },

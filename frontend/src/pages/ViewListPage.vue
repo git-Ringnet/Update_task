@@ -882,6 +882,7 @@ const isModalOpen = ref(false)
 const searchInputRef = ref(null)
 const scrollContainerDefault = ref(null)
 const scrollContainerGrouped = ref(null)
+const scrollContainerNotes = ref(null)
 
 // Profile dropdown & modal states
 const isProfileDropdownOpen = ref(false)
@@ -980,18 +981,20 @@ const displayedProjects = computed(() => {
     }
   }
 
-  // In notes view, prioritize pinned projects (though all should be pinned already)
-  if (viewMode.value === 'notes') {
-    list.sort((a, b) => {
-      const aPinned = a.is_pinned ? 1 : 0
-      const bPinned = b.is_pinned ? 1 : 0
+  // Always sort pinned projects to the top instantly for all view modes
+  list.sort((a, b) => {
+    const aPinned = (a.is_pinned == 1 || a.is_pinned === true) ? 1 : 0
+    const bPinned = (b.is_pinned == 1 || b.is_pinned === true) ? 1 : 0
+    if (bPinned !== aPinned) {
       return bPinned - aPinned
-    })
-  }
-
-  // Backend already sorts by: pinned -> sort_order -> last_activity_at DESC
-  // So we keep the order from backend (20 latest projects)
-  // No need to sort again here for list/grouped views
+    }
+    const aOrder = a.sort_order ?? 999999
+    const bOrder = b.sort_order ?? 999999
+    if (aOrder !== bOrder) {
+      return aOrder - bOrder
+    }
+    return new Date(b.last_activity_at || 0) - new Date(a.last_activity_at || 0)
+  })
   
   // Apply limit for pagination (load 20 initially, then load more)
   return list.slice(0, displayLimit.value)
@@ -1188,25 +1191,9 @@ const onGroupedDrop = async (event, group, dropIdx) => {
 // Pinned & star functions
 const togglePinProject = async (project) => {
   try {
-    const isCurrentlyPinned = project.is_pinned == 1 || project.is_pinned === true
-    const nextVal = isCurrentlyPinned ? 0 : 1
-    
-    // Optimistic update - Update UI immediately
-    project.is_pinned = nextVal
-    
-    // Synchronize with store array
-    const storeP = projectStore.projects.find(p => p.id === project.id)
-    if (storeP) storeP.is_pinned = nextVal
-
-    // Fire and forget - don't wait for response
-    axios.put(`/api/projects/${project.id}`, { is_pinned: nextVal }).catch(err => {
-      // Only revert on error
-      console.error(err)
-      project.is_pinned = isCurrentlyPinned
-      if (storeP) storeP.is_pinned = isCurrentlyPinned
-    })
+    await projectStore.togglePin(project.id)
   } catch (err) {
-    console.error(err)
+    console.error('Failed to toggle pin:', err)
   }
 }
 
@@ -1827,6 +1814,9 @@ onMounted(async () => {
     if (scrollContainerGrouped.value) {
       scrollContainerGrouped.value.addEventListener('scroll', handleScroll)
     }
+    if (scrollContainerNotes.value) {
+      scrollContainerNotes.value.addEventListener('scroll', handleScroll)
+    }
   }, 100)
 
   pollTimer = setInterval(() => {
@@ -1851,6 +1841,9 @@ onUnmounted(() => {
   }
   if (scrollContainerGrouped.value) {
     scrollContainerGrouped.value.removeEventListener('scroll', handleScroll)
+  }
+  if (scrollContainerNotes.value) {
+    scrollContainerNotes.value.removeEventListener('scroll', handleScroll)
   }
 })
 </script>
@@ -1892,35 +1885,32 @@ onUnmounted(() => {
   isolation: isolate;
   box-shadow:
     0 0.5px 0 rgba(255,255,255,0.6) inset,
-    0 1px 1px rgba(0,0,0,0.08),
-    0 3px 3px -1px rgba(0,0,0,0.07),
-    0 8px 10px -4px rgba(0,0,0,0.12),
-    0 18px 24px -12px rgba(0,0,0,0.18);
+    0 2px 4px rgba(0,0,0,0.06),
+    0 8px 16px -4px rgba(0,0,0,0.12);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   cursor: pointer;
-  transform: rotate(var(--tilt, 0deg));
+  transform: rotate(var(--tilt, 0deg)) translateZ(0);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
   user-select: none;
+  contain: layout style;
+  will-change: transform;
 }
 
-/* Paper grain texture SVG overlay (softened opacity for higher brightness) */
+/* Optimized Paper Grain Texture (no heavy SVG turbulence or mix-blend-mode for 60fps scrolling) */
 .note-card::before {
   content: "";
   position: absolute;
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background-image:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='c'><feTurbulence type='fractalNoise' baseFrequency='0.012' numOctaves='4' seed='7' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.06 0'/></filter><rect width='100%25' height='100%25' filter='url(%23c)'/></svg>"),
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-  background-size: 260px 260px, 120px 120px;
-  mix-blend-mode: multiply;
-  opacity: 0.22;
+  background-image: radial-gradient(rgba(0,0,0,0.04) 1px, transparent 0);
+  background-size: 8px 8px;
+  opacity: 0.4;
 }
 
-/* Crease and wrinkle shadows/lights overlay (brightened light gradients) */
+/* Streamlined Wrinkle/Crease overlay for GPU hardware acceleration */
 .note-card::after {
   content: "";
   position: absolute;
@@ -1928,20 +1918,9 @@ onUnmounted(() => {
   z-index: 2;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 26px 9px at 50% 0, rgba(0,0,0,0.09), rgba(0,0,0,0) 75%),
-    linear-gradient(112deg, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0) 8%),
-    linear-gradient(112deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0) 8%),
-    linear-gradient(258deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0) 14%),
-    linear-gradient(258deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 4%),
-    linear-gradient(34deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 20%),
-    linear-gradient(34deg, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0) 5%),
-    linear-gradient(196deg, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0) 26%),
-    linear-gradient(72deg, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0) 40%),
-    linear-gradient(150deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 45%),
-    radial-gradient(ellipse 140% 60% at 15% 100%, rgba(0,0,0,0.06), rgba(0,0,0,0) 60%),
-    radial-gradient(ellipse 70% 45% at 88% 92%, rgba(0,0,0,0.04), rgba(0,0,0,0) 55%),
-    radial-gradient(ellipse 60% 40% at 90% 8%, rgba(255,255,255,0.25), rgba(255,255,255,0) 60%),
-    radial-gradient(ellipse 50% 35% at 8% 20%, rgba(255,255,255,0.15), rgba(255,255,255,0) 55%);
+    radial-gradient(ellipse 28px 10px at 50% 0, rgba(0,0,0,0.1), rgba(0,0,0,0) 75%),
+    linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 15%),
+    linear-gradient(225deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0) 20%);
 }
 
 .note-card:nth-child(6n+2)::after,

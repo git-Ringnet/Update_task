@@ -33,4 +33,9 @@ class Milestone extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function tasks()
+    {
+        return $this->hasMany(Task::class)->with('assignee');
+    }
 }

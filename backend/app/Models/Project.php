@@ -59,17 +59,17 @@ class Project extends Model
 
     public function getIsPinnedAttribute()
     {
-        if (!empty($this->attributes['is_pinned'])) {
-            return true;
+        $userId = auth()->id() ?? request()->user_id;
+        if ($userId) {
+            $isPinnedForUser = \Illuminate\Support\Facades\DB::table('pinned_projects')
+                ->where('user_id', $userId)
+                ->where('project_id', $this->id)
+                ->exists();
+            if ($isPinnedForUser) {
+                return true;
+            }
         }
 
-        $userId = auth()->id() ?? request()->user_id;
-        if (!$userId) {
-            return false;
-        }
-        return \Illuminate\Support\Facades\DB::table('pinned_projects')
-            ->where('user_id', $userId)
-            ->where('project_id', $this->id)
-            ->exists();
+        return (bool) ($this->attributes['is_pinned'] ?? false);
     }
 }
