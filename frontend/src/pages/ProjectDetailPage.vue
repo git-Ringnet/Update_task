@@ -331,7 +331,7 @@
           <!-- Bottom Action: + Thêm việc cần làm -->
           <div class="pt-2 border-t border-amber-100/80 flex items-center justify-between relative z-10">
             <button 
-              @click="isAddStageTaskOpen = !isAddStageTaskOpen" 
+              @click="openAddStageTaskForm" 
               type="button"
               class="w-full sm:w-auto px-5 py-2.5 bg-white border border-amber-200 hover:bg-amber-50 text-amber-900 font-extrabold text-xs rounded-2xl transition-all shadow-2xs flex items-center justify-center gap-2 cursor-pointer"
             >
@@ -344,12 +344,14 @@
             </span>
           </div>
 
-          <!-- Add Stage Task Form -->
+          <!-- Add Stage Task Form (MẶC ĐỊNH CHỌN TÀI KHOẢN ĐĂNG NHẬP Ở TRƯỜNG "GIAO CHO AI") -->
           <form v-if="isAddStageTaskOpen" @submit.prevent="handleAddStageTaskSubmit" class="p-4 bg-amber-50/60 border border-amber-200 rounded-2xl space-y-3 animate-fade-in-up relative z-10">
             <input 
+              ref="stageTaskTitleInputRef"
               v-model="newStageTaskTitle" 
               type="text" 
               required 
+              autofocus
               placeholder="Tên việc cần làm..." 
               class="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-amber-500"
             />
@@ -364,6 +366,7 @@
               <input 
                 v-model="newStageTaskDueDate" 
                 type="date" 
+                required
                 class="px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-amber-500"
               />
             </div>
@@ -533,7 +536,15 @@
           </div>
 
           <form @submit.prevent="handleAddMilestone" class="space-y-3">
-            <input v-model="newMilestone.title" type="text" required placeholder="Tên chặng / cột mốc..." class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500" />
+            <input 
+              ref="milestoneTitleInputRef"
+              v-model="newMilestone.title" 
+              type="text" 
+              required 
+              autofocus
+              placeholder="Tên chặng / cột mốc..." 
+              class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500" 
+            />
             <input v-model="newMilestone.due_date" type="date" required class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500" />
             <div class="flex items-center justify-end gap-2 pt-2">
               <button @click="isAddMilestoneOpen = false" type="button" class="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-700">Hủy</button>
@@ -558,7 +569,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, computed, watch } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
@@ -600,6 +611,9 @@ const isModalOpen = ref(false)
 
 const activePageDot = ref(1)
 
+const milestoneTitleInputRef = ref(null)
+const stageTaskTitleInputRef = ref(null)
+
 const getTodayDateString = () => {
   const today = new Date()
   const yyyy = today.getFullYear()
@@ -621,11 +635,47 @@ const openAddMilestoneModal = () => {
   isAddMilestoneOpen.value = true
 }
 
+// Auto focus into stage title input field when modal opens
+watch(isAddMilestoneOpen, (newVal) => {
+  if (newVal) {
+    nextTick(() => {
+      setTimeout(() => {
+        milestoneTitleInputRef.value?.focus()
+      }, 50)
+    })
+  }
+})
+
 const selectedMilestone = ref(null)
 const isAddStageTaskOpen = ref(false)
 const newStageTaskTitle = ref('')
-const newStageTaskAssignee = ref('')
-const newStageTaskDueDate = ref('')
+const newStageTaskAssignee = ref(authStore.user?.id || '')
+const newStageTaskDueDate = ref(getTodayDateString())
+
+const openAddStageTaskForm = () => {
+  isAddStageTaskOpen.value = !isAddStageTaskOpen.value
+  if (isAddStageTaskOpen.value) {
+    newStageTaskDueDate.value = getTodayDateString()
+    newStageTaskAssignee.value = authStore.user?.id || ''
+    nextTick(() => {
+      setTimeout(() => {
+        stageTaskTitleInputRef.value?.focus()
+      }, 50)
+    })
+  }
+}
+
+// Auto focus into task title input field whenever task form opens
+watch(isAddStageTaskOpen, (newVal) => {
+  if (newVal) {
+    newStageTaskAssignee.value = authStore.user?.id || ''
+    nextTick(() => {
+      setTimeout(() => {
+        stageTaskTitleInputRef.value?.focus()
+      }, 50)
+    })
+  }
+})
 
 const updateContentText = ref('')
 const detailAttachedFiles = ref([])
@@ -867,17 +917,19 @@ const handleAddStageTaskSubmit = async () => {
   if (!newStageTaskTitle.value.trim()) return
   const pId = projectId.value
   const msId = selectedMilestone.value ? selectedMilestone.value.id : null
+  const selectedDueDate = newStageTaskDueDate.value || getTodayDateString()
+  const assignedUserId = newStageTaskAssignee.value || authStore.user?.id || 1
 
   const newTaskObj = {
     id: Date.now(),
     project_id: pId,
     milestone_id: msId,
-    assignee_id: newStageTaskAssignee.value || null,
-    assignee: users.value.find(u => u.id == newStageTaskAssignee.value) || authStore.user || null,
+    assignee_id: assignedUserId,
+    assignee: users.value.find(u => u.id == assignedUserId) || authStore.user || null,
     title: newStageTaskTitle.value.trim(),
     status: 'todo',
     priority: 'medium',
-    due_date: newStageTaskDueDate.value || null,
+    due_date: selectedDueDate,
     created_at: new Date().toISOString()
   }
 
@@ -885,11 +937,11 @@ const handleAddStageTaskSubmit = async () => {
     const res = await axios.post('/api/tasks', {
       project_id: pId,
       milestone_id: typeof msId === 'number' ? msId : null,
-      assignee_id: newStageTaskAssignee.value || null,
+      assignee_id: assignedUserId,
       title: newStageTaskTitle.value.trim(),
       status: 'todo',
       priority: 'medium',
-      due_date: newStageTaskDueDate.value || null,
+      due_date: selectedDueDate,
       created_by: authStore.user?.id || 1
     })
 
@@ -917,8 +969,8 @@ const handleAddStageTaskSubmit = async () => {
     toast.success('Đã thêm việc cần làm vào chặng!')
   } finally {
     newStageTaskTitle.value = ''
-    newStageTaskAssignee.value = ''
-    newStageTaskDueDate.value = ''
+    newStageTaskAssignee.value = authStore.user?.id || ''
+    newStageTaskDueDate.value = getTodayDateString()
     isAddStageTaskOpen.value = false
   }
 }
@@ -940,6 +992,9 @@ const fetchUsers = async () => {
   try {
     const res = await axios.get('/api/users')
     users.value = res.data
+    if (authStore.user?.id && !newStageTaskAssignee.value) {
+      newStageTaskAssignee.value = authStore.user.id
+    }
   } catch (err) {}
 }
 
