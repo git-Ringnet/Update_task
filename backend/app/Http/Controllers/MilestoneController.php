@@ -42,10 +42,10 @@ class MilestoneController extends Controller
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
+            'title' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
             'due_date' => 'nullable|date',
-            'is_completed' => 'boolean',
+            'is_completed' => 'sometimes|boolean',
         ]);
 
         $milestone = Milestone::findOrFail($id);

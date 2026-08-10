@@ -24,9 +24,12 @@ Route::post('/login', function (Request $request) {
         'password' => 'required|string',
     ]);
 
-    // Find by email or username (name)
-    $user = User::where('email', $request->username)
-                ->orWhere('name', $request->username)
+    $input = trim($request->username);
+
+    // Find by email, name, or email prefix (unaccented username e.g. an, thien, tin)
+    $user = User::where('email', $input)
+                ->orWhere('name', $input)
+                ->orWhere('email', 'LIKE', $input . '@%')
                 ->first();
 
     if (!$user || !Hash::check($request->password, $user->password)) {

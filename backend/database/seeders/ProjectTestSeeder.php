@@ -16,28 +16,10 @@ class ProjectTestSeeder extends Seeder
     {
         $faker = Faker::create('vi_VN');
         
-        // Đảm bảo có ít nhất 1 user
-        $user = User::first();
-        if (!$user) {
-            $user = User::create([
-                'name' => 'Admin User',
-                'email' => 'admin@example.com',
-                'password' => bcrypt('password'),
-                'avatar' => 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=120',
-            ]);
-        }
-
-        // Tạo thêm một số users nếu cần
+        // Sử dụng các users hiện có trong hệ thống (Tài khoản nội bộ)
         $users = User::all();
-        if ($users->count() < 5) {
-            for ($i = $users->count(); $i < 5; $i++) {
-                User::create([
-                    'name' => $faker->name,
-                    'email' => "user{$i}@example.com",
-                    'password' => bcrypt('password'),
-                    'avatar' => "https://i.pravatar.cc/150?img=" . ($i + 10),
-                ]);
-            }
+        if ($users->isEmpty()) {
+            $this->call(InternalUsersSeeder::class);
             $users = User::all();
         }
 
