@@ -286,7 +286,7 @@
       <!-- MAIN CARDS / ACTIVITIES CONTAINER ("DẤU CHÂN HOẠT ĐỘNG") -->
       <div class="bg-white border border-gray-100 rounded-3xl p-6 sm:p-8 shadow-xl w-full space-y-5 animate-fade-in-up relative">
         
-        <!-- Header Row: Title "DẤU CHÂN HOẠT ĐỘNG" & "Xem tất cả →" -->
+        <!-- Header Row: Title "DẤU CHÂN HOẠT ĐỘNG" & Double Click Hint -->
         <div class="flex items-center justify-between border-b border-gray-100 pb-4">
           <div class="flex items-center gap-3">
             <!-- Clear Filter / Back Button if Milestone is Selected -->
@@ -318,6 +318,12 @@
               <i class="fa-solid fa-circle-check text-xs"></i>
               <span>{{ selectedMilestone.is_completed ? 'Đã hoàn thành chặng' : 'Đánh dấu hoàn thành chặng' }}</span>
             </button>
+          </div>
+
+          <!-- DOUBLE CLICK HINT BADGE -->
+          <div class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50/90 border border-emerald-200/60 text-emerald-700 text-xs font-bold rounded-full shadow-2xs">
+            <i class="fa-solid fa-hand-pointer text-emerald-600 text-xs animate-bounce"></i>
+            <span>Nhấn đúp (Double-click) vào thẻ để chỉnh sửa</span>
           </div>
         </div>
 
@@ -444,15 +450,25 @@
                 </div>
               </div>
 
-              <!-- Delete action on hover -->
-              <button 
-                @click.stop="handleDeleteTask(t.id)" 
-                type="button"
-                class="w-7 h-7 rounded-full bg-gray-100 hover:bg-rose-600 hover:text-white text-gray-400 flex items-center justify-center text-xs transition-colors opacity-0 group-hover:opacity-100"
-                title="Xóa hoạt động"
-              >
-                <i class="fa-solid fa-trash-can"></i>
-              </button>
+              <!-- Edit & Delete actions on hover -->
+              <div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button 
+                  @click.stop="openEditStageTaskForm(t)" 
+                  type="button"
+                  class="w-7 h-7 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white flex items-center justify-center text-xs transition-colors cursor-pointer"
+                  title="Nhấn đúp hoặc bấm vào đây để chỉnh sửa hoạt động"
+                >
+                  <i class="fa-solid fa-pen"></i>
+                </button>
+                <button 
+                  @click.stop="handleDeleteTask(t.id)" 
+                  type="button"
+                  class="w-7 h-7 rounded-full bg-gray-100 hover:bg-rose-600 hover:text-white text-gray-400 flex items-center justify-center text-xs transition-colors cursor-pointer"
+                  title="Xóa hoạt động"
+                >
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
             </div>
           </div>
 
