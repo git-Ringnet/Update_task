@@ -284,7 +284,7 @@
       </div>
 
       <!-- MAIN CARDS / ACTIVITIES CONTAINER ("DẤU CHÂN HOẠT ĐỘNG") -->
-      <div class="bg-white border border-gray-100 rounded-3xl p-6 sm:p-8 shadow-xl max-w-4xl mx-auto space-y-5 animate-fade-in-up relative">
+      <div class="bg-white border border-gray-100 rounded-3xl p-6 sm:p-8 shadow-xl w-full space-y-5 animate-fade-in-up relative">
         
         <!-- Header Row: Title "DẤU CHÂN HOẠT ĐỘNG" & "Xem tất cả →" -->
         <div class="flex items-center justify-between border-b border-gray-100 pb-4">
