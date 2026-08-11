@@ -38,7 +38,7 @@ class TaskController extends Controller
             'description' => 'nullable|string',
             'status' => 'required|in:todo,in_progress,review,done',
             'priority' => 'required|in:low,medium,high,urgent',
-            'due_date' => 'nullable|date',
+            'due_date' => 'nullable',
         ]);
 
         $task = Task::create($validated);
@@ -92,7 +92,7 @@ class TaskController extends Controller
             'milestone_id' => 'nullable|exists:milestones,id',
             'assignee_id' => 'nullable|exists:users,id',
             'title' => 'required|string|max:255',
-            'due_date' => 'nullable|date',
+            'due_date' => 'nullable',
             'status' => 'required|in:todo,in_progress,review,done',
             'priority' => 'required|in:low,medium,high,urgent',
         ]);

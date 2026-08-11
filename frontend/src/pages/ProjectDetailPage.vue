@@ -37,8 +37,8 @@
       <div class="flex items-center justify-between">
         <!-- Back link -->
         <button @click="goBack" type="button"
-          class="inline-flex items-center gap-2 text-xs font-extrabold text-gray-600 hover:text-emerald-700 transition-colors cursor-pointer focus:outline-none">
-          <i class="fa-solid fa-arrow-left text-xs"></i>
+          class="inline-flex items-center gap-2.5 text-sm sm:text-base font-black text-gray-800 hover:text-emerald-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-2xl px-4 py-2.5 shadow-2xs transition-all cursor-pointer focus:outline-none">
+          <i class="fa-solid fa-arrow-left text-sm"></i>
           <span>Danh sách dự án</span>
         </button>
 
@@ -47,23 +47,24 @@
           <!-- Menu Button / Dropdown -->
           <div class="relative" ref="actionMenuDropdownRef">
             <button @click="toggleActionMenu" type="button"
-              class="w-9 h-9 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl flex items-center justify-center text-gray-700 shadow-2xs transition-colors cursor-pointer">
-              <i class="fa-solid fa-bars text-sm"></i>
+              class="w-11 h-11 bg-white border border-gray-200 hover:bg-gray-50 rounded-2xl flex items-center justify-center text-gray-800 shadow-2xs transition-colors cursor-pointer text-lg"
+              title="Menu tùy chọn">
+              <i class="fa-solid fa-bars"></i>
             </button>
 
             <!-- Dropdown Menu -->
             <div v-if="isActionMenuOpen"
-              class="absolute right-0 top-full mt-2 w-56 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 py-1.5 text-left ring-1 ring-black/5 animate-fade-in-up">
+              class="absolute right-0 top-full mt-2 w-60 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 py-2 text-left ring-1 ring-black/5 animate-fade-in-up">
               <button @click="handleEditProject" type="button"
-                class="w-full text-left px-4 py-2 hover:bg-amber-50 text-gray-700 hover:text-amber-800 text-xs font-bold transition-colors flex items-center gap-2.5 cursor-pointer">
-                <i class="fa-solid fa-pen-to-square text-amber-500 text-xs"></i>
+                class="w-full text-left px-4.5 py-2.5 hover:bg-amber-50 text-gray-800 hover:text-amber-800 text-xs sm:text-sm font-bold transition-colors flex items-center gap-3 cursor-pointer">
+                <i class="fa-solid fa-pen-to-square text-amber-500 text-sm"></i>
                 <span>Chỉnh sửa thông tin dự án</span>
               </button>
               <div class="border-t border-gray-100 my-1"></div>
               <button @click="handleDeleteProject" type="button" :disabled="!canDeleteProject"
-                class="w-full text-left px-4 py-2 text-xs font-bold transition-colors flex items-center gap-2.5 cursor-pointer"
+                class="w-full text-left px-4.5 py-2.5 text-xs sm:text-sm font-bold transition-colors flex items-center gap-3 cursor-pointer"
                 :class="canDeleteProject ? 'hover:bg-rose-50 text-rose-600' : 'text-gray-300 cursor-not-allowed'">
-                <i class="fa-solid fa-trash-can text-xs"></i>
+                <i class="fa-solid fa-trash-can text-sm"></i>
                 <span>Xóa dự án</span>
               </button>
             </div>
@@ -72,12 +73,12 @@
       </div>
 
       <!-- MAIN PROJECT TITLE & CUSTOMER NAME BELOW -->
-      <div class="text-center space-y-0.5 py-0">
-        <h1 class="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight font-heading">
+      <div class="text-left sm:text-center space-y-1 pt-2 pb-1">
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 tracking-tight font-heading uppercase">
           {{ project.title }}
         </h1>
-        <div class="text-xs sm:text-sm font-extrabold text-slate-500 font-sans tracking-wide">
-          {{ project.customer ? project.customer.name : 'Ringnet' }}
+        <div class="text-base sm:text-lg font-bold text-gray-500 font-sans tracking-wide">
+          {{ project.customer ? project.customer.name : 'Hùng Nhơn' }}
         </div>
       </div>
 
@@ -117,17 +118,17 @@
 
           <!-- NÚT BẮT ĐẦU DỰ ÁN (HIỂN THỊ CỜ VÀ NGÀY TẠO DỰ ÁN NẰM BÊN DƯỚI) -->
           <div 
-            class="absolute top-[165px] -translate-x-1/2 flex flex-col items-center z-30 pointer-events-none"
+            class="absolute top-[160px] -translate-x-1/2 flex flex-col items-center z-30 pointer-events-none"
             style="left: 2.73%"
           >
-            <div class="w-10 h-10 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-600 flex items-center justify-center text-base shadow-xs font-black">
+            <div class="w-11 h-11 rounded-full border-2 border-emerald-300 bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shadow-sm font-black">
               <i class="fa-solid fa-flag text-emerald-600"></i>
             </div>
             <div class="text-center mt-1 whitespace-nowrap font-sans">
-              <div class="text-[10px] font-extrabold text-gray-800">
+              <div class="text-base sm:text-lg font-black tracking-tight text-gray-900">
                 Bắt đầu
               </div>
-              <div v-if="project.created_at" class="text-[9px] font-bold text-slate-400 mt-0.5">
+              <div v-if="project.created_at" class="text-xs sm:text-sm font-bold text-slate-500 mt-0.5">
                 {{ formatDateShort(project.created_at) }}
               </div>
             </div>
@@ -188,22 +189,24 @@
             <!-- Tên chặng, Người được giao (NẾU CÓ USER ĐƯỢC CHỌN) & Thời gian NẰM CĂN CHÍNH GIỮA BÊN DƯỚI ĐỈNH NÚI -->
             <div 
               @click="selectStageByMilestone(ms)"
-              class="absolute top-[115px] -translate-x-1/2 text-center space-y-0.5 font-sans z-10 cursor-pointer group max-w-[180px]"
+              class="absolute top-[112px] -translate-x-1/2 text-center space-y-0.5 font-sans z-10 cursor-pointer group max-w-[210px]"
               :style="{ left: peakPositions[index] || '17.55%' }"
             >
+              <!-- Tên chặng font to đậm nổi bật -->
               <div 
-                class="text-sm sm:text-base font-black tracking-tight truncate transition-colors"
+                class="text-base sm:text-lg font-black tracking-tight leading-tight truncate transition-colors"
                 :class="selectedMilestone && selectedMilestone.id === ms.id ? 'text-emerald-700 underline underline-offset-4 decoration-2' : 'text-gray-900 group-hover:text-emerald-700'"
               >
                 {{ ms.title }}
               </div>
 
               <!-- HIỆN TÊN NGƯỜI ĐƯỢC ASSIGN BÊN DƯỚI TÊN CHẶNG NẾU CÓ ASSIGNEE -->
-              <div v-if="getStageAssigneeName(ms)" class="text-[11px] font-extrabold text-emerald-700 truncate">
+              <div v-if="getStageAssigneeName(ms)" class="text-xs sm:text-sm font-black text-emerald-700 truncate mt-0.5">
                 {{ getStageAssigneeName(ms) }}
               </div>
 
-              <div class="text-[11px] font-semibold text-slate-500">
+              <!-- Ngày xếp lịch -->
+              <div class="text-xs sm:text-sm font-bold text-slate-500 mt-0.5">
                 {{ ms.due_date ? formatDateShort(ms.due_date) : 'Chưa xếp lịch' }}
               </div>
             </div>
@@ -212,7 +215,7 @@
 
           <!-- Empty state when project has 0 milestones -->
           <div v-if="visibleMilestones.length === 0" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center z-10">
-            <div class="text-xs font-bold text-gray-400">Chưa có chặng nào trong dự án. Bấm "+ Thêm chặng" để tạo chặng đầu tiên.</div>
+            <div class="text-xs sm:text-sm font-bold text-gray-400">Chưa có chặng nào trong dự án. Bấm "+ Thêm chặng" để tạo chặng đầu tiên.</div>
           </div>
 
           <!-- NÚT (+) THÊM CHẶNG ĐẶT TẠI ĐIỂM KẾT THÚC CỦA ĐƯỜNG NẾT NÚI -->
@@ -225,7 +228,7 @@
               <i class="fa-solid fa-plus"></i>
             </button>
             <div class="text-center mt-1 whitespace-nowrap">
-              <div class="text-[10px] font-extrabold text-gray-800 group-hover:text-emerald-700 font-sans">
+              <div class="text-xs sm:text-sm font-black text-gray-900 group-hover:text-emerald-700 font-sans">
                 Thêm chặng
               </div>
             </div>
@@ -266,31 +269,43 @@
 
       </div>
 
-      <!-- MAIN CARDS CONTAINER (MẶC ĐỊNH HIỆN "TẤT CẢ HOẠT ĐỘNG", NHẤN CỘT MỐC SẼ LỌC THEO CỘT MỐC) -->
-      <div class="bg-white border border-gray-200 rounded-3xl p-6 sm:p-7 shadow-xl space-y-4 animate-fade-in-up relative">
+      <!-- CENTER PROMINENT "+ TẠO CẬP NHẬT" BUTTON -->
+      <div class="flex justify-center my-6">
+        <button 
+          @click="openAddStageTaskForm" 
+          type="button"
+          class="px-8 py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-black text-base sm:text-xl rounded-full shadow-lg hover:shadow-xl hover:scale-103 active:scale-97 transition-all flex items-center gap-3 cursor-pointer group"
+        >
+          <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-plus text-lg text-white"></i>
+          </div>
+          <span>TẠO CẬP NHẬT</span>
+        </button>
+      </div>
+
+      <!-- MAIN CARDS / ACTIVITIES CONTAINER ("DẤU CHÂN HOẠT ĐỘNG") -->
+      <div class="bg-white border border-gray-100 rounded-3xl p-6 sm:p-8 shadow-xl max-w-4xl mx-auto space-y-5 animate-fade-in-up relative">
         
-        <!-- Header Row: Title, Count Badge, Milestone Completion Toggle & Action Button "+ Cập nhật hoạt động" -->
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-4 relative z-10">
-          <div class="flex items-center gap-3 flex-wrap">
+        <!-- Header Row: Title "DẤU CHÂN HOẠT ĐỘNG" & "Xem tất cả →" -->
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+          <div class="flex items-center gap-3">
             <!-- Clear Filter / Back Button if Milestone is Selected -->
             <button 
               v-if="selectedMilestone"
               @click="closeSelectedStage" 
               type="button"
-              class="w-8.5 h-8.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 flex items-center justify-center text-sm font-bold shadow-2xs transition-colors cursor-pointer"
+              class="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 flex items-center justify-center text-sm font-bold shadow-2xs transition-colors cursor-pointer"
               title="Hiện tất cả hoạt động"
             >
-              <i class="fa-solid fa-arrow-left text-xs"></i>
+              <i class="fa-solid fa-arrow-left text-sm"></i>
             </button>
             
-            <div class="flex items-center gap-2.5">
-              <h3 class="text-lg sm:text-xl font-black text-gray-900 uppercase tracking-tight font-heading">
-                {{ selectedMilestone ? selectedMilestone.title : 'TẤT CẢ HOẠT ĐỘNG' }}
-              </h3>
-              <span class="w-6.5 h-6.5 rounded-lg bg-rose-500 text-white font-black text-xs flex items-center justify-center shadow-xs">
-                {{ displayedCards.length }}
-              </span>
-            </div>
+            <h3 class="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-tight font-heading">
+              {{ selectedMilestone ? selectedMilestone.title : 'DẤU CHÂN HOẠT ĐỘNG' }}
+            </h3>
+            <span class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 font-black text-xs flex items-center justify-center shadow-2xs">
+              {{ displayedCards.length }}
+            </span>
 
             <!-- BUTTON ĐÁNH DẤU CỘT MỐC ĐÓ HOÀN THÀNH -->
             <button 
@@ -304,88 +319,136 @@
               <span>{{ selectedMilestone.is_completed ? 'Đã hoàn thành chặng' : 'Đánh dấu hoàn thành chặng' }}</span>
             </button>
           </div>
-
-          <!-- Action button: + Cập nhật hoạt động -->
-          <div class="flex items-center gap-2.5">
-            <button 
-              @click="openAddStageTaskForm" 
-              type="button"
-              class="px-4.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
-            >
-              <i class="fa-solid fa-plus text-[10px]"></i>
-              <span>Cập nhật hoạt động</span>
-            </button>
-          </div>
         </div>
 
-        <!-- CARDS LIST: STRICT ORDER [NGÀY] | [NGƯỜI UPDATE / GIAO CHO] | [TÊN / NỘI DUNG HOẠT ĐỘNG (CÓ TÊN NGƯỜI ĐƯỢC ASSIGN BÊN DƯỚI)] -->
-        <div class="space-y-3 relative z-10">
+        <!-- ACTIVITIES LIST: CLEAN WHITE CARDS WITH LARGE, BOLD FONT SIZES -->
+        <div class="space-y-3.5 relative z-10">
           <div 
             v-for="t in displayedCards" 
             :key="t.id"
-            class="flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all shadow-xs group cursor-pointer"
-            :class="getTaskCardBgColor(t)"
+            @dblclick="openEditStageTaskForm(t)"
+            class="bg-white border border-gray-100 hover:border-gray-200 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all flex items-center justify-between gap-4 group cursor-pointer"
+            title="Nhấn đúp (Double-click) để chỉnh sửa hoạt động này"
           >
-            <!-- CỘT 1: NGÀY (VD: 09/10) -->
-            <div class="text-xs sm:text-sm font-black text-white/90 whitespace-nowrap min-w-[50px] tracking-tight">
-              {{ formatDateShort(t.due_date || t.created_at) }}
-            </div>
-
-            <!-- DẢI PHÂN CÁCH BẰNG CỘT TỌA ĐỘ -->
-            <div class="w-px h-5 bg-white/30 flex-shrink-0"></div>
-
-            <!-- CỘT 2: NGƯỜI UPDATE / CHỌN NHANH NGƯỜI GIAO (CHỈ HIỆN AVATAR KHI CÓ USER ĐƯỢC CHỌN) -->
-            <div class="flex items-center gap-2 text-xs font-black text-white whitespace-nowrap min-w-[115px]">
-              <img 
-                v-if="t.assignee_id && getAssigneeAvatar(t)"
-                :src="getAssigneeAvatar(t)" 
-                class="w-7 h-7 rounded-full object-cover border border-white/60 shadow-2xs flex-shrink-0" 
-                :title="getAssigneeDisplayName(t)"
-              />
-              <div v-else class="w-7 h-7 rounded-full bg-white/20 border border-white/40 flex items-center justify-center text-white/80 flex-shrink-0">
-                <i class="fa-solid fa-user text-xs"></i>
-              </div>
-
-              <!-- Select Assignee Dropdown inside Card -->
-              <select 
-                :value="t.assignee_id || ''"
-                @change="handleQuickAssignTask(t, $event.target.value)"
-                @click.stop
-                class="bg-transparent text-white font-black text-xs border-0 outline-none cursor-pointer hover:bg-white/20 rounded px-1 py-0.5 transition-colors max-w-[90px] truncate"
-                title="Đổi người giao"
+            <!-- LEFT GROUP: ICON + AVATAR + USER & TITLE -->
+            <div class="flex items-center gap-4 min-w-0 flex-1">
+              <!-- ICON BADGE (GREEN FOOTPRINTS IF UNASSIGNED, YELLOW BELL IF ASSIGNED) -->
+              <div 
+                class="w-11 h-11 rounded-full flex items-center justify-center text-lg shadow-2xs flex-shrink-0 border"
+                :class="isNewUnassignedTask(t) ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-500 border-amber-100'"
+                :title="isNewUnassignedTask(t) ? 'Hoạt động chưa phân công (Dấu chân xanh)' : 'Hoạt động đã có người phụ trách (Chuông vàng)'"
               >
-                <option value="" class="text-gray-900 font-bold">-- Chưa chọn --</option>
-                <option v-for="u in users" :key="u.id" :value="u.id" class="text-gray-900 font-bold">
-                  {{ u.name }}
-                </option>
-              </select>
-            </div>
-
-            <!-- DẢI PHÂN CÁCH BẰNG CỘT TỌA ĐỘ -->
-            <div class="w-px h-5 bg-white/30 flex-shrink-0"></div>
-
-            <!-- CỘT 3: TÊN / NỘI DUNG HOẠT ĐỘNG (CÓ TÊN NGƯỜI ĐƯỢC ASSIGN BÊN DƯỚI TÊN NẾU CÓ CHỌN USER) -->
-            <div class="flex items-center gap-3 min-w-0 flex-1">
-              <div class="w-7.5 h-7.5 rounded-full bg-white/25 flex items-center justify-center text-white flex-shrink-0 shadow-2xs">
-                <i :class="getTaskCardIcon(t)" class="text-xs"></i>
+                <i :class="isNewUnassignedTask(t) ? 'fa-solid fa-shoe-prints text-emerald-600' : 'fa-solid fa-bell text-amber-500'"></i>
               </div>
+
+              <!-- CREATOR AVATAR -->
+              <img 
+                v-if="getCreatorAvatar(t)"
+                :src="getCreatorAvatar(t)" 
+                class="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm flex-shrink-0" 
+                :title="`Người tạo: ${getCreatorDisplayName(t)}`"
+              />
+              <div v-else class="w-10 h-10 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-gray-500 shadow-sm flex-shrink-0">
+                <i class="fa-solid fa-user text-sm"></i>
+              </div>
+
+              <!-- CONTENT BLOCK: USER NAME & LARGE BOLD TITLE -->
               <div class="min-w-0 flex-1">
-                <div class="text-xs sm:text-sm font-extrabold text-white tracking-wide truncate">
+                <!-- User Name -->
+                <div class="text-xs sm:text-sm font-bold text-gray-500 tracking-tight">
+                  {{ getCreatorDisplayName(t) }}
+                </div>
+                <!-- Large Activity Title -->
+                <div class="text-base sm:text-xl font-black text-gray-900 leading-snug tracking-tight mt-0.5 truncate">
                   {{ t.title }}
                 </div>
-                <!-- BÊN DƯỚI TÊN: NẾU ĐƯỢC ASSIGN THÌ HIỆN TÊN NGƯỜI ĐÓ BÊN DƯỚI -->
-                <div v-if="t.assignee_id && getAssigneeDisplayName(t)" class="text-[11px] font-bold text-white/90 mt-0.5 flex items-center gap-1">
-                  <span>Giao cho: <strong class="text-white underline">{{ getAssigneeDisplayName(t) }}</strong></span>
+                <!-- Assignee Dropdown Selector -->
+                <div class="text-xs font-bold text-gray-500 mt-1.5 flex items-center gap-1.5 relative">
+                  <span class="opacity-80">Giao cho:</span>
+                  <div class="relative">
+                    <button
+                      type="button"
+                      @click.stop="toggleAssigneeDropdown(t.id)"
+                      class="inline-flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-extrabold text-xs border border-gray-200 rounded-full px-3 py-1 transition-all shadow-2xs cursor-pointer group/btn"
+                      title="Đổi người được giao"
+                    >
+                      <img 
+                        v-if="t.assignee_id && getAssigneeAvatar(t)"
+                        :src="getAssigneeAvatar(t)" 
+                        class="w-4 h-4 rounded-full object-cover border border-white flex-shrink-0" 
+                      />
+                      <i v-else class="fa-solid fa-user-circle text-xs text-gray-500 flex-shrink-0"></i>
+                      
+                      <span class="truncate max-w-[120px]">
+                        {{ t.assignee_id ? getAssigneeDisplayName(t) : 'Chưa phân công' }}
+                      </span>
+
+                      <i class="fa-solid fa-chevron-down text-[9px] text-gray-500 group-hover/btn:text-gray-800 transition-transform duration-200" :class="{ 'rotate-180': activeAssigneeDropdownTaskId === t.id }"></i>
+                    </button>
+
+                    <!-- CUSTOM DROPDOWN POPOVER MENU -->
+                    <div 
+                      v-if="activeAssigneeDropdownTaskId === t.id"
+                      @click.stop
+                      class="absolute left-0 top-full mt-1.5 z-50 w-56 bg-white border border-gray-200 rounded-xl shadow-2xl py-1.5 text-gray-800 animate-in fade-in zoom-in-95 duration-150 max-h-60 overflow-y-auto custom-scrollbar ring-1 ring-black/5"
+                    >
+                      <div class="px-3 py-1 text-[10px] uppercase tracking-wider font-extrabold text-emerald-600 border-b border-gray-100 mb-1 flex items-center justify-between">
+                        <span>Chọn người phụ trách</span>
+                        <i class="fa-solid fa-user-gear text-xs text-emerald-600"></i>
+                      </div>
+
+                      <!-- OPTION: CHƯA PHÂN CÔNG -->
+                      <button
+                        type="button"
+                        @click.stop="selectAssigneeForTask(t, null)"
+                        class="w-full px-3 py-1.5 flex items-center gap-2.5 text-xs font-medium hover:bg-gray-100 transition-colors rounded-lg text-left"
+                        :class="{ 'bg-emerald-50 text-emerald-700 font-bold': !t.assignee_id }"
+                      >
+                        <div class="w-5.5 h-5.5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0">
+                          <i class="fa-solid fa-user-slash text-[10px]"></i>
+                        </div>
+                        <span class="flex-1 truncate">-- Chưa phân công --</span>
+                        <i v-if="!t.assignee_id" class="fa-solid fa-check text-emerald-600 text-xs"></i>
+                      </button>
+
+                      <!-- USERS OPTIONS -->
+                      <button
+                        v-for="u in users"
+                        :key="u.id"
+                        type="button"
+                        @click.stop="selectAssigneeForTask(t, u.id)"
+                        class="w-full px-3 py-1.5 flex items-center gap-2.5 text-xs font-medium hover:bg-gray-100 transition-colors rounded-lg text-left"
+                        :class="{ 'bg-emerald-50 text-emerald-700 font-bold': t.assignee_id == u.id }"
+                      >
+                        <img 
+                          :src="u.avatar || defaultAvatar" 
+                          class="w-5.5 h-5.5 rounded-full object-cover border border-gray-200 flex-shrink-0" 
+                        />
+                        <span class="flex-1 truncate">{{ u.name }}</span>
+                        <i v-if="t.assignee_id == u.id" class="fa-solid fa-check text-emerald-600 text-xs"></i>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- Delete action on hover -->
-            <div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1 flex-shrink-0">
+            <!-- RIGHT GROUP: DATE & TIME STACK + DELETE BUTTON -->
+            <div class="flex items-center gap-3.5 flex-shrink-0">
+              <div class="text-right whitespace-nowrap">
+                <div class="text-base sm:text-lg font-black text-gray-900 tracking-tight">
+                  {{ formatDateShort(t.due_date || t.created_at) }}
+                </div>
+                <div class="text-xs sm:text-sm font-extrabold text-slate-500 mt-0.5">
+                  {{ formatTimeOnly(t.due_date || t.created_at) || '10:30' }}
+                </div>
+              </div>
+
+              <!-- Delete action on hover -->
               <button 
                 @click.stop="handleDeleteTask(t.id)" 
                 type="button"
-                class="w-6.5 h-6.5 rounded-full bg-white/25 hover:bg-rose-600 text-white flex items-center justify-center text-[10px] transition-colors"
+                class="w-7 h-7 rounded-full bg-gray-100 hover:bg-rose-600 hover:text-white text-gray-400 flex items-center justify-center text-xs transition-colors opacity-0 group-hover:opacity-100"
                 title="Xóa hoạt động"
               >
                 <i class="fa-solid fa-trash-can"></i>
@@ -393,12 +456,21 @@
             </div>
           </div>
 
-          <!-- Empty stage tasks state -->
-          <div v-if="displayedCards.length === 0" class="py-8 text-center text-gray-400 text-xs font-semibold bg-white rounded-2xl border border-dashed border-gray-200">
-            Chưa có hoạt động nào. Bấm nút "+ Cập nhật hoạt động" để tạo mới.
+          <!-- Empty stage tasks state: Click or Double-click to open create modal -->
+          <div 
+            v-if="displayedCards.length === 0" 
+            @click="openAddStageTaskForm"
+            @dblclick="openAddStageTaskForm"
+            class="py-12 text-center text-gray-400 text-sm font-semibold bg-white rounded-2xl border border-dashed border-gray-200 hover:border-emerald-400 hover:bg-emerald-50/30 transition-all cursor-pointer group"
+            title="Bấm hoặc Nhấn đúp (Double-click) vào đây để tạo cập nhật mới"
+          >
+            <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg mx-auto mb-2 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-plus"></i>
+            </div>
+            <div class="font-extrabold text-gray-700 group-hover:text-emerald-700">Chưa có cập nhật hoạt động nào.</div>
+            <div class="text-xs text-gray-400 mt-1">Bấm hoặc Nhấn đúp (Double-click) vào đây để mở bảng tạo cập nhật mới.</div>
           </div>
         </div>
-
       </div>
 
     </main>
@@ -423,9 +495,11 @@
           <div class="flex items-center justify-between border-b border-gray-100 pb-3">
             <div class="flex items-center gap-2.5">
               <span class="w-8.5 h-8.5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg shadow-2xs font-bold">
-                <i class="fa-solid fa-bullseye"></i>
+                <i :class="editingTaskId ? 'fa-solid fa-pen-to-square' : 'fa-solid fa-bullseye'"></i>
               </span>
-              <h3 class="text-base sm:text-lg font-black text-gray-900 tracking-tight font-heading">Cập nhật hoạt động</h3>
+              <h3 class="text-base sm:text-lg font-black text-gray-900 tracking-tight font-heading">
+                {{ editingTaskId ? 'Chỉnh sửa cập nhật hoạt động' : 'Tạo cập nhật hoạt động' }}
+              </h3>
             </div>
 
             <button 
@@ -505,8 +579,8 @@
                 type="submit" 
                 class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <i class="fa-solid fa-plus text-base"></i>
-                <span>Cập nhật hoạt động</span>
+                <i :class="editingTaskId ? 'fa-solid fa-pen-to-square text-base' : 'fa-solid fa-plus text-base'"></i>
+                <span>{{ editingTaskId ? 'Lưu chỉnh sửa hoạt động' : 'Tạo cập nhật hoạt động' }}</span>
               </button>
             </div>
 
@@ -750,6 +824,7 @@ const selectedMilestone = ref(null)
 const selectedTargetMilestoneId = ref(null)
 
 const isAddStageTaskOpen = ref(false)
+const editingTaskId = ref(null)
 const newStageTaskTitle = ref('')
 const newStageTaskAssignee = ref('')
 const newStageTaskDueDate = ref('')
@@ -757,11 +832,47 @@ const newStageTaskDueTime = ref('')
 const newStageTaskMilestoneId = ref(null)
 
 const openAddStageTaskForm = () => {
+  editingTaskId.value = null
   newStageTaskTitle.value = ''
   newStageTaskDueDate.value = ''
   newStageTaskDueTime.value = ''
   newStageTaskAssignee.value = '' // MẶC ĐỊNH CHƯA CHỌN USER!
   newStageTaskMilestoneId.value = selectedMilestone.value ? selectedMilestone.value.id : (effectiveMilestones.value[0]?.id || null)
+  isAddStageTaskOpen.value = true
+}
+
+const openEditStageTaskForm = (task) => {
+  if (!task) return
+  editingTaskId.value = task.id
+  newStageTaskTitle.value = task.title || ''
+  newStageTaskAssignee.value = task.assignee_id ? String(task.assignee_id) : ''
+  newStageTaskMilestoneId.value = task.milestone_id || (selectedMilestone.value ? selectedMilestone.value.id : (effectiveMilestones.value[0]?.id || null))
+  
+  if (task.due_date) {
+    if (typeof task.due_date === 'string' && task.due_date.includes(' ')) {
+      const parts = task.due_date.split(' ')
+      newStageTaskDueDate.value = parts[0]
+      if (parts[1]) {
+        const timeParts = parts[1].split(':')
+        newStageTaskDueTime.value = `${timeParts[0]}:${timeParts[1]}`
+      }
+    } else {
+      const d = new Date(task.due_date)
+      if (!isNaN(d.getTime())) {
+        const yyyy = d.getFullYear()
+        const mm = String(d.getMonth() + 1).padStart(2, '0')
+        const dd = String(d.getDate()).padStart(2, '0')
+        newStageTaskDueDate.value = `${yyyy}-${mm}-${dd}`
+        const hh = String(d.getHours()).padStart(2, '0')
+        const min = String(d.getMinutes()).padStart(2, '0')
+        newStageTaskDueTime.value = `${hh}:${min}`
+      }
+    }
+  } else {
+    newStageTaskDueDate.value = ''
+    newStageTaskDueTime.value = ''
+  }
+
   isAddStageTaskOpen.value = true
 }
 
@@ -860,6 +971,28 @@ const getAssigneeDisplayName = (task) => {
     if (u) return u.name
   }
   return ''
+}
+
+const getCreatorAvatar = (task) => {
+  if (!task) return defaultAvatar
+  if (task.creator?.avatar) return task.creator.avatar
+  const creatorId = task.created_by || task.creator_id || task.creator?.id
+  if (creatorId && users.value) {
+    const u = users.value.find(user => user.id == creatorId || String(user.id) === String(creatorId))
+    if (u?.avatar) return u.avatar
+  }
+  return defaultAvatar
+}
+
+const getCreatorDisplayName = (task) => {
+  if (!task) return 'Người tạo'
+  if (task.creator?.name) return task.creator.name
+  const creatorId = task.created_by || task.creator_id || task.creator?.id
+  if (creatorId && users.value) {
+    const u = users.value.find(user => user.id == creatorId || String(user.id) === String(creatorId))
+    if (u) return u.name
+  }
+  return 'Người tạo'
 }
 
 // REAL MILESTONES DATA DYNAMIC COMPUTATION FROM BACKEND
@@ -1054,6 +1187,11 @@ const currentStageTasks = computed(() => {
   })
 })
 
+const isNewUnassignedTask = (t) => {
+  if (!t) return true
+  return !t.assignee_id
+}
+
 const closeSelectedStage = () => {
   selectedMilestone.value = null
 }
@@ -1091,19 +1229,86 @@ const handleQuickAssignTask = async (task, newUserId) => {
   }
 }
 
+const activeAssigneeDropdownTaskId = ref(null)
+
+const toggleAssigneeDropdown = (taskId) => {
+  if (activeAssigneeDropdownTaskId.value === taskId) {
+    activeAssigneeDropdownTaskId.value = null
+  } else {
+    activeAssigneeDropdownTaskId.value = taskId
+  }
+}
+
+const selectAssigneeForTask = (task, userId) => {
+  activeAssigneeDropdownTaskId.value = null
+  handleQuickAssignTask(task, userId)
+}
+
+const handleDocumentClick = () => {
+  activeAssigneeDropdownTaskId.value = null
+}
+
 // SUBMIT COMPREHENSIVE "CẬP NHẬT HOẠT ĐỘNG"
 const handleAddStageTaskSubmit = async () => {
   if (!newStageTaskTitle.value.trim()) return
   const pId = projectId.value
   const msId = newStageTaskMilestoneId.value || selectedTargetMilestoneId.value || (effectiveMilestones.value[0]?.id || null)
   
-  let selectedDueDate = newStageTaskDueDate.value || null
-  if (selectedDueDate && newStageTaskDueTime.value) {
-    selectedDueDate = `${selectedDueDate} ${newStageTaskDueTime.value}:00`
+  const titleText = newStageTaskTitle.value.trim()
+  const parsedDate = parseVietnameseDateFromText(titleText)
+  const parsedTime = parseTimeFromText(titleText)
+
+  const finalDueDate = newStageTaskDueDate.value || parsedDate || getTodayDateString()
+  const finalDueTime = newStageTaskDueTime.value || parsedTime || null
+
+  let selectedDueDate = null
+
+  if (finalDueTime) {
+    selectedDueDate = `${finalDueDate} ${finalDueTime}:00`
+  } else if (newStageTaskDueDate.value || parsedDate) {
+    const now = new Date()
+    const hh = String(now.getHours()).padStart(2, '0')
+    const mm = String(now.getMinutes()).padStart(2, '0')
+    selectedDueDate = `${finalDueDate} ${hh}:${mm}:00`
+  } else {
+    const now = new Date()
+    const yyyy = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    const hh = String(now.getHours()).padStart(2, '0')
+    const mm = String(now.getMinutes()).padStart(2, '0')
+    selectedDueDate = `${yyyy}-${month}-${day} ${hh}:${mm}:00`
   }
   
   const assignedUserId = newStageTaskAssignee.value ? Number(newStageTaskAssignee.value) : null
   const currentUserId = authStore.user?.id || 1
+
+  if (editingTaskId.value) {
+    try {
+      if (typeof editingTaskId.value === 'number') {
+        await axios.put(`/api/tasks/${editingTaskId.value}`, {
+          milestone_id: typeof msId === 'number' ? msId : null,
+          assignee_id: assignedUserId,
+          title: titleText,
+          status: 'todo',
+          priority: 'medium',
+          due_date: selectedDueDate
+        })
+      }
+      toast.success('Đã cập nhật thông tin hoạt động!')
+      await fetchProjectDetail()
+    } catch (err) {
+      toast.success('Đã cập nhật hoạt động!')
+    } finally {
+      editingTaskId.value = null
+      newStageTaskTitle.value = ''
+      newStageTaskAssignee.value = ''
+      newStageTaskDueDate.value = ''
+      newStageTaskDueTime.value = ''
+      isAddStageTaskOpen.value = false
+    }
+    return
+  }
 
   const newTaskObj = {
     id: Date.now(),
@@ -1112,11 +1317,11 @@ const handleAddStageTaskSubmit = async () => {
     assignee_id: assignedUserId,
     assignee: assignedUserId ? (users.value.find(u => u.id == assignedUserId) || null) : null,
     created_by: currentUserId,
-    title: newStageTaskTitle.value.trim(),
+    title: titleText,
     status: 'todo',
     priority: 'medium',
-    due_date: selectedDueDate || new Date().toISOString(),
-    created_at: new Date().toISOString()
+    due_date: selectedDueDate,
+    created_at: selectedDueDate
   }
 
   try {
@@ -1124,10 +1329,10 @@ const handleAddStageTaskSubmit = async () => {
       project_id: pId,
       milestone_id: typeof msId === 'number' ? msId : null,
       assignee_id: assignedUserId,
-      title: newStageTaskTitle.value.trim(),
+      title: titleText,
       status: 'todo',
       priority: 'medium',
-      due_date: selectedDueDate || new Date().toISOString(),
+      due_date: selectedDueDate,
       created_by: currentUserId
     })
 
@@ -1145,7 +1350,7 @@ const handleAddStageTaskSubmit = async () => {
     await axios.post('/api/comments', {
       project_id: pId,
       user_id: currentUserId,
-      content: `Đã thêm hoạt động: ${newStageTaskTitle.value.trim()}`,
+      content: `Đã thêm hoạt động: ${titleText}`,
       type: 'comment'
     })
 
@@ -1164,6 +1369,7 @@ const handleAddStageTaskSubmit = async () => {
 
     toast.success('Đã cập nhật hoạt động!')
   } finally {
+    editingTaskId.value = null
     newStageTaskTitle.value = ''
     newStageTaskAssignee.value = ''
     newStageTaskDueDate.value = ''
@@ -1374,12 +1580,44 @@ const formatDateShort = (dateStr) => {
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
+const formatTimeOnly = (dateStr) => {
+  if (!dateStr) return ''
+  
+  // Extract time from string format "YYYY-MM-DD HH:mm:ss" or "YYYY-MM-DD HH:mm"
+  if (typeof dateStr === 'string' && dateStr.includes(' ')) {
+    const parts = dateStr.split(' ')
+    if (parts[1]) {
+      const timeParts = parts[1].split(':')
+      if (timeParts.length >= 2) {
+        return `${timeParts[0].padStart(2, '0')}:${timeParts[1].padStart(2, '0')}`
+      }
+    }
+  }
+
+  // Extract time from ISO string "YYYY-MM-DDTHH:mm:ss"
+  if (typeof dateStr === 'string' && dateStr.includes('T')) {
+    const parts = dateStr.split('T')
+    if (parts[1] && !parts[1].startsWith('00:00:00')) {
+      const timeParts = parts[1].split(':')
+      if (timeParts.length >= 2) {
+        return `${timeParts[0].padStart(2, '0')}:${timeParts[1].padStart(2, '0')}`
+      }
+    }
+  }
+
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return ''
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
+  window.addEventListener('click', handleDocumentClick)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('click', handleDocumentClick)
 })
 
 watch(
