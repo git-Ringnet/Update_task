@@ -1,5 +1,5 @@
 <template>
-  <header class="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-2xs py-2">
+  <header class="bg-[#f4f5f0] border-b border-stone-200/80 sticky top-0 z-50 py-2">
     <!-- Navbar Container: Centered workspace dropdown -->
     <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-center relative" ref="dropdownRef">
       

@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#f8faf9] pb-24">
+  <div class="min-h-screen bg-[#f4f5f0] pb-24">
     <!-- Navbar Component -->
     <Navbar />
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#f8faf9] pb-24">
+  <div class="min-h-screen bg-[#f4f5f0] pb-24">
     <Navbar />
 
     <main class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -128,7 +128,7 @@
           </div>
 
           <!-- Load more container -->
-          <div v-if="activities.length > displayLimit" class="pt-4 flex justify-center bg-[#f8faf9] mb-4">
+          <div v-if="activities.length > displayLimit" class="pt-4 flex justify-center bg-[#f4f5f0] mb-4">
             <button
               @click="displayLimit += 15"
               type="button"

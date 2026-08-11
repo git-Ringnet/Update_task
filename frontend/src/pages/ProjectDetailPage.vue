@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#fafbfc] text-gray-800 pb-24 font-sans select-none">
+  <div class="min-h-screen bg-[#f4f5f0] text-gray-800 pb-24 font-sans select-none">
     <!-- Navbar Component -->
     <Navbar />
 
@@ -74,7 +74,7 @@
 
       <!-- MAIN PROJECT TITLE & CUSTOMER NAME BELOW -->
       <div class="text-left sm:text-center space-y-1 pt-2 pb-1">
-        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 tracking-tight font-heading uppercase">
+        <h1 class="text-2xl sm:text-4xl lg:text-5xl font-black text-gray-900 tracking-tight font-heading uppercase break-words max-w-full leading-tight">
           {{ project.title }}
         </h1>
         <div class="text-base sm:text-lg font-bold text-gray-500 font-sans tracking-wide">
@@ -83,7 +83,7 @@
       </div>
 
       <!-- SOFT ELEGANT MOUNTAIN ROADMAP CONTAINER -->
-      <div class="relative bg-white rounded-3xl p-4 sm:p-6 shadow-xs select-none overflow-hidden min-h-[340px]">
+      <div class="relative bg-[#f4f5f0] rounded-3xl p-4 sm:p-6 select-none overflow-hidden min-h-[340px]">
 
         <!-- Mountain graphic container -->
         <div class="relative min-w-[980px] h-[290px] mx-auto px-4 sm:px-6">
@@ -119,7 +119,7 @@
           <!-- NÚT BẮT ĐẦU DỰ ÁN (HIỂN THỊ CỜ VÀ NGÀY TẠO DỰ ÁN NẰM BÊN DƯỚI) -->
           <div 
             class="absolute top-[160px] -translate-x-1/2 flex flex-col items-center z-30 pointer-events-none"
-            style="left: 2.73%"
+            style="left: 3.18%"
           >
             <div class="w-11 h-11 rounded-full border-2 border-emerald-300 bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shadow-sm font-black">
               <i class="fa-solid fa-flag text-emerald-600"></i>
@@ -135,81 +135,123 @@
           </div>
 
           <!-- DYNAMIC MILESTONE PEAKS & SLOPE AVATARS -->
-          <template v-for="(ms, index) in visibleMilestones" :key="ms.id || index">
+          <template v-for="(item, index) in milestoneLayout.visibleItems" :key="item.ms.id || index">
             
-            <!-- ĐỈNH NÚI: CỜ XANH + SỐ VIỆC (MÀU XANH NẾU HOÀN THÀNH, MÀU ĐỎ NẾU ĐANG THỰC HIỆN) -->
-            <div 
-              @click="selectStageByMilestone(ms)"
-              class="absolute top-[36px] -translate-x-1/2 flex items-end gap-1.5 z-20 cursor-pointer group transition-all duration-300 hover:scale-108"
-              :style="{ left: peakPositions[index] || '17.55%' }"
-            >
-              <div class="flex flex-col items-center -space-y-1">
-                <!-- Status Flag in Green -->
-                <i class="fa-solid fa-flag text-2xl filter drop-shadow-2xs" :class="isStageCompleted(ms) ? 'text-emerald-700 scale-110' : 'text-emerald-600'"></i>
-                
-                <!-- Task Count Circle: GREEN IF STAGE COMPLETED, RED IF IN PROGRESS -->
+            <!-- COMPACT COMPLETED STAGE NODE (NHÔ CAO GIỐNG NÚI) -->
+            <template v-if="item.isDone">
+              <!-- Compact Node Flag Icon + Avatars -->
+              <div 
+                @click="selectStageByMilestone(item.ms)"
+                class="absolute top-[95px] -translate-x-1/2 flex items-center justify-center gap-1.5 z-20 cursor-pointer group transition-all duration-300 hover:scale-110"
+                :style="{ left: item.leftPct }"
+              >
                 <div 
-                  class="w-6.5 h-6.5 rounded-full text-white flex items-center justify-center text-xs font-black shadow-xs border-2 border-white transition-colors"
-                  :class="isStageCompleted(ms) ? 'bg-emerald-600' : 'bg-rose-500'"
+                  class="w-7.5 h-7.5 rounded-full border-2 border-emerald-600 bg-white text-emerald-600 flex items-center justify-center shadow-xs transition-colors group-hover:bg-emerald-50"
+                  :title="`Chặng đã hoàn thành: ${item.ms.title}`"
                 >
-                  {{ getStageTaskCount(ms) }}
+                  <i class="fa-solid fa-flag text-xs text-emerald-600"></i>
+                </div>
+
+                <!-- Task count badge if > 0 -->
+                <div v-if="getStageTaskCount(item.ms) > 0" class="w-5.5 h-5.5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-black shadow-2xs border border-white">
+                  {{ getStageTaskCount(item.ms) }}
+                </div>
+
+                <!-- AVATAR NGƯỜI CẬP NHẬT/PHỤ TRÁCH CHẶNG ĐÃ HOÀN THÀNH -->
+                <div v-if="getStageActiveUsers(item.ms).length > 0" class="flex items-center -space-x-1.5 ml-0.5">
+                  <div 
+                    v-for="u in getStageActiveUsers(item.ms)" 
+                    :key="u.id"
+                    class="w-7 h-7 rounded-full bg-white p-0.5 shadow-sm border-2 border-emerald-500 transition-all hover:scale-115"
+                    :title="`Người phụ trách: ${u.name}`"
+                  >
+                    <img :src="u.avatar || defaultAvatar" class="w-full h-full rounded-full object-cover" />
+                  </div>
                 </div>
               </div>
 
-              <!-- AVATAR NẰM KẾ BÊN CỜ KHI CỘT MỐC ĐÃ ĐƯỢC ĐÁNH DẤU HOÀN THÀNH (NẾU CÓ THÀNH VIÊN ĐƯỢC ASSIGN) -->
-              <div v-if="isStageCompleted(ms) && getStageActiveUsers(ms).length > 0" class="flex items-center -space-x-2">
+              <!-- Compact Stage Label & Date Below -->
+              <div 
+                @click="selectStageByMilestone(item.ms)"
+                class="absolute top-[135px] -translate-x-1/2 text-center space-y-0.5 font-sans z-10 cursor-pointer group max-w-[135px]"
+                :style="{ left: item.leftPct }"
+              >
                 <div 
-                  v-for="u in getStageActiveUsers(ms)" 
+                  class="text-xs sm:text-sm font-black tracking-tight leading-tight uppercase transition-colors truncate max-w-[135px]"
+                  :class="selectedMilestone && selectedMilestone.id === item.ms.id ? 'text-emerald-700 underline underline-offset-4 decoration-2' : 'text-gray-900 group-hover:text-emerald-700'"
+                  :title="item.ms.title"
+                >
+                  {{ item.ms.title }}
+                </div>
+
+                <div v-if="getStageAssigneeName(item.ms)" class="text-[11px] font-bold text-emerald-700 truncate max-w-[135px]">
+                  {{ getStageAssigneeName(item.ms) }}
+                </div>
+
+                <div class="text-[10px] font-bold text-slate-500">
+                  {{ item.ms.due_date ? formatDateShort(item.ms.due_date) : '' }}
+                </div>
+              </div>
+            </template>
+
+            <!-- ACTIVE / IN-PROGRESS STAGE PEAK NODE (HIGH MOUNTAIN PEAK) -->
+            <template v-else>
+              <!-- ĐỈNH NÚI: CỜ XANH + SỐ VIỆC -->
+              <div 
+                @click="selectStageByMilestone(item.ms)"
+                class="absolute top-[36px] -translate-x-1/2 flex items-end gap-1.5 z-20 cursor-pointer group transition-all duration-300 hover:scale-108"
+                :style="{ left: item.leftPct }"
+              >
+                <div class="flex flex-col items-center -space-y-1">
+                  <!-- Status Flag in Green -->
+                  <i class="fa-solid fa-flag text-2xl filter drop-shadow-2xs text-emerald-600"></i>
+                  
+                  <!-- Task Count Circle -->
+                  <div class="w-6.5 h-6.5 rounded-full text-white flex items-center justify-center text-xs font-black shadow-xs border-2 border-white transition-colors bg-rose-500">
+                    {{ getStageTaskCount(item.ms) }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- AVATAR ĐANG LEO SƯỜN NÚI -->
+              <div 
+                v-if="getStageActiveUsers(item.ms).length > 0"
+                @click="selectStageByMilestone(item.ms)"
+                class="absolute top-[92px] -translate-x-1/2 flex items-center -space-x-2 z-25 cursor-pointer transition-all duration-300 hover:scale-110"
+                :style="{ left: item.slopePct }"
+              >
+                <div 
+                  v-for="u in getStageActiveUsers(item.ms)" 
                   :key="u.id"
-                  class="w-9 h-9 rounded-full bg-white p-0.5 shadow-md border-2 border-emerald-500 transition-all hover:scale-115 hover:z-30 filter drop-shadow-xs"
-                  :title="`Cột mốc đã hoàn thành: ${u.name}`"
+                  class="w-8.5 h-8.5 rounded-full bg-white p-0.5 shadow-md border-2 border-emerald-500 transition-all hover:scale-115 hover:z-30 filter drop-shadow-2xs"
+                  :title="`Đang thực hiện chặng ${item.ms.title}: ${u.name}`"
                 >
                   <img :src="u.avatar || defaultAvatar" class="w-full h-full rounded-full object-cover" />
                 </div>
               </div>
-            </div>
 
-            <!-- AVATAR ĐANG LEO SƯỜN NÚI NẰM TRỰC TIẾP TRÊN ĐƯỜNG KẺ NẾT ĐỨT KHI CHẶNG ĐANG THỰC HIỆN (CHỈ HIỆN KHI CÓ USER ĐƯỢC CHỌN) -->
-            <div 
-              v-if="!isStageCompleted(ms) && getStageActiveUsers(ms).length > 0"
-              @click="selectStageByMilestone(ms)"
-              class="absolute top-[92px] -translate-x-1/2 flex items-center -space-x-2 z-25 cursor-pointer transition-all duration-300 hover:scale-110"
-              :style="{ left: slopePositions[index] || '10.14%' }"
-            >
+              <!-- Tên chặng, Người được giao & Thời gian -->
               <div 
-                v-for="u in getStageActiveUsers(ms)" 
-                :key="u.id"
-                class="w-8.5 h-8.5 rounded-full bg-white p-0.5 shadow-md border-2 border-emerald-500 transition-all hover:scale-115 hover:z-30 filter drop-shadow-2xs"
-                :title="`Đang thực hiện chặng ${ms.title}: ${u.name}`"
+                @click="selectStageByMilestone(item.ms)"
+                class="absolute top-[112px] -translate-x-1/2 text-center space-y-0.5 font-sans z-10 cursor-pointer group max-w-[210px]"
+                :style="{ left: item.leftPct }"
               >
-                <img :src="u.avatar || defaultAvatar" class="w-full h-full rounded-full object-cover" />
-              </div>
-            </div>
+                <div 
+                  class="text-base sm:text-lg font-black tracking-tight leading-tight truncate transition-colors"
+                  :class="selectedMilestone && selectedMilestone.id === item.ms.id ? 'text-emerald-700 underline underline-offset-4 decoration-2' : 'text-gray-900 group-hover:text-emerald-700'"
+                >
+                  {{ item.ms.title }}
+                </div>
 
-            <!-- Tên chặng, Người được giao (NẾU CÓ USER ĐƯỢC CHỌN) & Thời gian NẰM CĂN CHÍNH GIỮA BÊN DƯỚI ĐỈNH NÚI -->
-            <div 
-              @click="selectStageByMilestone(ms)"
-              class="absolute top-[112px] -translate-x-1/2 text-center space-y-0.5 font-sans z-10 cursor-pointer group max-w-[210px]"
-              :style="{ left: peakPositions[index] || '17.55%' }"
-            >
-              <!-- Tên chặng font to đậm nổi bật -->
-              <div 
-                class="text-base sm:text-lg font-black tracking-tight leading-tight truncate transition-colors"
-                :class="selectedMilestone && selectedMilestone.id === ms.id ? 'text-emerald-700 underline underline-offset-4 decoration-2' : 'text-gray-900 group-hover:text-emerald-700'"
-              >
-                {{ ms.title }}
-              </div>
+                <div v-if="getStageAssigneeName(item.ms)" class="text-xs sm:text-sm font-black text-emerald-700 truncate mt-0.5">
+                  {{ getStageAssigneeName(item.ms) }}
+                </div>
 
-              <!-- HIỆN TÊN NGƯỜI ĐƯỢC ASSIGN BÊN DƯỚI TÊN CHẶNG NẾU CÓ ASSIGNEE -->
-              <div v-if="getStageAssigneeName(ms)" class="text-xs sm:text-sm font-black text-emerald-700 truncate mt-0.5">
-                {{ getStageAssigneeName(ms) }}
+                <div class="text-xs sm:text-sm font-bold text-slate-500 mt-0.5">
+                  {{ item.ms.due_date ? formatDateShort(item.ms.due_date) : 'Chưa xếp lịch' }}
+                </div>
               </div>
-
-              <!-- Ngày xếp lịch -->
-              <div class="text-xs sm:text-sm font-bold text-slate-500 mt-0.5">
-                {{ ms.due_date ? formatDateShort(ms.due_date) : 'Chưa xếp lịch' }}
-              </div>
-            </div>
+            </template>
 
           </template>
 
@@ -269,22 +311,22 @@
 
       </div>
 
-      <!-- CENTER PROMINENT "+ TẠO CẬP NHẬT" BUTTON -->
+      <!-- CENTER PROMINENT "CHIM SẺ GỌI ĐẠI BÀNG" BUTTON -->
       <div class="flex justify-center my-6">
         <button 
-          @click="openAddStageTaskForm" 
+          @click="toggleInlineForm" 
           type="button"
           class="px-8 py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-black text-base sm:text-xl rounded-full shadow-lg hover:shadow-xl hover:scale-103 active:scale-97 transition-all flex items-center gap-3 cursor-pointer group"
         >
           <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <i class="fa-solid fa-plus text-lg text-white"></i>
+            <i class="fa-solid fa-dove text-lg text-white"></i>
           </div>
-          <span>TẠO CẬP NHẬT</span>
+          <span>CHIM SẺ GỌI ĐẠI BÀNG</span>
         </button>
       </div>
 
       <!-- MAIN CARDS / ACTIVITIES CONTAINER ("DẤU CHÂN HOẠT ĐỘNG") -->
-      <div class="bg-white border border-gray-100 rounded-3xl p-6 sm:p-8 shadow-xl w-full space-y-5 animate-fade-in-up relative">
+      <div class="bg-[#f4f5f0] rounded-3xl p-4 sm:p-6 w-full space-y-5 animate-fade-in-up relative">
         
         <!-- Header Row: Title "DẤU CHÂN HOẠT ĐỘNG" & Double Click Hint -->
         <div class="flex items-center justify-between border-b border-gray-100 pb-4">
@@ -339,6 +381,8 @@
           </div>
         </div>
 
+
+
         <!-- ACTIVITIES LIST: CLEAN WHITE CARDS WITH LARGE, BOLD FONT SIZES -->
         <div class="space-y-3.5 relative z-10">
           <div 
@@ -377,9 +421,7 @@
                   {{ getCreatorDisplayName(t) }}
                 </div>
                 <!-- Large Activity Title -->
-                <div class="text-base sm:text-xl font-black text-gray-900 leading-snug tracking-tight mt-0.5 truncate">
-                  {{ t.title }}
-                </div>
+                <div class="text-base sm:text-xl font-black text-gray-900 leading-snug tracking-tight mt-0.5" v-html="formatTitleWithMentions(t.title)"></div>
                 <!-- Assignee Dropdown Selector -->
                 <div class="text-xs font-bold text-gray-500 mt-1.5 flex items-center gap-1.5 relative">
                   <span class="opacity-80">Giao cho:</span>
@@ -507,116 +549,267 @@
     <ProjectModal :is-open="isModalOpen" :customers="customers" :users="users" :edit-project="project"
       @close="handleCloseModal" @submit="handleUpdateProjectSubmit" @customer-created="fetchCustomers" />
 
-    <!-- MODAL POPUP DIALOG FOR ADDING A NEW STAGE TASK / CẬP NHẬT HOẠT ĐỘNG -->
+    <!-- FIXED BOTTOM UPDATE CREATION CARD (COLLAPSED BY DEFAULT, FIXED AT BOTTOM OF SCREEN WHEN OPEN) -->
     <transition 
-      enter-active-class="transition duration-200 ease-out" 
-      enter-from-class="opacity-0 scale-95" 
-      enter-to-class="opacity-100 scale-100" 
-      leave-active-class="transition duration-150 ease-in" 
-      leave-from-class="opacity-100 scale-100" 
-      leave-to-class="opacity-0 scale-95"
+      enter-active-class="transition duration-300 ease-out transform" 
+      enter-from-class="opacity-0 translate-y-full" 
+      enter-to-class="opacity-100 translate-y-0" 
+      leave-active-class="transition duration-200 ease-in transform" 
+      leave-from-class="opacity-100 translate-y-0" 
+      leave-to-class="opacity-0 translate-y-full"
     >
-      <div v-if="isAddStageTaskOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs" @click.self="isAddStageTaskOpen = false">
-        <div class="bg-white rounded-3xl p-6 sm:p-7 w-full max-w-lg border border-gray-100 shadow-2xl space-y-5 animate-fade-in-up relative">
-          
-          <!-- Header -->
-          <div class="flex items-center justify-between border-b border-gray-100 pb-3">
-            <div class="flex items-center gap-2.5">
-              <span class="w-8.5 h-8.5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg shadow-2xs font-bold">
-                <i :class="editingTaskId ? 'fa-solid fa-pen-to-square' : 'fa-solid fa-bullseye'"></i>
-              </span>
-              <h3 class="text-base sm:text-lg font-black text-gray-900 tracking-tight font-heading">
-                {{ editingTaskId ? 'Chỉnh sửa cập nhật hoạt động' : 'Tạo cập nhật hoạt động' }}
-              </h3>
-            </div>
-
-            <button 
-              @click="isAddStageTaskOpen = false" 
-              type="button" 
-              class="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-            >
-              <span class="font-mono text-[10px] uppercase font-black px-1 py-0.5 bg-gray-200 rounded text-gray-700 mr-1">ESC</span>để đóng
-            </button>
-          </div>
-
-          <!-- Task Form -->
-          <form @submit.prevent="handleAddStageTaskSubmit" class="space-y-4">
+      <div 
+        v-if="isInlineFormOpen"
+        ref="inlineFormRef"
+        class="fixed bottom-0 left-0 right-0 z-50 pointer-events-none pb-3 sm:pb-5 px-4 sm:px-6 lg:px-8 transition-all"
+      >
+        <div class="max-w-[1380px] mx-auto pointer-events-auto bg-white border border-gray-200 shadow-2xl rounded-2xl p-4 sm:p-5 relative ring-1 ring-black/5">
+          <form @submit.prevent="handleAddStageTaskSubmit" class="flex flex-col lg:flex-row items-stretch lg:items-center gap-4 lg:gap-6">
             
-            <!-- Nội dung cập nhật hoạt động (NHẤN ENTER ĐỂ GỬI CẬP NHẬT) -->
-            <div class="p-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus-within:bg-white focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all">
-              <textarea 
-                ref="stageTaskTitleInputRef"
-                v-model="newStageTaskTitle" 
-                rows="2"
-                required 
-                autofocus
-                @keydown.enter="handleTextareaEnter"
-                placeholder="Gõ nội dung cập nhật hoạt động... (VD: 9g tối khảo sát ngày 18/7)" 
-                class="w-full bg-transparent text-sm font-bold text-gray-900 focus:outline-none placeholder-gray-400 resize-none"
-              ></textarea>
-            </div>
-
-            <!-- Mục tiêu nhắm đến (Select Milestone) -->
-            <div>
-              <label class="block text-xs font-bold text-gray-700 mb-1.5">Mục tiêu nhắm đến (Chặng)</label>
-              <select 
-                v-model="newStageTaskMilestoneId" 
-                class="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500 transition-colors cursor-pointer"
-              >
-                <option v-for="ms in effectiveMilestones" :key="ms.id" :value="ms.id">
-                  🚩 {{ ms.title }}
-                </option>
-                <option v-if="effectiveMilestones.length === 0" :value="null">🚩 Chọn cột mốc</option>
-              </select>
-            </div>
-
-            <!-- Optional Fields Row: Ngày, Giờ & Giao cho ai? -->
-            <div class="grid grid-cols-3 gap-2.5">
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1.5">Ngày</label>
-                <input 
-                  v-model="newStageTaskDueDate" 
-                  type="date" 
-                  class="w-full px-2.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500 transition-colors"
-                />
+            <!-- LEFT SECTION: MỤC TIÊU HƯỚNG ĐẾN (CHẶNG / MILESTONE SELECTOR) -->
+            <div class="flex flex-col gap-2 lg:pr-5 lg:border-r lg:border-gray-200 flex-shrink-0">
+              <div class="flex items-center gap-1 text-[11px] font-extrabold text-gray-500 tracking-wider uppercase font-sans">
+                <span>MỤC TIÊU HƯỚNG ĐẾN</span>
+                <i class="fa-regular fa-circle-question text-gray-400 text-xs" title="Chọn chặng mục tiêu hướng đến cho cập nhật"></i>
               </div>
 
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1.5">Giờ</label>
-                <input 
-                  v-model="newStageTaskDueTime" 
-                  type="time" 
-                  class="w-full px-2.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500 transition-colors"
-                />
-              </div>
-
-              <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1.5">Giao cho ai?</label>
-                <select 
-                  v-model="newStageTaskAssignee" 
-                  class="w-full px-2.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500 transition-colors cursor-pointer"
+              <!-- IF <= 3 STAGES: DISPLAY STAGE BUTTONS SIDE BY SIDE LIKE IN THE IMAGE -->
+              <div v-if="effectiveMilestones.length <= 3 && effectiveMilestones.length > 0" class="flex items-center gap-2">
+                <div
+                  v-for="ms in effectiveMilestones"
+                  :key="ms.id"
+                  @click="newStageTaskMilestoneId = ms.id"
+                  class="flex flex-col items-center justify-between p-2 rounded-xl border transition-all cursor-pointer select-none min-w-[72px] sm:min-w-[84px] h-[78px]"
+                  :class="newStageTaskMilestoneId === ms.id 
+                    ? 'bg-rose-50/70 border-rose-200 text-rose-600 shadow-2xs' 
+                    : 'bg-white border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'"
                 >
-                  <option value="">-- Chưa chọn --</option>
-                  <option v-for="u in users" :key="u.id" :value="u.id">👤 {{ u.name }}</option>
+                  <!-- Circle with task count -->
+                  <div 
+                    class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-colors"
+                    :class="newStageTaskMilestoneId === ms.id 
+                      ? 'border-2 border-rose-500 bg-white text-rose-600' 
+                      : 'border border-gray-300 bg-white text-gray-700'"
+                  >
+                    {{ getStageTaskCount(ms) }}
+                  </div>
+
+                  <!-- Stage Name -->
+                  <span 
+                    class="text-[10px] font-black tracking-tight text-center uppercase leading-tight line-clamp-2 mt-0.5"
+                    :class="newStageTaskMilestoneId === ms.id ? 'text-gray-900 font-extrabold' : 'text-gray-600'"
+                  >
+                    {{ ms.title }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- IF > 3 STAGES: CONVERT TO DROPDOWN SELECTOR AS REQUESTED -->
+              <div v-else-if="effectiveMilestones.length > 3" class="w-full sm:w-56">
+                <select 
+                  v-model="newStageTaskMilestoneId" 
+                  class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors cursor-pointer"
+                >
+                  <option v-for="ms in effectiveMilestones" :key="ms.id" :value="ms.id">
+                    🚩 {{ ms.title }} ({{ getStageTaskCount(ms) }})
+                  </option>
                 </select>
               </div>
+
+              <!-- IF 0 STAGES -->
+              <div v-else class="text-xs text-gray-400 font-medium italic">
+                Chưa có chặng mục tiêu
+              </div>
             </div>
 
-            <div class="pt-2">
-              <button 
-                type="submit" 
-                class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <i :class="editingTaskId ? 'fa-solid fa-pen-to-square text-base' : 'fa-solid fa-plus text-base'"></i>
-                <span>{{ editingTaskId ? 'Lưu chỉnh sửa hoạt động' : 'Tạo cập nhật hoạt động' }}</span>
-              </button>
+            <!-- RIGHT SECTION: USER AVATAR + TEXTAREA INPUT + TAGS & SUBMIT BUTTON -->
+            <div class="flex-1 flex flex-col justify-between gap-2.5 min-w-0 relative">
+              
+              <!-- TOP ROW: USER AVATAR + TEXTAREA INPUT -->
+              <div class="flex items-start gap-3 min-w-0">
+                <!-- User avatar -->
+                <img 
+                  :src="authStore.user?.avatar || defaultAvatar" 
+                  class="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-gray-200 shadow-2xs flex-shrink-0 mt-0.5" 
+                  :title="authStore.user?.name || 'Tôi'"
+                />
+
+                <!-- Input Area Container with Mention Dropdown -->
+                <div class="flex-1 min-w-0 relative">
+                  <!-- HIGHLIGHT OVERLAY BEHIND TEXTAREA (ONLY WHEN MENTIONS EXIST) -->
+                  <div 
+                    v-if="hasMentionsInTitle"
+                    class="w-full bg-transparent text-sm sm:text-base font-bold text-gray-900 leading-relaxed py-1 whitespace-pre-wrap break-words pointer-events-none absolute inset-0 select-none overflow-hidden m-0 border-0"
+                    v-html="formattedInputTitle + (newStageTaskTitle.endsWith('\n') ? '<br/>' : '')"
+                  ></div>
+
+                  <textarea 
+                    ref="stageTaskTitleInputRef"
+                    v-model="newStageTaskTitle" 
+                    rows="2"
+                    required 
+                    @input="onTitleInput"
+                    @keydown="onTitleKeydown"
+                    placeholder="9g 15/8 @Khánh đi khảo sát Outspan" 
+                    class="w-full bg-transparent text-sm sm:text-base font-bold leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none relative z-10 m-0 border-0"
+                    :class="hasMentionsInTitle ? 'text-transparent caret-gray-900' : 'text-gray-900'"
+                  ></textarea>
+
+                  <!-- AUTOCOMPLETE @MENTION DROPDOWN POPOVER (POPS UP ABOVE INPUT) -->
+                  <div 
+                    v-if="showMentionDropdown && filteredUsersForMention.length > 0"
+                    class="absolute left-0 bottom-full mb-2 z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-xl py-1 text-gray-800 max-h-52 overflow-y-auto ring-1 ring-black/5"
+                  >
+                    <div class="px-3 py-1 text-[10px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1 flex items-center justify-between">
+                      <span>Chọn người phụ trách (@)</span>
+                      <i class="fa-solid fa-at text-xs"></i>
+                    </div>
+                    <button
+                      v-for="(u, idx) in filteredUsersForMention"
+                      :key="u.id"
+                      type="button"
+                      @mousedown.prevent
+                      @click="selectMentionUser(u)"
+                      class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left"
+                      :class="{ 'bg-emerald-50 text-emerald-800 font-bold': idx === mentionIndex }"
+                    >
+                      <img :src="u.avatar || defaultAvatar" class="w-5 h-5 rounded-full object-cover border border-gray-200" />
+                      <span class="truncate flex-1">{{ u.name }}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+                <!-- BOTTOM ROW: ACTION TAGS & SUBMIT BUTTON (RIGHT ALIGNED) -->
+              <div class="flex items-center justify-between gap-2 flex-wrap pt-1">
+                
+                <!-- LEFT: Quick picker buttons for person & date/time -->
+                <div class="flex items-center gap-2">
+                  <!-- Person picker toggle button -->
+                  <div class="relative" ref="personPickerRef">
+                    <button
+                      type="button"
+                      @click="showPersonPicker = !showPersonPicker"
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none shadow-3xs"
+                      :class="newStageTaskAssignee ? 'bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-700' : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600'"
+                    >
+                      <i class="fa-regular fa-user text-xs"></i>
+                      <span v-if="newStageTaskAssignee">@{{ selectedAssigneeName }}</span>
+                      <span v-else>Chọn người</span>
+                    </button>
+                    <!-- Person picker dropdown -->
+                    <div 
+                      v-if="showPersonPicker" 
+                      class="absolute left-0 bottom-full mb-2 z-50 w-56 bg-white border border-gray-200 rounded-xl shadow-xl py-1 max-h-52 overflow-y-auto ring-1 ring-black/5"
+                    >
+                      <div class="px-3 py-1 text-[10px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1">Chọn người phụ trách</div>
+                      <button
+                        v-if="newStageTaskAssignee"
+                        type="button"
+                        @click="clearAssignee(); showPersonPicker = false"
+                        class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-rose-50 text-rose-500 transition-colors text-left"
+                      >
+                        <i class="fa-solid fa-xmark text-xs"></i>
+                        <span>Bỏ chọn</span>
+                      </button>
+                      <button
+                        v-for="u in users"
+                        :key="u.id"
+                        type="button"
+                        @click="newStageTaskAssignee = String(u.id); showPersonPicker = false"
+                        class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left"
+                        :class="{ 'bg-emerald-50 text-emerald-800 font-bold': String(u.id) === String(newStageTaskAssignee) }"
+                      >
+                        <img :src="u.avatar || defaultAvatar" class="w-5 h-5 rounded-full object-cover border border-gray-200" />
+                        <span class="truncate flex-1">{{ u.name }}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Date picker button -->
+                  <div class="relative inline-flex items-center gap-1">
+                    <button
+                      type="button"
+                      @click="showDateTimePicker = !showDateTimePicker"
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none shadow-3xs"
+                      :class="(newStageTaskDueDate || newStageTaskDueTime) ? 'bg-blue-50 hover:bg-blue-100/80 border border-blue-200 text-blue-700' : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600'"
+                    >
+                      <i class="fa-regular fa-calendar-days text-xs"></i>
+                      <span v-if="newStageTaskDueDate || newStageTaskDueTime">{{ tagFormattedDateTime }}</span>
+                      <span v-else>Ngày / giờ</span>
+                    </button>
+                    <button 
+                      v-if="newStageTaskDueDate || newStageTaskDueTime"
+                      type="button" 
+                      @click="clearDateTime" 
+                      class="text-gray-400 hover:text-rose-500 transition-colors cursor-pointer p-0.5 rounded-full"
+                      title="Bỏ chọn ngày giờ"
+                    >
+                      <i class="fa-solid fa-xmark text-xs"></i>
+                    </button>
+                    <!-- Date/time picker popup -->
+                    <div 
+                      v-if="showDateTimePicker" 
+                      class="absolute left-0 bottom-full mb-2 z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-xl p-3 ring-1 ring-black/5"
+                    >
+                      <div class="text-[10px] uppercase font-bold text-gray-500 mb-2">Chọn ngày & giờ</div>
+                      <div class="space-y-2">
+                        <div>
+                          <label class="text-[10px] font-bold text-gray-500 mb-0.5 block">Giờ</label>
+                          <input 
+                            type="time" 
+                            v-model="newStageTaskDueTime" 
+                            class="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500"
+                          />
+                        </div>
+                        <div>
+                          <label class="text-[10px] font-bold text-gray-500 mb-0.5 block">Ngày</label>
+                          <input 
+                            type="date" 
+                            v-model="newStageTaskDueDate" 
+                            class="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500"
+                          />
+                        </div>
+                      </div>
+                      <button 
+                        type="button" 
+                        @click="showDateTimePicker = false" 
+                        class="mt-2 w-full px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer"
+                      >Xong</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- RIGHT: Submit buttons -->
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    @click="cancelEditTask"
+                    class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                  >
+                    {{ editingTaskId ? 'Hủy' : 'Đóng' }}
+                  </button>
+                  
+                  <button 
+                    type="submit" 
+                    class="inline-flex items-center gap-2 px-5 py-2 bg-[#2e7d32] hover:bg-[#1b5e20] text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-sm transition-all cursor-pointer"
+                  >
+                    <i class="fa-brands fa-twitter text-sm"></i>
+                    <span>{{ editingTaskId ? 'Lưu' : 'Hú Hú' }}</span>
+                    <i class="fa-solid fa-chevron-down text-[10px] opacity-80"></i>
+                  </button>
+                </div>
+
+              </div>
+
             </div>
 
           </form>
-
         </div>
       </div>
     </transition>
+          
+
 
     <!-- Modal for Adding Milestone Stage -->
     <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
@@ -851,22 +1044,281 @@ watch(isAddMilestoneOpen, (newVal) => {
 const selectedMilestone = ref(null)
 const selectedTargetMilestoneId = ref(null)
 
-const isAddStageTaskOpen = ref(false)
+const isInlineFormOpen = ref(false)
+const inlineFormRef = ref(null)
 const editingTaskId = ref(null)
 const newStageTaskTitle = ref('')
 const newStageTaskAssignee = ref('')
 const newStageTaskDueDate = ref('')
 const newStageTaskDueTime = ref('')
 const newStageTaskMilestoneId = ref(null)
+const showPersonPicker = ref(false)
+const showDateTimePicker = ref(false)
+const personPickerRef = ref(null)
+
+const toggleInlineForm = () => {
+  isInlineFormOpen.value = !isInlineFormOpen.value
+  if (isInlineFormOpen.value) {
+    editingTaskId.value = null
+    newStageTaskTitle.value = ''
+    newStageTaskDueDate.value = ''
+    newStageTaskDueTime.value = ''
+    newStageTaskAssignee.value = ''
+    showPersonPicker.value = false
+    showDateTimePicker.value = false
+    if (!newStageTaskMilestoneId.value) {
+      newStageTaskMilestoneId.value = selectedMilestone.value ? selectedMilestone.value.id : (effectiveMilestones.value[0]?.id || null)
+    }
+    nextTick(() => {
+      stageTaskTitleInputRef.value?.focus()
+    })
+  }
+}
+
+const removeVietnameseAccents = (str) => {
+  if (!str) return ''
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+}
+
+const formatTitleWithMentions = (titleText) => {
+  if (!titleText) return ''
+  let escaped = String(titleText)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+
+  const userList = (users && users.value) ? users.value : []
+  if (userList && userList.length > 0) {
+    const sortedUsers = [...userList].sort((a, b) => (b.name ? b.name.length : 0) - (a.name ? a.name.length : 0))
+    sortedUsers.forEach(u => {
+      if (u && u.name) {
+        const escapedName = u.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const regex = new RegExp(`@${escapedName}`, 'gi')
+        escaped = escaped.replace(regex, `<span class="text-emerald-600 font-extrabold">@${u.name}</span>`)
+      }
+    })
+  }
+
+  // Fallback for single-word @mentions not already matched inside HTML tags
+  escaped = escaped.replace(/@([^\s@,.:;!?()\n]+)(?![^<]*>|[^<>]*<\/span>)/g, '<span class="text-emerald-600 font-extrabold">@$1</span>')
+
+  return escaped
+}
+
+const selectedAssigneeName = computed(() => {
+  if (!newStageTaskAssignee.value) return ''
+  const u = users.value.find(user => String(user.id) === String(newStageTaskAssignee.value))
+  return u ? u.name : ''
+})
+
+const tagFormattedDateTime = computed(() => {
+  let timeStr = newStageTaskDueTime.value || ''
+  let dateStr = ''
+  if (newStageTaskDueDate.value) {
+    const parts = newStageTaskDueDate.value.split('-')
+    if (parts.length === 3) {
+      dateStr = `${parts[2]}/${parts[1]}`
+    }
+  }
+  if (timeStr && dateStr) {
+    return `${timeStr} ${dateStr}`
+  }
+  return timeStr || dateStr || ''
+})
+
+// @Mention State & Auto-Assign Logic
+const showMentionDropdown = ref(false)
+const mentionQuery = ref('')
+const mentionIndex = ref(0)
+
+const formattedInputTitle = computed(() => {
+  if (!newStageTaskTitle.value) return ''
+  let text = newStageTaskTitle.value
+  
+  // Escape HTML special characters
+  text = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+
+  // Sort users by name length descending so multi-word names take priority
+  const sortedUsers = [...users.value].sort((a, b) => (b.name || '').length - (a.name || '').length)
+  
+  // Replace matching @User Full Name with green text span matching exact textarea font-bold
+  sortedUsers.forEach(u => {
+    if (u && u.name) {
+      const escapedName = u.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const reg = new RegExp(`@${escapedName}`, 'gi')
+      text = text.replace(reg, `<span class="text-emerald-600 font-bold">@${u.name}</span>`)
+    }
+  })
+
+  // Match any generic @mention if user not in list yet
+  text = text.replace(/(@[^\s<]+)(?![^<]*>)/g, '<span class="text-emerald-600 font-bold">$1</span>')
+
+  return text
+})
+
+const hasMentionsInTitle = computed(() => {
+  return /@[^\s]+/.test(newStageTaskTitle.value)
+})
+
+const filteredUsersForMention = computed(() => {
+  if (!mentionQuery.value) return users.value
+  const q = removeVietnameseAccents(mentionQuery.value)
+  return users.value.filter(u => {
+    const nameAcc = removeVietnameseAccents(u.name)
+    return nameAcc.includes(q) || u.name.toLowerCase().includes(mentionQuery.value.toLowerCase())
+  })
+})
+
+const autoDetectAssigneeFromText = (text) => {
+  if (!text) return
+  const matches = [...text.matchAll(/@([^\s@,.:;!?()\n]+)/g)]
+  if (matches && matches.length > 0) {
+    const lastTerm = matches[matches.length - 1][1]
+    if (lastTerm) {
+      const qAcc = removeVietnameseAccents(lastTerm)
+      const matched = users.value.find(u => {
+        const nameAcc = removeVietnameseAccents(u.name)
+        const parts = nameAcc.split(' ')
+        return parts.some(p => p === qAcc) || nameAcc === qAcc
+      })
+      if (matched) {
+        newStageTaskAssignee.value = String(matched.id)
+      }
+    }
+  }
+}
+
+const onTitleInput = (e) => {
+  const text = newStageTaskTitle.value || ''
+  
+  // 1. Parse Vietnamese date & time
+  const parsedDate = parseVietnameseDateFromText(text)
+  if (parsedDate) {
+    newStageTaskDueDate.value = parsedDate
+  }
+  const parsedTime = parseTimeFromText(text)
+  if (parsedTime) {
+    newStageTaskDueTime.value = parsedTime
+  }
+
+  // 2. Mention dropdown trigger
+  const cursorPos = e.target.selectionStart || text.length
+  const textBeforeCursor = text.substring(0, cursorPos)
+  const match = textBeforeCursor.match(/@([^\s@]*)$/)
+
+  if (match) {
+    mentionQuery.value = match[1]
+    showMentionDropdown.value = true
+    mentionIndex.value = 0
+  } else {
+    showMentionDropdown.value = false
+  }
+
+  // 3. Auto-detect assignee if exact user name typed (e.g. @hiếu)
+  autoDetectAssigneeFromText(text)
+}
+
+const onTitleKeydown = (e) => {
+  if (showMentionDropdown.value && filteredUsersForMention.value.length > 0) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      mentionIndex.value = (mentionIndex.value + 1) % filteredUsersForMention.value.length
+      return
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      mentionIndex.value = (mentionIndex.value - 1 + filteredUsersForMention.value.length) % filteredUsersForMention.value.length
+      return
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault()
+      const selectedUser = filteredUsersForMention.value[mentionIndex.value]
+      if (selectedUser) {
+        selectMentionUser(selectedUser)
+      }
+      return
+    } else if (e.key === 'Escape') {
+      showMentionDropdown.value = false
+      return
+    }
+  }
+
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault()
+    handleAddStageTaskSubmit()
+  }
+}
+
+const selectMentionUser = (user) => {
+  if (!user) return
+  newStageTaskAssignee.value = String(user.id)
+  
+  const text = newStageTaskTitle.value
+  const cursorPos = stageTaskTitleInputRef.value?.selectionStart || text.length
+  const textBeforeCursor = text.substring(0, cursorPos)
+  const textAfterCursor = text.substring(cursorPos)
+
+  let newCursorPos = cursorPos
+  const match = textBeforeCursor.match(/@([^\s@]*)$/)
+  if (match) {
+    const startIndex = match.index
+    const newBefore = textBeforeCursor.substring(0, startIndex) + `@${user.name} `
+    newStageTaskTitle.value = newBefore + textAfterCursor
+    newCursorPos = newBefore.length
+  } else {
+    newStageTaskTitle.value = `${text} @${user.name} `
+    newCursorPos = newStageTaskTitle.value.length
+  }
+  showMentionDropdown.value = false
+
+  nextTick(() => {
+    if (stageTaskTitleInputRef.value) {
+      stageTaskTitleInputRef.value.focus()
+      stageTaskTitleInputRef.value.setSelectionRange(newCursorPos, newCursorPos)
+    }
+  })
+}
+
+const clearAssignee = () => {
+  newStageTaskAssignee.value = ''
+}
+
+const clearDateTime = () => {
+  newStageTaskDueDate.value = ''
+  newStageTaskDueTime.value = ''
+}
+
+const cancelEditTask = () => {
+  isInlineFormOpen.value = false
+  editingTaskId.value = null
+  newStageTaskTitle.value = ''
+  newStageTaskAssignee.value = ''
+  newStageTaskDueDate.value = ''
+  newStageTaskDueTime.value = ''
+  showPersonPicker.value = false
+  showDateTimePicker.value = false
+}
 
 const openAddStageTaskForm = () => {
   editingTaskId.value = null
   newStageTaskTitle.value = ''
   newStageTaskDueDate.value = ''
   newStageTaskDueTime.value = ''
-  newStageTaskAssignee.value = '' // MẶC ĐỊNH CHƯA CHỌN USER!
-  newStageTaskMilestoneId.value = selectedMilestone.value ? selectedMilestone.value.id : (effectiveMilestones.value[0]?.id || null)
-  isAddStageTaskOpen.value = true
+  newStageTaskAssignee.value = ''
+  if (!newStageTaskMilestoneId.value) {
+    newStageTaskMilestoneId.value = selectedMilestone.value ? selectedMilestone.value.id : (effectiveMilestones.value[0]?.id || null)
+  }
+  isInlineFormOpen.value = true
+  nextTick(() => {
+    stageTaskTitleInputRef.value?.focus()
+  })
 }
 
 const openEditStageTaskForm = (task) => {
@@ -901,37 +1353,11 @@ const openEditStageTaskForm = (task) => {
     newStageTaskDueTime.value = ''
   }
 
-  isAddStageTaskOpen.value = true
-}
-
-watch(isAddStageTaskOpen, (newVal) => {
-  if (newVal) {
-    nextTick(() => {
-      setTimeout(() => {
-        stageTaskTitleInputRef.value?.focus()
-      }, 50)
-    })
-  }
-})
-
-watch(newStageTaskTitle, (newVal) => {
-  if (newVal) {
-    const parsedDate = parseVietnameseDateFromText(newVal)
-    if (parsedDate) {
-      newStageTaskDueDate.value = parsedDate
-    }
-    const parsedTime = parseTimeFromText(newVal)
-    if (parsedTime) {
-      newStageTaskDueTime.value = parsedTime
-    }
-  }
-})
-
-const handleTextareaEnter = (e) => {
-  if (!e.shiftKey) {
-    e.preventDefault()
-    handleAddStageTaskSubmit()
-  }
+  isInlineFormOpen.value = true
+  nextTick(() => {
+    inlineFormRef.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    stageTaskTitleInputRef.value?.focus()
+  })
 }
 
 const activePreviewImage = ref(null)
@@ -1031,51 +1457,104 @@ const effectiveMilestones = computed(() => {
   return []
 })
 
-const totalPages = computed(() => {
-  const count = effectiveMilestones.value.length
-  return Math.max(1, Math.ceil(count / 3))
-})
-
-const visibleMilestones = computed(() => {
+const milestoneLayout = computed(() => {
   const all = effectiveMilestones.value
-  if (!all || all.length === 0) return []
-  const pageSize = 3
-  const startIndex = (activePageDot.value - 1) * pageSize
-  return all.slice(startIndex, startIndex + pageSize)
+  if (!all || all.length === 0) {
+    return { visibleItems: [], pageCount: 1, hills: [], ridgeline: 'M 35 180 Q 540 -25 1040 180', btnPos: '94.55%' }
+  }
+
+  const startX = 100
+  const maxContainerW = 940 // Available width before "+ Thêm chặng"
+  const fixedDoneW = 155 // Spacing for completed stage to prevent text overlap
+
+  // 1. Dynamic Paginate: Group milestones into pages where completed take 155px and active take 240px
+  const pages = []
+  let currentPage = []
+  let currentW = 0
+
+  all.forEach((ms) => {
+    const isDone = isStageCompleted(ms)
+    const msW = isDone ? fixedDoneW : 240
+    if (currentW + msW > maxContainerW && currentPage.length > 0) {
+      pages.push(currentPage)
+      currentPage = [ms]
+      currentW = msW
+    } else {
+      currentPage.push(ms)
+      currentW += msW
+    }
+  })
+  if (currentPage.length > 0) pages.push(currentPage)
+
+  const pageIdx = Math.min(Math.max(0, activePageDot.value - 1), pages.length - 1)
+  const currentVisible = pages[pageIdx] || []
+
+  // 2. Position items in currentVisible:
+  // Done items take fixed 155px (compacted on left), active items take remaining space evenly!
+  const doneCount = currentVisible.filter(ms => isStageCompleted(ms)).length
+  const activeCount = currentVisible.length - doneCount
+
+  const reservedDoneW = doneCount * fixedDoneW
+  const remainingW = maxContainerW - reservedDoneW
+  const activeItemW = activeCount > 0 ? (remainingW / activeCount) : fixedDoneW
+
+  let curX = startX
+  const items = currentVisible.map((ms) => {
+    const isDone = isStageCompleted(ms)
+    const spanW = isDone ? fixedDoneW : activeItemW
+    const peakX = curX + spanW / 2
+    const leftPct = `${((peakX / 1100) * 100).toFixed(2)}%`
+    const slopeX = curX + spanW * 0.25
+    const slopePct = `${((slopeX / 1100) * 100).toFixed(2)}%`
+    
+    const itemData = {
+      ms,
+      isDone,
+      spanW,
+      startX: curX,
+      endX: curX + spanW,
+      peakX,
+      leftPct,
+      slopePct
+    }
+    curX += spanW
+    return itemData
+  })
+
+  // 3. SVG hill paths and ridgeline
+  let dPath = `M 35 180 L ${startX} 180`
+  const hillPaths = []
+  
+  items.forEach((item) => {
+    const midX = item.startX + item.spanW / 2
+    if (item.isDone) {
+      dPath += ` Q ${midX} 85 ${item.endX} 180`
+      hillPaths.push({ d: `M ${item.startX} 290 L ${item.startX} 180 Q ${midX} 85 ${item.endX} 180 L ${item.endX} 290 Z` })
+    } else {
+      dPath += ` Q ${midX} -25 ${item.endX} 180`
+      hillPaths.push({ d: `M ${item.startX} 290 L ${item.startX} 180 Q ${midX} -25 ${item.endX} 180 L ${item.endX} 290 Z` })
+    }
+  })
+
+  const btnX = Math.min(1040, Math.max(900, curX + 25))
+  const btnPosPct = `${((btnX / 1100) * 100).toFixed(2)}%`
+
+  return {
+    visibleItems: items,
+    pageCount: pages.length,
+    hills: hillPaths,
+    ridgeline: dPath,
+    btnPos: btnPosPct
+  }
 })
 
-const peakPositions = computed(() => {
-  return ['17.55%', '47.18%', '76.82%']
-})
-
-const slopePositions = computed(() => {
-  return ['10.14%', '39.77%', '69.41%']
-})
-
-const addMilestoneBtnPosition = computed(() => {
-  const count = visibleMilestones.value.length
-  if (count === 0) return '50%'
-  if (count === 1) return '32.36%'
-  if (count === 2) return '62.0%'
-  return '91.8%'
-})
-
-const svgHills = computed(() => {
-  const count = visibleMilestones.value.length
-  const hills = []
-  if (count >= 1) hills.push({ d: 'M 30 290 L 30 180 Q 193 -25 356 180 L 356 290 Z' })
-  if (count >= 2) hills.push({ d: 'M 356 290 L 356 180 Q 519 -25 682 180 L 682 290 Z' })
-  if (count >= 3) hills.push({ d: 'M 682 290 L 682 180 Q 845 -25 1008 180 L 1008 290 Z' })
-  return hills
-})
-
-const svgDashedRidgeline = computed(() => {
-  const count = visibleMilestones.value.length
-  if (count === 1) return 'M 30 180 Q 193 -25 356 180'
-  if (count === 2) return 'M 30 180 Q 193 -25 356 180 Q 519 -25 682 180'
-  if (count >= 3) return 'M 30 180 Q 193 -25 356 180 Q 519 -25 682 180 Q 845 -25 1008 180'
-  return 'M 30 180 Q 193 -25 356 180'
-})
+const totalPages = computed(() => milestoneLayout.value.pageCount)
+const visibleMilestones = computed(() => milestoneLayout.value.visibleItems.map(i => i.ms))
+const svgHills = computed(() => milestoneLayout.value.hills)
+const svgDashedRidgeline = computed(() => milestoneLayout.value.ridgeline)
+const addMilestoneBtnPosition = computed(() => milestoneLayout.value.btnPos)
+const peakPositions = computed(() => milestoneLayout.value.visibleItems.map(i => i.leftPct))
+const slopePositions = computed(() => milestoneLayout.value.visibleItems.map(i => i.slopePct))
 
 const slidePrev = () => {
   if (activePageDot.value > 1) activePageDot.value--
@@ -1159,25 +1638,38 @@ const handleDeleteMilestone = async (msId) => {
   }
 }
 
-// GET LIST OF ACTIVE USERS ASSIGNED TO A STAGE (CHỈ HIỆN AVATAR KHI CÓ USER ĐƯỢC CHỌN)
+// GET LIST OF USERS WHO CREATED ACTIVITIES OR COMPLETED/CREATED THIS STAGE
 const getStageActiveUsers = (stage) => {
   if (!stage) return []
   const userMap = new Map()
 
-  // Only collection users who were explicitly assigned to tasks in this stage
+  const addUserByIdOrObj = (id, obj) => {
+    if (obj && obj.id) {
+      userMap.set(obj.id, obj)
+      return
+    }
+    if (id && users.value) {
+      const u = users.value.find(user => user.id == id || String(user.id) === String(id))
+      if (u) userMap.set(u.id, u)
+    }
+  }
+
+  // 1. User who created or completed the stage
+  const stageCreatorId = stage.completed_by || stage.created_by || stage.user_id || stage.user?.id
+  addUserByIdOrObj(stageCreatorId, stage.user || stage.creator || stage.completed_by_user)
+
+  // 2. Users who created activities or are assigned to tasks in this stage
   const msTasks = currentStageTasksFor(stage)
   msTasks.forEach(t => {
-    if (t.assignee_id) {
-      if (t.assignee && t.assignee.id) {
-        userMap.set(t.assignee.id, t.assignee)
-      } else if (users.value) {
-        const u = users.value.find(user => user.id == t.assignee_id || String(user.id) === String(t.assignee_id))
-        if (u) userMap.set(u.id, u)
-      }
-    }
+    // Creator of the task/activity
+    const creatorId = t.created_by || t.creator_id || t.creator?.id
+    addUserByIdOrObj(creatorId, t.creator)
+
+    // Assignee of the task
+    const assigneeId = t.assignee_id || t.assignee?.id
+    addUserByIdOrObj(assigneeId, t.assignee)
   })
 
-  // Returns ONLY users who are explicitly assigned (Empty list if no user was selected)
   return Array.from(userMap.values())
 }
 
@@ -1241,13 +1733,7 @@ const closeSelectedStage = () => {
   selectedMilestone.value = null
 }
 
-const handleKeydown = (e) => {
-  if (e.key === 'Escape' || e.key === 'Esc') {
-    closeSelectedStage()
-    isAddStageTaskOpen.value = false
-    isAddMilestoneOpen.value = false
-  }
-}
+
 
 const handleQuickAssignTask = async (task, newUserId) => {
   const uId = newUserId ? Number(newUserId) : null
@@ -1289,8 +1775,11 @@ const selectAssigneeForTask = (task, userId) => {
   handleQuickAssignTask(task, userId)
 }
 
-const handleDocumentClick = () => {
+const handleDocumentClick = (e) => {
   activeAssigneeDropdownTaskId.value = null
+  if (actionMenuDropdownRef.value && e && e.target && !actionMenuDropdownRef.value.contains(e.target)) {
+    isActionMenuOpen.value = false
+  }
 }
 
 // SUBMIT COMPREHENSIVE "CẬP NHẬT HOẠT ĐỘNG"
@@ -1350,7 +1839,7 @@ const handleAddStageTaskSubmit = async () => {
       newStageTaskAssignee.value = ''
       newStageTaskDueDate.value = ''
       newStageTaskDueTime.value = ''
-      isAddStageTaskOpen.value = false
+      isInlineFormOpen.value = false
     }
     return
   }
@@ -1419,7 +1908,7 @@ const handleAddStageTaskSubmit = async () => {
     newStageTaskAssignee.value = ''
     newStageTaskDueDate.value = ''
     newStageTaskDueTime.value = ''
-    isAddStageTaskOpen.value = false
+    isInlineFormOpen.value = false
   }
 }
 
@@ -1653,6 +2142,23 @@ const formatTimeOnly = (dateStr) => {
   const d = new Date(dateStr)
   if (isNaN(d.getTime())) return ''
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+
+
+const handleKeydown = (e) => {
+  if (e.key === 'Escape' || e.code === 'Escape') {
+    if (isInlineFormOpen.value) {
+      isInlineFormOpen.value = false
+      editingTaskId.value = null
+    }
+    if (isAddMilestoneOpen.value) {
+      isAddMilestoneOpen.value = false
+    }
+    if (selectedMilestone.value) {
+      closeSelectedStage()
+    }
+  }
 }
 
 onMounted(() => {

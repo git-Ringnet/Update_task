@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen flex flex-col pb-12 transition-colors duration-200"
-       :class="viewMode === 'notes' ? 'sticky-board-bg' : 'bg-[#f8faf9]'">
+       :class="viewMode === 'notes' ? 'sticky-board-bg' : 'bg-[#f4f5f0]'">
     <!-- Navbar Component -->
     <Navbar @search="handleSearch" />
 
@@ -486,80 +486,7 @@
         </div>
 
         <!-- Bulk Action Buttons Group -->
-        <div class="flex items-center flex-wrap gap-2 flex-1 justify-end">
-          
-
-          <!-- Bulk Move Lead Option -->
-          <div class="relative">
-            <button
-              @click="toggleBulkMenu('lead')"
-              type="button"
-              class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 font-bold text-xs rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs"
-            >
-              <span>Move Lead</span>
-            </button>
-            <div v-if="activeBulkMenu === 'lead'" class="absolute top-full mt-2 right-0 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 py-1.5 flex flex-col gap-0.5 max-h-48 overflow-y-auto min-w-[170px]">
-              <div class="px-3 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 mb-1">Chuyển lead cho</div>
-              <button @click="bulkUpdateLead(null)" class="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-800 text-xs font-bold text-slate-400 text-left"><i class="fa-solid fa-user-slash"></i> Không giao</button>
-              <button v-for="u in projectStore.users" :key="u.id" @click="bulkUpdateLead(u.id)" class="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-800 text-xs font-bold text-slate-200 text-left"><img :src="u.avatar" class="w-4 h-4 rounded-full" /> {{ u.name }}</button>
-            </div>
-          </div>
-
-          <!-- Bulk Health Update (Update Health) -->
-          <div class="relative">
-            <button
-              @click="toggleBulkMenu('health')"
-              type="button"
-              class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 font-bold text-xs rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs"
-            >
-              <span>Update Health</span>
-            </button>
-            <div v-if="activeBulkMenu === 'health'" class="absolute top-full mt-2 right-0 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 p-3 flex flex-col gap-3 min-w-[120px]">
-              <!-- Green - Happy Face -->
-              <button @click="bulkUpdateHealth('green')" class="flex items-center justify-center hover:opacity-80 transition-opacity cursor-pointer">
-                <div class="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center">
-                  <div class="flex flex-col items-center gap-1">
-                    <div class="flex gap-1.5">
-                      <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
-                      <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
-                    </div>
-                    <svg width="16" height="8" viewBox="0 0 16 8" class="mt-0.5">
-                      <path d="M 2 2 Q 8 6 14 2" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
-                    </svg>
-                  </div>
-                </div>
-              </button>
-              
-              <!-- Yellow - Neutral Face -->
-              <button @click="bulkUpdateHealth('yellow')" class="flex items-center justify-center hover:opacity-80 transition-opacity cursor-pointer">
-                <div class="w-12 h-12 rounded-full bg-amber-400 flex items-center justify-center">
-                  <div class="flex flex-col items-center gap-1.5">
-                    <div class="flex gap-1.5">
-                      <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
-                      <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
-                    </div>
-                    <div class="w-5 h-0.5 bg-white rounded-full"></div>
-                  </div>
-                </div>
-              </button>
-              
-              <!-- Red - Sad Face -->
-              <button @click="bulkUpdateHealth('red')" class="flex items-center justify-center hover:opacity-80 transition-opacity cursor-pointer">
-                <div class="w-12 h-12 rounded-full bg-rose-500 flex items-center justify-center">
-                  <div class="flex flex-col items-center gap-1">
-                    <div class="flex gap-1.5">
-                      <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
-                      <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
-                    </div>
-                    <svg width="16" height="8" viewBox="0 0 16 8" class="mt-0.5">
-                      <path d="M 2 6 Q 8 2 14 6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
-                    </svg>
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
-
+        <div class="flex items-center flex-wrap gap-2.5 flex-1 justify-end">
           <!-- Bulk Status Update (Update Status) -->
           <div class="relative">
             <button
@@ -567,17 +494,21 @@
               type="button"
               class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 font-bold text-xs rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs"
             >
+              <i class="fa-solid fa-list-check text-emerald-400"></i>
               <span>Update Status</span>
+              <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
             </button>
-            <div v-if="activeBulkMenu === 'status'" class="absolute top-full mt-2 right-0 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 p-2 flex flex-col gap-1 min-w-[150px]">
-              <button @click="bulkUpdateStatus('completed')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-800 text-xs font-bold rounded-lg text-slate-200 text-left">
-                <span>Hoàn thành</span>
+
+            <!-- Dropdown Popover Menu -->
+            <div v-if="activeBulkMenu === 'status'" class="absolute top-full mt-2 right-0 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 p-2 flex flex-col gap-1 min-w-[140px] animate-in fade-in zoom-in-95 duration-150">
+              <button @click="bulkUpdateStatus('completed')" class="px-3 py-2 hover:bg-slate-800 text-xs font-bold rounded-lg text-slate-100 text-left transition-colors cursor-pointer block w-full">
+                Hoàn thành
               </button>
-              <button @click="bulkUpdateStatus('following')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-800 text-xs font-bold rounded-lg text-slate-200 text-left">
-                <span>Đang theo</span>
+              <button @click="bulkUpdateStatus('following')" class="px-3 py-2 hover:bg-slate-800 text-xs font-bold rounded-lg text-slate-100 text-left transition-colors cursor-pointer block w-full">
+                Đang theo
               </button>
-              <button @click="bulkUpdateStatus('not_following')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-800 text-xs font-bold rounded-lg text-slate-200 text-left">
-                <span>Bỏ theo</span>
+              <button @click="bulkUpdateStatus('not_following')" class="px-3 py-2 hover:bg-slate-800 text-xs font-bold rounded-lg text-slate-100 text-left transition-colors cursor-pointer block w-full">
+                Không theo
               </button>
             </div>
           </div>
@@ -587,12 +518,11 @@
             <button
               @click="goToBulkUpdate"
               type="button"
-              class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-md"
+              class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-md"
             >
               <span>Post Update</span>
             </button>
           </div>
-
         </div>
       </div>
     </transition>

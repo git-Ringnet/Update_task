@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-white flex flex-col justify-between pb-24">
+  <div class="min-h-screen bg-[#f4f5f0] flex flex-col justify-between pb-24">
     <div>
       <!-- Navbar Component -->
       <Navbar @search="handleSearch" />
@@ -390,42 +390,7 @@
         </div>
 
         <!-- Bulk Action Buttons Group -->
-        <div class="flex items-center flex-wrap gap-2 flex-1 justify-end">
-          
-          <!-- Bulk Update Health Option -->
-          <div class="relative">
-            <button
-              @click="toggleBulkMenu('health')"
-              type="button"
-              class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-bold text-xs rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
-            >
-              <i class="fa-solid fa-heart-pulse text-emerald-600"></i>
-              <span>Update Health</span>
-            </button>
-            <div v-if="activeBulkMenu === 'health'" class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-2 flex flex-col gap-1.5 min-w-[140px]">
-              <button @click="bulkUpdateHealth('green')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-emerald-50 text-xs font-bold rounded-lg text-emerald-800"><i class="fa-solid fa-face-smile text-emerald-600"></i> Healthy</button>
-              <button @click="bulkUpdateHealth('yellow')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-amber-50 text-xs font-bold rounded-lg text-amber-800"><i class="fa-solid fa-face-meh text-amber-500"></i> At Risk</button>
-              <button @click="bulkUpdateHealth('red')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-rose-50 text-xs font-bold rounded-lg text-rose-800"><i class="fa-solid fa-face-frown text-rose-500"></i> Needs Care</button>
-            </div>
-          </div>
-
-          <!-- Bulk Move Lead Option -->
-          <div class="relative">
-            <button
-              @click="toggleBulkMenu('lead')"
-              type="button"
-              class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-bold text-xs rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
-            >
-              <i class="fa-solid fa-user-pen text-blue-600"></i>
-              <span>Move Lead</span>
-            </button>
-            <div v-if="activeBulkMenu === 'lead'" class="absolute bottom-full mb-2 right-0 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1.5 flex flex-col gap-0.5 max-h-48 overflow-y-auto min-w-[160px]">
-              <div class="px-3 py-1 text-[9px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 mb-1">Chuyển lead cho</div>
-              <button @click="bulkUpdateLead(null)" class="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 text-xs font-bold text-gray-500 text-left"><i class="fa-solid fa-user-slash"></i> Không giao</button>
-              <button v-for="u in projectStore.users" :key="u.id" @click="bulkUpdateLead(u.id)" class="flex items-center gap-2 px-3 py-1.5 hover:bg-emerald-50 text-xs font-bold text-gray-700 text-left"><img :src="u.avatar" class="w-4 h-4 rounded-full" /> {{ u.name }}</button>
-            </div>
-          </div>
-
+        <div class="flex items-center flex-wrap gap-2.5 flex-1 justify-end">
           <!-- Bulk Status Update (Update Status) -->
           <div class="relative">
             <button
@@ -433,21 +398,19 @@
               type="button"
               class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-bold text-xs rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
             >
-              <i class="fa-solid fa-box-archive text-purple-600"></i>
+              <i class="fa-solid fa-list-check text-emerald-600"></i>
               <span>Update Status</span>
+              <i class="fa-solid fa-chevron-down text-[10px] text-gray-400"></i>
             </button>
             <div v-if="activeBulkMenu === 'status'" class="absolute bottom-full mb-2 right-0 bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-2 flex flex-col gap-1 min-w-[140px]">
-              <button @click="bulkUpdateStatus('completed')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 text-xs font-bold rounded-lg text-gray-700 text-left">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
-                <span>Hoàn thành</span>
+              <button @click="bulkUpdateStatus('completed')" class="px-3 py-2 hover:bg-gray-100 text-xs font-bold rounded-lg text-gray-700 text-left transition-colors cursor-pointer block w-full">
+                Hoàn thành
               </button>
-              <button @click="bulkUpdateStatus('following')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 text-xs font-bold rounded-lg text-gray-700 text-left">
-                <span class="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0"></span>
-                <span>Đang theo</span>
+              <button @click="bulkUpdateStatus('following')" class="px-3 py-2 hover:bg-gray-100 text-xs font-bold rounded-lg text-gray-700 text-left transition-colors cursor-pointer block w-full">
+                Đang theo
               </button>
-              <button @click="bulkUpdateStatus('not_following')" class="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 text-xs font-bold rounded-lg text-gray-700 text-left">
-                <span class="w-2.5 h-2.5 rounded-full bg-rose-500 flex-shrink-0"></span>
-                <span>Không theo</span>
+              <button @click="bulkUpdateStatus('not_following')" class="px-3 py-2 hover:bg-gray-100 text-xs font-bold rounded-lg text-gray-700 text-left transition-colors cursor-pointer block w-full">
+                Không theo
               </button>
             </div>
           </div>
@@ -457,13 +420,12 @@
             <button
               @click="goToBulkUpdate"
               type="button"
-              class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-bold text-xs rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+              class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition-colors cursor-pointer shadow-sm"
             >
-              <i class="fa-solid fa-message text-emerald-600"></i>
+              <i class="fa-solid fa-message text-white"></i>
               <span>Post Update</span>
             </button>
           </div>
-
         </div>
 
       </div>

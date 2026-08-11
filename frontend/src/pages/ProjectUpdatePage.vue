@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#f8faf9] flex flex-col justify-between pb-24">
+  <div class="min-h-screen bg-[#f4f5f0] flex flex-col justify-between pb-24">
     <div>
       <!-- Custom Header matching mockup -->
       <header class="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-2xs">
@@ -88,6 +88,23 @@
           </div>
         </div>
 
+        <!-- Error state -->
+        <div v-else-if="loadError" class="bg-white rounded-2xl p-12 text-center border border-rose-100 shadow-2xs">
+          <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-rose-50 flex items-center justify-center">
+            <i class="fa-solid fa-triangle-exclamation text-rose-500 text-2xl"></i>
+          </div>
+          <p class="text-gray-700 font-bold text-base mb-1">Không thể tải danh sách dự án</p>
+          <p class="text-gray-400 text-sm font-medium mb-5">{{ loadError }}</p>
+          <button
+            @click="loadProjects"
+            type="button"
+            class="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-sm transition-colors cursor-pointer focus:outline-none"
+          >
+            <i class="fa-solid fa-rotate-right text-xs"></i>
+            <span>Thử lại</span>
+          </button>
+        </div>
+
         <!-- Empty state -->
         <div v-else-if="projects.length === 0" class="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-2xs">
           <p class="text-gray-400 font-medium">Không có dự án nào được chọn để cập nhật.</p>
@@ -97,143 +114,130 @@
         </div>
 
         <!-- Selected Projects list to update -->
-        <div v-else class="space-y-4">
+        <div v-else class="space-y-3">
           <div
             v-for="(project, index) in projects"
             :key="project.id"
-            class="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs hover:shadow-xs transition-shadow flex flex-col md:flex-row md:items-start justify-between gap-4"
+            class="bg-white rounded-2xl border border-gray-100 shadow-2xs hover:shadow-xs transition-shadow"
           >
-            <!-- Left section: project name, type icon, status -->
-            <div class="flex items-start gap-3.5 min-w-0 md:w-1/3 flex-shrink-0">
-              <!-- Rounded Type Icon -->
-              <div 
-                class="w-10 h-10 rounded-full flex items-center justify-center text-base flex-shrink-0 mt-0.5"
-                :class="getIconData(project.title).bg"
-              >
-                <i :class="getIconData(project.title).icon"></i>
-              </div>
+            <!-- Main row: Title + Textarea + Status -->
+            <div class="flex items-start gap-4 lg:gap-5 p-4 sm:p-5">
 
-              <!-- Title & Status -->
-              <div class="min-w-0 flex-1">
-                <div class="font-bold text-gray-900 text-base leading-snug font-heading break-all min-w-0">
+              <!-- Left: Project title only (no icon, no status) -->
+              <div class="flex-shrink-0 w-36 sm:w-44 min-w-0 pt-1.5">
+                <div class="font-extrabold text-gray-900 text-sm leading-snug font-heading break-words min-w-0">
                   {{ project.title }}
                 </div>
-                <!-- Status dot indicator -->
-                <div class="flex items-center gap-1.5 mt-1">
-                  <span class="w-2 h-2 rounded-full inline-block flex-shrink-0" :class="statusDotClass(project.tracking_status)"></span>
-                  <span class="text-xs text-gray-500 font-bold uppercase tracking-wider">
-                    {{ statusText(project.tracking_status) }}
+              </div>
+
+              <!-- Middle: Textarea input (inline, borderless style like detail page) -->
+              <div class="flex-1 min-w-0">
+                <textarea
+                  v-model="updateTexts[project.id]"
+                  @input="isSaved[project.id] = false"
+                  @paste="handlePaste(project.id, $event)"
+                  rows="1"
+                  placeholder="Nhập nội dung cập nhật hoạt động hôm nay... (Ctrl+V để dán ảnh)"
+                  class="w-full bg-transparent text-sm font-bold text-gray-900 leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none border-0"
+                  @keydown.enter.exact.prevent="saveUpdate(project.id)"
+                  @keydown.ctrl.enter.prevent="handleFinishAll"
+                ></textarea>
+              </div>
+
+              <!-- Right: Update status indicator -->
+              <div class="flex-shrink-0 text-right flex items-center justify-end gap-2 min-h-[24px] pt-1.5">
+                <template v-if="isSaved[project.id]">
+                  <span class="text-xs text-gray-400 font-semibold whitespace-nowrap">{{ savedTimes[project.id] }}</span>
+                  <i class="fa-solid fa-circle-check text-emerald-600 text-lg transition-transform scale-110"></i>
+                </template>
+                <template v-else>
+                  <span class="text-xs text-gray-400 font-medium italic flex items-center gap-1 hover:text-gray-600 transition-colors whitespace-nowrap">
+                    <span>Chưa có cập nhật</span>
+                    <i class="fa-solid fa-chevron-right text-[10px]"></i>
                   </span>
-                </div>
+                </template>
               </div>
             </div>
 
-            <!-- Middle section: Textarea/Input for updates -->
-            <div class="flex-1 min-w-0 space-y-2.5">
-              <textarea
-                v-model="updateTexts[project.id]"
-                @input="isSaved[project.id] = false"
-                rows="2"
-                placeholder="Nhập nội dung cập nhật hoạt động hôm nay..."
-                class="w-full px-4 py-2.5 bg-gray-50/70 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-colors shadow-3xs resize"
-                @keydown.enter.exact.prevent="saveUpdate(project.id)"
-                @keydown.ctrl.enter.prevent="handleFinishAll"
-              ></textarea>
-
-              <!-- Attachment Buttons & Controls -->
-              <div class="flex items-center justify-between gap-3 flex-wrap">
-                <div class="flex items-center gap-2">
-                  <!-- Hidden File Input for Images -->
-                  <input 
-                    :id="'img-input-' + project.id"
-                    type="file" 
-                    accept="image/*" 
-                    multiple 
-                    class="hidden" 
-                    @change="handleFileSelect(project.id, $event, true)"
-                  />
-                  <label 
-                    :for="'img-input-' + project.id"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold cursor-pointer transition-colors border border-emerald-200/60 select-none shadow-3xs"
-                  >
-                    <i class="fa-solid fa-image text-emerald-600"></i>
-                    <span>Thêm hình ảnh</span>
-                  </label>
-
-                  <!-- Hidden File Input for Documents -->
-                  <input 
-                    :id="'file-input-' + project.id"
-                    type="file" 
-                    accept="*" 
-                    multiple 
-                    class="hidden" 
-                    @change="handleFileSelect(project.id, $event, false)"
-                  />
-                  <label 
-                    :for="'file-input-' + project.id"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer transition-colors border border-slate-200 select-none shadow-3xs"
-                  >
-                    <i class="fa-solid fa-paperclip text-slate-500"></i>
-                    <span>Đính kèm file</span>
-                  </label>
-                </div>
-
-                <div class="text-[11px] text-gray-400 font-bold select-none flex items-center gap-1.5">
-                  <i class="fa-regular fa-lightbulb text-emerald-600 text-[13px]"></i>
-                  <span>Enter để lưu riêng, Ctrl + Enter để lưu tất cả</span>
-                </div>
-              </div>
-
-              <!-- Attached Files Preview Grid -->
-              <div v-if="attachedFiles[project.id]?.length > 0" class="flex items-center gap-2.5 flex-wrap pt-2 border-t border-gray-100">
-                <div 
-                  v-for="(file, fIdx) in attachedFiles[project.id]" 
-                  :key="fIdx"
-                  class="relative group"
+            <!-- Bottom bar: Attachment buttons + hints -->
+            <div class="flex items-center justify-between gap-3 flex-wrap px-4 sm:px-5 pb-3 pt-0">
+              <div class="flex items-center gap-2">
+                <!-- Hidden File Input for Images -->
+                <input 
+                  :id="'img-input-' + project.id"
+                  type="file" 
+                  accept="image/*" 
+                  multiple 
+                  class="hidden" 
+                  @change="handleFileSelect(project.id, $event, true)"
+                />
+                <label 
+                  :for="'img-input-' + project.id"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold cursor-pointer transition-colors border border-emerald-200/60 select-none shadow-3xs"
                 >
-                  <!-- Image Preview Thumbnail -->
-                  <div v-if="file.isImage" class="relative w-16 h-16 rounded-xl overflow-hidden border border-gray-200 shadow-3xs group">
-                    <img :src="file.url" class="w-full h-full object-cover" />
-                    <button 
-                      @click="removeAttachment(project.id, fIdx)"
-                      type="button" 
-                      class="absolute top-1 right-1 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] shadow-md hover:bg-rose-600 transition-colors cursor-pointer"
-                      title="Xóa hình ảnh"
-                    >
-                      <i class="fa-solid fa-xmark"></i>
-                    </button>
-                  </div>
+                  <i class="fa-solid fa-image text-emerald-600"></i>
+                  <span>Thêm hình ảnh</span>
+                </label>
 
-                  <!-- Document File Pill -->
-                  <div v-else class="flex items-center gap-2 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 shadow-3xs">
-                    <i class="fa-solid fa-file-lines text-emerald-600"></i>
-                    <span class="max-w-[120px] truncate">{{ file.name }}</span>
-                    <span class="text-[10px] text-gray-400">({{ formatFileSize(file.size) }})</span>
-                    <button 
-                      @click="removeAttachment(project.id, fIdx)"
-                      type="button" 
-                      class="text-gray-400 hover:text-rose-500 ml-1 cursor-pointer"
-                      title="Xóa file"
-                    >
-                      <i class="fa-solid fa-xmark"></i>
-                    </button>
-                  </div>
-                </div>
+                <!-- Hidden File Input for Documents -->
+                <input 
+                  :id="'file-input-' + project.id"
+                  type="file" 
+                  accept="*" 
+                  multiple 
+                  class="hidden" 
+                  @change="handleFileSelect(project.id, $event, false)"
+                />
+                <label 
+                  :for="'file-input-' + project.id"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer transition-colors border border-slate-200 select-none shadow-3xs"
+                >
+                  <i class="fa-solid fa-paperclip text-slate-500"></i>
+                  <span>Đính kèm file</span>
+                </label>
+              </div>
+
+              <div class="text-[11px] text-gray-400 font-bold select-none flex items-center gap-1.5">
+                <i class="fa-regular fa-lightbulb text-emerald-600 text-[13px]"></i>
+                <span>Enter để lưu riêng, Ctrl + Enter để lưu tất cả</span>
               </div>
             </div>
 
-            <!-- Right section: Update status indicator -->
-            <div class="w-28 flex-shrink-0 text-right flex items-center justify-end gap-2.5 min-h-[24px]">
-              <template v-if="isSaved[project.id]">
-                <span class="text-xs text-gray-400 font-semibold">{{ savedTimes[project.id] }}</span>
-                <i class="fa-solid fa-circle-check text-emerald-600 text-lg transition-transform scale-110"></i>
-              </template>
-              <template v-else>
-                <span class="text-xs text-gray-400 font-medium italic flex items-center gap-1 hover:text-gray-600 transition-colors">
-                  <span>Chưa có cập nhật</span>
-                  <i class="fa-solid fa-chevron-right text-[10px]"></i>
-                </span>
-              </template>
+            <!-- Attached Files Preview Grid -->
+            <div v-if="attachedFiles[project.id]?.length > 0" class="flex items-center gap-2.5 flex-wrap px-4 sm:px-5 pb-4 pt-1 border-t border-gray-100 mx-4 sm:mx-5">
+              <div 
+                v-for="(file, fIdx) in attachedFiles[project.id]" 
+                :key="fIdx"
+                class="relative group"
+              >
+                <!-- Image Preview Thumbnail -->
+                <div v-if="file.isImage" class="relative w-16 h-16 rounded-xl overflow-hidden border border-gray-200 shadow-3xs group">
+                  <img :src="file.url" class="w-full h-full object-cover" />
+                  <button 
+                    @click="removeAttachment(project.id, fIdx)"
+                    type="button" 
+                    class="absolute top-1 right-1 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] shadow-md hover:bg-rose-600 transition-colors cursor-pointer"
+                    title="Xóa hình ảnh"
+                  >
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+
+                <!-- Document File Pill -->
+                <div v-else class="flex items-center gap-2 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 shadow-3xs">
+                  <i class="fa-solid fa-file-lines text-emerald-600"></i>
+                  <span class="max-w-[120px] truncate">{{ file.name }}</span>
+                  <span class="text-[10px] text-gray-400">({{ formatFileSize(file.size) }})</span>
+                  <button 
+                    @click="removeAttachment(project.id, fIdx)"
+                    type="button" 
+                    class="text-gray-400 hover:text-rose-500 ml-1 cursor-pointer"
+                    title="Xóa file"
+                  >
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -277,6 +281,7 @@ const selectedIds = route.query.ids ? route.query.ids.split(',').map(Number) : [
 
 const projects = ref([])
 const isLoading = ref(true)
+const loadError = ref(null)
 
 // Reactive structures to store user updates
 const updateTexts = reactive({})
@@ -352,6 +357,39 @@ const handleFileSelect = async (projectId, event, isImageOnly = false) => {
   event.target.value = ''
 }
 
+const handlePaste = async (projectId, event) => {
+  const clipboardData = event.clipboardData
+  if (!clipboardData || !clipboardData.items) return
+
+  const imageItems = Array.from(clipboardData.items).filter(item => item.type.startsWith('image/'))
+  if (imageItems.length === 0) return
+
+  // Prevent default paste behavior only when there are images
+  event.preventDefault()
+
+  if (!attachedFiles[projectId]) {
+    attachedFiles[projectId] = []
+  }
+
+  for (const item of imageItems) {
+    const file = item.getAsFile()
+    if (!file) continue
+
+    const fileUrl = await compressImage(file)
+    const timestamp = new Date().toISOString().slice(11, 19).replace(/:/g, '')
+    const ext = file.type.includes('png') ? 'png' : 'jpg'
+
+    attachedFiles[projectId].push({
+      name: `pasted_${timestamp}.${ext}`,
+      size: file.size,
+      type: file.type,
+      url: fileUrl,
+      isImage: true
+    })
+    isSaved[projectId] = false
+  }
+}
+
 const removeAttachment = (projectId, fileIndex) => {
   if (attachedFiles[projectId]) {
     attachedFiles[projectId].splice(fileIndex, 1)
@@ -367,40 +405,6 @@ const formatFileSize = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
 }
 
-// Icons mapping helper for dynamic design aesthetics
-const getIconData = (title) => {
-  const lower = title.toLowerCase()
-  if (lower.includes('server') || lower.includes('license')) {
-    return { icon: 'fa-solid fa-server text-emerald-600', bg: 'bg-emerald-100' }
-  }
-  if (lower.includes('migration') || lower.includes('nâng cấp') || lower.includes('upgrade') || lower.includes('wifi')) {
-    return { icon: 'fa-solid fa-network-wired text-amber-600', bg: 'bg-amber-100' }
-  }
-  if (lower.includes('nas') || lower.includes('backup') || lower.includes('sao lưu')) {
-    return { icon: 'fa-solid fa-database text-blue-600', bg: 'bg-blue-100' }
-  }
-  if (lower.includes('firewall') || lower.includes('fortinet') || lower.includes('bảo mật')) {
-    return { icon: 'fa-solid fa-shield-halved text-purple-600', bg: 'bg-purple-100' }
-  }
-  if (lower.includes('office') || lower.includes('văn phòng') || lower.includes('chi nhánh') || lower.includes('camera')) {
-    return { icon: 'fa-solid fa-building text-rose-600', bg: 'bg-rose-100' }
-  }
-  return { icon: 'fa-solid fa-folder-open text-gray-500', bg: 'bg-gray-100' }
-}
-
-const statusDotClass = (status) => {
-  if (status === 'completed') return 'bg-emerald-500'
-  if (status === 'following') return 'bg-amber-400'
-  if (status === 'not_following') return 'bg-rose-500'
-  return 'bg-gray-400'
-}
-
-const statusText = (status) => {
-  if (status === 'completed') return 'Hoàn thành'
-  if (status === 'following') return 'Đang theo'
-  if (status === 'not_following') return 'Không theo'
-  return 'Không rõ'
-}
 
 // Compute progress indicators
 const updatedCount = computed(() => {
@@ -418,10 +422,15 @@ const progressPercentage = computed(() => {
 
 const loadProjects = async () => {
   isLoading.value = true
+  loadError.value = null
   try {
     const res = await axios.get('/api/projects')
-    const allProjects = res.data.projects
+    const allProjects = res.data?.projects || res.data || []
     
+    if (!Array.isArray(allProjects)) {
+      throw new Error('Dữ liệu trả về không hợp lệ')
+    }
+
     if (selectedIds.length > 0) {
       projects.value = allProjects.filter(p => selectedIds.includes(p.id))
     } else {
@@ -438,6 +447,15 @@ const loadProjects = async () => {
     })
   } catch (err) {
     console.error('Failed to load projects for bulk update:', err)
+    if (err.response?.status === 401) {
+      loadError.value = 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.'
+    } else if (err.response?.status >= 500) {
+      loadError.value = 'Lỗi máy chủ. Vui lòng thử lại sau.'
+    } else if (!err.response) {
+      loadError.value = 'Không thể kết nối đến máy chủ. Kiểm tra kết nối mạng.'
+    } else {
+      loadError.value = err.message || 'Đã xảy ra lỗi không xác định.'
+    }
   } finally {
     isLoading.value = false
   }

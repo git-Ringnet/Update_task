@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#f8faf9] flex flex-col justify-between pb-24">
+  <div class="min-h-screen bg-[#f4f5f0] flex flex-col justify-between pb-24">
     <div>
       <!-- Navbar Component -->
       <Navbar />
@@ -263,11 +263,10 @@
 
                 <div class="min-w-0">
                   <div 
-                    class="font-bold text-gray-900 text-base leading-snug font-heading truncate group-hover:text-emerald-700"
+                    class="font-bold text-gray-900 text-base leading-snug font-heading group-hover:text-emerald-700"
                     :class="{ 'line-through text-gray-400': task.status === 'done' }"
-                  >
-                    {{ task.title }}
-                  </div>
+                    v-html="formatTitleWithMentions(task.title)"
+                  ></div>
                   <div 
                     class="text-xs font-semibold mt-0.5 truncate"
                     :class="projectTitleColorClass(task.project ? task.project.health : 'green')"
@@ -485,6 +484,32 @@ const isTaskModalOpen = ref(false)
 const selectedTask = ref(null)
 const taskComments = ref([])
 const newCommentText = ref('')
+
+const formatTitleWithMentions = (titleText) => {
+  if (!titleText) return ''
+  let escaped = String(titleText)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+
+  const userList = (users && users.value) ? users.value : []
+  if (userList && userList.length > 0) {
+    const sortedUsers = [...userList].sort((a, b) => (b.name ? b.name.length : 0) - (a.name ? a.name.length : 0))
+    sortedUsers.forEach(u => {
+      if (u && u.name) {
+        const escapedName = u.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const regex = new RegExp(`@${escapedName}`, 'gi')
+        escaped = escaped.replace(regex, `<span class="text-emerald-600 font-extrabold">@${u.name}</span>`)
+      }
+    })
+  }
+
+  // Fallback for single-word @mentions not already matched inside HTML tags
+  escaped = escaped.replace(/@([^\s@,.:;!?()\n]+)(?![^<]*>|[^<>]*<\/span>)/g, '<span class="text-emerald-600 font-extrabold">@$1</span>')
+
+  return escaped
+}
 
 const selectedTaskIds = ref([])
 

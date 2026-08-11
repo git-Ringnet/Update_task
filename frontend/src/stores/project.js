@@ -93,9 +93,14 @@ export const useProjectStore = defineStore('project', {
 
       try {
         const res = await axios.patch(`/api/projects/${projectId}/pin`)
-        if (res.data && res.data.project) {
-          project.is_pinned = Boolean(res.data.project.is_pinned)
+        if (res.data) {
+          const finalState = res.data.is_pinned !== undefined 
+            ? Boolean(res.data.is_pinned) 
+            : (res.data.project ? Boolean(res.data.project.is_pinned) : nextState)
+          
+          project.is_pinned = finalState
           this.sortProjects()
+          return finalState
         }
         return project.is_pinned
       } catch (err) {
