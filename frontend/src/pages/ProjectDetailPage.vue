@@ -318,6 +318,18 @@
               <i class="fa-solid fa-circle-check text-xs"></i>
               <span>{{ selectedMilestone.is_completed ? 'Đã hoàn thành chặng' : 'Đánh dấu hoàn thành chặng' }}</span>
             </button>
+
+            <!-- BUTTON XÓA CHẶNG ĐANG CHỌN -->
+            <button 
+              v-if="selectedMilestone"
+              @click="handleDeleteMilestone(selectedMilestone.id)"
+              type="button"
+              class="px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-600 hover:text-white"
+              title="Xóa chặng này"
+            >
+              <i class="fa-solid fa-trash-can text-xs"></i>
+              <span>Xóa chặng</span>
+            </button>
           </div>
 
           <!-- DOUBLE CLICK HINT BADGE -->
@@ -1127,6 +1139,23 @@ const toggleMilestoneCompleted = async (ms) => {
     await fetchProjectDetail()
   } catch (err) {
     toast.success(`Đã cập nhật trạng thái chặng!`)
+  }
+}
+
+const handleDeleteMilestone = async (msId) => {
+  if (!msId) return
+  if (!confirm('Bạn có chắc chắn muốn xóa chặng này?')) return
+
+  try {
+    await axios.delete(`/api/milestones/${msId}`)
+    toast.success('Đã xóa chặng thành công!')
+    if (selectedMilestone.value && selectedMilestone.value.id === msId) {
+      selectedMilestone.value = null
+      selectedTargetMilestoneId.value = null
+    }
+    await fetchProjectDetail()
+  } catch (err) {
+    toast.error('Không thể xóa chặng!')
   }
 }
 
