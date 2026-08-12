@@ -1656,7 +1656,8 @@ const getStageActiveUsers = (stage) => {
 }
 
 // LOGIC HIỂN THỊ AVATAR LEO NÚI:
-// Chuyển avatar sang chặng chưa hoàn thành tiếp theo sau chặng hoàn thành gần nhất khi có công việc/hoạt động
+// 1. Chỉ chuyển avatar sang chặng chưa hoàn thành mới khi chặng đó thực sự CÓ CẬP NHẬT/CÔNG VIỆC (getStageTaskCount > 0).
+// 2. Khi tạo chặng mới chưa có cập nhật, avatar vẫn ở lại chặng hoàn thành gần nhất.
 const targetAvatarStageId = computed(() => {
   const milestones = effectiveMilestones.value
   if (!milestones || milestones.length === 0) return null
@@ -1670,20 +1671,19 @@ const targetAvatarStageId = computed(() => {
     }
   }
 
-  // 2. Nếu đã có chặng hoàn thành, xét các chặng phía sau chặng hoàn thành đó
+  // 2. Nếu đã có chặng hoàn thành:
   if (lastCompletedIdx !== -1) {
     const remainingMs = milestones.slice(lastCompletedIdx + 1)
+    
+    // CHỈ chuyển sang chặng chưa hoàn thành phía sau KHI CHẶNG ĐÓ CÓ CẬP NHẬT/CÔNG VIỆC ("hú hú") > 0
     if (remainingMs.length > 0) {
-      // Ưu tiên chặng chưa hoàn thành phía sau có công việc/hoạt động ("hú hú")
       const nextWithTasks = remainingMs.find(ms => !isStageCompleted(ms) && getStageTaskCount(ms) > 0)
-      if (nextWithTasks) return nextWithTasks.id
-
-      // Nếu chưa có công việc, chọn chặng chưa hoàn thành đầu tiên ngay phía sau
-      const nextUncompleted = remainingMs.find(ms => !isStageCompleted(ms))
-      if (nextUncompleted) return nextUncompleted.id
+      if (nextWithTasks) {
+        return nextWithTasks.id
+      }
     }
 
-    // Nếu không còn chặng nào phía sau, chọn chặng hoàn thành cuối cùng
+    // Nếu chưa có công việc/cập nhật nào ở chặng mới, VẪN Ở LẠI CHẶNG HOÀN THÀNH GẦN NHẤT
     return milestones[lastCompletedIdx].id
   }
 
