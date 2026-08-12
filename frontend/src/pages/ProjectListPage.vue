@@ -376,58 +376,97 @@
     >
       <div
         v-if="selectedProjectIds.length > 0"
-        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white/95 backdrop-blur-md px-5 py-3 rounded-2xl shadow-xl border border-gray-200 flex items-center gap-4 w-[95%] max-w-4xl justify-between"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#fafaf7] sm:bg-white/95 backdrop-blur-md px-3.5 py-2.5 sm:px-6 sm:py-3 rounded-2xl shadow-2xl border border-gray-200/90 flex items-center gap-2.5 sm:gap-4 max-w-4xl select-none"
       >
-        <!-- Selection Counter Badge -->
-        <div class="bg-[#1f5728] text-white px-4 py-2.5 rounded-xl flex items-center justify-between gap-3 text-sm font-extrabold flex-shrink-0">
-          <div class="flex items-center gap-2">
-            <i class="fa-solid fa-square-check text-base"></i>
-            <div class="flex flex-col items-start leading-tight">
-              <span>{{ selectedProjectIds.length }} selected</span>
-              <button @click="selectedProjectIds = []" type="button" class="text-[10px] text-emerald-250 hover:text-white underline cursor-pointer">Clear</button>
-            </div>
+        <!-- LEFT: COUNT BADGE & TEXT -->
+        <div class="flex items-center gap-2 sm:gap-2.5">
+          <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#fbd37d] text-gray-900 font-extrabold flex items-center justify-center text-xs sm:text-sm flex-shrink-0 shadow-2xs">
+            {{ selectedProjectIds.length }}
+          </div>
+          <div class="flex flex-col items-start leading-none">
+            <span class="text-xs sm:text-sm font-extrabold text-gray-900 leading-tight whitespace-nowrap">Đã chọn {{ selectedProjectIds.length }} dự án</span>
+            <button @click="selectedProjectIds = []" type="button" class="text-[10px] sm:text-[11px] text-gray-400 hover:text-gray-600 font-bold cursor-pointer leading-tight mt-0.5">Bỏ chọn</button>
           </div>
         </div>
 
-        <!-- Bulk Action Buttons Group -->
-        <div class="flex items-center flex-wrap gap-2.5 flex-1 justify-end">
-          <!-- Bulk Status Update (Update Status) -->
-          <div class="relative">
-            <button
-              @click="toggleBulkMenu('status')"
-              type="button"
-              class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-bold text-xs rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
-            >
-              <i class="fa-solid fa-list-check text-emerald-600"></i>
-              <span>Update Status</span>
-              <i class="fa-solid fa-chevron-down text-[10px] text-gray-400"></i>
-            </button>
-            <div v-if="activeBulkMenu === 'status'" class="absolute bottom-full mb-2 right-0 bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-2 flex flex-col gap-1 min-w-[140px]">
-              <button @click="bulkUpdateStatus('completed')" class="px-3 py-2 hover:bg-gray-100 text-xs font-bold rounded-lg text-gray-700 text-left transition-colors cursor-pointer block w-full">
-                Hoàn thành
-              </button>
-              <button @click="bulkUpdateStatus('following')" class="px-3 py-2 hover:bg-gray-100 text-xs font-bold rounded-lg text-gray-700 text-left transition-colors cursor-pointer block w-full">
-                Đang theo
-              </button>
-              <button @click="bulkUpdateStatus('not_following')" class="px-3 py-2 hover:bg-gray-100 text-xs font-bold rounded-lg text-gray-700 text-left transition-colors cursor-pointer block w-full">
-                Không theo
-              </button>
-            </div>
-          </div>
+        <!-- DIVIDER -->
+        <div class="h-6 w-px bg-gray-200 flex-shrink-0 mx-0.5 sm:mx-1"></div>
 
-          <!-- Bulk Post Update Option -->
-          <div>
-            <button
-              @click="goToBulkUpdate"
-              type="button"
-              class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition-colors cursor-pointer shadow-sm"
-            >
-              <i class="fa-solid fa-message text-white"></i>
-              <span>Post Update</span>
+        <!-- DESKTOP STATUS PILL BUTTONS (hidden on mobile) -->
+        <div class="hidden sm:flex items-center gap-2">
+          <button
+            @click="selectBulkStatusOption('following')"
+            type="button"
+            class="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs border"
+            :class="selectedBulkStatus === 'following' ? 'bg-[#fbd37d] text-gray-900 border-amber-300 hover:bg-[#fcd34d]' : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-200'"
+          >
+            <i class="fa-solid fa-flag text-xs"></i>
+            <span>Đang theo</span>
+          </button>
+
+          <button
+            @click="selectBulkStatusOption('not_following')"
+            type="button"
+            class="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs border"
+            :class="selectedBulkStatus === 'not_following' ? 'bg-[#fbd37d] text-gray-900 border-amber-300 hover:bg-[#fcd34d]' : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-200'"
+          >
+            <i class="fa-solid fa-eye-slash text-xs"></i>
+            <span>Không theo</span>
+          </button>
+
+          <button
+            @click="selectBulkStatusOption('completed')"
+            type="button"
+            class="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs border"
+            :class="selectedBulkStatus === 'completed' ? 'bg-[#fbd37d] text-gray-900 border-amber-300 hover:bg-[#fcd34d]' : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-200'"
+          >
+            <i class="fa-regular fa-circle-check text-xs"></i>
+            <span>Hoàn thành</span>
+          </button>
+        </div>
+
+        <!-- MOBILE STATUS DROPDOWN MENU (shown on sm:hidden) -->
+        <div class="sm:hidden block relative">
+          <button 
+            @click="isMobileStatusDropdownOpen = !isMobileStatusDropdownOpen" 
+            type="button" 
+            class="px-2.5 py-1.5 bg-white border border-gray-200 text-gray-800 font-extrabold text-xs rounded-xl flex items-center gap-1 shadow-2xs cursor-pointer"
+          >
+            <span>{{ getBulkStatusLabel(selectedBulkStatus) }}</span>
+            <i class="fa-solid fa-chevron-down text-[9px] text-gray-500"></i>
+          </button>
+
+          <div 
+            v-if="isMobileStatusDropdownOpen" 
+            class="absolute bottom-full mb-2 left-0 bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-1.5 min-w-[135px] flex flex-col gap-1 ring-1 ring-black/5"
+          >
+            <button @click="selectBulkStatusOption('following')" type="button" class="px-2.5 py-1.5 hover:bg-amber-50 text-xs font-bold rounded-lg text-left text-gray-800 flex items-center gap-2">
+              <i class="fa-solid fa-flag text-amber-500 text-xs"></i>
+              <span>Đang theo</span>
+            </button>
+            <button @click="selectBulkStatusOption('not_following')" type="button" class="px-2.5 py-1.5 hover:bg-gray-100 text-xs font-bold rounded-lg text-left text-gray-800 flex items-center gap-2">
+              <i class="fa-solid fa-eye-slash text-gray-500 text-xs"></i>
+              <span>Không theo</span>
+            </button>
+            <button @click="selectBulkStatusOption('completed')" type="button" class="px-2.5 py-1.5 hover:bg-emerald-50 text-xs font-bold rounded-lg text-left text-gray-800 flex items-center gap-2">
+              <i class="fa-regular fa-circle-check text-emerald-600 text-xs"></i>
+              <span>Hoàn thành</span>
             </button>
           </div>
         </div>
 
+        <!-- DIVIDER -->
+        <div class="h-6 w-px bg-gray-200 flex-shrink-0 mx-0.5 sm:mx-1"></div>
+
+        <!-- RIGHT: SUBMIT "HÚ HÚ" BUTTON -->
+        <button
+          @click="goToBulkUpdate"
+          type="button"
+          class="px-3.5 py-1.5 sm:px-5 sm:py-2.5 bg-[#10b981] hover:bg-emerald-600 text-white font-extrabold text-xs sm:text-sm rounded-xl flex items-center gap-1.5 sm:gap-2 shadow-xs transition-colors cursor-pointer flex-shrink-0"
+        >
+          <i class="fa-solid fa-dove text-sm"></i>
+          <span>Hú Hú</span>
+        </button>
       </div>
     </transition>
   </div>
@@ -634,6 +673,22 @@ const bulkUpdateLead = async (userId) => {
     console.error('Failed bulk update lead:', err)
     toast.error('Chuyển lead thất bại!')
   }
+}
+
+const selectedBulkStatus = ref('following')
+const isMobileStatusDropdownOpen = ref(false)
+
+const getBulkStatusLabel = (status) => {
+  if (status === 'following') return '🚩 Đang theo'
+  if (status === 'not_following') return '🙈 Không theo'
+  if (status === 'completed') return '✔️ Hoàn thành'
+  return '🚩 Đang theo'
+}
+
+const selectBulkStatusOption = (status) => {
+  selectedBulkStatus.value = status
+  isMobileStatusDropdownOpen.value = false
+  bulkUpdateStatus(status)
 }
 
 const bulkUpdateStatus = async (status) => {

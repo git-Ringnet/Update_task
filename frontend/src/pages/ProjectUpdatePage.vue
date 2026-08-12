@@ -1,33 +1,8 @@
 <template>
   <div class="min-h-screen bg-[#f4f5f0] flex flex-col justify-between pb-24">
     <div>
-      <!-- Custom Header matching mockup -->
-      <header class="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-2xs">
-        <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <!-- Left: Logo & Mascot -->
-          <router-link to="/projects" class="flex items-center gap-2 group">
-            <CactusLogo />
-          </router-link>
-
-          <!-- Center: Keyboard only mode badge -->
-          <div class="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-100/60 shadow-2xs">
-            <i class="fa-solid fa-bolt text-[10px] animate-pulse"></i>
-            <span>Chế độ phím tắt</span>
-            <span class="text-emerald-400">•</span>
-            <span class="text-emerald-600 font-medium">Không cần dùng chuột</span>
-          </div>
-
-          <!-- Right: Profile Dropdown -->
-          <div class="flex items-center gap-2.5">
-            <img
-              :src="currentUser.avatar"
-              :alt="currentUser.name"
-              class="w-9 h-9 rounded-full object-cover border-2 border-emerald-400/70"
-            />
-            <span class="text-base font-bold text-gray-900 font-heading">{{ currentUser.name }}</span>
-          </div>
-        </div>
-      </header>
+      <!-- Navbar Component matching standard app header -->
+      <Navbar />
 
       <!-- Main Container -->
       <main class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -118,13 +93,14 @@
           <div
             v-for="(project, index) in projects"
             :key="project.id"
-            class="bg-white rounded-2xl border border-gray-100 shadow-2xs hover:shadow-xs transition-shadow"
+            @click="focusTextarea(project.id)"
+            class="bg-white rounded-2xl border border-gray-100 shadow-2xs hover:shadow-xs transition-shadow cursor-text"
           >
             <!-- Main row: Title + Textarea + Status -->
             <div class="flex items-start gap-4 lg:gap-5 p-4 sm:p-5">
 
               <!-- Left: Project title only (no icon, no status) -->
-              <div class="flex-shrink-0 w-36 sm:w-44 min-w-0 pt-1.5">
+              <div class="flex-shrink-0 w-36 sm:w-44 min-w-0 pt-1.5 select-none">
                 <div class="font-extrabold text-gray-900 text-sm leading-snug font-heading break-words min-w-0">
                   {{ project.title }}
                 </div>
@@ -133,12 +109,13 @@
               <!-- Middle: Textarea input (inline, borderless style like detail page) -->
               <div class="flex-1 min-w-0">
                 <textarea
+                  :ref="(el) => setTextareaRef(el, project.id)"
                   v-model="updateTexts[project.id]"
-                  @input="isSaved[project.id] = false"
+                  @input="onInputText(project.id, $event)"
                   @paste="handlePaste(project.id, $event)"
                   rows="1"
                   placeholder="Nhập nội dung cập nhật hoạt động hôm nay... (Ctrl+V để dán ảnh)"
-                  class="w-full bg-transparent text-sm font-bold text-gray-900 leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none border-0"
+                  class="w-full bg-transparent text-sm font-bold text-gray-900 leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none border-0 min-h-[32px]"
                   @keydown.enter.exact.prevent="saveUpdate(project.id)"
                   @keydown.ctrl.enter.prevent="handleFinishAll"
                 ></textarea>
@@ -250,10 +227,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import CactusLogo from '../components/CactusLogo.vue'
+import Navbar from '../components/Navbar.vue'
 
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toast'
@@ -277,7 +255,7 @@ const currentUser = computed(() => authStore.user || {
 })
 
 // Parse selected project IDs from url query
-const selectedIds = route.query.ids ? route.query.ids.split(',').map(Number) : []
+const selectedIds = route.query.ids ? route.query.ids.split(',') : []
 
 const projects = ref([])
 const isLoading = ref(true)
@@ -289,6 +267,29 @@ const attachedFiles = reactive({})
 const savedTimes = reactive({})
 const isSaved = reactive({})
 const isSaving = reactive({})
+
+const textareaRefs = reactive({})
+
+const setTextareaRef = (el, projectId) => {
+  if (el) {
+    textareaRefs[projectId] = el
+  }
+}
+
+const focusTextarea = (projectId) => {
+  if (textareaRefs[projectId]) {
+    textareaRefs[projectId].focus()
+  }
+}
+
+const onInputText = (projectId, event) => {
+  isSaved[projectId] = false
+  const el = event.target
+  if (el) {
+    el.style.height = 'auto'
+    el.style.height = `${Math.max(el.scrollHeight, 32)}px`
+  }
+}
 
 const compressImage = (file) => {
   return new Promise((resolve) => {
@@ -432,18 +433,25 @@ const loadProjects = async () => {
     }
 
     if (selectedIds.length > 0) {
-      projects.value = allProjects.filter(p => selectedIds.includes(p.id))
+      projects.value = allProjects.filter(p => selectedIds.some(id => String(id) === String(p.id)))
     } else {
       projects.value = allProjects
     }
 
     // Initialize state mapping
     projects.value.forEach(p => {
-      updateTexts[p.id] = ''
-      attachedFiles[p.id] = []
-      savedTimes[p.id] = null
-      isSaved[p.id] = false
-      isSaving[p.id] = false
+      if (updateTexts[p.id] === undefined) updateTexts[p.id] = ''
+      if (attachedFiles[p.id] === undefined) attachedFiles[p.id] = []
+      if (savedTimes[p.id] === undefined) savedTimes[p.id] = null
+      if (isSaved[p.id] === undefined) isSaved[p.id] = false
+      if (isSaving[p.id] === undefined) isSaving[p.id] = false
+    })
+
+    // Auto-focus the first project's input field after DOM render
+    nextTick(() => {
+      if (projects.value.length > 0 && projects.value[0]?.id) {
+        focusTextarea(projects.value[0].id)
+      }
     })
   } catch (err) {
     console.error('Failed to load projects for bulk update:', err)
@@ -462,11 +470,16 @@ const loadProjects = async () => {
 }
 
 const saveUpdate = async (projectId) => {
-  if (isSaving[projectId]) return
+  if (isSaving[projectId] || isSaved[projectId]) return
+  isSaving[projectId] = true
+
   let text = updateTexts[projectId]?.trim() || ''
   const files = attachedFiles[projectId] || []
 
-  if (!text && files.length === 0) return
+  if (!text && files.length === 0) {
+    isSaving[projectId] = false
+    return
+  }
 
   let finalContent = text
   if (files.length > 0) {
@@ -481,14 +494,12 @@ const saveUpdate = async (projectId) => {
     finalContent = finalContent ? `${finalContent}\n\n${fileMarkdown}` : fileMarkdown
   }
 
-  isSaving[projectId] = true
   try {
     await axios.post('/api/comments', {
       project_id: projectId,
       user_id: authStore.user?.id || 3,
       content: finalContent
     })
-    toast.success('Đã lưu cập nhật dự án!')
 
     // Set saved state
     isSaved[projectId] = true
@@ -524,7 +535,6 @@ const handleFinishAll = async () => {
 
   if (savePromises.length > 0) {
     await Promise.all(savePromises)
-    toast.success('Đã lưu toàn bộ cập nhật!')
   }
 
   // Navigate back to home screen

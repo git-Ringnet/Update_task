@@ -137,14 +137,15 @@
           <!-- DYNAMIC MILESTONE PEAKS & SLOPE AVATARS -->
           <template v-for="(item, index) in milestoneLayout.visibleItems" :key="item.ms.id || index">
             
-            <!-- COMPACT COMPLETED STAGE NODE (NHÔ CAO GIỐNG NÚI) -->
+            <!-- COMPACT COMPLETED STAGE NODE (CĂN NẰM NGANG VỚI "BẮT ĐẦU", CỜ XANH NẰM TRÊN SỐ) -->
             <template v-if="item.isDone">
-              <!-- Compact Node Flag Icon + Avatars -->
+              <!-- Compact Node Flag Icon + Badge (Căn thẳng hàng ngang tại top-[138px]) -->
               <div 
                 @click="selectStageByMilestone(item.ms)"
-                class="absolute top-[95px] -translate-x-1/2 flex items-center justify-center gap-1.5 z-20 cursor-pointer group transition-all duration-300 hover:scale-110"
+                class="absolute top-[138px] -translate-x-1/2 flex flex-col items-center justify-center gap-1 z-20 cursor-pointer group transition-all duration-300 hover:scale-108"
                 :style="{ left: item.leftPct }"
               >
+                <!-- Cờ xanh hoàn thành -->
                 <div 
                   class="w-7.5 h-7.5 rounded-full border-2 border-emerald-600 bg-white text-emerald-600 flex items-center justify-center shadow-xs transition-colors group-hover:bg-emerald-50"
                   :title="`Chặng đã hoàn thành: ${item.ms.title}`"
@@ -152,28 +153,28 @@
                   <i class="fa-solid fa-flag text-xs text-emerald-600"></i>
                 </div>
 
-                <!-- Task count badge if > 0 -->
-                <div v-if="getStageTaskCount(item.ms) > 0" class="w-5.5 h-5.5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-black shadow-2xs border border-white">
+                <!-- Badge số việc nằm DƯỚI cờ (Hiển thị số 0 nếu chưa có việc) -->
+                <div class="w-5.5 h-5.5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-black shadow-2xs border border-white">
                   {{ getStageTaskCount(item.ms) }}
                 </div>
 
-                <!-- AVATAR NGƯỜI CẬP NHẬT/PHỤ TRÁCH CHẶNG ĐÃ HOÀN THÀNH -->
-                <div v-if="getStageActiveUsers(item.ms).length > 0" class="flex items-center -space-x-1.5 ml-0.5">
+                <!-- AVATARS: CHỈ HIỂN THỊ TRÊN CHẶNG HOÀN THÀNH MỚI NHẤT -->
+                <div v-if="shouldShowAvatarsFor(item.ms) && stageAvatarsList.length > 0" class="flex items-center -space-x-1.5 mt-0.5">
                   <div 
-                    v-for="u in getStageActiveUsers(item.ms)" 
+                    v-for="u in stageAvatarsList" 
                     :key="u.id"
                     class="w-7 h-7 rounded-full bg-white p-0.5 shadow-sm border-2 border-emerald-500 transition-all hover:scale-115"
-                    :title="`Người phụ trách: ${u.name}`"
+                    :title="`Thành viên: ${u.name}`"
                   >
                     <img :src="u.avatar || defaultAvatar" class="w-full h-full rounded-full object-cover" />
                   </div>
                 </div>
               </div>
 
-              <!-- Compact Stage Label & Date Below -->
+              <!-- Compact Stage Label & Date Below (Không có tên người cập nhật) -->
               <div 
                 @click="selectStageByMilestone(item.ms)"
-                class="absolute top-[135px] -translate-x-1/2 text-center space-y-0.5 font-sans z-10 cursor-pointer group max-w-[135px]"
+                class="absolute top-[200px] -translate-x-1/2 text-center space-y-0.5 font-sans z-10 cursor-pointer group max-w-[135px]"
                 :style="{ left: item.leftPct }"
               >
                 <div 
@@ -184,53 +185,47 @@
                   {{ item.ms.title }}
                 </div>
 
-                <div v-if="getStageAssigneeName(item.ms)" class="text-[11px] font-bold text-emerald-700 truncate max-w-[135px]">
-                  {{ getStageAssigneeName(item.ms) }}
-                </div>
-
                 <div class="text-[10px] font-bold text-slate-500">
-                  {{ item.ms.due_date ? formatDateShort(item.ms.due_date) : '' }}
+                  {{ item.ms.due_date ? formatDateShort(item.ms.due_date) : (item.ms.updated_at ? formatDateShort(item.ms.updated_at) : '') }}
                 </div>
               </div>
             </template>
 
-            <!-- ACTIVE / IN-PROGRESS STAGE PEAK NODE (HIGH MOUNTAIN PEAK) -->
+            <!-- ACTIVE / IN-PROGRESS STAGE PEAK NODE (CỜ XÁM NẰM TRÊN SỐ) -->
             <template v-else>
-              <!-- ĐỈNH NÚI: CỜ XANH + SỐ VIỆC -->
+              <!-- ĐỈNH NÚI: CỜ XÁM NẰM TRÊN SỐ VIỆC -->
               <div 
                 @click="selectStageByMilestone(item.ms)"
-                class="absolute top-[36px] -translate-x-1/2 flex items-end gap-1.5 z-20 cursor-pointer group transition-all duration-300 hover:scale-108"
+                class="absolute top-[36px] -translate-x-1/2 flex flex-col items-center gap-1 z-20 cursor-pointer group transition-all duration-300 hover:scale-108"
                 :style="{ left: item.leftPct }"
               >
-                <div class="flex flex-col items-center -space-y-1">
-                  <!-- Status Flag in Green -->
-                  <i class="fa-solid fa-flag text-2xl filter drop-shadow-2xs text-emerald-600"></i>
-                  
-                  <!-- Task Count Circle -->
-                  <div class="w-6.5 h-6.5 rounded-full text-white flex items-center justify-center text-xs font-black shadow-xs border-2 border-white transition-colors bg-rose-500">
-                    {{ getStageTaskCount(item.ms) }}
-                  </div>
+                <!-- Status Flag in Gray -->
+                <i class="fa-solid fa-flag text-2xl filter drop-shadow-2xs text-slate-400"></i>
+                
+                <!-- Task Count Circle in Gray -->
+                <div class="w-6.5 h-6.5 rounded-full text-white flex items-center justify-center text-xs font-black shadow-xs border-2 border-white transition-colors bg-slate-400">
+                  {{ getStageTaskCount(item.ms) }}
                 </div>
               </div>
 
-              <!-- AVATAR ĐANG LEO SƯỜN NÚI -->
+              <!-- AVATAR ĐANG LEO SƯỜN NÚI (Chỉ hiện khi chặng này là chặng hoạt động nhận avatar) -->
               <div 
-                v-if="getStageActiveUsers(item.ms).length > 0"
+                v-if="shouldShowAvatarsFor(item.ms) && stageAvatarsList.length > 0"
                 @click="selectStageByMilestone(item.ms)"
                 class="absolute top-[92px] -translate-x-1/2 flex items-center -space-x-2 z-25 cursor-pointer transition-all duration-300 hover:scale-110"
                 :style="{ left: item.slopePct }"
               >
                 <div 
-                  v-for="u in getStageActiveUsers(item.ms)" 
+                  v-for="u in stageAvatarsList" 
                   :key="u.id"
                   class="w-8.5 h-8.5 rounded-full bg-white p-0.5 shadow-md border-2 border-emerald-500 transition-all hover:scale-115 hover:z-30 filter drop-shadow-2xs"
-                  :title="`Đang thực hiện chặng ${item.ms.title}: ${u.name}`"
+                  :title="`Thành viên thực hiện ${item.ms.title}: ${u.name}`"
                 >
                   <img :src="u.avatar || defaultAvatar" class="w-full h-full rounded-full object-cover" />
                 </div>
               </div>
 
-              <!-- Tên chặng, Người được giao & Thời gian -->
+              <!-- Tên chặng & Thời gian (Không có tên người cập nhật) -->
               <div 
                 @click="selectStageByMilestone(item.ms)"
                 class="absolute top-[112px] -translate-x-1/2 text-center space-y-0.5 font-sans z-10 cursor-pointer group max-w-[210px]"
@@ -241,10 +236,6 @@
                   :class="selectedMilestone && selectedMilestone.id === item.ms.id ? 'text-emerald-700 underline underline-offset-4 decoration-2' : 'text-gray-900 group-hover:text-emerald-700'"
                 >
                   {{ item.ms.title }}
-                </div>
-
-                <div v-if="getStageAssigneeName(item.ms)" class="text-xs sm:text-sm font-black text-emerald-700 truncate mt-0.5">
-                  {{ getStageAssigneeName(item.ms) }}
                 </div>
 
                 <div class="text-xs sm:text-sm font-bold text-slate-500 mt-0.5">
@@ -311,17 +302,17 @@
 
       </div>
 
-      <!-- CENTER PROMINENT "CHIM SẺ GỌI ĐẠI BÀNG" BUTTON -->
-      <div class="flex justify-center my-6">
+      <!-- CENTER PROMINENT "HÚ HÚ" BUTTON (Ẩn khi chặng được chọn đã hoàn thành) -->
+      <div v-if="!selectedMilestone || !selectedMilestone.is_completed" class="flex justify-center my-6">
         <button 
           @click="toggleInlineForm" 
           type="button"
-          class="px-8 py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-black text-base sm:text-xl rounded-full shadow-lg hover:shadow-xl hover:scale-103 active:scale-97 transition-all flex items-center gap-3 cursor-pointer group"
+          class="px-8 py-3 bg-[#10b981] hover:bg-emerald-600 text-white font-extrabold text-base sm:text-xl rounded-full shadow-md hover:shadow-lg hover:scale-103 active:scale-97 transition-all flex items-center gap-3 cursor-pointer group"
         >
           <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
             <i class="fa-solid fa-dove text-lg text-white"></i>
           </div>
-          <span>CHIM SẺ GỌI ĐẠI BÀNG</span>
+          <span>HÚ HÚ</span>
         </button>
       </div>
 
@@ -361,9 +352,9 @@
               <span>{{ selectedMilestone.is_completed ? 'Đã hoàn thành chặng' : 'Đánh dấu hoàn thành chặng' }}</span>
             </button>
 
-            <!-- BUTTON XÓA CHẶNG ĐANG CHỌN -->
+            <!-- BUTTON XÓA CHẶNG ĐANG CHỌN (Chỉ hiển thị khi chặng CHƯA hoàn thành) -->
             <button 
-              v-if="selectedMilestone"
+              v-if="selectedMilestone && !selectedMilestone.is_completed"
               @click="handleDeleteMilestone(selectedMilestone.id)"
               type="button"
               class="px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-600 hover:text-white"
@@ -388,9 +379,9 @@
           <div 
             v-for="t in displayedCards" 
             :key="t.id"
-            @dblclick="openEditStageTaskForm(t)"
+            @dblclick="!isTaskInDoneStage(t) && openEditStageTaskForm(t)"
             class="bg-white border border-gray-100 hover:border-gray-200 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all flex items-center justify-between gap-4 group cursor-pointer"
-            title="Nhấn đúp (Double-click) để chỉnh sửa hoạt động này"
+            :title="isTaskInDoneStage(t) ? 'Chặng đã hoàn thành (Không thể chỉnh sửa)' : 'Nhấn đúp (Double-click) để chỉnh sửa hoạt động này'"
           >
             <!-- LEFT GROUP: ICON + AVATAR + USER & TITLE -->
             <div class="flex items-center gap-4 min-w-0 flex-1">
@@ -428,9 +419,11 @@
                   <div class="relative">
                     <button
                       type="button"
-                      @click.stop="toggleAssigneeDropdown(t.id)"
-                      class="inline-flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-extrabold text-xs border border-gray-200 rounded-full px-3 py-1 transition-all shadow-2xs cursor-pointer group/btn"
-                      title="Đổi người được giao"
+                      @click.stop="!isTaskInDoneStage(t) && toggleAssigneeDropdown(t.id)"
+                      :disabled="isTaskInDoneStage(t)"
+                      class="inline-flex items-center gap-1.5 bg-gray-100 text-gray-800 font-extrabold text-xs border border-gray-200 rounded-full px-3 py-1 transition-all shadow-2xs group/btn"
+                      :class="isTaskInDoneStage(t) ? 'cursor-not-allowed opacity-75' : 'hover:bg-gray-200 cursor-pointer'"
+                      :title="isTaskInDoneStage(t) ? 'Chặng đã hoàn thành (Không thể đổi người)' : 'Đổi người được giao'"
                     >
                       <img 
                         v-if="t.assignee_id && getAssigneeAvatar(t)"
@@ -443,12 +436,12 @@
                         {{ t.assignee_id ? getAssigneeDisplayName(t) : 'Chưa phân công' }}
                       </span>
 
-                      <i class="fa-solid fa-chevron-down text-[9px] text-gray-500 group-hover/btn:text-gray-800 transition-transform duration-200" :class="{ 'rotate-180': activeAssigneeDropdownTaskId === t.id }"></i>
+                      <i v-if="!isTaskInDoneStage(t)" class="fa-solid fa-chevron-down text-[9px] text-gray-500 group-hover/btn:text-gray-800 transition-transform duration-200" :class="{ 'rotate-180': activeAssigneeDropdownTaskId === t.id }"></i>
                     </button>
 
                     <!-- CUSTOM DROPDOWN POPOVER MENU -->
                     <div 
-                      v-if="activeAssigneeDropdownTaskId === t.id"
+                      v-if="!isTaskInDoneStage(t) && activeAssigneeDropdownTaskId === t.id"
                       @click.stop
                       class="absolute left-0 top-full mt-1.5 z-50 w-56 bg-white border border-gray-200 rounded-xl shadow-2xl py-1.5 text-gray-800 animate-in fade-in zoom-in-95 duration-150 max-h-60 overflow-y-auto custom-scrollbar ring-1 ring-black/5"
                     >
@@ -493,19 +486,13 @@
               </div>
             </div>
 
-            <!-- RIGHT GROUP: DATE & TIME STACK + DELETE BUTTON -->
-            <div class="flex items-center gap-3.5 flex-shrink-0">
-              <div class="text-right whitespace-nowrap">
-                <div class="text-base sm:text-lg font-black text-gray-900 tracking-tight">
-                  {{ formatDateShort(t.due_date || t.created_at) }}
-                </div>
-                <div class="text-xs sm:text-sm font-extrabold text-slate-500 mt-0.5">
-                  {{ formatTimeOnly(t.due_date || t.created_at) || '10:30' }}
-                </div>
-              </div>
-
-              <!-- Edit & Delete actions on hover -->
-              <div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <!-- RIGHT GROUP: DATE & TIME STACK -->
+            <div class="flex items-center flex-shrink-0 relative">
+              <!-- Edit & Delete floating action buttons (Appears on hover to the left of date/time without affecting layout or creating empty whitespace) -->
+              <div 
+                v-if="!isTaskInDoneStage(t)" 
+                class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-white/95 backdrop-blur-xs px-2 py-1 rounded-full shadow-xs border border-gray-200/80 z-10 pointer-events-none group-hover:pointer-events-auto"
+              >
                 <button 
                   @click.stop="openEditStageTaskForm(t)" 
                   type="button"
@@ -522,6 +509,16 @@
                 >
                   <i class="fa-solid fa-trash-can"></i>
                 </button>
+              </div>
+
+              <!-- Date & Time stack (Always sitting naturally at far right edge across all cards) -->
+              <div class="text-right whitespace-nowrap min-w-[55px]">
+                <div class="text-base sm:text-lg font-black text-gray-900 tracking-tight">
+                  {{ formatDateShort(t.due_date || t.created_at) }}
+                </div>
+                <div class="text-xs sm:text-sm font-extrabold text-slate-500 mt-0.5">
+                  {{ formatTimeOnly(t.due_date || t.created_at) || '10:30' }}
+                </div>
               </div>
             </div>
           </div>
@@ -574,9 +571,9 @@
               </div>
 
               <!-- IF <= 3 STAGES: DISPLAY STAGE BUTTONS SIDE BY SIDE LIKE IN THE IMAGE -->
-              <div v-if="effectiveMilestones.length <= 3 && effectiveMilestones.length > 0" class="flex items-center gap-2">
+              <div v-if="activeTargetMilestones.length <= 3 && activeTargetMilestones.length > 0" class="flex items-center gap-2">
                 <div
-                  v-for="ms in effectiveMilestones"
+                  v-for="ms in activeTargetMilestones"
                   :key="ms.id"
                   @click="newStageTaskMilestoneId = ms.id"
                   class="flex flex-col items-center justify-between p-2 rounded-xl border transition-all cursor-pointer select-none min-w-[72px] sm:min-w-[84px] h-[78px]"
@@ -605,12 +602,12 @@
               </div>
 
               <!-- IF > 3 STAGES: CONVERT TO DROPDOWN SELECTOR AS REQUESTED -->
-              <div v-else-if="effectiveMilestones.length > 3" class="w-full sm:w-56">
+              <div v-else-if="activeTargetMilestones.length > 3" class="w-full sm:w-56">
                 <select 
                   v-model="newStageTaskMilestoneId" 
                   class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors cursor-pointer"
                 >
-                  <option v-for="ms in effectiveMilestones" :key="ms.id" :value="ms.id">
+                  <option v-for="ms in activeTargetMilestones" :key="ms.id" :value="ms.id">
                     🚩 {{ ms.title }} ({{ getStageTaskCount(ms) }})
                   </option>
                 </select>
@@ -636,13 +633,6 @@
 
                 <!-- Input Area Container with Mention Dropdown -->
                 <div class="flex-1 min-w-0 relative">
-                  <!-- HIGHLIGHT OVERLAY BEHIND TEXTAREA (ONLY WHEN MENTIONS EXIST) -->
-                  <div 
-                    v-if="hasMentionsInTitle"
-                    class="w-full bg-transparent text-sm sm:text-base font-bold text-gray-900 leading-relaxed py-1 whitespace-pre-wrap break-words pointer-events-none absolute inset-0 select-none overflow-hidden m-0 border-0"
-                    v-html="formattedInputTitle + (newStageTaskTitle.endsWith('\n') ? '<br/>' : '')"
-                  ></div>
-
                   <textarea 
                     ref="stageTaskTitleInputRef"
                     v-model="newStageTaskTitle" 
@@ -651,8 +641,7 @@
                     @input="onTitleInput"
                     @keydown="onTitleKeydown"
                     placeholder="9g 15/8 @Khánh đi khảo sát Outspan" 
-                    class="w-full bg-transparent text-sm sm:text-base font-bold leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none relative z-10 m-0 border-0"
-                    :class="hasMentionsInTitle ? 'text-transparent caret-gray-900' : 'text-gray-900'"
+                    class="w-full bg-transparent text-sm sm:text-base font-bold text-gray-900 leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none m-0 border-0"
                   ></textarea>
 
                   <!-- AUTOCOMPLETE @MENTION DROPDOWN POPOVER (POPS UP ABOVE INPUT) -->
@@ -785,16 +774,16 @@
                   <button
                     type="button"
                     @click="cancelEditTask"
-                    class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                    class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold text-xs sm:text-sm rounded-xl transition-all cursor-pointer"
                   >
                     {{ editingTaskId ? 'Hủy' : 'Đóng' }}
                   </button>
                   
                   <button 
                     type="submit" 
-                    class="inline-flex items-center gap-2 px-5 py-2 bg-[#2e7d32] hover:bg-[#1b5e20] text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-sm transition-all cursor-pointer"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#10b981] hover:bg-emerald-600 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer"
                   >
-                    <i class="fa-brands fa-twitter text-sm"></i>
+                    <i class="fa-solid fa-dove text-sm"></i>
                     <span>{{ editingTaskId ? 'Lưu' : 'Hú Hú' }}</span>
                     <i class="fa-solid fa-chevron-down text-[10px] opacity-80"></i>
                   </button>
@@ -1066,8 +1055,10 @@ const toggleInlineForm = () => {
     newStageTaskAssignee.value = ''
     showPersonPicker.value = false
     showDateTimePicker.value = false
-    if (!newStageTaskMilestoneId.value) {
-      newStageTaskMilestoneId.value = selectedMilestone.value ? selectedMilestone.value.id : (effectiveMilestones.value[0]?.id || null)
+    if (!newStageTaskMilestoneId.value || isStageCompleted(effectiveMilestones.value.find(m => m.id === newStageTaskMilestoneId.value))) {
+      newStageTaskMilestoneId.value = (selectedMilestone.value && !selectedMilestone.value.is_completed) 
+        ? selectedMilestone.value.id 
+        : (activeTargetMilestones.value[0]?.id || null)
     }
     nextTick(() => {
       stageTaskTitleInputRef.value?.focus()
@@ -1150,17 +1141,17 @@ const formattedInputTitle = computed(() => {
   // Sort users by name length descending so multi-word names take priority
   const sortedUsers = [...users.value].sort((a, b) => (b.name || '').length - (a.name || '').length)
   
-  // Replace matching @User Full Name with green text span matching exact textarea font-bold
+  // Replace matching @User Full Name with green text span
   sortedUsers.forEach(u => {
     if (u && u.name) {
       const escapedName = u.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
       const reg = new RegExp(`@${escapedName}`, 'gi')
-      text = text.replace(reg, `<span class="text-emerald-600 font-bold">@${u.name}</span>`)
+      text = text.replace(reg, `<span class="text-emerald-600">@${u.name}</span>`)
     }
   })
 
   // Match any generic @mention if user not in list yet
-  text = text.replace(/(@[^\s<]+)(?![^<]*>)/g, '<span class="text-emerald-600 font-bold">$1</span>')
+  text = text.replace(/(@[^\s<]+)(?![^<]*>)/g, '<span class="text-emerald-600">$1</span>')
 
   return text
 })
@@ -1323,35 +1314,15 @@ const openAddStageTaskForm = () => {
 
 const openEditStageTaskForm = (task) => {
   if (!task) return
+  if (isTaskInDoneStage(task)) return
   editingTaskId.value = task.id
   newStageTaskTitle.value = task.title || ''
   newStageTaskAssignee.value = task.assignee_id ? String(task.assignee_id) : ''
   newStageTaskMilestoneId.value = task.milestone_id || (selectedMilestone.value ? selectedMilestone.value.id : (effectiveMilestones.value[0]?.id || null))
   
-  if (task.due_date) {
-    if (typeof task.due_date === 'string' && task.due_date.includes(' ')) {
-      const parts = task.due_date.split(' ')
-      newStageTaskDueDate.value = parts[0]
-      if (parts[1]) {
-        const timeParts = parts[1].split(':')
-        newStageTaskDueTime.value = `${timeParts[0]}:${timeParts[1]}`
-      }
-    } else {
-      const d = new Date(task.due_date)
-      if (!isNaN(d.getTime())) {
-        const yyyy = d.getFullYear()
-        const mm = String(d.getMonth() + 1).padStart(2, '0')
-        const dd = String(d.getDate()).padStart(2, '0')
-        newStageTaskDueDate.value = `${yyyy}-${mm}-${dd}`
-        const hh = String(d.getHours()).padStart(2, '0')
-        const min = String(d.getMinutes()).padStart(2, '0')
-        newStageTaskDueTime.value = `${hh}:${min}`
-      }
-    }
-  } else {
-    newStageTaskDueDate.value = ''
-    newStageTaskDueTime.value = ''
-  }
+  const parsed = parseDateTimeStrings(task.due_date || task.created_at)
+  newStageTaskDueDate.value = parsed.date
+  newStageTaskDueTime.value = parsed.time
 
   isInlineFormOpen.value = true
   nextTick(() => {
@@ -1457,6 +1428,11 @@ const effectiveMilestones = computed(() => {
   return []
 })
 
+// CHỈ LỌC CÁC CHẶNG CHƯA HOÀN THÀNH CHO MỤC TIÊU HƯỚNG ĐẾN KHI TẠO HÚ HÚ MỚI
+const activeTargetMilestones = computed(() => {
+  return effectiveMilestones.value.filter(ms => !isStageCompleted(ms))
+})
+
 const milestoneLayout = computed(() => {
   const all = effectiveMilestones.value
   if (!all || all.length === 0) {
@@ -1528,8 +1504,8 @@ const milestoneLayout = computed(() => {
   items.forEach((item) => {
     const midX = item.startX + item.spanW / 2
     if (item.isDone) {
-      dPath += ` Q ${midX} 85 ${item.endX} 180`
-      hillPaths.push({ d: `M ${item.startX} 290 L ${item.startX} 180 Q ${midX} 85 ${item.endX} 180 L ${item.endX} 290 Z` })
+      dPath += ` L ${item.endX} 180`
+      hillPaths.push({ d: `M ${item.startX} 290 L ${item.startX} 180 L ${item.endX} 180 L ${item.endX} 290 Z` })
     } else {
       dPath += ` Q ${midX} -25 ${item.endX} 180`
       hillPaths.push({ d: `M ${item.startX} 290 L ${item.startX} 180 Q ${midX} -25 ${item.endX} 180 L ${item.endX} 290 Z` })
@@ -1673,6 +1649,65 @@ const getStageActiveUsers = (stage) => {
   return Array.from(userMap.values())
 }
 
+// LOGIC HIỂN THỊ AVATAR: Chỉ hiển thị avatar tại chặng hoàn thành mới nhất (hoặc chặng đầu tiên nếu chưa hoàn thành chặng nào)
+const targetAvatarStageId = computed(() => {
+  const milestones = effectiveMilestones.value
+  if (!milestones || milestones.length === 0) return null
+
+  // Lấy các chặng đã hoàn thành theo đúng thứ tự
+  const completedMs = milestones.filter(ms => isStageCompleted(ms))
+  if (completedMs.length > 0) {
+    // Chặng hoàn thành mới nhất (nằm ở vị trí cuối trong danh sách chặng hoàn thành)
+    return completedMs[completedMs.length - 1].id
+  }
+
+  // Nếu chưa có chặng nào hoàn thành, hiển thị tại chặng chưa hoàn thành đầu tiên
+  const firstUncompleted = milestones.find(ms => !isStageCompleted(ms))
+  return firstUncompleted ? firstUncompleted.id : milestones[0].id
+})
+
+const shouldShowAvatarsFor = (stage) => {
+  if (!stage || !stage.id) return false
+  return String(stage.id) === String(targetAvatarStageId.value)
+}
+
+const stageAvatarsList = computed(() => {
+  const userMap = new Map()
+
+  const addUserByIdOrObj = (id, obj) => {
+    if (obj && obj.id) {
+      userMap.set(obj.id, obj)
+      return
+    }
+    if (id && users.value) {
+      const u = users.value.find(user => user.id == id || String(user.id) === String(id))
+      if (u) userMap.set(u.id, u)
+    }
+  }
+
+  // 1. Thu thập người dùng thực sự có hoạt động/cập nhật ở tất cả các chặng trong dự án
+  const milestones = effectiveMilestones.value || []
+  milestones.forEach(ms => {
+    const activeMsUsers = getStageActiveUsers(ms)
+    activeMsUsers.forEach(u => {
+      if (u && u.id) userMap.set(u.id, u)
+    })
+  })
+
+  // 2. Thu thập người tạo/phụ trách các hoạt động trong danh sách task của dự án
+  if (project.value && project.value.tasks && Array.isArray(project.value.tasks)) {
+    project.value.tasks.forEach(t => {
+      const creatorId = t.created_by || t.creator_id || t.creator?.id
+      addUserByIdOrObj(creatorId, t.creator)
+
+      const assigneeId = t.assignee_id || t.assignee?.id
+      addUserByIdOrObj(assigneeId, t.assignee)
+    })
+  }
+
+  return Array.from(userMap.values())
+})
+
 const getStageAssigneeName = (stage) => {
   if (!stage) return null
   const activeUsers = getStageActiveUsers(stage)
@@ -1723,6 +1758,54 @@ const currentStageTasks = computed(() => {
     return (b.id || 0) - (a.id || 0)
   })
 })
+
+const isTaskInDoneStage = (task) => {
+  if (!task) return false
+  if (selectedMilestone.value && selectedMilestone.value.is_completed) return true
+  const msId = task.milestone_id
+  if (!msId) return false
+  const ms = effectiveMilestones.value.find(m => String(m.id) === String(msId))
+  return ms ? isStageCompleted(ms) : false
+}
+
+const parseDateTimeStrings = (dateStr) => {
+  if (!dateStr) return { date: '', time: '' }
+  let str = String(dateStr)
+  let datePart = ''
+  let timePart = ''
+
+  if (str.includes('T')) {
+    const parts = str.split('T')
+    datePart = parts[0]
+    if (parts[1]) {
+      const t = parts[1].split('.')[0]
+      const tp = t.split(':')
+      if (tp.length >= 2) timePart = `${tp[0].padStart(2, '0')}:${tp[1].padStart(2, '0')}`
+    }
+  } else if (str.includes(' ')) {
+    const parts = str.split(' ')
+    datePart = parts[0]
+    if (parts[1]) {
+      const tp = parts[1].split(':')
+      if (tp.length >= 2) timePart = `${tp[0].padStart(2, '0')}:${tp[1].padStart(2, '0')}`
+    }
+  } else if (str.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    datePart = str
+  } else {
+    const d = new Date(dateStr)
+    if (!isNaN(d.getTime())) {
+      const yyyy = d.getFullYear()
+      const mm = String(d.getMonth() + 1).padStart(2, '0')
+      const dd = String(d.getDate()).padStart(2, '0')
+      datePart = `${yyyy}-${mm}-${dd}`
+      const hh = String(d.getHours()).padStart(2, '0')
+      const min = String(d.getMinutes()).padStart(2, '0')
+      timePart = `${hh}:${min}`
+    }
+  }
+
+  return { date: datePart, time: timePart }
+}
 
 const isNewUnassignedTask = (t) => {
   if (!t) return true
@@ -1786,7 +1869,7 @@ const handleDocumentClick = (e) => {
 const handleAddStageTaskSubmit = async () => {
   if (!newStageTaskTitle.value.trim()) return
   const pId = projectId.value
-  const msId = newStageTaskMilestoneId.value || selectedTargetMilestoneId.value || (effectiveMilestones.value[0]?.id || null)
+  const msId = newStageTaskMilestoneId.value || (selectedTargetMilestoneId.value && !selectedMilestone.value?.is_completed ? selectedTargetMilestoneId.value : null) || (activeTargetMilestones.value[0]?.id || null)
   
   const titleText = newStageTaskTitle.value.trim()
   const parsedDate = parseVietnameseDateFromText(titleText)
@@ -1880,13 +1963,6 @@ const handleAddStageTaskSubmit = async () => {
       targetMs.tasks.unshift(created)
       targetMs.tasks_count = (targetMs.tasks_count || 0) + 1
     }
-
-    await axios.post('/api/comments', {
-      project_id: pId,
-      user_id: currentUserId,
-      content: `Đã thêm hoạt động: ${titleText}`,
-      type: 'comment'
-    })
 
     toast.success('Đã cập nhật hoạt động mới!')
     await fetchProjectDetail()
