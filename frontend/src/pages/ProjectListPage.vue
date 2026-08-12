@@ -365,18 +365,18 @@
       @customer-created="projectStore.fetchAuxData()"
     />
 
-    <!-- Floating Bulk Update Action Bar matching mockup exactly -->
+    <!-- Floating Bulk Update Action Bar (Command Bar at TOP matching image 2) -->
     <transition
       enter-active-class="transition duration-300 ease-out"
-      enter-from-class="transform translate-y-10 opacity-0"
-      enter-to-class="transform translate-y-0 opacity-100"
+      enter-from-class="transform -translate-y-10 opacity-0 scale-95"
+      enter-to-class="transform translate-y-0 opacity-100 scale-100"
       leave-active-class="transition duration-200 ease-in"
-      leave-from-class="transform translate-y-0 opacity-100"
-      leave-to-class="transform translate-y-10 opacity-0"
+      leave-from-class="transform translate-y-0 opacity-100 scale-100"
+      leave-to-class="transform -translate-y-10 opacity-0 scale-95"
     >
       <div
         v-if="selectedProjectIds.length > 0"
-        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#fafaf7] sm:bg-white/95 backdrop-blur-md px-3.5 py-2.5 sm:px-6 sm:py-3 rounded-2xl shadow-2xl border border-gray-200/90 flex items-center gap-2.5 sm:gap-4 max-w-4xl select-none"
+        class="fixed top-20 sm:top-[88px] left-1/2 -translate-x-1/2 z-50 bg-[#fafaf7] sm:bg-white/95 backdrop-blur-md px-3.5 py-2.5 sm:px-6 sm:py-3 rounded-2xl shadow-2xl border border-gray-200/90 flex items-center gap-2.5 sm:gap-4 max-w-4xl select-none transition-all"
       >
         <!-- LEFT: COUNT BADGE & TEXT -->
         <div class="flex items-center gap-2 sm:gap-2.5">
@@ -438,7 +438,7 @@
 
           <div 
             v-if="isMobileStatusDropdownOpen" 
-            class="absolute bottom-full mb-2 left-0 bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-1.5 min-w-[135px] flex flex-col gap-1 ring-1 ring-black/5"
+            class="absolute top-full mt-2 left-0 bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-1.5 min-w-[135px] flex flex-col gap-1 ring-1 ring-black/5"
           >
             <button @click="selectBulkStatusOption('following')" type="button" class="px-2.5 py-1.5 hover:bg-amber-50 text-xs font-bold rounded-lg text-left text-gray-800 flex items-center gap-2">
               <i class="fa-solid fa-flag text-amber-500 text-xs"></i>

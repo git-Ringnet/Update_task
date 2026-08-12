@@ -31,6 +31,7 @@ class MilestoneController extends Controller
         $project = Project::findOrFail($projectId);
 
         $validated['project_id'] = $project->id;
+        $validated['is_completed'] = $request->has('is_completed') ? (bool)$request->is_completed : false;
         $validated['created_by'] = auth()->id() ?? $request->user_id ?? $project->lead_id ?? \App\Models\User::first()->id ?? null;
 
         $milestone = Milestone::create($validated);

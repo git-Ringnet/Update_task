@@ -18,13 +18,16 @@
       </div>
       <div>
         <h3 class="text-lg font-black text-gray-900 font-heading">Không thể tải dữ liệu dự án</h3>
-        <p class="text-xs text-gray-500 font-semibold mt-1">Vui lòng kiểm tra lại kết nối mạng hoặc dự án không tồn tại.</p>
+        <p class="text-xs text-gray-500 font-semibold mt-1">Vui lòng kiểm tra lại kết nối mạng hoặc dự án không tồn tại.
+        </p>
       </div>
       <div class="flex items-center gap-3 mt-2">
-        <button @click="goBack" type="button" class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition-colors cursor-pointer">
+        <button @click="goBack" type="button"
+          class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition-colors cursor-pointer">
           Quay lại danh sách
         </button>
-        <button @click="loadAllData" type="button" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-colors cursor-pointer">
+        <button @click="loadAllData" type="button"
+          class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-colors cursor-pointer">
           Thử lại
         </button>
       </div>
@@ -58,7 +61,7 @@
               <button @click="handleEditProject" type="button"
                 class="w-full text-left px-4.5 py-2.5 hover:bg-amber-50 text-gray-800 hover:text-amber-800 text-xs sm:text-sm font-bold transition-colors flex items-center gap-3 cursor-pointer">
                 <i class="fa-solid fa-pen-to-square text-amber-500 text-sm"></i>
-                <span>Chỉnh sửa thông tin dự án</span>
+                <span>Chỉnh sửa dự án</span>
               </button>
               <div class="border-t border-gray-100 my-1"></div>
               <button @click="handleDeleteProject" type="button" :disabled="!canDeleteProject"
@@ -72,13 +75,15 @@
         </div>
       </div>
 
-      <!-- MAIN PROJECT TITLE & CUSTOMER NAME BELOW -->
-      <div class="text-left sm:text-center space-y-1 pt-2 pb-1">
-        <h1 class="text-2xl sm:text-4xl lg:text-5xl font-black text-gray-900 tracking-tight font-heading uppercase break-words max-w-full leading-tight">
+      <!-- MAIN PROJECT TITLE & CUSTOMER NAME BELOW (CĂN GIỮA) -->
+      <div class="text-center space-y-0.5 pt-1 pb-2">
+        <h1
+          class="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 tracking-tight font-heading uppercase break-words max-w-full leading-tight mx-auto">
           {{ project.title }}
         </h1>
-        <div class="text-base sm:text-lg font-bold text-gray-500 font-sans tracking-wide">
-          {{ project.customer ? project.customer.name : 'Hùng Nhơn' }}
+        <div
+          class="flex items-center justify-center gap-1.5 text-sm sm:text-base font-bold text-gray-500 font-sans">
+          <span>{{ project.customer ? project.customer.name : '' }}</span>
         </div>
       </div>
 
@@ -87,48 +92,49 @@
 
         <!-- Mountain graphic container -->
         <div class="relative min-w-[980px] h-[290px] mx-auto px-4 sm:px-6">
-          
+
           <!-- SVG Dynamic Mountain Hills Fill -->
-          <svg class="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none" viewBox="0 0 1100 290">
+          <svg class="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none"
+            viewBox="0 0 1100 290">
             <defs>
               <linearGradient id="hill-unified-green-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stop-color="#10b981" stop-opacity="0.16"/>
-                <stop offset="85%" stop-color="#10b981" stop-opacity="0.0"/>
+                <stop offset="0%" stop-color="#94a3b8" stop-opacity="0.25" />
+                <stop offset="100%" stop-color="#cbd5e1" stop-opacity="0.05" />
+              </linearGradient>
+              <linearGradient id="hill-active-red-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#64748b" stop-opacity="0.30" />
+                <stop offset="100%" stop-color="#cbd5e1" stop-opacity="0.08" />
               </linearGradient>
             </defs>
 
             <!-- Render dynamic modular mountain hill paths -->
-            <path 
-              v-for="(hill, hIdx) in svgHills" 
-              :key="hIdx"
-              fill="url(#hill-unified-green-grad)" 
-              :d="hill.d" 
-            />
+            <path v-for="(hill, hIdx) in svgHills" :key="hIdx"
+              :fill="hill.isActive ? 'url(#hill-active-red-grad)' : 'url(#hill-unified-green-grad)'" :d="hill.d" />
 
             <!-- Continuous Dashed Mountain Ridgeline Line -->
-            <path 
-              :d="svgDashedRidgeline" 
-              fill="none" 
-              stroke="#cbd5e1" 
-              stroke-width="2.5" 
-              stroke-dasharray="6,6"
-              stroke-linecap="round"
-            />
+            <path :d="svgDashedRidgeline" fill="none" stroke="#cbd5e1" stroke-width="2.5" stroke-dasharray="6,6"
+              stroke-linecap="round" />
           </svg>
 
-          <!-- NÚT BẮT ĐẦU DỰ ÁN (HIỂN THỊ CỜ VÀ NGÀY TẠO DỰ ÁN NẰM BÊN DƯỚI) -->
-          <div 
-            class="absolute top-[160px] -translate-x-1/2 flex flex-col items-center z-30 pointer-events-none"
-            style="left: 3.18%"
-          >
-            <div class="w-11 h-11 rounded-full border-2 border-emerald-300 bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shadow-sm font-black">
-              <i class="fa-solid fa-flag text-emerald-600"></i>
+          <!-- NÚT BẮT ĐẦU DỰ ÁN (CỜ SVG + BADGE TICK DONE NẰM CHÍNH GIỮA PHÍA DƯỚI CỜ, THẲNG HÀNG TẠI TOP 150PX) -->
+          <div class="absolute top-[150px] -translate-x-1/2 flex flex-col items-center z-30 pointer-events-none"
+            style="left: 3.18%">
+            <div class="relative w-10 h-10 rounded-full border-2 border-emerald-600 bg-emerald-50 flex items-center justify-center shadow-2xs">
+              <svg class="w-5 h-5 fill-emerald-600" viewBox="0 0 512 512">
+                <g transform="translate(0,512) scale(0.1,-0.1)">
+                  <path d="M560 4828 c-18 -13 -43 -36 -54 -51 l-21 -28 0 -2189 0 -2189 21 -28 c73 -98 195 -98 268 0 21 28 21 34 24 850 l3 822 1874 562 c1031 309 1886 570 1900 580 31 22 65 90 65 128 0 39 -36 110 -66 130 -19 12 -2490 923 -3748 1381 -168 61 -215 66 -266 32z m1834 -948 c861 -316 1566 -577 1566 -580 0 -3 -706 -216 -1568 -474 -862 -258 -1573 -471 -1579 -474 -10 -3 -13 212 -13 1053 0 885 2 1056 14 1053 7 -2 718 -262 1580 -578z"/>
+                </g>
+              </svg>
+              <!-- Tick Done Badge Centered at Bottom Edge -->
+              <div class="w-4.5 h-4.5 rounded-full bg-emerald-600 border-2 border-white text-white flex items-center justify-center absolute -bottom-1 left-1/2 -translate-x-1/2 shadow-2xs">
+                <i class="fa-solid fa-check text-[8px]"></i>
+              </div>
             </div>
-            <div class="text-center mt-1 whitespace-nowrap font-sans">
-              <div class="text-base sm:text-lg font-black tracking-tight text-gray-900">
+            <div class="text-center mt-1.5 whitespace-nowrap font-sans">
+              <div class="text-xs font-black tracking-tight text-gray-900 uppercase">
                 Bắt đầu
               </div>
-              <div v-if="project.created_at" class="text-xs sm:text-sm font-bold text-slate-500 mt-0.5">
+              <div v-if="project.created_at" class="text-[11px] font-bold text-gray-400 mt-0.5">
                 {{ formatDateShort(project.created_at) }}
               </div>
             </div>
@@ -136,116 +142,100 @@
 
           <!-- DYNAMIC MILESTONE PEAKS & SLOPE AVATARS -->
           <template v-for="(item, index) in milestoneLayout.visibleItems" :key="item.ms.id || index">
-            
-            <!-- COMPACT COMPLETED STAGE NODE (CĂN NẰM NGANG VỚI "BẮT ĐẦU", CỜ XANH NẰM TRÊN SỐ) -->
+
+            <!-- COMPACT COMPLETED STAGE NODE (CỜ SVG, BADGE TICK DONE CENTERED BÊN DƯỚI CỜ, KHÔNG CÓ NỀN MẢNG XÁM BÊN DƯỚI) -->
             <template v-if="item.isDone">
-              <!-- Compact Node Flag Icon + Badge (Căn thẳng hàng ngang tại top-[138px]) -->
-              <div 
-                @click="selectStageByMilestone(item.ms)"
-                class="absolute top-[110px] -translate-x-1/2 flex flex-col items-center justify-end gap-1 z-20 cursor-pointer group transition-all duration-300 hover:scale-108"
-                :style="{ left: item.leftPct }"
-              >
-                <!-- AVATARS: HIỂN THỊ NẰM PHÍA TRÊN CỜ CHO CHẶNG HOÀN THÀNH -->
-                <div v-if="shouldShowAvatarsFor(item.ms) && stageAvatarsList.length > 0" class="flex items-center -space-x-1.5 mb-0.5">
-                  <div 
-                    v-for="u in stageAvatarsList" 
-                    :key="u.id"
-                    class="w-7 h-7 rounded-full bg-white p-0.5 shadow-sm border-2 border-emerald-500 transition-all hover:scale-115"
-                    :title="`Thành viên: ${u.name}`"
-                  >
-                    <img :src="u.avatar || defaultAvatar" class="w-full h-full rounded-full object-cover" />
+              <div @click="selectStageByMilestone(item.ms)"
+                class="absolute top-[150px] -translate-x-1/2 flex flex-col items-center z-20 cursor-pointer group transition-all duration-300 hover:scale-108 max-w-[100px]"
+                :style="{ left: item.leftPct }">
+
+                <!-- Cờ xanh SVG hoàn thành với badge tick checkmark NẰM CHÍNH GIỮA PHÍA DƯỚI CỜ -->
+                <div class="relative w-10 h-10 rounded-full border-2 border-emerald-600 bg-emerald-50 flex items-center justify-center shadow-2xs transition-colors group-hover:bg-emerald-100"
+                  :title="`Chặng đã hoàn thành: ${item.ms.title}`">
+
+                  <!-- AVATARS CỦA RIÊNG CHẶNG ĐÃ HOÀN THÀNH (Định vị absolute phía trên cờ để không đẩy cờ đi xuống) -->
+                  <div v-if="(milestoneAvatarsMap[item.ms.id] || []).length > 0"
+                    class="absolute -top-8.5 left-1/2 -translate-x-1/2 flex items-center -space-x-1.5 mb-1 pointer-events-none whitespace-nowrap">
+                    <div v-for="u in (milestoneAvatarsMap[item.ms.id] || [])" :key="u.id"
+                      class="w-7.5 h-7.5 rounded-full bg-white p-0.5 shadow-sm border-2 border-emerald-500 transition-all hover:scale-115">
+                      <img :src="u.avatar || defaultAvatar" class="w-full h-full rounded-full object-cover" />
+                    </div>
+                  </div>
+
+                  <svg class="w-5 h-5 fill-emerald-600" viewBox="0 0 512 512">
+                    <g transform="translate(0,512) scale(0.1,-0.1)">
+                      <path d="M560 4828 c-18 -13 -43 -36 -54 -51 l-21 -28 0 -2189 0 -2189 21 -28 c73 -98 195 -98 268 0 21 28 21 34 24 850 l3 822 1874 562 c1031 309 1886 570 1900 580 31 22 65 90 65 128 0 39 -36 110 -66 130 -19 12 -2490 923 -3748 1381 -168 61 -215 66 -266 32z m1834 -948 c861 -316 1566 -577 1566 -580 0 -3 -706 -216 -1568 -474 -862 -258 -1573 -471 -1579 -474 -10 -3 -13 212 -13 1053 0 885 2 1056 14 1053 7 -2 718 -262 1580 -578z"/>
+                    </g>
+                  </svg>
+                  <div class="w-4.5 h-4.5 rounded-full bg-emerald-600 border-2 border-white text-white flex items-center justify-center absolute -bottom-1 left-1/2 -translate-x-1/2 shadow-2xs">
+                    <i class="fa-solid fa-check text-[8px]"></i>
                   </div>
                 </div>
 
-                <!-- Cờ xanh hoàn thành -->
-                <div 
-                  class="w-7.5 h-7.5 rounded-full border-2 border-emerald-600 bg-white text-emerald-600 flex items-center justify-center shadow-xs transition-colors group-hover:bg-emerald-50"
-                  :title="`Chặng đã hoàn thành: ${item.ms.title}`"
-                >
-                  <i class="fa-solid fa-flag text-xs text-emerald-600"></i>
-                </div>
-
-                <!-- Badge số việc nằm DƯỚI cờ (Hiển thị số 0 nếu chưa có việc) -->
-                <div class="w-5.5 h-5.5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-black shadow-2xs border border-white">
-                  {{ getStageTaskCount(item.ms) }}
-                </div>
-              </div>
-
-              <!-- Compact Stage Label & Date Below (Không có tên người cập nhật) -->
-              <div 
-                @click="selectStageByMilestone(item.ms)"
-                class="absolute top-[200px] -translate-x-1/2 text-center space-y-0.5 font-sans z-10 cursor-pointer group max-w-[135px]"
-                :style="{ left: item.leftPct }"
-              >
-                <div 
-                  class="text-xs sm:text-sm font-black tracking-tight leading-tight uppercase transition-colors truncate max-w-[135px]"
-                  :class="selectedMilestone && selectedMilestone.id === item.ms.id ? 'text-emerald-700 underline underline-offset-4 decoration-2' : 'text-gray-900 group-hover:text-emerald-700'"
-                  :title="item.ms.title"
-                >
-                  {{ item.ms.title }}
-                </div>
-
-                <div class="text-[10px] font-bold text-slate-500">
-                  {{ item.ms.due_date ? formatDateShort(item.ms.due_date) : (item.ms.updated_at ? formatDateShort(item.ms.updated_at) : '') }}
+                <!-- Tên chặng & Ngày hoàn thành (e.g. 01/05, 02/05) -->
+                <div class="text-center mt-1.5 whitespace-nowrap font-sans max-w-[100px]">
+                  <div class="text-xs font-black tracking-tight leading-tight uppercase transition-colors truncate"
+                    :class="selectedMilestone && selectedMilestone.id === item.ms.id ? 'text-emerald-700 underline underline-offset-4 decoration-2' : 'text-gray-900 group-hover:text-emerald-700'"
+                    :title="item.ms.title">
+                    {{ item.ms.title }}
+                  </div>
+                  <div class="text-[11px] font-bold text-gray-400 mt-0.5">
+                    {{ item.ms.updated_at ? formatDateShort(item.ms.updated_at) : (item.ms.due_date ? formatDateShort(item.ms.due_date) : '') }}
+                  </div>
                 </div>
               </div>
             </template>
 
-            <!-- ACTIVE / IN-PROGRESS STAGE PEAK NODE (CỜ XÁM NẰM TRÊN SỐ) -->
+            <!-- ACTIVE / IN-PROGRESS STAGE PEAK NODE (CỜ XÁM VÀ SỐ) -->
             <template v-else>
-              <!-- ĐỈNH NÚI: CỜ XÁM NẰM TRÊN SỐ VIỆC -->
-              <div 
-                @click="selectStageByMilestone(item.ms)"
+              <!-- ĐỈNH NÚI: CỜ SLATE/XÁM TRÒN Y CHANG DONE (BỎ MÀU ĐỎ CỦA CỜ VÀ NỀN) -->
+              <div @click="selectStageByMilestone(item.ms)"
                 class="absolute top-[36px] -translate-x-1/2 flex flex-col items-center gap-1 z-20 cursor-pointer group transition-all duration-300 hover:scale-108"
-                :style="{ left: item.leftPct }"
-              >
-                <!-- Status Flag in Gray -->
-                <i class="fa-solid fa-flag text-2xl filter drop-shadow-2xs text-slate-400"></i>
+                :style="{ left: item.leftPct }">
                 
-                <!-- Task Count Circle in Gray -->
-                <div class="w-6.5 h-6.5 rounded-full text-white flex items-center justify-center text-xs font-black shadow-xs border-2 border-white transition-colors bg-slate-400">
-                  {{ getStageTaskCount(item.ms) }}
+                <!-- Cờ xám SVG tròn với badge số công việc NẰM CHÍNH GIỮA PHÍA DƯỚI CỜ -->
+                <div class="relative w-10 h-10 rounded-full border-2 border-slate-400 bg-slate-100 flex items-center justify-center shadow-2xs transition-colors group-hover:bg-slate-200"
+                  :title="`Chặng chưa hoàn thành: ${item.ms.title}`">
+                  <svg class="w-5 h-5 fill-slate-500" viewBox="0 0 512 512">
+                    <g transform="translate(0,512) scale(0.1,-0.1)">
+                      <path d="M560 4828 c-18 -13 -43 -36 -54 -51 l-21 -28 0 -2189 0 -2189 21 -28 c73 -98 195 -98 268 0 21 28 21 34 24 850 l3 822 1874 562 c1031 309 1886 570 1900 580 31 22 65 90 65 128 0 39 -36 110 -66 130 -19 12 -2490 923 -3748 1381 -168 61 -215 66 -266 32z m1834 -948 c861 -316 1566 -577 1566 -580 0 -3 -706 -216 -1568 -474 -862 -258 -1573 -471 -1579 -474 -10 -3 -13 212 -13 1053 0 885 2 1056 14 1053 7 -2 718 -262 1580 -578z"/>
+                    </g>
+                  </svg>
+                  <div class="w-4.5 h-4.5 rounded-full bg-slate-500 border-2 border-white text-white flex items-center justify-center absolute -bottom-1 left-1/2 -translate-x-1/2 shadow-2xs text-[9px] font-black leading-none">
+                    {{ getStageTaskCount(item.ms) }}
+                  </div>
                 </div>
               </div>
 
-              <!-- AVATAR ĐANG LEO SƯỜN NÚI (Xếp nghiêng dọc theo đường nét đứt sườn núi) -->
-              <div 
-                v-if="shouldShowAvatarsFor(item.ms) && stageAvatarsList.length > 0"
+              <!-- AVATAR ĐANG LEO SƯỜN NÚI CỦA RIÊNG CHẶNG NÀY (Phân bố theo milestoneAvatarsMap) -->
+              <div v-if="(milestoneAvatarsMap[item.ms.id] || []).length > 0"
                 @click="selectStageByMilestone(item.ms)"
                 class="absolute top-[105px] -translate-x-1/2 z-25 cursor-pointer transition-all duration-300 hover:scale-105"
-                :style="{ left: item.slopePct }"
-              >
+                :style="{ left: item.slopePct }">
                 <div class="relative flex items-center justify-center">
-                  <div 
-                    v-for="(u, uIdx) in stageAvatarsList.slice(0, 7)" 
-                    :key="u.id || uIdx"
+                  <div v-for="(u, uIdx) in (milestoneAvatarsMap[item.ms.id] || []).slice(0, 7)" :key="u.id || uIdx"
                     class="absolute w-8 h-8 rounded-full bg-white p-0.5 shadow-md border-2 border-emerald-500 transition-all hover:scale-125 filter drop-shadow-2xs"
                     :style="{
-                      transform: `translate(${(uIdx - (Math.min(stageAvatarsList.length, 7) - 1) / 2) * 20}px, ${-(uIdx - (Math.min(stageAvatarsList.length, 7) - 1) / 2) * 16}px)`,
+                      transform: `translate(${(uIdx - (Math.min((milestoneAvatarsMap[item.ms.id] || []).length, 7) - 1) / 2) * 20}px, ${-(uIdx - (Math.min((milestoneAvatarsMap[item.ms.id] || []).length, 7) - 1) / 2) * 16}px)`,
                       zIndex: uIdx + 1
-                    }"
-                    :title="`Thành viên thực hiện ${item.ms.title}: ${u.name}`"
-                  >
+                    }" :title="`Thành viên thực hiện ${item.ms.title}: ${u.name}`">
                     <img :src="u.avatar || defaultAvatar" class="w-full h-full rounded-full object-cover" />
                   </div>
                 </div>
               </div>
 
-              <!-- Tên chặng & Thời gian (Không có tên người cập nhật) -->
-              <div 
-                @click="selectStageByMilestone(item.ms)"
+              <!-- Tên chặng & Thời gian -->
+              <div @click="selectStageByMilestone(item.ms)"
                 class="absolute top-[112px] -translate-x-1/2 text-center space-y-0.5 font-sans z-10 cursor-pointer group max-w-[210px]"
-                :style="{ left: item.leftPct }"
-              >
-                <div 
-                  class="text-base sm:text-lg font-black tracking-tight leading-tight truncate transition-colors"
-                  :class="selectedMilestone && selectedMilestone.id === item.ms.id ? 'text-emerald-700 underline underline-offset-4 decoration-2' : 'text-gray-900 group-hover:text-emerald-700'"
-                >
+                :style="{ left: item.leftPct }">
+                <div
+                  class="text-sm sm:text-base font-black tracking-tight leading-tight uppercase truncate transition-colors"
+                  :class="selectedMilestone && selectedMilestone.id === item.ms.id ? 'text-emerald-700 underline underline-offset-4 decoration-2' : 'text-gray-900 group-hover:text-emerald-700'">
                   {{ item.ms.title }}
                 </div>
 
-                <div class="text-xs sm:text-sm font-bold text-slate-500 mt-0.5">
-                  {{ item.ms.due_date ? formatDateShort(item.ms.due_date) : 'Chưa xếp lịch' }}
+                <div class="text-[11px] font-bold text-gray-400 mt-0.5">
+                  {{ item.ms.due_date ? formatDateShort(item.ms.due_date) : '' }}
                 </div>
               </div>
             </template>
@@ -253,21 +243,23 @@
           </template>
 
           <!-- Empty state when project has 0 milestones -->
-          <div v-if="visibleMilestones.length === 0" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center z-10">
-            <div class="text-xs sm:text-sm font-bold text-gray-400">Chưa có chặng nào trong dự án. Bấm "+ Thêm chặng" để tạo chặng đầu tiên.</div>
+          <div v-if="visibleMilestones.length === 0"
+            class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center z-10">
+            <div class="text-xs sm:text-sm font-bold text-gray-400">Chưa có chặng nào trong dự án. Bấm "+ THÊM CHẶNG" để
+              tạo chặng
+              đầu tiên.</div>
           </div>
 
           <!-- NÚT (+) THÊM CHẶNG ĐẶT TẠI ĐIỂM KẾT THÚC CỦA ĐƯỜNG NẾT NÚI -->
-          <div 
-            @click="openAddMilestoneModal"
+          <div @click="openAddMilestoneModal"
             class="absolute top-[165px] flex flex-col items-center cursor-pointer group transition-all duration-300 hover:scale-108 z-30"
-            :style="{ left: addMilestoneBtnPosition }"
-          >
-            <button type="button" class="w-10 h-10 rounded-full border border-gray-200 bg-white text-gray-700 group-hover:border-emerald-600 group-hover:text-emerald-600 flex items-center justify-center text-base shadow-md transition-colors cursor-pointer">
+            :style="{ left: addMilestoneBtnPosition }">
+            <button type="button"
+              class="w-8 h-8 rounded-full border border-dashed border-gray-400 bg-white text-gray-500 group-hover:border-emerald-600 group-hover:text-emerald-600 flex items-center justify-center text-sm shadow-2xs transition-colors cursor-pointer">
               <i class="fa-solid fa-plus"></i>
             </button>
-            <div class="text-center mt-1 whitespace-nowrap">
-              <div class="text-xs sm:text-sm font-black text-gray-900 group-hover:text-emerald-700 font-sans">
+            <div class="text-center mt-1.5 whitespace-nowrap">
+              <div class="text-xs font-black text-gray-900 group-hover:text-emerald-700 font-sans uppercase">
                 Thêm chặng
               </div>
             </div>
@@ -277,579 +269,514 @@
 
         <!-- Carousel Pagination Dots -->
         <div v-if="totalPages > 1" class="flex items-center justify-center gap-2 mt-2">
-          <span 
-            v-for="dot in totalPages" 
-            :key="dot"
-            class="w-2.5 h-2.5 rounded-full transition-all cursor-pointer"
+          <span v-for="dot in totalPages" :key="dot" class="w-2.5 h-2.5 rounded-full transition-all cursor-pointer"
             :class="dot === activePageDot ? 'w-3 h-3 bg-slate-900' : 'bg-slate-300 hover:bg-slate-400'"
-            @click="activePageDot = dot"
-          ></span>
+            @click="activePageDot = dot"></span>
         </div>
 
         <!-- Slide Navigation Arrows -->
         <div v-if="totalPages > 1" class="absolute bottom-4 right-6 flex items-center gap-3 z-30">
-          <button 
-            @click="slidePrev" 
-            type="button" 
+          <button @click="slidePrev" type="button"
             class="w-9 h-9 rounded-full bg-white border border-gray-200 shadow-xs hover:shadow-md flex items-center justify-center text-gray-600 hover:text-emerald-600 transition-all cursor-pointer"
-            title="Chặng trước"
-          >
+            title="Chặng trước">
             <i class="fa-solid fa-arrow-left text-xs"></i>
           </button>
-          <button 
-            @click="slideNext" 
-            type="button" 
+          <button @click="slideNext" type="button"
             class="w-9 h-9 rounded-full bg-white border border-gray-200 shadow-xs hover:shadow-md flex items-center justify-center text-gray-600 hover:text-emerald-600 transition-all cursor-pointer"
-            title="Chặng tiếp theo"
-          >
+            title="Chặng tiếp theo">
             <i class="fa-solid fa-arrow-right text-xs"></i>
           </button>
         </div>
 
       </div>
 
-      <!-- CENTER PROMINENT "HÚ HÚ" BUTTON (Ẩn khi chặng được chọn đã hoàn thành) -->
-      <div v-if="!selectedMilestone || !selectedMilestone.is_completed" class="flex justify-center my-6">
-        <button 
-          @click="toggleInlineForm" 
-          type="button"
-          class="px-8 py-3 bg-[#10b981] hover:bg-emerald-600 text-white font-extrabold text-base sm:text-xl rounded-full shadow-md hover:shadow-lg hover:scale-103 active:scale-97 transition-all flex items-center gap-3 cursor-pointer group"
-        >
-          <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+      <!-- CENTER PROMINENT "HÚ HÚ" BUTTON (Chỉ hiện khi dự án có chặng và chặng đang chọn chưa hoàn thành) -->
+      <div v-if="effectiveMilestones.length > 0 && selectedMilestone && !selectedMilestone.is_completed" class="flex flex-col items-center justify-center my-6 gap-2">
+        <button @click="toggleInlineForm" type="button"
+          class="px-8 py-3 bg-[#10b981] hover:bg-emerald-600 text-white font-extrabold text-base sm:text-xl rounded-full shadow-md hover:shadow-lg hover:scale-103 active:scale-97 transition-all flex items-center gap-3 cursor-pointer group">
+          <div
+            class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
             <i class="fa-solid fa-dove text-lg text-white"></i>
           </div>
           <span>HÚ HÚ</span>
         </button>
+        <span class="text-xs sm:text-sm font-semibold text-gray-500 font-sans tracking-wide">Chim sẻ gọi đại bàng</span>
       </div>
 
       <!-- MAIN CARDS / ACTIVITIES CONTAINER ("DẤU CHÂN HOẠT ĐỘNG") -->
-      <div class="bg-[#f4f5f0] rounded-3xl p-4 sm:p-6 w-full space-y-5 animate-fade-in-up relative">
-        
-        <!-- Header Row: Title "DẤU CHÂN HOẠT ĐỘNG" & Double Click Hint -->
-        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+      <div @click="handleActivityContainerClick"
+        class="bg-white rounded-3xl p-5 sm:p-6 shadow-xl border border-gray-100 max-w-[720px] mx-auto w-full space-y-4 animate-fade-in-up relative">
+
+        <!-- Header Row: Title "DẤU CHÂN HOẠT ĐỘNG" & Xem tất cả -->
+        <div class="flex items-center justify-between border-b border-gray-100 pb-3.5">
           <div class="flex items-center gap-3">
             <!-- Clear Filter / Back Button if Milestone is Selected -->
-            <button 
-              v-if="selectedMilestone"
-              @click="closeSelectedStage" 
-              type="button"
-              class="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 flex items-center justify-center text-sm font-bold shadow-2xs transition-colors cursor-pointer"
-              title="Hiện tất cả hoạt động"
-            >
-              <i class="fa-solid fa-arrow-left text-sm"></i>
+            <button v-if="selectedMilestone" @click="closeSelectedStage" type="button"
+              class="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 flex items-center justify-center text-xs font-bold shadow-2xs transition-colors cursor-pointer"
+              title="Hiện tất cả hoạt động">
+              <i class="fa-solid fa-arrow-left"></i>
             </button>
-            
-            <h3 class="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-tight font-heading">
+
+            <h3 class="text-base sm:text-lg font-black text-gray-900 uppercase tracking-tight font-heading">
               {{ selectedMilestone ? selectedMilestone.title : 'DẤU CHÂN HOẠT ĐỘNG' }}
             </h3>
-            <span class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 font-black text-xs flex items-center justify-center shadow-2xs">
-              {{ displayedCards.length }}
-            </span>
 
             <!-- BUTTON ĐÁNH DẤU CỘT MỐC ĐÓ HOÀN THÀNH -->
-            <button 
-              v-if="selectedMilestone"
-              @click="toggleMilestoneCompleted(selectedMilestone)"
-              type="button"
-              class="px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer ml-2"
-              :class="selectedMilestone.is_completed ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200' : 'bg-emerald-600 hover:bg-emerald-700 text-white'"
-            >
+            <button v-if="selectedMilestone" @click="toggleMilestoneCompleted(selectedMilestone)" type="button"
+              class="px-3 py-1 rounded-xl font-bold text-xs shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer ml-2"
+              :class="selectedMilestone.is_completed ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200' : 'bg-emerald-600 hover:bg-emerald-700 text-white'">
               <i class="fa-solid fa-circle-check text-xs"></i>
               <span>{{ selectedMilestone.is_completed ? 'Đã hoàn thành chặng' : 'Đánh dấu hoàn thành chặng' }}</span>
             </button>
 
             <!-- BUTTON XÓA CHẶNG ĐANG CHỌN (Chỉ hiển thị khi chặng CHƯA hoàn thành) -->
-            <button 
-              v-if="selectedMilestone && !selectedMilestone.is_completed"
-              @click="handleDeleteMilestone(selectedMilestone.id)"
-              type="button"
-              class="px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-600 hover:text-white"
-              title="Xóa chặng này"
-            >
+            <button v-if="selectedMilestone && !selectedMilestone.is_completed"
+              @click="handleDeleteMilestone(selectedMilestone.id)" type="button"
+              class="px-3 py-1 rounded-xl font-bold text-xs shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-600 hover:text-white"
+              title="Xóa chặng này">
               <i class="fa-solid fa-trash-can text-xs"></i>
               <span>Xóa chặng</span>
             </button>
           </div>
 
-          <!-- DOUBLE CLICK HINT BADGE -->
-          <div class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50/90 border border-emerald-200/60 text-emerald-700 text-xs font-bold rounded-full shadow-2xs">
-            <i class="fa-solid fa-hand-pointer text-emerald-600 text-xs animate-bounce"></i>
-            <span>Nhấn đúp (Double-click) vào thẻ để chỉnh sửa</span>
-          </div>
+          <!-- Xem tất cả link với hiệu ứng loading -->
+          <button @click="handleViewAll" type="button" :disabled="isViewingAllLoading"
+            class="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all select-none"
+            title="Xem tất cả hoạt động của dự án">
+            <span v-if="isViewingAllLoading" class="w-3.5 h-3.5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></span>
+            <i v-else class="fa-solid fa-layer-group text-[11px]"></i>
+            <span>{{ isViewingAllLoading ? 'Đang tải...' : 'Xem tất cả' }}</span>
+            <i v-if="!isViewingAllLoading" class="fa-solid fa-arrow-right text-[10px]"></i>
+          </button>
         </div>
 
+        <!-- ACTIVITIES LIST CONTAINER -->
+        <div class="relative z-10">
+          <!-- Loading overlay mượt mà khi nhấn Xem tất cả -->
+          <div v-if="isViewingAllLoading" class="py-12 flex flex-col items-center justify-center gap-3">
+            <div class="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-xs font-extrabold text-emerald-600 animate-pulse">Đang tải tất cả hoạt động...</span>
+          </div>
 
-
-        <!-- ACTIVITIES LIST: CLEAN WHITE CARDS WITH LARGE, BOLD FONT SIZES -->
-        <div class="space-y-3.5 relative z-10">
-          <div 
-            v-for="t in displayedCards" 
-            :key="t.id"
-            @dblclick="!isTaskInDoneStage(t) && openEditStageTaskForm(t)"
-            class="bg-white border border-gray-100 hover:border-gray-200 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all flex items-center justify-between gap-4 group cursor-pointer"
-            :title="isTaskInDoneStage(t) ? 'Chặng đã hoàn thành (Không thể chỉnh sửa)' : 'Nhấn đúp (Double-click) để chỉnh sửa hoạt động này'"
-          >
-            <!-- LEFT GROUP: ICON + AVATAR + USER & TITLE -->
-            <div class="flex items-center gap-4 min-w-0 flex-1">
-              <!-- ICON BADGE (GREEN FOOTPRINTS IF UNASSIGNED, YELLOW BELL IF ASSIGNED) -->
-              <div 
-                class="w-11 h-11 rounded-full flex items-center justify-center text-lg shadow-2xs flex-shrink-0 border"
-                :class="isNewUnassignedTask(t) ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-500 border-amber-100'"
-                :title="isNewUnassignedTask(t) ? 'Hoạt động chưa phân công (Dấu chân xanh)' : 'Hoạt động đã có người phụ trách (Chuông vàng)'"
-              >
-                <i :class="isNewUnassignedTask(t) ? 'fa-solid fa-shoe-prints text-emerald-600' : 'fa-solid fa-bell text-amber-500'"></i>
-              </div>
-
-              <!-- CREATOR AVATAR -->
-              <img 
-                v-if="getCreatorAvatar(t)"
-                :src="getCreatorAvatar(t)" 
-                class="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm flex-shrink-0" 
-                :title="`Người tạo: ${getCreatorDisplayName(t)}`"
-              />
-              <div v-else class="w-10 h-10 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-gray-500 shadow-sm flex-shrink-0">
-                <i class="fa-solid fa-user text-sm"></i>
-              </div>
-
-              <!-- CONTENT BLOCK: USER NAME & LARGE BOLD TITLE -->
-              <div class="min-w-0 flex-1">
-                <!-- User Name -->
-                <div class="text-xs sm:text-sm font-bold text-gray-500 tracking-tight">
-                  {{ getCreatorDisplayName(t) }}
+          <div v-else class="space-y-3">
+            <!-- CARDS LIST -->
+            <div v-for="t in displayedCards" :key="t.id" @dblclick="!isTaskInDoneStage(t) && openEditStageTaskForm(t)"
+              class="bg-white border border-gray-100 hover:border-gray-200 rounded-2xl p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex items-center justify-between gap-3.5 group cursor-pointer"
+              :title="isTaskInDoneStage(t) ? 'Chặng đã hoàn thành (Không thể chỉnh sửa)' : 'Nhấn đúp (Double-click) để chỉnh sửa hoạt động này'">
+              <!-- LEFT GROUP: ICON + AVATAR + AUTHOR NAME, TITLE & GIAO CHO DROPDOWN -->
+              <div class="flex items-start gap-3.5 min-w-0 flex-1">
+                <!-- ICON BADGE (GREEN FOOTPRINTS IF UNASSIGNED, YELLOW BELL IF ASSIGNED) -->
+                <div class="w-[42px] h-[42px] rounded-full flex items-center justify-center text-base font-bold flex-shrink-0 mt-0.5"
+                  :class="isNewUnassignedTask(t) ? 'bg-emerald-100/70 text-emerald-700' : 'bg-amber-100/70 text-amber-700'">
+                  <i :class="isNewUnassignedTask(t) ? 'fa-solid fa-shoe-prints text-base' : 'fa-solid fa-bell text-base'"></i>
                 </div>
-                <!-- Large Activity Title -->
-                <div class="text-base sm:text-xl font-black text-gray-900 leading-snug tracking-tight mt-0.5" v-html="formatTitleWithMentions(t.title)"></div>
-                <!-- Assignee Dropdown Selector -->
-                <div class="text-xs font-bold text-gray-500 mt-1.5 flex items-center gap-1.5 relative">
-                  <span class="opacity-80">Giao cho:</span>
-                  <div class="relative">
-                    <button
-                      type="button"
-                      @click.stop="!isTaskInDoneStage(t) && toggleAssigneeDropdown(t.id)"
-                      :disabled="isTaskInDoneStage(t)"
-                      class="inline-flex items-center gap-1.5 bg-gray-100 text-gray-800 font-extrabold text-xs border border-gray-200 rounded-full px-3 py-1 transition-all shadow-2xs group/btn"
-                      :class="isTaskInDoneStage(t) ? 'cursor-not-allowed opacity-75' : 'hover:bg-gray-200 cursor-pointer'"
-                      :title="isTaskInDoneStage(t) ? 'Chặng đã hoàn thành (Không thể đổi người)' : 'Đổi người được giao'"
-                    >
-                      <img 
-                        v-if="t.assignee_id && getAssigneeAvatar(t)"
-                        :src="getAssigneeAvatar(t)" 
-                        class="w-4 h-4 rounded-full object-cover border border-white flex-shrink-0" 
-                      />
-                      <i v-else class="fa-solid fa-user-circle text-xs text-gray-500 flex-shrink-0"></i>
-                      
-                      <span class="truncate max-w-[120px]">
-                        {{ t.assignee_id ? getAssigneeDisplayName(t) : 'Chưa phân công' }}
-                      </span>
 
-                      <i v-if="!isTaskInDoneStage(t)" class="fa-solid fa-chevron-down text-[9px] text-gray-500 group-hover/btn:text-gray-800 transition-transform duration-200" :class="{ 'rotate-180': activeAssigneeDropdownTaskId === t.id }"></i>
-                    </button>
+                <!-- CREATOR AVATAR -->
+                <img v-if="getCreatorAvatar(t)" :src="getCreatorAvatar(t)"
+                  class="w-[40px] h-[40px] rounded-full object-cover border border-gray-200 flex-shrink-0 mt-0.5"
+                  :title="`Người tạo: ${getCreatorDisplayName(t)}`" />
+                <div v-else
+                  class="w-[40px] h-[40px] rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-xs flex-shrink-0 mt-0.5">
+                  <i class="fa-solid fa-user text-xs"></i>
+                </div>
 
-                    <!-- CUSTOM DROPDOWN POPOVER MENU -->
-                    <div 
-                      v-if="!isTaskInDoneStage(t) && activeAssigneeDropdownTaskId === t.id"
-                      @click.stop
-                      class="absolute left-0 top-full mt-1.5 z-50 w-56 bg-white border border-gray-200 rounded-xl shadow-2xl py-1.5 text-gray-800 animate-in fade-in zoom-in-95 duration-150 max-h-60 overflow-y-auto custom-scrollbar ring-1 ring-black/5"
-                    >
-                      <div class="px-3 py-1 text-[10px] uppercase tracking-wider font-extrabold text-emerald-600 border-b border-gray-100 mb-1 flex items-center justify-between">
-                        <span>Chọn người phụ trách</span>
-                        <i class="fa-solid fa-user-gear text-xs text-emerald-600"></i>
-                      </div>
+                <!-- CONTENT BLOCK: CREATOR NAME, TITLE & GIAO CHO DROPDOWN BUTTON -->
+                <div class="min-w-0 flex-1">
+                  <!-- Creator Name -->
+                  <div class="text-xs sm:text-sm font-bold text-gray-500 leading-none">
+                    {{ getCreatorDisplayName(t) }}
+                  </div>
 
-                      <!-- OPTION: CHƯA PHÂN CÔNG -->
-                      <button
-                        type="button"
-                        @click.stop="selectAssigneeForTask(t, null)"
-                        class="w-full px-3 py-1.5 flex items-center gap-2.5 text-xs font-medium hover:bg-gray-100 transition-colors rounded-lg text-left"
-                        :class="{ 'bg-emerald-50 text-emerald-700 font-bold': !t.assignee_id }"
-                      >
-                        <div class="w-5.5 h-5.5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0">
-                          <i class="fa-solid fa-user-slash text-[10px]"></i>
+                  <!-- Task Title -->
+                  <div class="text-base sm:text-[20px] font-extrabold text-gray-900 leading-snug tracking-tight mt-0.5"
+                    v-html="formatTitleWithMentions(t.title)"></div>
+
+                  <!-- Giao cho: Pill Dropdown Button (Exactly matching user mockup) -->
+                  <div class="flex items-center gap-2 mt-1.5 text-xs text-gray-400 font-bold">
+                    <span>Giao cho:</span>
+                    <div class="relative">
+                      <button type="button" @click.stop="toggleAssigneeDropdown(t.id)"
+                        class="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 hover:bg-gray-200/80 border border-gray-200/80 rounded-full text-xs font-bold text-gray-800 transition-all cursor-pointer shadow-3xs">
+                        <i class="fa-regular fa-user text-xs text-gray-500"></i>
+                        <span>{{ getAssigneeDisplayName(t) || 'Chưa phân công' }}</span>
+                        <i class="fa-solid fa-chevron-down text-[10px] text-gray-400 ml-0.5"></i>
+                      </button>
+
+                      <!-- DROPDOWN POPOVER MENU -->
+                      <div v-if="activeAssigneeDropdownTaskId === t.id" @click.stop
+                        class="absolute left-0 top-full mt-1 z-50 w-52 bg-white border border-gray-200 rounded-xl shadow-xl py-1 text-gray-800 ring-1 ring-black/5 animate-fade-in-up">
+                        <div class="px-3 py-1 text-[10px] uppercase font-bold text-gray-400 border-b border-gray-100 mb-1">
+                          Chọn người phụ trách
                         </div>
-                        <span class="flex-1 truncate">-- Chưa phân công --</span>
-                        <i v-if="!t.assignee_id" class="fa-solid fa-check text-emerald-600 text-xs"></i>
-                      </button>
-
-                      <!-- USERS OPTIONS -->
-                      <button
-                        v-for="u in users"
-                        :key="u.id"
-                        type="button"
-                        @click.stop="selectAssigneeForTask(t, u.id)"
-                        class="w-full px-3 py-1.5 flex items-center gap-2.5 text-xs font-medium hover:bg-gray-100 transition-colors rounded-lg text-left"
-                        :class="{ 'bg-emerald-50 text-emerald-700 font-bold': t.assignee_id == u.id }"
-                      >
-                        <img 
-                          :src="u.avatar || defaultAvatar" 
-                          class="w-5.5 h-5.5 rounded-full object-cover border border-gray-200 flex-shrink-0" 
-                        />
-                        <span class="flex-1 truncate">{{ u.name }}</span>
-                        <i v-if="t.assignee_id == u.id" class="fa-solid fa-check text-emerald-600 text-xs"></i>
-                      </button>
+                        <button type="button" @click="selectAssigneeForTask(t, null)"
+                          class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-gray-100 transition-colors text-left"
+                          :class="{ 'bg-gray-100 font-bold': !t.assignee_id }">
+                          <i class="fa-regular fa-user text-xs text-gray-400"></i>
+                          <span>Chưa phân công</span>
+                        </button>
+                        <button v-for="u in users" :key="u.id" type="button"
+                          @click="selectAssigneeForTask(t, u.id)"
+                          class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left"
+                          :class="{ 'bg-emerald-50 text-emerald-800 font-bold': String(u.id) === String(t.assignee_id) }">
+                          <img :src="u.avatar || defaultAvatar" class="w-5 h-5 rounded-full object-cover border border-gray-200" />
+                          <span class="truncate flex-1">{{ u.name }}</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- RIGHT GROUP: DATE & TIME STACK -->
-            <div class="flex items-center flex-shrink-0 relative">
-              <!-- Edit & Delete floating action buttons (Appears on hover to the left of date/time without affecting layout or creating empty whitespace) -->
-              <div 
-                v-if="!isTaskInDoneStage(t)" 
-                class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-white/95 backdrop-blur-xs px-2 py-1 rounded-full shadow-xs border border-gray-200/80 z-10 pointer-events-none group-hover:pointer-events-auto"
-              >
-                <button 
-                  @click.stop="openEditStageTaskForm(t)" 
-                  type="button"
-                  class="w-7 h-7 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white flex items-center justify-center text-xs transition-colors cursor-pointer"
-                  title="Nhấn đúp hoặc bấm vào đây để chỉnh sửa hoạt động"
-                >
-                  <i class="fa-solid fa-pen"></i>
-                </button>
-                <button 
-                  @click.stop="handleDeleteTask(t.id)" 
-                  type="button"
-                  class="w-7 h-7 rounded-full bg-gray-100 hover:bg-rose-600 hover:text-white text-gray-400 flex items-center justify-center text-xs transition-colors cursor-pointer"
-                  title="Xóa hoạt động"
-                >
-                  <i class="fa-solid fa-trash-can"></i>
-                </button>
-              </div>
-
-              <!-- Date & Time stack (Always sitting naturally at far right edge across all cards) -->
-              <div class="text-right whitespace-nowrap min-w-[55px]">
-                <div class="text-base sm:text-lg font-black text-gray-900 tracking-tight">
-                  {{ formatDateShort(t.due_date || t.created_at) }}
-                </div>
-                <div class="text-xs sm:text-sm font-extrabold text-slate-500 mt-0.5">
-                  {{ formatTimeOnly(t.due_date || t.created_at) || '10:30' }}
-                </div>
+              <!-- RIGHT GROUP: DATE & TIME STACK -->
+              <div class="flex-shrink-0 text-right leading-tight min-w-[55px]">
+                <span class="text-xs sm:text-sm font-bold text-gray-400 block">{{ formatDateShort(t.created_at || t.due_date) }}</span>
+                <span class="text-[11px] font-medium text-gray-400 block mt-0.5">{{ formatTimeOnly(t.created_at || t.due_date) || '10:30' }}</span>
               </div>
             </div>
-          </div>
 
-          <!-- Empty stage tasks state: Click or Double-click to open create modal -->
-          <div 
-            v-if="displayedCards.length === 0" 
-            @click="openAddStageTaskForm"
-            @dblclick="openAddStageTaskForm"
-            class="py-12 text-center text-gray-400 text-sm font-semibold bg-white rounded-2xl border border-dashed border-gray-200 hover:border-emerald-400 hover:bg-emerald-50/30 transition-all cursor-pointer group"
-            title="Bấm hoặc Nhấn đúp (Double-click) vào đây để tạo cập nhật mới"
-          >
-            <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg mx-auto mb-2 group-hover:scale-110 transition-transform">
-              <i class="fa-solid fa-plus"></i>
+            <!-- EMPTY STATE IF NO CARDS -->
+            <div v-if="totalCardsForCurrentView.length === 0" class="py-10 text-center text-gray-400 font-medium text-xs">
+              Chưa có hoạt động nào trong chặng này.
             </div>
-            <div class="font-extrabold text-gray-700 group-hover:text-emerald-700">Chưa có cập nhật hoạt động nào.</div>
-            <div class="text-xs text-gray-400 mt-1">Bấm hoặc Nhấn đúp (Double-click) vào đây để mở bảng tạo cập nhật mới.</div>
+
+            <!-- LOAD MORE BUTTON (HIỂN THỊ KHI CÒN CARD CHƯA XEM) -->
+            <div v-if="hasMoreCards" class="pt-3 text-center">
+              <button @click="handleLoadMore" type="button" :disabled="isLoadingMore"
+                class="inline-flex items-center gap-2 px-6 py-2.5 bg-gray-50 hover:bg-emerald-50 text-gray-700 hover:text-emerald-700 border border-gray-200 hover:border-emerald-200 rounded-2xl text-xs sm:text-sm font-extrabold shadow-2xs hover:shadow-xs transition-all cursor-pointer disabled:opacity-50">
+                <div v-if="isLoadingMore" class="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+                <i v-else class="fa-solid fa-angles-down text-xs text-emerald-600"></i>
+                <span>{{ isLoadingMore ? 'Đang tải thêm...' : `Xem thêm (${totalCardsForCurrentView.length - displayedCards.length} hoạt động nữa)` }}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
     </main>
 
-    <!-- Modal for Project Edit -->
-    <ProjectModal :is-open="isModalOpen" :customers="customers" :users="users" :edit-project="project"
-      @close="handleCloseModal" @submit="handleUpdateProjectSubmit" @customer-created="fetchCustomers" />
+  <!-- Modal for Project Edit -->
+  <ProjectModal :is-open="isModalOpen" :customers="customers" :users="users" :edit-project="project"
+    @close="handleCloseModal" @submit="handleUpdateProjectSubmit" @customer-created="fetchCustomers" />
 
-    <!-- FIXED BOTTOM UPDATE CREATION CARD (COLLAPSED BY DEFAULT, FIXED AT BOTTOM OF SCREEN WHEN OPEN) -->
-    <transition 
-      enter-active-class="transition duration-300 ease-out transform" 
-      enter-from-class="opacity-0 translate-y-full" 
-      enter-to-class="opacity-100 translate-y-0" 
-      leave-active-class="transition duration-200 ease-in transform" 
-      leave-from-class="opacity-100 translate-y-0" 
-      leave-to-class="opacity-0 translate-y-full"
-    >
-      <div 
-        v-if="isInlineFormOpen"
-        ref="inlineFormRef"
-        class="fixed bottom-0 left-0 right-0 z-50 pointer-events-none pb-3 sm:pb-5 px-4 sm:px-6 lg:px-8 transition-all"
-      >
-        <div class="max-w-[1380px] mx-auto pointer-events-auto bg-white border border-gray-200 shadow-2xl rounded-2xl p-4 sm:p-5 relative ring-1 ring-black/5">
-          <form @submit.prevent="handleAddStageTaskSubmit" class="flex flex-col lg:flex-row items-stretch lg:items-center gap-4 lg:gap-6">
-            
-            <!-- LEFT SECTION: MỤC TIÊU HƯỚNG ĐẾN (CHẶNG / MILESTONE SELECTOR) -->
-            <div class="flex flex-col gap-2 lg:pr-5 lg:border-r lg:border-gray-200 flex-shrink-0">
-              <div class="flex items-center gap-1 text-[11px] font-extrabold text-gray-500 tracking-wider uppercase font-sans">
-                <span>MỤC TIÊU HƯỚNG ĐẾN</span>
-                <i class="fa-regular fa-circle-question text-gray-400 text-xs" title="Chọn chặng mục tiêu hướng đến cho cập nhật"></i>
-              </div>
+  <!-- FIXED BOTTOM UPDATE CREATION CARD (COLLAPSED BY DEFAULT, FIXED AT BOTTOM OF SCREEN WHEN OPEN) -->
+  <transition enter-active-class="transition duration-300 ease-out transform"
+    enter-from-class="opacity-0 translate-y-full" enter-to-class="opacity-100 translate-y-0"
+    leave-active-class="transition duration-200 ease-in transform" leave-from-class="opacity-100 translate-y-0"
+    leave-to-class="opacity-0 translate-y-full">
+    <div v-if="isInlineFormOpen" ref="inlineFormRef"
+      class="fixed bottom-0 left-0 right-0 z-50 pointer-events-none pb-3 sm:pb-5 px-4 sm:px-6 lg:px-8 transition-all">
+      <div
+        class="max-w-[720px] mx-auto pointer-events-auto bg-white border border-gray-200 shadow-2xl rounded-2xl p-4 sm:p-5 relative ring-1 ring-black/5">
 
-              <!-- IF <= 3 STAGES: DISPLAY STAGE BUTTONS SIDE BY SIDE LIKE IN THE IMAGE -->
-              <div v-if="activeTargetMilestones.length <= 3 && activeTargetMilestones.length > 0" class="flex items-center gap-2">
-                <div
-                  v-for="ms in activeTargetMilestones"
-                  :key="ms.id"
-                  @click="newStageTaskMilestoneId = ms.id"
-                  class="flex flex-col items-center justify-between p-2 rounded-xl border transition-all cursor-pointer select-none min-w-[72px] sm:min-w-[84px] h-[78px]"
-                  :class="newStageTaskMilestoneId === ms.id 
-                    ? 'bg-rose-50/70 border-rose-200 text-rose-600 shadow-2xs' 
-                    : 'bg-white border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'"
-                >
-                  <!-- Circle with task count -->
-                  <div 
-                    class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-colors"
-                    :class="newStageTaskMilestoneId === ms.id 
-                      ? 'border-2 border-rose-500 bg-white text-rose-600' 
-                      : 'border border-gray-300 bg-white text-gray-700'"
-                  >
-                    {{ getStageTaskCount(ms) }}
-                  </div>
+        <!-- X CLOSE BUTTON (TOP RIGHT) -->
+        <button type="button" @click="cancelEditTask"
+          class="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-gray-100 hover:bg-rose-100 text-gray-500 hover:text-rose-600 flex items-center justify-center text-xs transition-colors cursor-pointer z-10"
+          title="Đóng (Esc)">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
 
-                  <!-- Stage Name -->
-                  <span 
-                    class="text-[10px] font-black tracking-tight text-center uppercase leading-tight line-clamp-2 mt-0.5"
-                    :class="newStageTaskMilestoneId === ms.id ? 'text-gray-900 font-extrabold' : 'text-gray-600'"
-                  >
-                    {{ ms.title }}
-                  </span>
+        <form @submit.prevent="handleAddStageTaskSubmit"
+          class="flex flex-col lg:flex-row items-stretch lg:items-center gap-4 lg:gap-5">
+
+          <!-- LEFT SECTION: MỤC TIÊU HƯỚNG ĐẾN (CHẶNG / MILESTONE SELECTOR) -->
+          <div class="flex flex-col gap-2 lg:pr-5 lg:border-r lg:border-gray-200 flex-shrink-0">
+            <div
+              class="flex items-center gap-1 text-[11px] font-extrabold text-gray-500 tracking-wider uppercase font-sans">
+              <span>MỤC TIÊU HƯỚNG ĐẾN</span>
+              <i class="fa-regular fa-circle-question text-gray-400 text-xs"
+                title="Chọn chặng mục tiêu hướng đến cho cập nhật"></i>
+            </div>
+
+            <!-- IF <= 3 STAGES: DISPLAY STAGE BUTTONS SIDE BY SIDE LIKE IN THE IMAGE -->
+            <div v-if="activeTargetMilestones.length <= 3 && activeTargetMilestones.length > 0"
+              class="flex items-center gap-2">
+              <div v-for="ms in activeTargetMilestones" :key="ms.id" @click="newStageTaskMilestoneId = ms.id"
+                class="flex flex-col items-center justify-between p-2 rounded-xl border transition-all cursor-pointer select-none min-w-[72px] sm:min-w-[84px] h-[78px]"
+                :class="newStageTaskMilestoneId === ms.id
+                  ? 'bg-rose-50/70 border-rose-200 text-rose-600 shadow-2xs'
+                  : 'bg-white border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'">
+                <!-- Circle with task count -->
+                <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-colors"
+                  :class="newStageTaskMilestoneId === ms.id
+                    ? 'border-2 border-rose-500 bg-white text-rose-600'
+                    : 'border border-gray-300 bg-white text-gray-700'">
+                  {{ getStageTaskCount(ms) }}
                 </div>
-              </div>
 
-              <!-- IF > 3 STAGES: CONVERT TO DROPDOWN SELECTOR AS REQUESTED -->
-              <div v-else-if="activeTargetMilestones.length > 3" class="w-full sm:w-56">
-                <select 
-                  v-model="newStageTaskMilestoneId" 
-                  class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors cursor-pointer"
-                >
-                  <option v-for="ms in activeTargetMilestones" :key="ms.id" :value="ms.id">
-                    🚩 {{ ms.title }} ({{ getStageTaskCount(ms) }})
-                  </option>
-                </select>
-              </div>
-
-              <!-- IF 0 STAGES -->
-              <div v-else class="text-xs text-gray-400 font-medium italic">
-                Chưa có chặng mục tiêu
+                <!-- Stage Name -->
+                <span
+                  class="text-[10px] font-black tracking-tight text-center uppercase leading-tight line-clamp-2 mt-0.5"
+                  :class="newStageTaskMilestoneId === ms.id ? 'text-gray-900 font-extrabold' : 'text-gray-600'">
+                  {{ ms.title }}
+                </span>
               </div>
             </div>
 
-            <!-- RIGHT SECTION: USER AVATAR + TEXTAREA INPUT + TAGS & SUBMIT BUTTON -->
-            <div class="flex-1 flex flex-col justify-between gap-2.5 min-w-0 relative">
-              
-              <!-- TOP ROW: USER AVATAR + TEXTAREA INPUT -->
-              <div class="flex items-start gap-3 min-w-0">
-                <!-- User avatar -->
-                <img 
-                  :src="authStore.user?.avatar || defaultAvatar" 
-                  class="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-gray-200 shadow-2xs flex-shrink-0 mt-0.5" 
-                  :title="authStore.user?.name || 'Tôi'"
-                />
+            <!-- IF > 3 STAGES: CONVERT TO DROPDOWN SELECTOR AS REQUESTED -->
+            <div v-else-if="activeTargetMilestones.length > 3" class="w-full sm:w-56">
+              <select v-model="newStageTaskMilestoneId"
+                class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors cursor-pointer">
+                <option v-for="ms in activeTargetMilestones" :key="ms.id" :value="ms.id">
+                  🚩 {{ ms.title }} ({{ getStageTaskCount(ms) }})
+                </option>
+              </select>
+            </div>
 
-                <!-- Input Area Container with Mention Dropdown -->
-                <div class="flex-1 min-w-0 relative">
-                  <textarea 
-                    ref="stageTaskTitleInputRef"
-                    v-model="newStageTaskTitle" 
-                    rows="2"
-                    required 
-                    @input="onTitleInput"
-                    @keydown="onTitleKeydown"
-                    placeholder="9g 15/8 @Khánh đi khảo sát Outspan" 
-                    class="w-full bg-transparent text-sm sm:text-base font-bold text-gray-900 leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none m-0 border-0"
-                  ></textarea>
+            <!-- IF 0 STAGES -->
+            <div v-else class="text-xs text-gray-400 font-medium italic">
+              Chưa có chặng mục tiêu
+            </div>
+          </div>
 
-                  <!-- AUTOCOMPLETE @MENTION DROPDOWN POPOVER (POPS UP ABOVE INPUT) -->
-                  <div 
-                    v-if="showMentionDropdown && filteredUsersForMention.length > 0"
-                    class="absolute left-0 bottom-full mb-2 z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-xl py-1 text-gray-800 max-h-52 overflow-y-auto ring-1 ring-black/5"
+          <!-- RIGHT SECTION: AVATAR + TEXTAREA + BOTTOM ACTION ROW -->
+          <div class="flex-1 flex flex-col justify-between gap-2 min-w-0 relative pr-5">
+
+            <!-- TOP ROW: USER AVATAR + TEXTAREA INPUT -->
+            <div class="flex items-start gap-3 min-w-0">
+              <!-- User avatar -->
+              <img :src="authStore.user?.avatar || defaultAvatar"
+                class="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-gray-200 shadow-2xs flex-shrink-0 mt-0.5"
+                :title="authStore.user?.name || 'Tôi'" />
+
+              <!-- Input Area Container with Mention Dropdown & Paste Support -->
+              <div class="flex-1 min-w-0 relative">
+                <textarea ref="stageTaskTitleInputRef" v-model="newStageTaskTitle" rows="1" required
+                  @input="onTitleInput" @keydown="onTitleKeydown" @paste="onTextareaPaste" placeholder="Chia sẻ cập nhật với team..."
+                  class="w-full bg-transparent text-sm sm:text-base font-bold text-gray-900 leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none m-0 border-0"></textarea>
+
+                <!-- AUTOCOMPLETE @MENTION DROPDOWN POPOVER (POPS UP ABOVE INPUT) -->
+                <div v-if="showMentionDropdown && filteredUsersForMention.length > 0"
+                  class="absolute left-0 bottom-full mb-2 z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-xl py-1 text-gray-800 max-h-52 overflow-y-auto ring-1 ring-black/5">
+                  <div
+                    class="px-3 py-1 text-[10px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1 flex items-center justify-between">
+                    <span>Chọn người phụ trách (@)</span>
+                    <i class="fa-solid fa-at text-xs"></i>
+                  </div>
+                  <button v-for="(u, idx) in filteredUsersForMention" :key="u.id" type="button" @mousedown.prevent
+                    @click="selectMentionUser(u)"
+                    class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left"
+                    :class="{ 'bg-emerald-50 text-emerald-800 font-bold': idx === mentionIndex }">
+                    <img :src="u.avatar || defaultAvatar"
+                      class="w-5 h-5 rounded-full object-cover border border-gray-200" />
+                    <span class="truncate flex-1">{{ u.name }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ATTACHED FILES & PASTED IMAGES PREVIEW BAR (FULL WIDTH) -->
+            <div v-if="attachedFiles && attachedFiles.length > 0" class="w-full flex items-center gap-2 overflow-x-auto py-1 border-t border-gray-100 custom-scrollbar">
+              <div 
+                v-for="(att, aIdx) in attachedFiles" 
+                :key="aIdx"
+                class="relative group flex-shrink-0"
+              >
+                <!-- Image Thumbnail (Click to view full-size modal) -->
+                <div v-if="att.isImage" @click="openImageModal(att.preview)" class="w-14 h-14 rounded-xl border border-gray-200 overflow-hidden bg-gray-100 shadow-2xs relative cursor-pointer group/img" title="Nhấn để xem ảnh phóng to">
+                  <img :src="att.preview" class="w-full h-full object-cover group-hover/img:scale-105 transition-transform" />
+                  <button 
+                    type="button" 
+                    @click.stop="removeAttachment(aIdx)" 
+                    class="absolute top-0.5 right-0.5 w-4.5 h-4.5 rounded-full bg-black/60 hover:bg-rose-600 text-white flex items-center justify-center text-[10px] transition-colors z-10"
+                    title="Xóa tệp này"
                   >
-                    <div class="px-3 py-1 text-[10px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1 flex items-center justify-between">
-                      <span>Chọn người phụ trách (@)</span>
-                      <i class="fa-solid fa-at text-xs"></i>
-                    </div>
-                    <button
-                      v-for="(u, idx) in filteredUsersForMention"
-                      :key="u.id"
-                      type="button"
-                      @mousedown.prevent
-                      @click="selectMentionUser(u)"
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+
+                <!-- Document File Badge -->
+                <div v-else class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 max-w-[200px]">
+                  <i class="fa-solid fa-file text-gray-500"></i>
+                  <span class="truncate">{{ att.name }}</span>
+                  <button 
+                    type="button" 
+                    @click="removeAttachment(aIdx)" 
+                    class="text-gray-400 hover:text-rose-600 transition-colors ml-1"
+                    title="Xóa tệp này"
+                  >
+                    <i class="fa-solid fa-xmark text-xs"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- BOTTOM ROW: Attachment left, Person + Date + Submit right -->
+            <div class="flex items-center justify-between gap-2 pt-0.5">
+
+              <!-- LEFT: Attachment button only -->
+              <div class="flex items-center gap-1.5">
+                <div class="relative inline-flex items-center gap-1">
+                  <button type="button" @click="triggerFileInput"
+                    class="inline-flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none shadow-3xs bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-500 w-9 h-9"
+                    title="Đính kèm tệp / ảnh (hoặc Ctrl+V dán ảnh từ bộ nhớ tạm)">
+                    <i class="fa-solid fa-paperclip text-sm"></i>
+                  </button>
+                  <input 
+                    type="file" 
+                    ref="fileInputRef" 
+                    multiple 
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar" 
+                    class="hidden" 
+                    @change="onFileSelected" 
+                  />
+                </div>
+              </div>
+
+              <!-- RIGHT: Person + Date + Submit -->
+              <div class="flex items-center gap-2">
+                <!-- Person picker toggle button -->
+                <div class="relative" ref="personPickerRef">
+                  <button type="button" @click="showPersonPicker = !showPersonPicker"
+                    class="inline-flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none shadow-3xs"
+                    :class="newStageTaskAssignee ? 'bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-700 px-3 py-1.5' : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 w-9 h-9'"
+                    title="Chọn người phụ trách">
+                    <i class="fa-regular fa-user text-sm"></i>
+                    <span v-if="newStageTaskAssignee">@{{ selectedAssigneeName }}</span>
+                  </button>
+                  <!-- Person picker dropdown -->
+                  <div v-if="showPersonPicker"
+                    class="absolute left-0 bottom-full mb-2 z-50 w-56 bg-white border border-gray-200 rounded-xl shadow-xl py-1 max-h-52 overflow-y-auto ring-1 ring-black/5">
+                    <div
+                      class="px-3 py-1 text-[10px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1">
+                      Chọn người phụ trách</div>
+                    <button v-if="newStageTaskAssignee" type="button" @click="clearAssignee(); showPersonPicker = false"
+                      class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-rose-50 text-rose-500 transition-colors text-left">
+                      <i class="fa-solid fa-xmark text-xs"></i>
+                      <span>Bỏ chọn</span>
+                    </button>
+                    <button v-for="u in users" :key="u.id" type="button"
+                      @click="newStageTaskAssignee = String(u.id); showPersonPicker = false"
                       class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left"
-                      :class="{ 'bg-emerald-50 text-emerald-800 font-bold': idx === mentionIndex }"
-                    >
-                      <img :src="u.avatar || defaultAvatar" class="w-5 h-5 rounded-full object-cover border border-gray-200" />
+                      :class="{ 'bg-emerald-50 text-emerald-800 font-bold': String(u.id) === String(newStageTaskAssignee) }">
+                      <img :src="u.avatar || defaultAvatar"
+                        class="w-5 h-5 rounded-full object-cover border border-gray-200" />
                       <span class="truncate flex-1">{{ u.name }}</span>
                     </button>
                   </div>
                 </div>
-              </div>
 
-                <!-- BOTTOM ROW: ACTION TAGS & SUBMIT BUTTON (RIGHT ALIGNED) -->
-              <div class="flex items-center justify-between gap-2 flex-wrap pt-1">
-                
-                <!-- LEFT: Quick picker buttons for person & date/time -->
-                <div class="flex items-center gap-2">
-                  <!-- Person picker toggle button -->
-                  <div class="relative" ref="personPickerRef">
-                    <button
-                      type="button"
-                      @click="showPersonPicker = !showPersonPicker"
-                      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none shadow-3xs"
-                      :class="newStageTaskAssignee ? 'bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-700' : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600'"
-                    >
-                      <i class="fa-regular fa-user text-xs"></i>
-                      <span v-if="newStageTaskAssignee">@{{ selectedAssigneeName }}</span>
-                      <span v-else>Chọn người</span>
-                    </button>
-                    <!-- Person picker dropdown -->
-                    <div 
-                      v-if="showPersonPicker" 
-                      class="absolute left-0 bottom-full mb-2 z-50 w-56 bg-white border border-gray-200 rounded-xl shadow-xl py-1 max-h-52 overflow-y-auto ring-1 ring-black/5"
-                    >
-                      <div class="px-3 py-1 text-[10px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1">Chọn người phụ trách</div>
-                      <button
-                        v-if="newStageTaskAssignee"
-                        type="button"
-                        @click="clearAssignee(); showPersonPicker = false"
-                        class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-rose-50 text-rose-500 transition-colors text-left"
-                      >
-                        <i class="fa-solid fa-xmark text-xs"></i>
-                        <span>Bỏ chọn</span>
-                      </button>
-                      <button
-                        v-for="u in users"
-                        :key="u.id"
-                        type="button"
-                        @click="newStageTaskAssignee = String(u.id); showPersonPicker = false"
-                        class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left"
-                        :class="{ 'bg-emerald-50 text-emerald-800 font-bold': String(u.id) === String(newStageTaskAssignee) }"
-                      >
-                        <img :src="u.avatar || defaultAvatar" class="w-5 h-5 rounded-full object-cover border border-gray-200" />
-                        <span class="truncate flex-1">{{ u.name }}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Date picker button -->
-                  <div class="relative inline-flex items-center gap-1">
-                    <button
-                      type="button"
-                      @click="showDateTimePicker = !showDateTimePicker"
-                      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none shadow-3xs"
-                      :class="(newStageTaskDueDate || newStageTaskDueTime) ? 'bg-blue-50 hover:bg-blue-100/80 border border-blue-200 text-blue-700' : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600'"
-                    >
-                      <i class="fa-regular fa-calendar-days text-xs"></i>
-                      <span v-if="newStageTaskDueDate || newStageTaskDueTime">{{ tagFormattedDateTime }}</span>
-                      <span v-else>Ngày / giờ</span>
-                    </button>
-                    <button 
-                      v-if="newStageTaskDueDate || newStageTaskDueTime"
-                      type="button" 
-                      @click="clearDateTime" 
-                      class="text-gray-400 hover:text-rose-500 transition-colors cursor-pointer p-0.5 rounded-full"
-                      title="Bỏ chọn ngày giờ"
-                    >
-                      <i class="fa-solid fa-xmark text-xs"></i>
-                    </button>
-                    <!-- Date/time picker popup -->
-                    <div 
-                      v-if="showDateTimePicker" 
-                      class="absolute left-0 bottom-full mb-2 z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-xl p-3 ring-1 ring-black/5"
-                    >
-                      <div class="text-[10px] uppercase font-bold text-gray-500 mb-2">Chọn ngày & giờ</div>
-                      <div class="space-y-2">
-                        <div>
-                          <label class="text-[10px] font-bold text-gray-500 mb-0.5 block">Giờ</label>
-                          <input 
-                            type="time" 
-                            v-model="newStageTaskDueTime" 
-                            class="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500"
-                          />
-                        </div>
-                        <div>
-                          <label class="text-[10px] font-bold text-gray-500 mb-0.5 block">Ngày</label>
-                          <input 
-                            type="date" 
-                            v-model="newStageTaskDueDate" 
-                            class="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500"
-                          />
-                        </div>
+                <!-- Date picker button -->
+                <div class="relative inline-flex items-center gap-1">
+                  <button type="button" @click="showDateTimePicker = !showDateTimePicker"
+                    class="inline-flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none shadow-3xs"
+                    :class="(newStageTaskDueDate || newStageTaskDueTime) ? 'bg-blue-50 hover:bg-blue-100/80 border border-blue-200 text-blue-700 px-3 py-1.5' : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 w-9 h-9'"
+                    title="Chọn ngày & giờ">
+                    <i class="fa-regular fa-calendar-days text-sm"></i>
+                    <span v-if="newStageTaskDueDate || newStageTaskDueTime">{{ tagFormattedDateTime }}</span>
+                  </button>
+                  <button v-if="newStageTaskDueDate || newStageTaskDueTime" type="button" @click="clearDateTime"
+                    class="text-gray-400 hover:text-rose-500 transition-colors cursor-pointer p-0.5 rounded-full"
+                    title="Bỏ chọn ngày giờ">
+                    <i class="fa-solid fa-xmark text-xs"></i>
+                  </button>
+                  <!-- Date/time picker popup -->
+                  <div v-if="showDateTimePicker"
+                    class="absolute left-0 bottom-full mb-2 z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-xl p-3 ring-1 ring-black/5">
+                    <div class="text-[10px] uppercase font-bold text-gray-500 mb-2">Chọn ngày & giờ</div>
+                    <div class="space-y-2">
+                      <div>
+                        <label class="text-[10px] font-bold text-gray-500 mb-0.5 block">Giờ</label>
+                        <input type="time" v-model="newStageTaskDueTime"
+                          class="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500" />
                       </div>
-                      <button 
-                        type="button" 
-                        @click="showDateTimePicker = false" 
-                        class="mt-2 w-full px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer"
-                      >Xong</button>
+                      <div>
+                        <label class="text-[10px] font-bold text-gray-500 mb-0.5 block">Ngày</label>
+                        <input type="date" v-model="newStageTaskDueDate"
+                          class="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500" />
+                      </div>
                     </div>
+                    <button type="button" @click="showDateTimePicker = false"
+                      class="mt-2 w-full px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer">Xong</button>
                   </div>
                 </div>
 
-                <!-- RIGHT: Submit buttons -->
-                <div class="flex items-center gap-2">
-                  <button
-                    type="button"
-                    @click="cancelEditTask"
-                    class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold text-xs sm:text-sm rounded-xl transition-all cursor-pointer"
-                  >
-                    {{ editingTaskId ? 'Hủy' : 'Đóng' }}
-                  </button>
-                  
-                  <button 
-                    type="submit" 
-                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#10b981] hover:bg-emerald-600 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer"
-                  >
-                    <i class="fa-solid fa-dove text-sm"></i>
-                    <span>{{ editingTaskId ? 'Lưu' : 'Hú Hú' }}</span>
-                    <i class="fa-solid fa-chevron-down text-[10px] opacity-80"></i>
-                  </button>
-                </div>
-
+                <!-- Submit button -->
+                <button type="submit"
+                  class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#10b981] hover:bg-emerald-600 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer">
+                  <i class="fa-solid fa-dove text-sm"></i>
+                  <span>{{ editingTaskId ? 'Lưu' : 'Hú hú!' }}</span>
+                  <i class="fa-solid fa-chevron-down text-[10px] opacity-80"></i>
+                </button>
               </div>
 
             </div>
 
-          </form>
-        </div>
-      </div>
-    </transition>
-          
-
-
-    <!-- Modal for Adding Milestone Stage -->
-    <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
-      <div v-if="isAddMilestoneOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs" @click.self="isAddMilestoneOpen = false">
-        <div class="bg-white rounded-3xl p-6 w-full max-w-md border border-gray-200 shadow-2xl space-y-4">
-          <div class="flex items-center justify-between border-b border-gray-100 pb-3">
-            <h3 class="text-base font-extrabold text-gray-900 font-heading">Thêm chặng tiếp theo</h3>
-            <button @click="isAddMilestoneOpen = false" type="button" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark"></i></button>
           </div>
 
-          <form @submit.prevent="handleAddMilestone" class="space-y-3">
-            <input 
-              ref="milestoneTitleInputRef"
-              v-model="newMilestone.title" 
-              type="text" 
-              required 
-              autofocus
-              placeholder="Tên chặng / cột mốc..." 
-              class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500" 
-            />
-            <input v-model="newMilestone.due_date" type="date" required class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500" />
-            <div class="flex items-center justify-end gap-2 pt-2">
-              <button @click="isAddMilestoneOpen = false" type="button" class="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-700">Hủy</button>
-              <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-xs transition-all cursor-pointer">Thêm chặng</button>
-            </div>
-          </form>
-        </div>
+        </form>
       </div>
-    </transition>
+    </div>
+  </transition>
 
-    <!-- Image Lightbox Modal -->
-    <div v-if="activePreviewImage" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md" @click="activePreviewImage = null">
-      <div class="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl shadow-2xl" @click.stop>
-        <img :src="activePreviewImage" class="max-w-full max-h-[85vh] object-contain rounded-2xl" />
-        <button @click="activePreviewImage = null" type="button" class="absolute top-3 right-3 w-9 h-9 bg-slate-900/80 text-white rounded-full flex items-center justify-center cursor-pointer">
-          <i class="fa-solid fa-xmark text-lg"></i>
+
+
+  <!-- Modal for Adding Milestone Stage -->
+  <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95"
+    enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in"
+    leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
+    <div v-if="isAddMilestoneOpen"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
+      @click.self="isAddMilestoneOpen = false">
+      <div class="bg-white rounded-3xl p-6 w-full max-w-md border border-gray-200 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+          <h3 class="text-base font-extrabold text-gray-900 font-heading">Thêm chặng tiếp theo</h3>
+          <button @click="isAddMilestoneOpen = false" type="button" class="text-gray-400 hover:text-gray-600"><i
+              class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form @submit.prevent="handleAddMilestone" class="space-y-3">
+          <input ref="milestoneTitleInputRef" v-model="newMilestone.title" type="text" required autofocus
+            placeholder="Tên chặng / cột mốc..."
+            class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500" />
+          <input v-model="newMilestone.due_date" type="date" required
+            class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500" />
+          <div class="flex items-center justify-end gap-2 pt-2">
+            <button @click="isAddMilestoneOpen = false" type="button"
+              class="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-700">Hủy</button>
+            <button type="submit"
+              class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-xs transition-all cursor-pointer">Thêm
+              chặng</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </transition>
+
+  <!-- Image Lightbox Modal -->
+  <div v-if="activePreviewImage"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
+    @click="activePreviewImage = null">
+    <div class="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl shadow-2xl" @click.stop>
+      <img :src="activePreviewImage" class="max-w-full max-h-[85vh] object-contain rounded-2xl" />
+      <button @click="activePreviewImage = null" type="button"
+        class="absolute top-3 right-3 w-9 h-9 bg-slate-900/80 text-white rounded-full flex items-center justify-center cursor-pointer">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- IMAGE LIGHTBOX PREVIEW MODAL -->
+  <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95"
+    enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in"
+    leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
+    <div v-if="previewModalImageUrl" @click="closeImageModal"
+      class="fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 cursor-zoom-out">
+      <div class="relative max-w-5xl max-h-[90vh] flex items-center justify-center" @click.stop>
+        <img :src="previewModalImageUrl"
+          class="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-white/20" />
+        <button type="button" @click="closeImageModal"
+          class="absolute -top-4 -right-4 w-9 h-9 rounded-full bg-white text-gray-800 hover:bg-rose-600 hover:text-white flex items-center justify-center font-bold text-base shadow-xl transition-all cursor-pointer">
+          <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
     </div>
+  </transition>
 
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed, watch, nextTick, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
@@ -1051,6 +978,99 @@ const showPersonPicker = ref(false)
 const showDateTimePicker = ref(false)
 const personPickerRef = ref(null)
 
+// ATTACHMENTS & CLIPBOARD PASTED IMAGES STATE
+const attachedFiles = ref([])
+const fileInputRef = ref(null)
+
+const triggerFileInput = () => {
+  if (fileInputRef.value) fileInputRef.value.click()
+}
+
+const addFileToAttachments = (file) => {
+  if (!file) return
+  const isImage = file.type.startsWith('image/')
+  const preview = isImage ? URL.createObjectURL(file) : null
+  attachedFiles.value.push({
+    file,
+    name: file.name,
+    type: file.type,
+    isImage,
+    preview
+  })
+}
+
+const onFileSelected = (e) => {
+  const files = e.target.files
+  if (!files || files.length === 0) return
+  Array.from(files).forEach(f => addFileToAttachments(f))
+  e.target.value = ''
+}
+
+const removeAttachment = (index) => {
+  const item = attachedFiles.value[index]
+  if (item && item.preview) {
+    URL.revokeObjectURL(item.preview)
+  }
+  attachedFiles.value.splice(index, 1)
+}
+
+const onTextareaPaste = (e) => {
+  const clipboardData = e.clipboardData || window.clipboardData
+  if (!clipboardData || !clipboardData.items) return
+
+  const items = clipboardData.items
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type.indexOf('image') !== -1) {
+      const file = items[i].getAsFile()
+      if (file) {
+        const pasteName = `pasted_image_${Date.now()}.png`
+        const renamedFile = new File([file], pasteName, { type: file.type })
+        addFileToAttachments(renamedFile)
+      }
+    }
+  }
+}
+
+// IMAGE LIGHTBOX PREVIEW MODAL STATE & HANDLERS
+const previewModalImageUrl = ref(null)
+
+const openImageModal = (url) => {
+  if (url) previewModalImageUrl.value = url
+}
+
+const closeImageModal = () => {
+  previewModalImageUrl.value = null
+}
+
+const handleActivityContainerClick = (e) => {
+  if (!e || !e.target) return
+  const el = e.target
+
+  // Check if clicked on an image preview badge or its child (icon inside the badge)
+  const badgeEl = el.closest('[data-img-src]')
+  if (badgeEl) {
+    e.stopPropagation()
+    e.preventDefault()
+    try {
+      const encodedSrc = badgeEl.getAttribute('data-img-src')
+      const src = decodeURIComponent(atob(encodedSrc))
+      if (src) openImageModal(src)
+    } catch (err) {
+      console.warn('Could not decode image src:', err)
+    }
+    return
+  }
+
+  // Fallback: if an actual <img> tag is clicked (e.g. in Hú Hú preview)
+  if (el.tagName === 'IMG') {
+    const src = el.getAttribute('src')
+    if (src && !el.classList.contains('rounded-full')) {
+      e.stopPropagation()
+      openImageModal(src)
+    }
+  }
+}
+
 const toggleInlineForm = () => {
   isInlineFormOpen.value = !isInlineFormOpen.value
   if (isInlineFormOpen.value) {
@@ -1061,9 +1081,10 @@ const toggleInlineForm = () => {
     newStageTaskAssignee.value = ''
     showPersonPicker.value = false
     showDateTimePicker.value = false
+    attachedFiles.value = []
     if (!newStageTaskMilestoneId.value || isStageCompleted(effectiveMilestones.value.find(m => m.id === newStageTaskMilestoneId.value))) {
-      newStageTaskMilestoneId.value = (selectedMilestone.value && !selectedMilestone.value.is_completed) 
-        ? selectedMilestone.value.id 
+      newStageTaskMilestoneId.value = (selectedMilestone.value && !selectedMilestone.value.is_completed)
+        ? selectedMilestone.value.id
         : (activeTargetMilestones.value[0]?.id || null)
     }
     nextTick(() => {
@@ -1084,12 +1105,65 @@ const removeVietnameseAccents = (str) => {
 
 const formatTitleWithMentions = (titleText) => {
   if (!titleText) return ''
-  let escaped = String(titleText)
+  let text = String(titleText)
+
+  // Collect all raw HTML fragments to protect from escaping
+  const protectedBlocks = []
+  const protect = (html) => {
+    const idx = protectedBlocks.length
+    protectedBlocks.push(html)
+    return `__BADGE_${idx}__`
+  }
+
+  // 1) Replace <img> tags with clickable green image badge
+  text = text.replace(/<img[^>]+src="([^"]*)"[^>]*>/gi, (match, src) => {
+    let fileName = 'Ảnh đính kèm'
+    if (!src.startsWith('data:')) {
+      const urlParts = src.split('/')
+      const lastPart = urlParts[urlParts.length - 1]?.split('?')[0]
+      if (lastPart && lastPart.length > 0) fileName = decodeURIComponent(lastPart)
+    }
+    const displayName = fileName.length > 22 ? fileName.substring(0, 19) + '...' : fileName
+    const encodedSrc = btoa(encodeURIComponent(src))
+    return `__ATTACH__<span class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-bold text-emerald-700 cursor-pointer hover:bg-emerald-100 transition-colors" data-img-src="${encodedSrc}" title="Nhấn để xem ảnh phóng to"><i class="fa-solid fa-image text-emerald-500"></i> ${displayName} <i class="fa-solid fa-eye text-emerald-400 text-[10px]"></i></span>__/ATTACH__`
+  })
+
+  // 2) Replace file attachment spans with green file badges
+  text = text.replace(/<span[^>]*>📎\s*Tệp đính kèm:\s*([^<]+)<\/span>/gi, (match, fileName) => {
+    const trimmedName = fileName.trim()
+    const displayName = trimmedName.length > 22 ? trimmedName.substring(0, 19) + '...' : trimmedName
+    return `__ATTACH__<span class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-bold text-emerald-700" title="Tệp: ${trimmedName}"><i class="fa-solid fa-paperclip text-emerald-500"></i> ${displayName} <i class="fa-solid fa-download text-emerald-400 text-[10px]"></i></span>__/ATTACH__`
+  })
+
+  // 3) Strip all <br/> tags between consecutive attachments, and group them
+  // Remove <br> tags that sit right before/between __ATTACH__ markers
+  text = text.replace(/(<br\s*\/?>)+\s*(__ATTACH__)/gi, '$2')
+  text = text.replace(/(__\/ATTACH__)\s*(<br\s*\/?>)+\s*(__ATTACH__)/gi, '$1 $3')
+
+  // Wrap the entire attachment group in a flex container
+  // Find the first __ATTACH__ and last __/ATTACH__ and wrap them
+  const firstAttach = text.indexOf('__ATTACH__')
+  if (firstAttach !== -1) {
+    const lastAttachEnd = text.lastIndexOf('__/ATTACH__') + '__/ATTACH__'.length
+    const before = text.substring(0, firstAttach)
+    const attachGroup = text.substring(firstAttach, lastAttachEnd)
+    const after = text.substring(lastAttachEnd)
+    // Clean up markers and wrap in flex container
+    const cleanedGroup = attachGroup.replace(/__ATTACH__|__\/ATTACH__/g, '')
+    text = before + protect('<div class="flex flex-wrap items-center gap-1.5 mt-1.5">' + cleanedGroup + '</div>') + after
+  }
+
+  // 4) Protect remaining <br> tags
+  text = text.replace(/<br\s*\/?>/gi, () => protect('<br/>'))
+
+  // 5) HTML-escape the remaining text
+  let escaped = text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
 
+  // 6) Format @mentions
   const userList = (users && users.value) ? users.value : []
   if (userList && userList.length > 0) {
     const sortedUsers = [...userList].sort((a, b) => (b.name ? b.name.length : 0) - (a.name ? a.name.length : 0))
@@ -1101,9 +1175,12 @@ const formatTitleWithMentions = (titleText) => {
       }
     })
   }
-
-  // Fallback for single-word @mentions not already matched inside HTML tags
   escaped = escaped.replace(/@([^\s@,.:;!?()\n]+)(?![^<]*>|[^<>]*<\/span>)/g, '<span class="text-emerald-600 font-extrabold">@$1</span>')
+
+  // 7) Restore all protected HTML blocks
+  protectedBlocks.forEach((block, idx) => {
+    escaped = escaped.replace(`__BADGE_${idx}__`, block)
+  })
 
   return escaped
 }
@@ -1137,7 +1214,7 @@ const mentionIndex = ref(0)
 const formattedInputTitle = computed(() => {
   if (!newStageTaskTitle.value) return ''
   let text = newStageTaskTitle.value
-  
+
   // Escape HTML special characters
   text = text
     .replace(/&/g, '&amp;')
@@ -1146,7 +1223,7 @@ const formattedInputTitle = computed(() => {
 
   // Sort users by name length descending so multi-word names take priority
   const sortedUsers = [...users.value].sort((a, b) => (b.name || '').length - (a.name || '').length)
-  
+
   // Replace matching @User Full Name with green text span
   sortedUsers.forEach(u => {
     if (u && u.name) {
@@ -1196,7 +1273,7 @@ const autoDetectAssigneeFromText = (text) => {
 
 const onTitleInput = (e) => {
   const text = newStageTaskTitle.value || ''
-  
+
   // 1. Parse Vietnamese date & time
   const parsedDate = parseVietnameseDateFromText(text)
   if (parsedDate) {
@@ -1256,7 +1333,7 @@ const onTitleKeydown = (e) => {
 const selectMentionUser = (user) => {
   if (!user) return
   newStageTaskAssignee.value = String(user.id)
-  
+
   const text = newStageTaskTitle.value
   const cursorPos = stageTaskTitleInputRef.value?.selectionStart || text.length
   const textBeforeCursor = text.substring(0, cursorPos)
@@ -1322,10 +1399,18 @@ const openEditStageTaskForm = (task) => {
   if (!task) return
   if (isTaskInDoneStage(task)) return
   editingTaskId.value = task.id
-  newStageTaskTitle.value = task.title || ''
+  // Strip HTML tags (images, file badges, line breaks) for clean text editing
+  let cleanTitle = (task.title || '')
+    .replace(/<br\s*\/?>/gi, '\n')                          // <br/> → newline
+    .replace(/<img[^>]*>/gi, '')                             // remove <img> tags
+    .replace(/<span[^>]*>📎\s*Tệp đính kèm:\s*[^<]*<\/span>/gi, '') // remove file badge spans
+    .replace(/<[^>]+>/g, '')                                 // remove any remaining HTML tags
+    .replace(/\n{3,}/g, '\n\n')                              // collapse excessive newlines
+    .trim()
+  newStageTaskTitle.value = cleanTitle
   newStageTaskAssignee.value = task.assignee_id ? String(task.assignee_id) : ''
   newStageTaskMilestoneId.value = task.milestone_id || (selectedMilestone.value ? selectedMilestone.value.id : (effectiveMilestones.value[0]?.id || null))
-  
+
   const parsed = parseDateTimeStrings(task.due_date || task.created_at)
   newStageTaskDueDate.value = parsed.date
   newStageTaskDueTime.value = parsed.time
@@ -1350,13 +1435,47 @@ const allProjectCards = computed(() => {
   })
 })
 
-// DISPLAYED CARDS: ALL CARDS BY DEFAULT, OR FILTERED BY MILESTONE WHEN A MILESTONE IS CLICKED!
-const displayedCards = computed(() => {
+// CARD PAGINATION & LOAD MORE STATE (MAX 15 INITIAL CARDS)
+const visibleCardCount = ref(15)
+const isLoadingMore = ref(false)
+const isViewingAllLoading = ref(false)
+
+const totalCardsForCurrentView = computed(() => {
   if (selectedMilestone.value) {
     return currentStageTasks.value
   }
   return allProjectCards.value
 })
+
+// DISPLAYED CARDS: LIMITED TO visibleCardCount (DEFAULT 15)
+const displayedCards = computed(() => {
+  return totalCardsForCurrentView.value.slice(0, visibleCardCount.value)
+})
+
+const hasMoreCards = computed(() => {
+  return totalCardsForCurrentView.value.length > displayedCards.value.length
+})
+
+const handleLoadMore = () => {
+  if (isLoadingMore.value) return
+  isLoadingMore.value = true
+  setTimeout(() => {
+    visibleCardCount.value += 15
+    isLoadingMore.value = false
+  }, 350)
+}
+
+const handleViewAll = () => {
+  if (isViewingAllLoading.value) return
+  isViewingAllLoading.value = true
+  if (selectedMilestone.value) {
+    selectedMilestone.value = null
+  }
+  setTimeout(() => {
+    visibleCardCount.value = 999999
+    isViewingAllLoading.value = false
+  }, 400)
+}
 
 // TASK CARD COLOR DEFINITIONS MATCHING IMAGE 2 EXACTLY
 const getTaskCardBgColor = (task) => {
@@ -1385,21 +1504,37 @@ const getTaskCardIcon = (task) => {
 }
 
 const getAssigneeAvatar = (task) => {
-  if (!task || !task.assignee_id) return null
+  if (!task) return null
   if (task.assignee?.avatar) return task.assignee.avatar
-  if (users.value) {
+  if (task.assignee_id && users.value) {
     const u = users.value.find(user => user.id == task.assignee_id || String(user.id) === String(task.assignee_id))
     if (u?.avatar) return u.avatar
+  }
+  if (task.title && users.value && users.value.length > 0) {
+    const match = task.title.match(/@([^\s@,.:;!?()\n<]+)/)
+    if (match && match[1]) {
+      const mentionName = match[1].toLowerCase()
+      const u = users.value.find(user => user.name && user.name.toLowerCase() === mentionName)
+      if (u?.avatar) return u.avatar
+    }
   }
   return defaultAvatar
 }
 
 const getAssigneeDisplayName = (task) => {
-  if (!task || !task.assignee_id) return ''
+  if (!task) return ''
   if (task.assignee?.name) return task.assignee.name
-  if (users.value) {
+  if (task.assignee_id && users.value) {
     const u = users.value.find(user => user.id == task.assignee_id || String(user.id) === String(task.assignee_id))
     if (u) return u.name
+  }
+  if (task.title && users.value && users.value.length > 0) {
+    const match = task.title.match(/@([^\s@,.:;!?()\n<]+)/)
+    if (match && match[1]) {
+      const mentionName = match[1].toLowerCase()
+      const u = users.value.find(user => user.name && user.name.toLowerCase() === mentionName)
+      if (u) return u.name
+    }
   }
   return ''
 }
@@ -1426,6 +1561,55 @@ const getCreatorDisplayName = (task) => {
   return 'Người tạo'
 }
 
+// Lấy danh sách thành viên tham gia/cập nhật RIÊNG cho từng chặng
+const getAvatarsForMilestone = (stage) => {
+  if (!stage) return []
+  const msId = stage.id
+  const userMap = new Map()
+
+  const addTaskUser = (t) => {
+    if (!t) return
+    if (t.assignee && t.assignee.id) {
+      userMap.set(t.assignee.id, t.assignee)
+    } else if (t.assignee_id && users.value) {
+      const u = users.value.find(user => user.id == t.assignee_id || String(user.id) === String(t.assignee_id))
+      if (u) userMap.set(u.id, u)
+    }
+
+    if (t.creator && t.creator.id) {
+      userMap.set(t.creator.id, t.creator)
+    } else if (t.created_by && users.value) {
+      const u = users.value.find(user => user.id == t.created_by || String(user.id) === String(t.created_by))
+      if (u) userMap.set(u.id, u)
+    }
+
+    if (t.title && users.value && users.value.length > 0) {
+      const matches = t.title.match(/@([^\s@,.:;!?()\n<]+)/g)
+      if (matches) {
+        matches.forEach(m => {
+          const mentionName = m.replace('@', '').toLowerCase()
+          const u = users.value.find(user => user.name && user.name.toLowerCase() === mentionName)
+          if (u) userMap.set(u.id, u)
+        })
+      }
+    }
+  }
+
+  if (stage.tasks && Array.isArray(stage.tasks)) {
+    stage.tasks.forEach(addTaskUser)
+  }
+
+  if (project.value && project.value.tasks && Array.isArray(project.value.tasks)) {
+    project.value.tasks.forEach(t => {
+      if (t && (t.milestone_id == msId || String(t.milestone_id) === String(msId))) {
+        addTaskUser(t)
+      }
+    })
+  }
+
+  return Array.from(userMap.values())
+}
+
 // REAL MILESTONES DATA DYNAMIC COMPUTATION FROM BACKEND
 const effectiveMilestones = computed(() => {
   if (project.value && project.value.milestones && Array.isArray(project.value.milestones) && project.value.milestones.length > 0) {
@@ -1447,9 +1631,9 @@ const milestoneLayout = computed(() => {
 
   const startX = 100
   const maxContainerW = 940 // Available width before "+ Thêm chặng"
-  const fixedDoneW = 155 // Spacing for completed stage to prevent text overlap
+  const fixedDoneW = 95 // Compact spacing for completed stages (Image 2)
 
-  // 1. Dynamic Paginate: Group milestones into pages where completed take 155px and active take 240px
+  // 1. Dynamic Paginate: Group milestones into pages where completed take 95px and active take 240px
   const pages = []
   let currentPage = []
   let currentW = 0
@@ -1472,7 +1656,7 @@ const milestoneLayout = computed(() => {
   const currentVisible = pages[pageIdx] || []
 
   // 2. Position items in currentVisible:
-  // Done items take fixed 155px (compacted on left), active items take remaining space evenly!
+  // Done items take fixed 95px (compacted on left), active items take remaining space evenly!
   const doneCount = currentVisible.filter(ms => isStageCompleted(ms)).length
   const activeCount = currentVisible.length - doneCount
 
@@ -1488,7 +1672,7 @@ const milestoneLayout = computed(() => {
     const leftPct = `${((peakX / 1100) * 100).toFixed(2)}%`
     const slopeX = curX + spanW * 0.25
     const slopePct = `${((slopeX / 1100) * 100).toFixed(2)}%`
-    
+
     const itemData = {
       ms,
       isDone,
@@ -1503,22 +1687,22 @@ const milestoneLayout = computed(() => {
     return itemData
   })
 
-  // 3. SVG hill paths and ridgeline
-  let dPath = `M 35 180 L ${startX} 180`
+  // 3. SVG hill paths and ridgeline (Ground level at 170px for flat completed stage alignment)
+  let dPath = `M 35 170 L ${startX} 170`
   const hillPaths = []
-  
+
   items.forEach((item) => {
     const midX = item.startX + item.spanW / 2
     if (item.isDone) {
-      dPath += ` L ${item.endX} 180`
-      hillPaths.push({ d: `M ${item.startX} 290 L ${item.startX} 180 L ${item.endX} 180 L ${item.endX} 290 Z` })
+      dPath += ` L ${item.endX} 170`
+      hillPaths.push({ d: `M ${item.startX} 290 L ${item.startX} 170 L ${item.endX} 170 L ${item.endX} 290 Z` })
     } else {
-      dPath += ` Q ${midX} -25 ${item.endX} 180`
-      hillPaths.push({ d: `M ${item.startX} 290 L ${item.startX} 180 Q ${midX} -25 ${item.endX} 180 L ${item.endX} 290 Z` })
+      dPath += ` Q ${midX} -25 ${item.endX} 170`
+      hillPaths.push({ d: `M ${item.startX} 290 L ${item.startX} 170 Q ${midX} -25 ${item.endX} 170 L ${item.endX} 290 Z` })
     }
   })
 
-  const btnX = Math.min(1040, Math.max(900, curX + 25))
+  const btnX = Math.min(1040, curX + 12)
   const btnPosPct = `${((btnX / 1100) * 100).toFixed(2)}%`
 
   return {
@@ -1537,6 +1721,54 @@ const svgDashedRidgeline = computed(() => milestoneLayout.value.ridgeline)
 const addMilestoneBtnPosition = computed(() => milestoneLayout.value.btnPos)
 const peakPositions = computed(() => milestoneLayout.value.visibleItems.map(i => i.leftPct))
 const slopePositions = computed(() => milestoneLayout.value.visibleItems.map(i => i.slopePct))
+
+const milestoneAvatarsMap = computed(() => {
+  const map = {}
+  const milestones = effectiveMilestones.value
+  if (!milestones || milestones.length === 0) return map
+
+  milestones.forEach(ms => {
+    map[ms.id] = []
+  })
+
+  let latestCompletedIdx = -1
+  milestones.forEach((ms, idx) => {
+    if (isStageCompleted(ms)) {
+      latestCompletedIdx = idx
+    }
+  })
+
+  const activeStageUsers = new Set()
+  milestones.forEach((ms, idx) => {
+    if (idx > latestCompletedIdx) {
+      getAvatarsForMilestone(ms).forEach(u => {
+        activeStageUsers.add(u.id)
+      })
+    }
+  })
+
+  milestones.forEach((ms, idx) => {
+    if (idx > latestCompletedIdx) {
+      map[ms.id] = getAvatarsForMilestone(ms)
+    } else if (idx === latestCompletedIdx) {
+      const completedStageUsers = new Map()
+      milestones.forEach((cms, cidx) => {
+        if (cidx <= latestCompletedIdx) {
+          getAvatarsForMilestone(cms).forEach(u => {
+            if (!activeStageUsers.has(u.id)) {
+              completedStageUsers.set(u.id, u)
+            }
+          })
+        }
+      })
+      map[ms.id] = Array.from(completedStageUsers.values())
+    } else {
+      map[ms.id] = []
+    }
+  })
+
+  return map
+})
 
 const slidePrev = () => {
   if (activePageDot.value > 1) activePageDot.value--
@@ -1674,7 +1906,7 @@ const targetAvatarStageId = computed(() => {
   // 2. Nếu đã có chặng hoàn thành:
   if (lastCompletedIdx !== -1) {
     const remainingMs = milestones.slice(lastCompletedIdx + 1)
-    
+
     // CHỈ chuyển sang chặng chưa hoàn thành phía sau KHI CHẶNG ĐÓ CÓ CẬP NHẬT/CÔNG VIỆC ("hú hú") > 0
     if (remainingMs.length > 0) {
       const nextWithTasks = remainingMs.find(ms => !isStageCompleted(ms) && getStageTaskCount(ms) > 0)
@@ -1772,6 +2004,7 @@ const currentStageTasksFor = (stage) => {
 
 const selectStageByMilestone = (ms) => {
   if (!ms) return
+  visibleCardCount.value = 15
   if (selectedMilestone.value && selectedMilestone.value.id === ms.id) {
     selectedMilestone.value = null
   } else {
@@ -1847,7 +2080,20 @@ const closeSelectedStage = () => {
   selectedMilestone.value = null
 }
 
+const activeAssigneeDropdownTaskId = ref(null)
 
+const toggleAssigneeDropdown = (taskId) => {
+  if (activeAssigneeDropdownTaskId.value === taskId) {
+    activeAssigneeDropdownTaskId.value = null
+  } else {
+    activeAssigneeDropdownTaskId.value = taskId
+  }
+}
+
+const selectAssigneeForTask = (task, userId) => {
+  activeAssigneeDropdownTaskId.value = null
+  handleQuickAssignTask(task, userId)
+}
 
 const handleQuickAssignTask = async (task, newUserId) => {
   const uId = newUserId ? Number(newUserId) : null
@@ -1874,21 +2120,6 @@ const handleQuickAssignTask = async (task, newUserId) => {
   }
 }
 
-const activeAssigneeDropdownTaskId = ref(null)
-
-const toggleAssigneeDropdown = (taskId) => {
-  if (activeAssigneeDropdownTaskId.value === taskId) {
-    activeAssigneeDropdownTaskId.value = null
-  } else {
-    activeAssigneeDropdownTaskId.value = taskId
-  }
-}
-
-const selectAssigneeForTask = (task, userId) => {
-  activeAssigneeDropdownTaskId.value = null
-  handleQuickAssignTask(task, userId)
-}
-
 const handleDocumentClick = (e) => {
   activeAssigneeDropdownTaskId.value = null
   if (actionMenuDropdownRef.value && e && e.target && !actionMenuDropdownRef.value.contains(e.target)) {
@@ -1898,11 +2129,31 @@ const handleDocumentClick = (e) => {
 
 // SUBMIT COMPREHENSIVE "CẬP NHẬT HOẠT ĐỘNG"
 const handleAddStageTaskSubmit = async () => {
-  if (!newStageTaskTitle.value.trim()) return
+  if (!newStageTaskTitle.value.trim() && attachedFiles.value.length === 0) return
   const pId = projectId.value
   const msId = newStageTaskMilestoneId.value || (selectedTargetMilestoneId.value && !selectedMilestone.value?.is_completed ? selectedTargetMilestoneId.value : null) || (activeTargetMilestones.value[0]?.id || null)
-  
-  const titleText = newStageTaskTitle.value.trim()
+
+  let titleText = newStageTaskTitle.value.trim()
+
+  // Process attached files & pasted images
+  if (attachedFiles.value.length > 0) {
+    for (const att of attachedFiles.value) {
+      if (att.isImage) {
+        const dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader()
+          reader.onload = (e) => resolve(e.target.result)
+          reader.readAsDataURL(att.file)
+        })
+        titleText += `<br/><img src="${dataUrl}" class="max-h-56 rounded-xl my-2 border border-gray-200 shadow-2xs block" />`
+      } else {
+        titleText += `<br/><span class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 my-1">📎 Tệp đính kèm: ${att.name}</span>`
+      }
+    }
+    // Clean up previews
+    attachedFiles.value.forEach(a => { if (a.preview) URL.revokeObjectURL(a.preview) })
+    attachedFiles.value = []
+  }
+
   const parsedDate = parseVietnameseDateFromText(titleText)
   const parsedTime = parseTimeFromText(titleText)
 
@@ -1927,7 +2178,7 @@ const handleAddStageTaskSubmit = async () => {
     const mm = String(now.getMinutes()).padStart(2, '0')
     selectedDueDate = `${yyyy}-${month}-${day} ${hh}:${mm}:00`
   }
-  
+
   const assignedUserId = newStageTaskAssignee.value ? Number(newStageTaskAssignee.value) : null
   const currentUserId = authStore.user?.id || 1
 
@@ -2036,7 +2287,7 @@ const fetchUsers = async () => {
   try {
     const res = await axios.get('/api/users')
     users.value = res.data
-  } catch (err) {}
+  } catch (err) { }
 }
 
 const fetchComments = async () => {
@@ -2045,14 +2296,14 @@ const fetchComments = async () => {
   try {
     const res = await axios.get('/api/comments', { params: { project_id: pId } })
     activityLogs.value = res.data
-  } catch (err) {}
+  } catch (err) { }
 }
 
 const fetchCustomers = async () => {
   try {
     const res = await axios.get('/api/customers')
     customers.value = res.data.customers || res.data
-  } catch (err) {}
+  } catch (err) { }
 }
 
 const loadAllData = async () => {
@@ -2178,7 +2429,7 @@ const handleDeleteTask = async (id) => {
 const canDeleteProject = computed(() => {
   if (!project.value) return false
   return (!project.value.milestones || project.value.milestones.length === 0) &&
-         (!project.value.tasks || project.value.tasks.length === 0)
+    (!project.value.tasks || project.value.tasks.length === 0)
 })
 
 const handleDeleteProject = async () => {
@@ -2208,53 +2459,66 @@ const handleUpdateProjectSubmit = async (data) => {
 }
 
 // Helpers
+const parseDateObj = (dateStr) => {
+  if (!dateStr) return null
+  if (dateStr instanceof Date) return dateStr
+
+  const str = String(dateStr).trim()
+  if (!str) return null
+
+  // 1. ISO string with T (e.g., "2026-08-12T05:42:00.000000Z")
+  if (str.includes('T')) {
+    const d = new Date(str)
+    if (!isNaN(d.getTime())) return d
+  }
+
+  // 2. MySQL format "YYYY-MM-DD HH:mm:ss" or "YYYY-MM-DD HH:mm"
+  if (str.includes(' ')) {
+    if (str.endsWith('Z') || str.includes('+')) {
+      const d = new Date(str)
+      if (!isNaN(d.getTime())) return d
+    }
+    // Convert to ISO UTC string "YYYY-MM-DDTHH:mm:ssZ"
+    const utcIso = str.replace(' ', 'T') + 'Z'
+    const utcD = new Date(utcIso)
+    if (!isNaN(utcD.getTime())) return utcD
+  }
+
+  const d = new Date(str)
+  return isNaN(d.getTime()) ? null : d
+}
+
 const formatDate = (dateStr) => {
   if (!dateStr) return ''
-  const d = new Date(dateStr)
+  const d = parseDateObj(dateStr)
+  if (!d) return ''
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
 }
 
 const formatDateShort = (dateStr) => {
   if (!dateStr) return ''
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return ''
+  const d = parseDateObj(dateStr)
+  if (!d) return ''
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
 const formatTimeOnly = (dateStr) => {
   if (!dateStr) return ''
-  
-  // Extract time from string format "YYYY-MM-DD HH:mm:ss" or "YYYY-MM-DD HH:mm"
-  if (typeof dateStr === 'string' && dateStr.includes(' ')) {
-    const parts = dateStr.split(' ')
-    if (parts[1]) {
-      const timeParts = parts[1].split(':')
-      if (timeParts.length >= 2) {
-        return `${timeParts[0].padStart(2, '0')}:${timeParts[1].padStart(2, '0')}`
-      }
-    }
-  }
-
-  // Extract time from ISO string "YYYY-MM-DDTHH:mm:ss"
-  if (typeof dateStr === 'string' && dateStr.includes('T')) {
-    const parts = dateStr.split('T')
-    if (parts[1] && !parts[1].startsWith('00:00:00')) {
-      const timeParts = parts[1].split(':')
-      if (timeParts.length >= 2) {
-        return `${timeParts[0].padStart(2, '0')}:${timeParts[1].padStart(2, '0')}`
-      }
-    }
-  }
-
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return ''
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  const d = parseDateObj(dateStr)
+  if (!d) return ''
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  return `${hh}:${mm}`
 }
 
 
 
 const handleKeydown = (e) => {
   if (e.key === 'Escape' || e.code === 'Escape') {
+    if (previewModalImageUrl.value) {
+      previewModalImageUrl.value = null
+      return
+    }
     if (isInlineFormOpen.value) {
       isInlineFormOpen.value = false
       editingTaskId.value = null
@@ -2289,15 +2553,25 @@ watch(
 
 <style scoped>
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-5px); }
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
 }
+
 .animate-float {
   animation: float 2.5s infinite ease-in-out;
 }
+
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
 .scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;

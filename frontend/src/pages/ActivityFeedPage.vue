@@ -160,7 +160,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
@@ -246,28 +246,57 @@ const parseCommentText = (content) => {
   return content
     .replace(/!\[.*?\]\((.*?)\)/g, '')
     .replace(/📎\s*\[(.*?)\]\((.*?)\)/g, '')
+    .replace(/<img[^>]*>/gi, '')
+    .replace(/<span[^>]*>📎\s*Tệp đính kèm:[^<]*<\/span>/gi, '')
+    .replace(/<br\s*\/?>/gi, ' ')
     .trim()
 }
 
 const parseCommentImages = (content) => {
   if (!content) return []
   const matches = []
-  const regex = /!\[(.*?)\]\((.*?)\)/g
+  
+  // 1. Markdown images ![name](url)
+  const mdRegex = /!\[(.*?)\]\((.*?)\)/g
   let m
-  while ((m = regex.exec(content)) !== null) {
+  while ((m = mdRegex.exec(content)) !== null) {
     matches.push({ name: m[1] || 'Hình ảnh', url: m[2] })
   }
+
+  // 2. HTML <img> tags <img src="url" ...>
+  const htmlRegex = /<img[^>]+src="([^"]*)"[^>]*>/gi
+  while ((m = htmlRegex.exec(content)) !== null) {
+    let fileName = 'Hình ảnh đính kèm'
+    const src = m[1]
+    if (src && !src.startsWith('data:')) {
+      const urlParts = src.split('/')
+      const lastPart = urlParts[urlParts.length - 1]?.split('?')[0]
+      if (lastPart) fileName = decodeURIComponent(lastPart)
+    }
+    matches.push({ name: fileName, url: src })
+  }
+
   return matches
 }
 
 const parseCommentFiles = (content) => {
   if (!content) return []
   const matches = []
-  const regex = /📎\s*\[(.*?)\]\((.*?)\)/g
+
+  // 1. Markdown files 📎 [name](url)
+  const mdRegex = /📎\s*\[(.*?)\]\((.*?)\)/g
   let m
-  while ((m = regex.exec(content)) !== null) {
+  while ((m = mdRegex.exec(content)) !== null) {
     matches.push({ name: m[1] || 'Tài liệu', url: m[2] })
   }
+
+  // 2. HTML file spans <span...>📎 Tệp đính kèm: name</span>
+  const htmlRegex = /<span[^>]*>📎\s*Tệp đính kèm:\s*([^<]+)<\/span>/gi
+  while ((m = htmlRegex.exec(content)) !== null) {
+    const rawName = m[1].trim()
+    matches.push({ name: rawName, url: '#' })
+  }
+
   return matches
 }
 
@@ -277,7 +306,20 @@ const goToProject = (projectId) => {
   }
 }
 
+const handleKeydown = (e) => {
+  if (e.key === 'Escape' || e.code === 'Escape') {
+    if (activePreviewImage.value) {
+      activePreviewImage.value = null
+    }
+  }
+}
+
 onMounted(() => {
   fetchActivities()
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
 })
 </script>

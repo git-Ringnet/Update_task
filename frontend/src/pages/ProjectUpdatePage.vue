@@ -1,11 +1,11 @@
 <template>
-  <div class="min-h-screen bg-[#f4f5f0] flex flex-col justify-between pb-24">
+  <div class="min-h-screen bg-[#f4f5f0] flex flex-col justify-between pb-24 font-sans select-none">
     <div>
       <!-- Navbar Component matching standard app header -->
       <Navbar />
 
       <!-- Main Container -->
-      <main class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main class="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Back Button -->
         <button
           @click="goBack"
@@ -43,7 +43,7 @@
             <button
               @click="handleFinishAll"
               type="button"
-              class="mt-1 text-emerald-700 hover:text-emerald-950 font-bold text-xs flex items-center gap-1.5 transition-colors focus:outline-none"
+              class="mt-1 text-emerald-700 hover:text-emerald-950 font-bold text-xs flex items-center gap-1.5 transition-colors focus:outline-none cursor-pointer"
             >
               <span>Hoàn thành tất cả</span>
               <kbd class="px-1.5 py-0.5 text-[9px] font-bold bg-gray-50 border border-emerald-200 text-emerald-800 rounded shadow-3xs select-none">F</kbd>
@@ -54,8 +54,8 @@
 
         <!-- Skeleton Loading -->
         <div v-if="isLoading" class="space-y-4">
-          <div v-for="i in 4" :key="'skel-' + i" class="bg-white rounded-2xl p-5 border border-gray-100 flex items-center gap-4 animate-pulse">
-            <div class="w-10 h-10 rounded-full bg-gray-200"></div>
+          <div v-for="i in 3" :key="'skel-' + i" class="bg-white rounded-2xl p-6 border border-gray-100 flex items-center gap-4 animate-pulse">
+            <div class="w-12 h-12 rounded-full bg-gray-200"></div>
             <div class="flex-1 space-y-2">
               <div class="h-4 bg-gray-200 w-1/4 rounded-md"></div>
               <div class="h-10 bg-gray-100 w-full rounded-xl"></div>
@@ -88,141 +88,315 @@
           </router-link>
         </div>
 
-        <!-- Selected Projects list to update -->
-        <div v-else class="space-y-3">
+        <!-- SELECTED PROJECTS LIST: EACH CARD USES HÚ HÚ FORM LAYOUT (MAX-W 720PX CENTERED MATCHING DETAIL PAGE) -->
+        <div v-else class="space-y-4 max-w-[720px] mx-auto w-full">
           <div
-            v-for="(project, index) in projects"
+            v-for="project in projects"
             :key="project.id"
-            @click="focusTextarea(project.id)"
-            class="bg-white rounded-2xl border border-gray-100 shadow-2xs hover:shadow-xs transition-shadow cursor-text"
+            class="bg-white border border-gray-200 shadow-xl rounded-2xl p-4 sm:p-5 relative ring-1 ring-black/5"
           >
-            <!-- Main row: Title + Textarea + Status -->
-            <div class="flex items-start gap-4 lg:gap-5 p-4 sm:p-5">
+            <form @submit.prevent="saveUpdate(project.id)" class="flex flex-col lg:flex-row items-stretch gap-4 lg:gap-5">
 
-              <!-- Left: Project title only (no icon, no status) -->
-              <div class="flex-shrink-0 w-36 sm:w-44 min-w-0 pt-1.5 select-none">
-                <div class="font-extrabold text-gray-900 text-sm leading-snug font-heading break-words min-w-0">
+              <!-- LEFT SECTION: MỤC TIÊU HƯỚNG ĐẾN (CHẶNG CHƯA HOÀN THÀNH CỦA DỰ ÁN) -->
+              <div class="flex flex-col gap-2 lg:pr-5 lg:border-r lg:border-gray-200 flex-shrink-0 min-w-[240px]">
+                <!-- Project Title -->
+                <div class="font-extrabold text-gray-900 text-sm sm:text-base font-heading truncate max-w-[220px]">
                   {{ project.title }}
                 </div>
-              </div>
 
-              <!-- Middle: Textarea input (inline, borderless style like detail page) -->
-              <div class="flex-1 min-w-0">
-                <textarea
-                  :ref="(el) => setTextareaRef(el, project.id)"
-                  v-model="updateTexts[project.id]"
-                  @input="onInputText(project.id, $event)"
-                  @paste="handlePaste(project.id, $event)"
-                  rows="1"
-                  placeholder="Nhập nội dung cập nhật hoạt động hôm nay... (Ctrl+V để dán ảnh)"
-                  class="w-full bg-transparent text-sm font-bold text-gray-900 leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none border-0 min-h-[32px]"
-                  @keydown.enter.exact.prevent="saveUpdate(project.id)"
-                  @keydown.ctrl.enter.prevent="handleFinishAll"
-                ></textarea>
-              </div>
-
-              <!-- Right: Update status indicator -->
-              <div class="flex-shrink-0 text-right flex items-center justify-end gap-2 min-h-[24px] pt-1.5">
-                <template v-if="isSaved[project.id]">
-                  <span class="text-xs text-gray-400 font-semibold whitespace-nowrap">{{ savedTimes[project.id] }}</span>
-                  <i class="fa-solid fa-circle-check text-emerald-600 text-lg transition-transform scale-110"></i>
-                </template>
-                <template v-else>
-                  <span class="text-xs text-gray-400 font-medium italic flex items-center gap-1 hover:text-gray-600 transition-colors whitespace-nowrap">
-                    <span>Chưa có cập nhật</span>
-                    <i class="fa-solid fa-chevron-right text-[10px]"></i>
-                  </span>
-                </template>
-              </div>
-            </div>
-
-            <!-- Bottom bar: Attachment buttons + hints -->
-            <div class="flex items-center justify-between gap-3 flex-wrap px-4 sm:px-5 pb-3 pt-0">
-              <div class="flex items-center gap-2">
-                <!-- Hidden File Input for Images -->
-                <input 
-                  :id="'img-input-' + project.id"
-                  type="file" 
-                  accept="image/*" 
-                  multiple 
-                  class="hidden" 
-                  @change="handleFileSelect(project.id, $event, true)"
-                />
-                <label 
-                  :for="'img-input-' + project.id"
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold cursor-pointer transition-colors border border-emerald-200/60 select-none shadow-3xs"
-                >
-                  <i class="fa-solid fa-image text-emerald-600"></i>
-                  <span>Thêm hình ảnh</span>
-                </label>
-
-                <!-- Hidden File Input for Documents -->
-                <input 
-                  :id="'file-input-' + project.id"
-                  type="file" 
-                  accept="*" 
-                  multiple 
-                  class="hidden" 
-                  @change="handleFileSelect(project.id, $event, false)"
-                />
-                <label 
-                  :for="'file-input-' + project.id"
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer transition-colors border border-slate-200 select-none shadow-3xs"
-                >
-                  <i class="fa-solid fa-paperclip text-slate-500"></i>
-                  <span>Đính kèm file</span>
-                </label>
-              </div>
-
-              <div class="text-[11px] text-gray-400 font-bold select-none flex items-center gap-1.5">
-                <i class="fa-regular fa-lightbulb text-emerald-600 text-[13px]"></i>
-                <span>Enter để lưu riêng, Ctrl + Enter để lưu tất cả</span>
-              </div>
-            </div>
-
-            <!-- Attached Files Preview Grid -->
-            <div v-if="attachedFiles[project.id]?.length > 0" class="flex items-center gap-2.5 flex-wrap px-4 sm:px-5 pb-4 pt-1 border-t border-gray-100 mx-4 sm:mx-5">
-              <div 
-                v-for="(file, fIdx) in attachedFiles[project.id]" 
-                :key="fIdx"
-                class="relative group"
-              >
-                <!-- Image Preview Thumbnail -->
-                <div v-if="file.isImage" class="relative w-16 h-16 rounded-xl overflow-hidden border border-gray-200 shadow-3xs group">
-                  <img :src="file.url" class="w-full h-full object-cover" />
-                  <button 
-                    @click="removeAttachment(project.id, fIdx)"
-                    type="button" 
-                    class="absolute top-1 right-1 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px] shadow-md hover:bg-rose-600 transition-colors cursor-pointer"
-                    title="Xóa hình ảnh"
-                  >
-                    <i class="fa-solid fa-xmark"></i>
-                  </button>
+                <div class="flex items-center gap-1 text-[11px] font-extrabold text-gray-500 tracking-wider uppercase font-sans">
+                  <span>MỤC TIÊU HƯỚNG ĐẾN</span>
+                  <i class="fa-regular fa-circle-question text-gray-400 text-xs" title="Chọn chặng mục tiêu hướng đến cho cập nhật"></i>
                 </div>
 
-                <!-- Document File Pill -->
-                <div v-else class="flex items-center gap-2 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 shadow-3xs">
-                  <i class="fa-solid fa-file-lines text-emerald-600"></i>
-                  <span class="max-w-[120px] truncate">{{ file.name }}</span>
-                  <span class="text-[10px] text-gray-400">({{ formatFileSize(file.size) }})</span>
-                  <button 
-                    @click="removeAttachment(project.id, fIdx)"
-                    type="button" 
-                    class="text-gray-400 hover:text-rose-500 ml-1 cursor-pointer"
-                    title="Xóa file"
-                  >
-                    <i class="fa-solid fa-xmark"></i>
+                <!-- IF <= 3 ACTIVE STAGES: DISPLAY STAGE BUTTONS SIDE BY SIDE -->
+                <div v-if="getActiveMilestonesForProject(project).length <= 3 && getActiveMilestonesForProject(project).length > 0" class="flex items-center gap-2">
+                  <div v-for="ms in getActiveMilestonesForProject(project)" :key="ms.id"
+                    @click="selectedMilestoneMap[project.id] = ms.id"
+                    class="flex flex-col items-center justify-between p-2 rounded-xl border transition-all cursor-pointer select-none min-w-[72px] sm:min-w-[84px] h-[78px]"
+                    :class="selectedMilestoneMap[project.id] === ms.id
+                      ? 'bg-rose-50/70 border-rose-200 text-rose-600 shadow-2xs'
+                      : 'bg-white border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'">
+                    <!-- Circle with task count -->
+                    <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-colors"
+                      :class="selectedMilestoneMap[project.id] === ms.id
+                        ? 'border-2 border-rose-500 bg-white text-rose-600'
+                        : 'border border-gray-300 bg-white text-gray-700'">
+                      {{ getMilestoneTaskCount(ms) }}
+                    </div>
+
+                    <!-- Stage Name -->
+                    <span class="text-[10px] font-black tracking-tight text-center uppercase leading-tight line-clamp-2 mt-0.5"
+                      :class="selectedMilestoneMap[project.id] === ms.id ? 'text-gray-900 font-extrabold' : 'text-gray-600'">
+                      {{ ms.title }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- IF > 3 ACTIVE STAGES: DROPDOWN SELECTOR -->
+                <div v-else-if="getActiveMilestonesForProject(project).length > 3" class="w-full">
+                  <select v-model="selectedMilestoneMap[project.id]"
+                    class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors cursor-pointer">
+                    <option v-for="ms in getActiveMilestonesForProject(project)" :key="ms.id" :value="ms.id">
+                      🚩 {{ ms.title }} ({{ getMilestoneTaskCount(ms) }})
+                    </option>
+                  </select>
+                </div>
+
+                <!-- IF 0 ACTIVE STAGES: SHOW WARNING & QUICK ADD STAGE BUTTON / INLINE FORM -->
+                <div v-else class="flex flex-col gap-2">
+                  <div class="text-[11px] text-amber-800 font-bold bg-amber-50 border border-amber-200/80 rounded-xl p-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-500 text-xs flex-shrink-0"></i>
+                    <span>Dự án chưa có chặng mục tiêu.</span>
+                  </div>
+
+                  <!-- Button to trigger inline add stage form -->
+                  <button v-if="activeAddStageProjectId !== project.id"
+                    type="button"
+                    @click="openQuickAddStage(project.id)"
+                    class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    <span>+ Thêm chặng mới</span>
                   </button>
+
+                  <!-- INLINE QUICK ADD STAGE FORM -->
+                  <div v-if="activeAddStageProjectId === project.id" class="p-2.5 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-2 animate-fade-in-up">
+                    <div class="text-[10px] font-extrabold text-emerald-800 uppercase flex items-center justify-between">
+                      <span>Tạo chặng mới</span>
+                      <button type="button" @click="activeAddStageProjectId = null" class="text-gray-400 hover:text-rose-600">
+                        <i class="fa-solid fa-xmark"></i>
+                      </button>
+                    </div>
+                    <input
+                      :ref="(el) => setStageTitleInputRef(el, project.id)"
+                      v-model="newStageTitleMap[project.id]"
+                      type="text"
+                      placeholder="Tên chặng..."
+                      class="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500"
+                      @keydown.enter.prevent="quickCreateStage(project.id)"
+                    />
+                    <input
+                      v-model="newStageDueDateMap[project.id]"
+                      type="date"
+                      class="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500"
+                    />
+                    <div class="flex items-center justify-end gap-1.5 pt-0.5">
+                      <button
+                        type="button"
+                        @click="activeAddStageProjectId = null"
+                        class="px-2 py-1 text-xs font-bold text-gray-500 hover:text-gray-700"
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        type="button"
+                        @click="quickCreateStage(project.id)"
+                        :disabled="isCreatingStageMap[project.id]"
+                        class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-lg shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        {{ isCreatingStageMap[project.id] ? 'Đang tạo...' : 'Tạo chặng' }}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+
+              <!-- RIGHT SECTION: USER AVATAR + TEXTAREA + ATTACHMENTS & SUBMIT BUTTON -->
+              <div class="flex-1 flex flex-col justify-between gap-2 min-w-0 relative">
+
+                <!-- TOP ROW: USER AVATAR + TEXTAREA INPUT -->
+                <div class="flex items-start gap-3 min-w-0">
+                  <img :src="currentUser.avatar || defaultAvatar"
+                    class="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-gray-200 shadow-2xs flex-shrink-0 mt-0.5"
+                    :title="currentUser.name" />
+
+                  <!-- Textarea input -->
+                  <div class="flex-1 min-w-0 relative">
+                    <textarea
+                      :ref="(el) => setTextareaRef(el, project.id)"
+                      v-model="updateTexts[project.id]"
+                      @input="onInputText(project.id, $event)"
+                      @keydown="onTextareaKeydown(project.id, $event)"
+                      @paste="handlePaste(project.id, $event)"
+                      rows="1"
+                      placeholder="Chia sẻ cập nhật với team... (Gõ @ để nhắc tên, 'ngày mai', 'hôm nay' để đặt ngày)"
+                      class="w-full bg-transparent text-sm sm:text-base font-bold text-gray-900 leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none m-0 border-0"
+                    ></textarea>
+
+                    <!-- MENTION DROPDOWN POPUP -->
+                    <div v-if="activeMentionProjectId === project.id && showMentionDropdown && filteredUsersForMention.length > 0"
+                      class="absolute left-0 top-full mt-1 z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-2xl py-1 text-gray-800 ring-1 ring-black/5 animate-fade-in-up">
+                      <div class="px-3 py-1 text-[10px] uppercase font-bold text-gray-400 border-b border-gray-100 mb-1 flex items-center justify-between">
+                        <span>Gắn thẻ thành viên</span>
+                        <span class="text-[9px] text-emerald-600 font-extrabold">↑↓ Enter</span>
+                      </div>
+                      <button v-for="(u, idx) in filteredUsersForMention" :key="u.id" type="button"
+                        @mousedown.prevent
+                        @click="selectMentionUser(project.id, u)"
+                        class="w-full px-3 py-2 flex items-center gap-2.5 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left cursor-pointer"
+                        :class="{ 'bg-emerald-50 text-emerald-800 font-bold': idx === mentionIndex }">
+                        <img :src="u.avatar || defaultAvatar" class="w-6 h-6 rounded-full object-cover border border-gray-200" />
+                        <div class="flex flex-col min-w-0 flex-1">
+                          <span class="truncate font-bold">{{ u.name }}</span>
+                          <span class="text-[10px] text-gray-400 truncate">@{{ u.name }}</span>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ATTACHED FILES & PASTED IMAGES PREVIEW BAR -->
+                <div v-if="attachedFiles[project.id]?.length > 0" class="w-full flex items-center gap-2 overflow-x-auto py-1 border-t border-gray-100 custom-scrollbar">
+                  <div v-for="(file, fIdx) in attachedFiles[project.id]" :key="fIdx" class="relative group flex-shrink-0">
+                    <!-- Image Thumbnail -->
+                    <div v-if="file.isImage"
+                      @click="openImageModal(file.url)"
+                      class="w-14 h-14 rounded-xl border border-gray-200 overflow-hidden bg-gray-100 shadow-2xs relative cursor-pointer hover:opacity-90 group transition-all"
+                      title="Nhấn để xem ảnh phóng to">
+                      <img :src="file.url" class="w-full h-full object-cover" />
+                      <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs">
+                        <i class="fa-solid fa-eye"></i>
+                      </div>
+                      <button type="button" @click.stop="removeAttachment(project.id, fIdx)"
+                        class="absolute top-0.5 right-0.5 w-4.5 h-4.5 rounded-full bg-black/60 hover:bg-rose-600 text-white flex items-center justify-center text-[10px] transition-colors z-10"
+                        title="Xóa hình ảnh">
+                        <i class="fa-solid fa-xmark"></i>
+                      </button>
+                    </div>
+
+                    <!-- File Pill -->
+                    <div v-else class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 max-w-[200px]">
+                      <i class="fa-solid fa-file text-gray-500"></i>
+                      <span class="truncate">{{ file.name }}</span>
+                      <button type="button" @click="removeAttachment(project.id, fIdx)" class="text-gray-400 hover:text-rose-600 transition-colors ml-1" title="Xóa file">
+                        <i class="fa-solid fa-xmark text-xs"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- BOTTOM ROW: Attachment left, Person + Date + Submit right -->
+                <div class="flex items-center justify-between gap-2 pt-0.5 flex-wrap">
+
+                  <!-- LEFT: Attachment File / Image Button -->
+                  <div class="flex items-center gap-1.5">
+                    <input
+                      :id="'file-input-' + project.id"
+                      type="file"
+                      multiple
+                      accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
+                      class="hidden"
+                      @change="handleFileSelect(project.id, $event)"
+                    />
+                    <label
+                      :for="'file-input-' + project.id"
+                      class="inline-flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none shadow-3xs bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-500 w-9 h-9"
+                      title="Đính kèm tệp / ảnh (hoặc Ctrl+V dán ảnh từ bộ nhớ tạm)"
+                    >
+                      <i class="fa-solid fa-paperclip text-sm"></i>
+                    </label>
+                  </div>
+
+                  <!-- RIGHT: Status + Person Picker + Date Picker + Submit Button -->
+                  <div class="flex items-center gap-2">
+                    <!-- Status indicator -->
+                    <template v-if="isSaved[project.id]">
+                      <span class="text-xs text-gray-400 font-semibold whitespace-nowrap">{{ savedTimes[project.id] }}</span>
+                      <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
+                    </template>
+
+                    <!-- Person picker button -->
+                    <div class="relative">
+                      <button type="button" @click="toggleProjectPersonPicker(project.id)"
+                        class="inline-flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none shadow-3xs"
+                        :class="assigneeMap[project.id] ? 'bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-700 px-3 py-1.5' : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 w-9 h-9'"
+                        title="Chọn người phụ trách">
+                        <i class="fa-regular fa-user text-sm"></i>
+                        <span v-if="assigneeMap[project.id]">@{{ getAssigneeName(assigneeMap[project.id]) }}</span>
+                      </button>
+
+                      <div v-if="activePersonPickerProjectId === project.id"
+                        class="absolute right-0 bottom-full mb-2 z-50 w-56 bg-white border border-gray-200 rounded-xl shadow-xl py-1 max-h-52 overflow-y-auto ring-1 ring-black/5">
+                        <div class="px-3 py-1 text-[10px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1">
+                          Chọn người phụ trách
+                        </div>
+                        <button v-if="assigneeMap[project.id]" type="button" @click="assigneeMap[project.id] = null; activePersonPickerProjectId = null"
+                          class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-rose-50 text-rose-500 transition-colors text-left">
+                          <i class="fa-solid fa-xmark text-xs"></i><span>Bỏ chọn</span>
+                        </button>
+                        <button v-for="u in usersList" :key="u.id" type="button"
+                          @click="assigneeMap[project.id] = u.id; activePersonPickerProjectId = null"
+                          class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left"
+                          :class="{ 'bg-emerald-50 text-emerald-800 font-bold': u.id === assigneeMap[project.id] }">
+                          <img :src="u.avatar || defaultAvatar" class="w-5 h-5 rounded-full object-cover border border-gray-200" />
+                          <span class="truncate flex-1">{{ u.name }}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Date & Time picker button -->
+                    <div class="relative inline-flex items-center gap-1">
+                      <button type="button" @click="toggleProjectDatePicker(project.id)"
+                        class="inline-flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none shadow-3xs"
+                        :class="(dueDateMap[project.id] || dueTimeMap[project.id]) ? 'bg-blue-50 hover:bg-blue-100/80 border border-blue-200 text-blue-700 px-3 py-1.5' : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 w-9 h-9'"
+                        title="Chọn ngày & giờ">
+                        <i class="fa-regular fa-calendar-days text-sm"></i>
+                        <span v-if="dueDateMap[project.id] || dueTimeMap[project.id]">{{ formatDueDateTag(dueDateMap[project.id], dueTimeMap[project.id]) }}</span>
+                      </button>
+                      <div v-if="activeDatePickerProjectId === project.id"
+                        class="absolute right-0 bottom-full mb-2 z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-xl p-3 ring-1 ring-black/5">
+                        <div class="text-[10px] uppercase font-bold text-gray-500 mb-2">Chọn ngày & giờ</div>
+                        <div class="space-y-2">
+                          <div>
+                            <label class="text-[10px] font-bold text-gray-400 block mb-1">Ngày hết hạn</label>
+                            <input type="date" v-model="dueDateMap[project.id]" class="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500" />
+                          </div>
+                          <div>
+                            <label class="text-[10px] font-bold text-gray-400 block mb-1">Giờ (hh:mm)</label>
+                            <input type="time" v-model="dueTimeMap[project.id]" class="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500" />
+                          </div>
+                        </div>
+                        <button type="button" @click="activeDatePickerProjectId = null"
+                          class="mt-3 w-full px-3 py-1.5 bg-emerald-600 text-white font-bold text-xs rounded-lg cursor-pointer hover:bg-emerald-700 transition-colors">Xong</button>
+                      </div>
+                    </div>
+
+                    <!-- Submit "Hú hú!" Button (Vô hiệu hóa khi chưa có chặng) -->
+                    <button type="submit" :disabled="getActiveMilestonesForProject(project).length === 0 || !selectedMilestoneMap[project.id] || isSaving[project.id]"
+                      class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#10b981] hover:bg-emerald-600 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                      <i class="fa-solid fa-dove text-sm"></i>
+                      <span>{{ isSaving[project.id] ? 'Đang lưu...' : 'Hú hú!' }}</span>
+                      <i class="fa-solid fa-chevron-down text-[10px] opacity-80"></i>
+                    </button>
+                  </div>
+
+                </div>
+
+              </div>
+
+            </form>
           </div>
         </div>
 
+        <!-- IMAGE LIGHTBOX PREVIEW MODAL -->
+        <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95"
+          enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in"
+          leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
+          <div v-if="previewModalImageUrl" @click="closeImageModal"
+            class="fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 cursor-zoom-out">
+            <div class="relative max-w-5xl max-h-[90vh] flex items-center justify-center" @click.stop>
+              <img :src="previewModalImageUrl"
+                class="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-white/20" />
+              <button type="button" @click="closeImageModal"
+                class="absolute -top-4 -right-4 w-9 h-9 rounded-full bg-white text-gray-800 hover:bg-rose-600 hover:text-white flex items-center justify-center font-bold text-base shadow-xl transition-all cursor-pointer">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+        </transition>
+
       </main>
     </div>
-
-
   </div>
 </template>
 
@@ -230,7 +404,6 @@
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
-import CactusLogo from '../components/CactusLogo.vue'
 import Navbar from '../components/Navbar.vue'
 
 import { useAuthStore } from '../stores/auth'
@@ -240,6 +413,8 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const toast = useToastStore()
+
+const defaultAvatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120'
 
 const goBack = () => {
   if (window.history.state && window.history.state.back) {
@@ -251,15 +426,27 @@ const goBack = () => {
 
 const currentUser = computed(() => authStore.user || {
   name: 'Minh',
-  avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=120'
+  avatar: defaultAvatar
 })
 
 // Parse selected project IDs from url query
 const selectedIds = route.query.ids ? route.query.ids.split(',') : []
 
 const projects = ref([])
+const usersList = ref([])
 const isLoading = ref(true)
 const loadError = ref(null)
+
+// IMAGE LIGHTBOX PREVIEW MODAL STATE & HANDLERS
+const previewModalImageUrl = ref(null)
+
+const openImageModal = (url) => {
+  if (url) previewModalImageUrl.value = url
+}
+
+const closeImageModal = () => {
+  previewModalImageUrl.value = null
+}
 
 // Reactive structures to store user updates
 const updateTexts = reactive({})
@@ -267,6 +454,238 @@ const attachedFiles = reactive({})
 const savedTimes = reactive({})
 const isSaved = reactive({})
 const isSaving = reactive({})
+
+// Per-project milestone, assignee, date and time maps
+const selectedMilestoneMap = reactive({})
+const assigneeMap = reactive({})
+const dueDateMap = reactive({})
+const dueTimeMap = reactive({})
+
+const activePersonPickerProjectId = ref(null)
+const activeDatePickerProjectId = ref(null)
+
+// Quick Add Stage State & Methods
+const activeAddStageProjectId = ref(null)
+const newStageTitleMap = reactive({})
+const newStageDueDateMap = reactive({})
+const isCreatingStageMap = reactive({})
+const stageTitleInputRefs = reactive({})
+
+const setStageTitleInputRef = (el, projectId) => {
+  if (el) stageTitleInputRefs[projectId] = el
+}
+
+const openQuickAddStage = (projectId) => {
+  activeAddStageProjectId.value = projectId
+  if (newStageTitleMap[projectId] === undefined) newStageTitleMap[projectId] = ''
+  if (!newStageDueDateMap[projectId]) {
+    const today = new Date()
+    const yyyy = today.getFullYear()
+    const mm = String(today.getMonth() + 1).padStart(2, '0')
+    const dd = String(today.getDate()).padStart(2, '0')
+    newStageDueDateMap[projectId] = `${yyyy}-${mm}-${dd}`
+  }
+
+  nextTick(() => {
+    if (stageTitleInputRefs[projectId]) {
+      stageTitleInputRefs[projectId].focus()
+    }
+  })
+}
+
+const quickCreateStage = async (projectId) => {
+  const title = newStageTitleMap[projectId]?.trim()
+  if (!title) {
+    toast.warning('Vui lòng nhập tên chặng!')
+    return
+  }
+
+  isCreatingStageMap[projectId] = true
+  try {
+    const res = await axios.post(`/api/projects/${projectId}/milestones`, {
+      title,
+      due_date: newStageDueDateMap[projectId] || null,
+      is_completed: false
+    })
+
+    const newMs = res.data
+    const targetProject = projects.value.find(p => p.id === projectId)
+    if (targetProject) {
+      if (!targetProject.milestones) targetProject.milestones = []
+      targetProject.milestones.push(newMs)
+    }
+
+    // Automatically select the newly created milestone
+    selectedMilestoneMap[projectId] = newMs.id
+    activeAddStageProjectId.value = null
+    newStageTitleMap[projectId] = ''
+
+    toast.success(`Đã tạo chặng "${newMs.title}" thành công!`)
+
+    nextTick(() => {
+      focusTextarea(projectId)
+    })
+  } catch (err) {
+    console.error('Lỗi khi tạo chặng mới:', err)
+    toast.error('Tạo chặng mới thất bại!')
+  } finally {
+    isCreatingStageMap[projectId] = false
+  }
+}
+
+// @Mention State & Auto-Assign Logic
+const activeMentionProjectId = ref(null)
+const showMentionDropdown = ref(false)
+const mentionQuery = ref('')
+const mentionIndex = ref(0)
+
+const removeVietnameseAccents = (str) => {
+  if (!str) return ''
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+}
+
+const filteredUsersForMention = computed(() => {
+  if (!mentionQuery.value) return usersList.value
+  const q = removeVietnameseAccents(mentionQuery.value)
+  return usersList.value.filter(u => {
+    const nameAcc = removeVietnameseAccents(u.name)
+    return nameAcc.includes(q) || u.name.toLowerCase().includes(mentionQuery.value.toLowerCase())
+  })
+})
+
+// SMART VIETNAMESE NATURAL LANGUAGE DATE PARSER
+const parseVietnameseDateFromText = (text) => {
+  if (!text) return null
+  const currentYear = new Date().getFullYear()
+  const now = new Date()
+
+  // 1. Check DD/MM or DD/MM/YYYY (e.g. 18/7, 19/5, 18/07/2026, 18-7)
+  const slashMatch = text.match(/(?:ngày\s+)?(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/i)
+  if (slashMatch) {
+    const day = parseInt(slashMatch[1], 10)
+    const month = parseInt(slashMatch[2], 10)
+    let year = slashMatch[3] ? parseInt(slashMatch[3], 10) : currentYear
+    if (year < 100) year += 2000
+
+    if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
+      const mm = String(month).padStart(2, '0')
+      const dd = String(day).padStart(2, '0')
+      return `${year}-${mm}-${dd}`
+    }
+  }
+
+  // 2. Check "ngày X tháng Y" (e.g. 17 tháng 9, ngày 17 tháng 9)
+  const textMatch = text.match(/(?:ngày\s+)?(\d{1,2})\s+tháng\s+(\d{1,2})(?:\s+năm\s+(\d{2,4}))?/i)
+  if (textMatch) {
+    const day = parseInt(textMatch[1], 10)
+    const month = parseInt(textMatch[2], 10)
+    let year = textMatch[3] ? parseInt(textMatch[3], 10) : currentYear
+    if (year < 100) year += 2000
+
+    if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
+      const mm = String(month).padStart(2, '0')
+      const dd = String(day).padStart(2, '0')
+      return `${year}-${mm}-${dd}`
+    }
+  }
+
+  // 3. Relative keywords (hôm nay, ngày mai, ngày kia)
+  const lower = text.toLowerCase()
+  if (lower.includes('hôm nay') || lower.includes('hom nay')) {
+    const yyyy = now.getFullYear()
+    const mm = String(now.getMonth() + 1).padStart(2, '0')
+    const dd = String(now.getDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+  }
+  if (lower.includes('ngày mai') || lower.includes('ngay mai')) {
+    const tomorrow = new Date(now)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const yyyy = tomorrow.getFullYear()
+    const mm = String(tomorrow.getMonth() + 1).padStart(2, '0')
+    const dd = String(tomorrow.getDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+  }
+  if (lower.includes('ngày kia') || lower.includes('ngay kia')) {
+    const afterTomorrow = new Date(now)
+    afterTomorrow.setDate(afterTomorrow.getDate() + 2)
+    const yyyy = afterTomorrow.getFullYear()
+    const mm = String(afterTomorrow.getMonth() + 1).padStart(2, '0')
+    const dd = String(afterTomorrow.getDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+  }
+
+  return null
+}
+
+// SMART VIETNAMESE NATURAL LANGUAGE TIME PARSER
+const parseTimeFromText = (text) => {
+  if (!text) return ''
+  const lower = text.toLowerCase()
+
+  const isPM = /\b(chiều|tối|đêm)\b/i.test(lower)
+  const isAM = /\b(sáng)\b/i.test(lower)
+  const isNoon = /\b(trưa)\b/i.test(lower)
+
+  const minuteMatch = lower.match(/(\d{1,2})\s*(?:h|g|:|giờ)\s*(\d{2})/)
+  if (minuteMatch) {
+    let hour = parseInt(minuteMatch[1], 10)
+    const minute = parseInt(minuteMatch[2], 10)
+
+    if ((isPM || (isNoon && hour < 12)) && hour < 12) {
+      hour += 12
+    } else if (isAM && hour === 12) {
+      hour = 0
+    }
+
+    if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+      const hh = String(hour).padStart(2, '0')
+      const mm = String(minute).padStart(2, '0')
+      return `${hh}:${mm}`
+    }
+  }
+
+  const hourMatch = lower.match(/(\d{1,2})\s*(?:h|g|:|giờ)/)
+  if (hourMatch) {
+    let hour = parseInt(hourMatch[1], 10)
+
+    if ((isPM || (isNoon && hour < 12)) && hour < 12) {
+      hour += 12
+    } else if (isAM && hour === 12) {
+      hour = 0
+    }
+
+    if (hour >= 0 && hour <= 23) {
+      const hh = String(hour).padStart(2, '0')
+      return `${hh}:00`
+    }
+  }
+
+  return ''
+}
+
+const autoDetectAssigneeFromText = (projectId, text) => {
+  if (!text || !usersList.value || usersList.value.length === 0) return
+  const matches = [...text.matchAll(/@([^\s@,.:;!?()\n]+)/g)]
+  if (matches && matches.length > 0) {
+    const lastTerm = matches[matches.length - 1][1]
+    if (lastTerm) {
+      const qAcc = removeVietnameseAccents(lastTerm)
+      const matched = usersList.value.find(u => {
+        const nameAcc = removeVietnameseAccents(u.name)
+        const parts = nameAcc.split(' ')
+        return parts.some(p => p === qAcc) || nameAcc === qAcc
+      })
+      if (matched) {
+        assigneeMap[projectId] = String(matched.id)
+      }
+    }
+  }
+}
 
 const textareaRefs = reactive({})
 
@@ -284,11 +703,104 @@ const focusTextarea = (projectId) => {
 
 const onInputText = (projectId, event) => {
   isSaved[projectId] = false
+  const text = updateTexts[projectId] || ''
   const el = event.target
   if (el) {
     el.style.height = 'auto'
     el.style.height = `${Math.max(el.scrollHeight, 32)}px`
   }
+
+  // 1. Parse Vietnamese natural language date & time
+  const parsedDate = parseVietnameseDateFromText(text)
+  if (parsedDate) {
+    dueDateMap[projectId] = parsedDate
+  }
+  const parsedTime = parseTimeFromText(text)
+  if (parsedTime) {
+    dueTimeMap[projectId] = parsedTime
+  }
+
+  // 2. Mention dropdown trigger
+  const cursorPos = el?.selectionStart || text.length
+  const textBeforeCursor = text.substring(0, cursorPos)
+  const match = textBeforeCursor.match(/@([^\s@]*)$/)
+
+  if (match) {
+    activeMentionProjectId.value = projectId
+    mentionQuery.value = match[1]
+    showMentionDropdown.value = true
+    mentionIndex.value = 0
+  } else {
+    showMentionDropdown.value = false
+  }
+
+  // 3. Auto-detect assignee if user name typed
+  autoDetectAssigneeFromText(projectId, text)
+}
+
+const onTextareaKeydown = (projectId, event) => {
+  if (activeMentionProjectId.value === projectId && showMentionDropdown.value && filteredUsersForMention.value.length > 0) {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      mentionIndex.value = (mentionIndex.value + 1) % filteredUsersForMention.value.length
+      return
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      mentionIndex.value = (mentionIndex.value - 1 + filteredUsersForMention.value.length) % filteredUsersForMention.value.length
+      return
+    } else if (event.key === 'Enter' || event.key === 'Tab') {
+      event.preventDefault()
+      const selectedUser = filteredUsersForMention.value[mentionIndex.value]
+      if (selectedUser) {
+        selectMentionUser(projectId, selectedUser)
+      }
+      return
+    } else if (event.key === 'Escape') {
+      showMentionDropdown.value = false
+      return
+    }
+  }
+
+  if (event.key === 'Enter' && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+    event.preventDefault()
+    saveUpdate(projectId)
+  }
+}
+
+const selectMentionUser = (projectId, user) => {
+  if (!user) return
+  assigneeMap[projectId] = String(user.id)
+
+  const text = updateTexts[projectId] || ''
+  const el = textareaRefs[projectId]
+  const cursorPos = el?.selectionStart || text.length
+  const textBeforeCursor = text.substring(0, cursorPos)
+  const textAfterCursor = text.substring(cursorPos)
+
+  let newPos = cursorPos
+  const match = textBeforeCursor.match(/@([^\s@]*)$/)
+  if (match) {
+    const startIndex = match.index
+    const newBefore = textBeforeCursor.substring(0, startIndex) + `@${user.name} `
+    updateTexts[projectId] = newBefore + textAfterCursor
+    newPos = newBefore.length
+  } else {
+    updateTexts[projectId] = `${text} @${user.name} `
+    newPos = updateTexts[projectId].length
+  }
+  showMentionDropdown.value = false
+
+  nextTick(() => {
+    if (el) {
+      el.style.height = 'auto'
+      el.style.height = `${Math.max(el.scrollHeight, 32)}px`
+      el.focus()
+      if (typeof el.setSelectionRange === 'function') {
+        el.setSelectionRange(newPos, newPos)
+      }
+      el.scrollTop = el.scrollHeight
+    }
+  })
 }
 
 const compressImage = (file) => {
@@ -324,7 +836,7 @@ const compressImage = (file) => {
   })
 }
 
-const handleFileSelect = async (projectId, event, isImageOnly = false) => {
+const handleFileSelect = async (projectId, event) => {
   const files = event.target.files
   if (!files || files.length === 0) return
 
@@ -365,7 +877,6 @@ const handlePaste = async (projectId, event) => {
   const imageItems = Array.from(clipboardData.items).filter(item => item.type.startsWith('image/'))
   if (imageItems.length === 0) return
 
-  // Prevent default paste behavior only when there are images
   event.preventDefault()
 
   if (!attachedFiles[projectId]) {
@@ -398,14 +909,56 @@ const removeAttachment = (projectId, fileIndex) => {
   }
 }
 
-const formatFileSize = (bytes) => {
-  if (!bytes) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+// Milestone & Person Picker Helpers
+const getActiveMilestonesForProject = (p) => {
+  if (!p || !p.milestones || !Array.isArray(p.milestones)) return []
+  return p.milestones.filter(ms => !ms.is_completed)
 }
 
+const getMilestoneTaskCount = (ms) => {
+  if (!ms) return 0
+  if (typeof ms.tasks_count === 'number') return ms.tasks_count
+  if (Array.isArray(ms.tasks)) return ms.tasks.length
+  return 0
+}
+
+const toggleProjectPersonPicker = (projectId) => {
+  if (activePersonPickerProjectId.value === projectId) {
+    activePersonPickerProjectId.value = null
+  } else {
+    activePersonPickerProjectId.value = projectId
+    activeDatePickerProjectId.value = null
+  }
+}
+
+const toggleProjectDatePicker = (projectId) => {
+  if (activeDatePickerProjectId.value === projectId) {
+    activeDatePickerProjectId.value = null
+  } else {
+    activeDatePickerProjectId.value = projectId
+    activePersonPickerProjectId.value = null
+  }
+}
+
+const getAssigneeName = (userId) => {
+  if (!userId) return ''
+  const u = usersList.value.find(item => String(item.id) === String(userId))
+  return u ? u.name : ''
+}
+
+const formatDueDateTag = (dateStr, timeStr) => {
+  if (!dateStr && !timeStr) return ''
+  let result = ''
+  if (dateStr) {
+    const parts = dateStr.split('-')
+    if (parts.length === 3) result = `${parts[2]}/${parts[1]}`
+    else result = dateStr
+  }
+  if (timeStr) {
+    result = result ? `${result} ${timeStr}` : timeStr
+  }
+  return result
+}
 
 // Compute progress indicators
 const updatedCount = computed(() => {
@@ -421,13 +974,21 @@ const progressPercentage = computed(() => {
   return (updatedCount.value / totalCount.value) * 100
 })
 
+const fetchUsers = async () => {
+  try {
+    const res = await axios.get('/api/users')
+    usersList.value = res.data || []
+  } catch (err) { }
+}
+
 const loadProjects = async () => {
   isLoading.value = true
   loadError.value = null
   try {
+    await fetchUsers()
     const res = await axios.get('/api/projects')
     const allProjects = res.data?.projects || res.data || []
-    
+
     if (!Array.isArray(allProjects)) {
       throw new Error('Dữ liệu trả về không hợp lệ')
     }
@@ -438,13 +999,18 @@ const loadProjects = async () => {
       projects.value = allProjects
     }
 
-    // Initialize state mapping
+    // Initialize state mapping & default selected milestone per project
     projects.value.forEach(p => {
       if (updateTexts[p.id] === undefined) updateTexts[p.id] = ''
       if (attachedFiles[p.id] === undefined) attachedFiles[p.id] = []
       if (savedTimes[p.id] === undefined) savedTimes[p.id] = null
       if (isSaved[p.id] === undefined) isSaved[p.id] = false
       if (isSaving[p.id] === undefined) isSaving[p.id] = false
+
+      const activeMs = getActiveMilestonesForProject(p)
+      if (!selectedMilestoneMap[p.id] && activeMs.length > 0) {
+        selectedMilestoneMap[p.id] = activeMs[0].id
+      }
     })
 
     // Auto-focus the first project's input field after DOM render
@@ -481,25 +1047,63 @@ const saveUpdate = async (projectId) => {
     return
   }
 
-  let finalContent = text
+  let titleText = text
   if (files.length > 0) {
-    const fileMarkdown = files.map(f => {
+    for (const f of files) {
       if (f.isImage) {
-        return `![${f.name}](${f.url})`
+        titleText += `<br/><img src="${f.url}" class="max-h-56 rounded-xl my-2 border border-gray-200 shadow-2xs block" />`
       } else {
-        return `📎 [${f.name}](${f.url})`
+        titleText += `<br/><span class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 my-1">📎 Tệp đính kèm: ${f.name}</span>`
       }
-    }).join('\n')
-    
-    finalContent = finalContent ? `${finalContent}\n\n${fileMarkdown}` : fileMarkdown
+    }
   }
 
+  const selectedMsId = selectedMilestoneMap[projectId] || null
+  if (!selectedMsId) {
+    toast.warning('Dự án này chưa có chặng mục tiêu! Vui lòng tạo/chọn chặng trước khi cập nhật.')
+    isSaving[projectId] = false
+    return
+  }
+  const selectedAssigneeId = assigneeMap[projectId] ? Number(assigneeMap[projectId]) : null
+  
+  let selectedDueDate = null
+  const dateVal = dueDateMap[projectId]
+  const timeVal = dueTimeMap[projectId]
+
+  if (dateVal && timeVal) {
+    selectedDueDate = `${dateVal} ${timeVal}:00`
+  } else if (dateVal) {
+    selectedDueDate = `${dateVal} 18:00:00`
+  } else if (timeVal) {
+    const now = new Date()
+    const yyyy = now.getFullYear()
+    const mm = String(now.getMonth() + 1).padStart(2, '0')
+    const dd = String(now.getDate()).padStart(2, '0')
+    selectedDueDate = `${yyyy}-${mm}-${dd} ${timeVal}:00`
+  }
+  const currentUserId = authStore.user?.id || 1
+
   try {
-    await axios.post('/api/comments', {
+    // 1. Post to /api/tasks (creates task under selected project & milestone)
+    await axios.post('/api/tasks', {
       project_id: projectId,
-      user_id: authStore.user?.id || 3,
-      content: finalContent
+      milestone_id: (selectedMsId !== null && selectedMsId !== undefined && !isNaN(Number(selectedMsId))) ? Number(selectedMsId) : null,
+      assignee_id: selectedAssigneeId,
+      title: titleText,
+      status: 'todo',
+      priority: 'medium',
+      due_date: selectedDueDate,
+      created_by: currentUserId
     })
+
+    // 2. Also post to /api/comments for activity logs
+    try {
+      await axios.post('/api/comments', {
+        project_id: projectId,
+        user_id: currentUserId,
+        content: titleText
+      })
+    } catch (cErr) { }
 
     // Set saved state
     isSaved[projectId] = true
@@ -507,7 +1111,9 @@ const saveUpdate = async (projectId) => {
     const pad = (n) => String(n).padStart(2, '0')
     savedTimes[projectId] = `${pad(now.getHours())}:${pad(now.getMinutes())}`
 
-    // Automatically navigate back to home screen when all projects are updated!
+    toast.success('Đã cập nhật hoạt động!')
+
+    // Automatically navigate back to home screen when all projects are updated
     const allSaved = projects.value.every(p => isSaved[p.id])
     if (allSaved) {
       setTimeout(() => {
@@ -523,7 +1129,6 @@ const saveUpdate = async (projectId) => {
 }
 
 const handleFinishAll = async () => {
-  // Automatically submit any unsaved updates with text or files
   const savePromises = []
   projects.value.forEach(p => {
     const text = updateTexts[p.id]?.trim() || ''
@@ -537,21 +1142,25 @@ const handleFinishAll = async () => {
     await Promise.all(savePromises)
   }
 
-  // Navigate back to home screen
   setTimeout(() => {
     router.push('/views')
   }, 400)
 }
 
-// Global keyboard shortcut listeners
 const handleGlobalKeyDown = (e) => {
-  // Ctrl + Enter or Cmd + Enter finishes all
+  if (e.key === 'Escape') {
+    if (previewModalImageUrl.value) {
+      e.preventDefault()
+      closeImageModal()
+      return
+    }
+  }
+
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
     e.preventDefault()
     handleFinishAll()
   }
 
-  // 'F' key outside input fields triggers finish all
   if (e.key === 'f' || e.key === 'F') {
     const activeEl = document.activeElement
     const isTyping = activeEl && (

@@ -454,26 +454,24 @@
             </div>
           </div>
         </section>
-
       </div>
-
     </main>
 
     <!-- Drag Selection Box -->
     <div v-if="selectionBox.visible" :style="getSelectionBoxStyle"></div>
 
-    <!-- Floating Dark Modal Bulk Option Bar at Eye Level -->
+    <!-- Floating Bulk Update Action Bar (Command Bar at TOP matching image 2) -->
     <transition
       enter-active-class="transition duration-300 ease-out"
-      enter-from-class="transform -translate-y-8 opacity-0 scale-95"
+      enter-from-class="transform -translate-y-10 opacity-0 scale-95"
       enter-to-class="transform translate-y-0 opacity-100 scale-100"
       leave-active-class="transition duration-200 ease-in"
       leave-from-class="transform translate-y-0 opacity-100 scale-100"
-      leave-to-class="transform -translate-y-8 opacity-0 scale-95"
+      leave-to-class="transform -translate-y-10 opacity-0 scale-95"
     >
       <div
         v-if="selectedProjectIds.length > 0"
-        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#fafaf7] sm:bg-white/95 backdrop-blur-md px-3.5 py-2.5 sm:px-6 sm:py-3 rounded-2xl shadow-2xl border border-gray-200/90 flex items-center gap-2.5 sm:gap-4 max-w-4xl select-none"
+        class="fixed top-20 sm:top-[88px] left-1/2 -translate-x-1/2 z-50 bg-[#fafaf7] sm:bg-white/95 backdrop-blur-md px-3.5 py-2.5 sm:px-6 sm:py-3 rounded-2xl shadow-2xl border border-gray-200/90 flex items-center gap-2.5 sm:gap-4 max-w-4xl select-none transition-all"
       >
         <!-- LEFT: COUNT BADGE & TEXT -->
         <div class="flex items-center gap-2 sm:gap-2.5">
@@ -535,7 +533,7 @@
 
           <div 
             v-if="isMobileStatusDropdownOpen" 
-            class="absolute bottom-full mb-2 left-0 bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-1.5 min-w-[135px] flex flex-col gap-1 ring-1 ring-black/5"
+            class="absolute top-full mt-2 left-0 bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-1.5 min-w-[135px] flex flex-col gap-1 ring-1 ring-black/5"
           >
             <button @click="selectBulkStatusOption('following')" type="button" class="px-2.5 py-1.5 hover:bg-amber-50 text-xs font-bold rounded-lg text-left text-gray-800 flex items-center gap-2">
               <i class="fa-solid fa-flag text-amber-500 text-xs"></i>
@@ -1588,28 +1586,57 @@ const parseCommentText = (content) => {
   return content
     .replace(/!\[.*?\]\((.*?)\)/g, '')
     .replace(/📎\s*\[(.*?)\]\((.*?)\)/g, '')
+    .replace(/<img[^>]*>/gi, '')
+    .replace(/<span[^>]*>📎\s*Tệp đính kèm:[^<]*<\/span>/gi, '')
+    .replace(/<br\s*\/?>/gi, ' ')
     .trim()
 }
 
 const parseCommentImages = (content) => {
   if (!content) return []
   const matches = []
-  const regex = /!\[(.*?)\]\((.*?)\)/g
+  
+  // 1. Markdown images ![name](url)
+  const mdRegex = /!\[(.*?)\]\((.*?)\)/g
   let m
-  while ((m = regex.exec(content)) !== null) {
+  while ((m = mdRegex.exec(content)) !== null) {
     matches.push({ name: m[1] || 'Hình ảnh', url: m[2] })
   }
+
+  // 2. HTML <img> tags <img src="url" ...>
+  const htmlRegex = /<img[^>]+src="([^"]*)"[^>]*>/gi
+  while ((m = htmlRegex.exec(content)) !== null) {
+    let fileName = 'Hình ảnh đính kèm'
+    const src = m[1]
+    if (src && !src.startsWith('data:')) {
+      const urlParts = src.split('/')
+      const lastPart = urlParts[urlParts.length - 1]?.split('?')[0]
+      if (lastPart) fileName = decodeURIComponent(lastPart)
+    }
+    matches.push({ name: fileName, url: src })
+  }
+
   return matches
 }
 
 const parseCommentFiles = (content) => {
   if (!content) return []
   const matches = []
-  const regex = /📎\s*\[(.*?)\]\((.*?)\)/g
+
+  // 1. Markdown files 📎 [name](url)
+  const mdRegex = /📎\s*\[(.*?)\]\((.*?)\)/g
   let m
-  while ((m = regex.exec(content)) !== null) {
+  while ((m = mdRegex.exec(content)) !== null) {
     matches.push({ name: m[1], url: m[2] })
   }
+
+  // 2. HTML file spans <span...>📎 Tệp đính kèm: name</span>
+  const htmlRegex = /<span[^>]*>📎\s*Tệp đính kèm:\s*([^<]+)<\/span>/gi
+  while ((m = htmlRegex.exec(content)) !== null) {
+    const rawName = m[1].trim()
+    matches.push({ name: rawName, url: '#' })
+  }
+
   return matches
 }
 

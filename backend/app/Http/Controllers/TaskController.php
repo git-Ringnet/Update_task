@@ -34,7 +34,7 @@ class TaskController extends Controller
             'milestone_id' => 'nullable|exists:milestones,id',
             'assignee_id' => 'nullable|exists:users,id',
             'created_by' => 'nullable|exists:users,id',
-            'title' => 'required|string|max:255',
+            'title' => 'required|string',
             'description' => 'nullable|string',
             'status' => 'required|in:todo,in_progress,review,done',
             'priority' => 'required|in:low,medium,high,urgent',
