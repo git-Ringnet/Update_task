@@ -142,9 +142,21 @@
               <!-- Compact Node Flag Icon + Badge (Căn thẳng hàng ngang tại top-[138px]) -->
               <div 
                 @click="selectStageByMilestone(item.ms)"
-                class="absolute top-[138px] -translate-x-1/2 flex flex-col items-center justify-center gap-1 z-20 cursor-pointer group transition-all duration-300 hover:scale-108"
+                class="absolute top-[110px] -translate-x-1/2 flex flex-col items-center justify-end gap-1 z-20 cursor-pointer group transition-all duration-300 hover:scale-108"
                 :style="{ left: item.leftPct }"
               >
+                <!-- AVATARS: HIỂN THỊ NẰM PHÍA TRÊN CỜ CHO CHẶNG HOÀN THÀNH -->
+                <div v-if="shouldShowAvatarsFor(item.ms) && stageAvatarsList.length > 0" class="flex items-center -space-x-1.5 mb-0.5">
+                  <div 
+                    v-for="u in stageAvatarsList" 
+                    :key="u.id"
+                    class="w-7 h-7 rounded-full bg-white p-0.5 shadow-sm border-2 border-emerald-500 transition-all hover:scale-115"
+                    :title="`Thành viên: ${u.name}`"
+                  >
+                    <img :src="u.avatar || defaultAvatar" class="w-full h-full rounded-full object-cover" />
+                  </div>
+                </div>
+
                 <!-- Cờ xanh hoàn thành -->
                 <div 
                   class="w-7.5 h-7.5 rounded-full border-2 border-emerald-600 bg-white text-emerald-600 flex items-center justify-center shadow-xs transition-colors group-hover:bg-emerald-50"
@@ -156,18 +168,6 @@
                 <!-- Badge số việc nằm DƯỚI cờ (Hiển thị số 0 nếu chưa có việc) -->
                 <div class="w-5.5 h-5.5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-black shadow-2xs border border-white">
                   {{ getStageTaskCount(item.ms) }}
-                </div>
-
-                <!-- AVATARS: CHỈ HIỂN THỊ TRÊN CHẶNG HOÀN THÀNH MỚI NHẤT -->
-                <div v-if="shouldShowAvatarsFor(item.ms) && stageAvatarsList.length > 0" class="flex items-center -space-x-1.5 mt-0.5">
-                  <div 
-                    v-for="u in stageAvatarsList" 
-                    :key="u.id"
-                    class="w-7 h-7 rounded-full bg-white p-0.5 shadow-sm border-2 border-emerald-500 transition-all hover:scale-115"
-                    :title="`Thành viên: ${u.name}`"
-                  >
-                    <img :src="u.avatar || defaultAvatar" class="w-full h-full rounded-full object-cover" />
-                  </div>
                 </div>
               </div>
 
@@ -208,20 +208,26 @@
                 </div>
               </div>
 
-              <!-- AVATAR ĐANG LEO SƯỜN NÚI (Chỉ hiện khi chặng này là chặng hoạt động nhận avatar) -->
+              <!-- AVATAR ĐANG LEO SƯỜN NÚI (Xếp nghiêng dọc theo đường nét đứt sườn núi) -->
               <div 
                 v-if="shouldShowAvatarsFor(item.ms) && stageAvatarsList.length > 0"
                 @click="selectStageByMilestone(item.ms)"
-                class="absolute top-[92px] -translate-x-1/2 flex items-center -space-x-2 z-25 cursor-pointer transition-all duration-300 hover:scale-110"
+                class="absolute top-[105px] -translate-x-1/2 z-25 cursor-pointer transition-all duration-300 hover:scale-105"
                 :style="{ left: item.slopePct }"
               >
-                <div 
-                  v-for="u in stageAvatarsList" 
-                  :key="u.id"
-                  class="w-8.5 h-8.5 rounded-full bg-white p-0.5 shadow-md border-2 border-emerald-500 transition-all hover:scale-115 hover:z-30 filter drop-shadow-2xs"
-                  :title="`Thành viên thực hiện ${item.ms.title}: ${u.name}`"
-                >
-                  <img :src="u.avatar || defaultAvatar" class="w-full h-full rounded-full object-cover" />
+                <div class="relative flex items-center justify-center">
+                  <div 
+                    v-for="(u, uIdx) in stageAvatarsList.slice(0, 7)" 
+                    :key="u.id || uIdx"
+                    class="absolute w-8 h-8 rounded-full bg-white p-0.5 shadow-md border-2 border-emerald-500 transition-all hover:scale-125 filter drop-shadow-2xs"
+                    :style="{
+                      transform: `translate(${(uIdx - (Math.min(stageAvatarsList.length, 7) - 1) / 2) * 20}px, ${-(uIdx - (Math.min(stageAvatarsList.length, 7) - 1) / 2) * 16}px)`,
+                      zIndex: uIdx + 1
+                    }"
+                    :title="`Thành viên thực hiện ${item.ms.title}: ${u.name}`"
+                  >
+                    <img :src="u.avatar || defaultAvatar" class="w-full h-full rounded-full object-cover" />
+                  </div>
                 </div>
               </div>
 
@@ -1649,21 +1655,46 @@ const getStageActiveUsers = (stage) => {
   return Array.from(userMap.values())
 }
 
-// LOGIC HIỂN THỊ AVATAR: Chỉ hiển thị avatar tại chặng hoàn thành mới nhất (hoặc chặng đầu tiên nếu chưa hoàn thành chặng nào)
+// LOGIC HIỂN THỊ AVATAR LEO NÚI:
+// Chuyển avatar sang chặng chưa hoàn thành tiếp theo sau chặng hoàn thành gần nhất khi có công việc/hoạt động
 const targetAvatarStageId = computed(() => {
   const milestones = effectiveMilestones.value
   if (!milestones || milestones.length === 0) return null
 
-  // Lấy các chặng đã hoàn thành theo đúng thứ tự
-  const completedMs = milestones.filter(ms => isStageCompleted(ms))
-  if (completedMs.length > 0) {
-    // Chặng hoàn thành mới nhất (nằm ở vị trí cuối trong danh sách chặng hoàn thành)
-    return completedMs[completedMs.length - 1].id
+  // 1. Tìm chỉ số của chặng đã hoàn thành cuối cùng
+  let lastCompletedIdx = -1
+  for (let i = milestones.length - 1; i >= 0; i--) {
+    if (isStageCompleted(milestones[i])) {
+      lastCompletedIdx = i
+      break
+    }
   }
 
-  // Nếu chưa có chặng nào hoàn thành, hiển thị tại chặng chưa hoàn thành đầu tiên
+  // 2. Nếu đã có chặng hoàn thành, xét các chặng phía sau chặng hoàn thành đó
+  if (lastCompletedIdx !== -1) {
+    const remainingMs = milestones.slice(lastCompletedIdx + 1)
+    if (remainingMs.length > 0) {
+      // Ưu tiên chặng chưa hoàn thành phía sau có công việc/hoạt động ("hú hú")
+      const nextWithTasks = remainingMs.find(ms => !isStageCompleted(ms) && getStageTaskCount(ms) > 0)
+      if (nextWithTasks) return nextWithTasks.id
+
+      // Nếu chưa có công việc, chọn chặng chưa hoàn thành đầu tiên ngay phía sau
+      const nextUncompleted = remainingMs.find(ms => !isStageCompleted(ms))
+      if (nextUncompleted) return nextUncompleted.id
+    }
+
+    // Nếu không còn chặng nào phía sau, chọn chặng hoàn thành cuối cùng
+    return milestones[lastCompletedIdx].id
+  }
+
+  // 3. Nếu chưa có chặng nào hoàn thành trong dự án:
+  const uncompletedWithTasks = milestones.find(ms => !isStageCompleted(ms) && getStageTaskCount(ms) > 0)
+  if (uncompletedWithTasks) return uncompletedWithTasks.id
+
   const firstUncompleted = milestones.find(ms => !isStageCompleted(ms))
-  return firstUncompleted ? firstUncompleted.id : milestones[0].id
+  if (firstUncompleted) return firstUncompleted.id
+
+  return milestones[0].id
 })
 
 const shouldShowAvatarsFor = (stage) => {
