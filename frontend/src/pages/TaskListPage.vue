@@ -500,13 +500,13 @@ const formatTitleWithMentions = (titleText) => {
       if (u && u.name) {
         const escapedName = u.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
         const regex = new RegExp(`@${escapedName}`, 'gi')
-        escaped = escaped.replace(regex, `<span class="text-emerald-600 font-extrabold">@${u.name}</span>`)
+        escaped = escaped.replace(regex, `<span class="text-emerald-600 font-bold">@${u.name}</span>`)
       }
     })
   }
 
   // Fallback for single-word @mentions not already matched inside HTML tags
-  escaped = escaped.replace(/@([^\s@,.:;!?()\n]+)(?![^<]*>|[^<>]*<\/span>)/g, '<span class="text-emerald-600 font-extrabold">@$1</span>')
+  escaped = escaped.replace(/@([^\s@,.:;!?()\n]+)(?![^<]*>|[^<>]*<\/span>)/g, '<span class="text-emerald-600 font-bold">@$1</span>')
 
   return escaped
 }

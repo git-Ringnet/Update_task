@@ -89,6 +89,17 @@ export const useAuthStore = defineStore('auth', {
         this.clearAuth()
         return null
       }
+    },
+
+    async updateProfile(profileData) {
+      const res = await axios.put('/api/me', {
+        name: profileData.name,
+        email: profileData.email,
+        avatar: profileData.avatar
+      })
+      this.user = res.data
+      localStorage.setItem('user', JSON.stringify(this.user))
+      return this.user
     }
   }
 })

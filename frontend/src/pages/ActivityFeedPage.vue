@@ -247,7 +247,9 @@ const parseCommentText = (content) => {
     .replace(/!\[.*?\]\((.*?)\)/g, '')
     .replace(/📎\s*\[(.*?)\]\((.*?)\)/g, '')
     .replace(/<img[^>]*>/gi, '')
+    .replace(/<a[^>]*>📎\s*Tệp đính kèm:[^<]*<\/a>/gi, '')
     .replace(/<span[^>]*>📎\s*Tệp đính kèm:[^<]*<\/span>/gi, '')
+    .replace(/<[^>]+>/g, '')
     .replace(/<br\s*\/?>/gi, ' ')
     .trim()
 }

@@ -1081,6 +1081,26 @@ const saveUpdate = async (projectId) => {
     const dd = String(now.getDate()).padStart(2, '0')
     selectedDueDate = `${yyyy}-${mm}-${dd} ${timeVal}:00`
   }
+
+  if (selectedDueDate) {
+    const parts = selectedDueDate.split(' ')
+    if (parts.length === 2) {
+      const dateParts = parts[0].split('-')
+      const timeParts = parts[1].split(':')
+      if (dateParts.length === 3 && timeParts.length === 3) {
+        const yyyy = parseInt(dateParts[0], 10)
+        const mm = parseInt(dateParts[1], 10) - 1
+        const dd = parseInt(dateParts[2], 10)
+        const hh = parseInt(timeParts[0], 10)
+        const min = parseInt(timeParts[1], 10)
+        const ss = parseInt(timeParts[2], 10)
+        const localDate = new Date(yyyy, mm, dd, hh, min, ss)
+        if (!isNaN(localDate.getTime())) {
+          selectedDueDate = localDate.toISOString()
+        }
+      }
+    }
+  }
   const currentUserId = authStore.user?.id || 1
 
   try {

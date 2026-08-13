@@ -101,6 +101,30 @@ class TaskController extends Controller
         $task->update($validated);
         $task->load(['project', 'assignee']);
 
+        // Update project last activity
+        Project::where('id', $task->project_id)->update(['last_activity_at' => Carbon::now()]);
+
+        // Update or create corresponding comment to show up at the top of Recent Activity
+        $comment = Comment::where('task_id', $task->id)->where('type', 'status_change')->first();
+        if ($comment) {
+            $comment->update([
+                'content' => $task->title,
+                'user_id' => auth()->id() ?? $task->created_by ?? 1,
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now()
+            ]);
+        } else {
+            Comment::create([
+                'project_id' => $task->project_id,
+                'task_id' => $task->id,
+                'user_id' => auth()->id() ?? $task->created_by ?? 1,
+                'content' => $task->title,
+                'type' => 'status_change',
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now()
+            ]);
+        }
+
         return response()->json($task);
     }
 
