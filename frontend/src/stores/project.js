@@ -14,9 +14,22 @@ export const useProjectStore = defineStore('project', {
     isLoading: false,
     customers: [],
     users: [],
+    pinningProjectIds: {},
   }),
 
   actions: {
+    reset() {
+      this.projects = []
+      this.counts = {
+        following: 0,
+        not_following: 0,
+        completed: 0,
+      }
+      this.searchQuery = ''
+      this.isLoading = false
+      this.pinningProjectIds = {}
+    },
+
     async fetchProjects(isSilent = false) {
       if (!isSilent && this.projects.length === 0) {
         this.isLoading = true
@@ -30,15 +43,26 @@ export const useProjectStore = defineStore('project', {
         }
         const res = await axios.get('/api/projects', { params })
         const rawProjects = res.data.projects || []
-        const newProjects = rawProjects.map(p => ({
+        const incoming = rawProjects.map(p => ({
           ...p,
-          is_pinned: Boolean(p.is_pinned)
+          is_pinned: Boolean(p.is_pinned),
         }))
-        
-        if (JSON.stringify(newProjects) !== JSON.stringify(this.projects)) {
-          this.projects = newProjects
-          this.sortProjects()
-        }
+
+        // Giữ trạng thái ghim local khi request pin đang chạy (tránh poll ghi đè)
+        const pendingPinState = {}
+        Object.keys(this.pinningProjectIds).forEach((id) => {
+          const local = this.projects.find(p => String(p.id) === String(id))
+          if (local) pendingPinState[id] = Boolean(local.is_pinned)
+        })
+
+        this.projects = incoming.map(p => {
+          const pending = pendingPinState[p.id] ?? pendingPinState[String(p.id)]
+          if (pending !== undefined) {
+            return { ...p, is_pinned: pending }
+          }
+          return p
+        })
+        this.sortProjects()
         this.counts = res.data.counts || this.counts
       } catch (err) {
         console.error('Failed to fetch projects:', err)
@@ -81,33 +105,40 @@ export const useProjectStore = defineStore('project', {
     },
 
     async togglePin(projectId) {
-      const project = this.projects.find(p => p.id === projectId)
+      const normalizedId = Number(projectId)
+      if (!normalizedId) return false
+
+      if (this.pinningProjectIds[normalizedId]) {
+        const existing = this.projects.find(p => Number(p.id) === normalizedId)
+        return existing ? Boolean(existing.is_pinned) : false
+      }
+
+      const project = this.projects.find(p => Number(p.id) === normalizedId)
       if (!project) return false
 
       const isCurrentlyPinned = Boolean(project.is_pinned)
       const nextState = !isCurrentlyPinned
 
-      // Instant optimistic update in 0ms
+      this.pinningProjectIds[normalizedId] = true
       project.is_pinned = nextState
       this.sortProjects()
 
       try {
-        const res = await axios.patch(`/api/projects/${projectId}/pin`)
-        if (res.data) {
-          const finalState = res.data.is_pinned !== undefined 
-            ? Boolean(res.data.is_pinned) 
-            : (res.data.project ? Boolean(res.data.project.is_pinned) : nextState)
-          
-          project.is_pinned = finalState
-          this.sortProjects()
-          return finalState
-        }
-        return project.is_pinned
+        const res = await axios.patch(`/api/projects/${normalizedId}/pin`)
+        const finalState = res.data?.is_pinned !== undefined
+          ? Boolean(res.data.is_pinned)
+          : nextState
+
+        project.is_pinned = finalState
+        this.sortProjects()
+        return finalState
       } catch (err) {
         console.error('Failed to toggle pin:', err)
         project.is_pinned = isCurrentlyPinned
         this.sortProjects()
         throw err
+      } finally {
+        delete this.pinningProjectIds[normalizedId]
       }
     },
 

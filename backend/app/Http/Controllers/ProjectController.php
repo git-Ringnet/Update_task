@@ -11,7 +11,7 @@ class ProjectController extends Controller
 {
     public function index(Request $request)
     {
-        $userId = auth()->id() ?? $request->user_id ?? \App\Models\User::first()->id ?? 1;
+        $userId = auth()->id();
 
         $query = Project::with(['customer', 'lead', 'tasks', 'milestones.tasks', 'latestComment.user'])
             ->withCount(['tasks', 'comments']);
@@ -22,7 +22,7 @@ class ProjectController extends Controller
                     $join->on('pinned_projects.project_id', '=', 'projects.id')
                          ->where('pinned_projects.user_id', '=', $userId);
                 })
-                ->orderByRaw('CASE WHEN pinned_projects.id IS NOT NULL OR projects.is_pinned = 1 THEN 1 ELSE 0 END DESC');
+                ->orderByRaw('CASE WHEN pinned_projects.id IS NOT NULL THEN 1 ELSE 0 END DESC');
         }
 
         $query->orderBy('sort_order', 'asc')
@@ -44,12 +44,7 @@ class ProjectController extends Controller
         }
 
         $projects = $query->get()->map(function ($p) use ($userId) {
-            $pivotPinned = \Illuminate\Support\Facades\DB::table('pinned_projects')
-                ->where('project_id', $p->id)
-                ->where('user_id', $userId)
-                ->exists();
-            $p->is_pinned = (bool) ($p->is_pinned || $pivotPinned);
-            return $p;
+            return $p->applyPinnedStateForUser($userId);
         });
 
         // Calculate counts based on tracking_status (NOT health)
@@ -68,6 +63,7 @@ class ProjectController extends Controller
     public function show($id)
     {
         $project = Project::with(['customer', 'lead', 'tasks.assignee', 'comments.user', 'milestones.creator', 'milestones.tasks.assignee'])->findOrFail($id);
+        $project->applyPinnedStateForUser(auth()->id());
         return response()->json($project);
     }
 
@@ -94,8 +90,21 @@ class ProjectController extends Controller
         }
 
         $validated['last_activity_at'] = Carbon::now();
+
+        $pinOnCreate = $validated['is_pinned'] ?? false;
+        unset($validated['is_pinned']);
+
         $project = Project::create($validated);
         $project->load(['customer', 'lead']);
+
+        $userId = auth()->id();
+        if ($pinOnCreate && $userId) {
+            \Illuminate\Support\Facades\DB::table('pinned_projects')->updateOrInsert(
+                ['user_id' => $userId, 'project_id' => $project->id],
+                ['created_at' => now(), 'updated_at' => now()]
+            );
+        }
+        $project->applyPinnedStateForUser($userId);
 
         // Log comment
         Comment::create([
@@ -134,26 +143,31 @@ class ProjectController extends Controller
             $validated['last_activity_at'] = Carbon::now();
         }
 
+        $userId = auth()->id();
+        $pinState = null;
+        if (array_key_exists('is_pinned', $validated)) {
+            $pinState = (bool) $validated['is_pinned'];
+            unset($validated['is_pinned']);
+        }
+
         $project->update($validated);
 
-        if (isset($validated['is_pinned'])) {
-            $userId = auth()->id() ?? $request->user_id ?? \App\Models\User::first()->id ?? null;
-            if ($userId) {
-                if ($validated['is_pinned']) {
-                    \Illuminate\Support\Facades\DB::table('pinned_projects')->updateOrInsert(
-                        ['user_id' => $userId, 'project_id' => $id],
-                        ['updated_at' => now(), 'created_at' => now()]
-                    );
-                } else {
-                    \Illuminate\Support\Facades\DB::table('pinned_projects')
-                        ->where('user_id', $userId)
-                        ->where('project_id', $id)
-                        ->delete();
-                }
+        if ($pinState !== null && $userId) {
+            if ($pinState) {
+                \Illuminate\Support\Facades\DB::table('pinned_projects')->updateOrInsert(
+                    ['user_id' => $userId, 'project_id' => $id],
+                    ['updated_at' => now(), 'created_at' => now()]
+                );
+            } else {
+                \Illuminate\Support\Facades\DB::table('pinned_projects')
+                    ->where('user_id', $userId)
+                    ->where('project_id', $id)
+                    ->delete();
             }
         }
 
         $project->load(['customer', 'lead']);
+        $project->applyPinnedStateForUser($userId);
 
         if (isset($validated['health']) && $validated['health'] !== $oldHealth) {
             $statusNames = [
@@ -215,50 +229,34 @@ class ProjectController extends Controller
 
     public function togglePin($id, Request $request)
     {
-        $project = Project::findOrFail($id);
-        $userId = auth()->id() ?? $request->user_id ?? \App\Models\User::first()->id ?? 1;
-
-        // Determine current pinned state accurately across column and pivot table
-        $currentlyPinned = (bool) $project->is_pinned;
-        if ($userId && !$currentlyPinned) {
-            $pivotExists = \Illuminate\Support\Facades\DB::table('pinned_projects')
-                ->where('user_id', $userId)
-                ->where('project_id', $id)
-                ->exists();
-            if ($pivotExists) {
-                $currentlyPinned = true;
-            }
+        $userId = auth()->id();
+        if (!$userId) {
+            return response()->json(['message' => 'Unauthorized'], 401);
         }
+
+        Project::findOrFail($id);
+
+        $currentlyPinned = \Illuminate\Support\Facades\DB::table('pinned_projects')
+            ->where('user_id', $userId)
+            ->where('project_id', $id)
+            ->exists();
 
         $newPinnedState = !$currentlyPinned;
 
-        // Sync both column and pivot table
-        $project->is_pinned = $newPinnedState;
-        $project->save();
-
-        if ($userId) {
-            if ($newPinnedState) {
-                \Illuminate\Support\Facades\DB::table('pinned_projects')->updateOrInsert(
-                    ['user_id' => $userId, 'project_id' => $id],
-                    ['created_at' => now(), 'updated_at' => now()]
-                );
-            } else {
-                \Illuminate\Support\Facades\DB::table('pinned_projects')
-                    ->where('user_id', $userId)
-                    ->where('project_id', $id)
-                    ->delete();
-            }
-        }
-
-        // Complete purge from pivot table if unpinned
-        if (!$newPinnedState) {
+        if ($newPinnedState) {
+            \Illuminate\Support\Facades\DB::table('pinned_projects')->updateOrInsert(
+                ['user_id' => $userId, 'project_id' => $id],
+                ['created_at' => now(), 'updated_at' => now()]
+            );
+        } else {
             \Illuminate\Support\Facades\DB::table('pinned_projects')
+                ->where('user_id', $userId)
                 ->where('project_id', $id)
                 ->delete();
         }
 
         $project = Project::with(['customer', 'lead'])->findOrFail($id);
-        $project->is_pinned = $newPinnedState;
+        $project->setAttribute('is_pinned', $newPinnedState);
 
         return response()->json([
             'message' => 'Cập nhật ghim thành công',

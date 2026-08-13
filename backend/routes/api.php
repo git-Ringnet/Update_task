@@ -176,6 +176,20 @@ Route::middleware('auth.token')->group(function () {
         return response()->json(auth()->user());
     });
 
+    Route::put('/me', function (Request $request) {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'avatar' => 'nullable|string',
+        ]);
+        $user->update($validated);
+        return response()->json($user);
+    });
+
     Route::post('/logout', function (Request $request) {
         $user = auth()->user();
         if ($user) {

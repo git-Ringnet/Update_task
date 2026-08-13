@@ -155,11 +155,68 @@
             </button>
           </div>
 
-          <form @submit.prevent="handleSaveProfile" class="space-y-4">
-            <div class="flex justify-center mb-2">
-              <img
-                :src="editForm.avatar"
-                class="w-20 h-20 rounded-full object-cover border-2 border-emerald-400 shadow-md"
+          <form @submit.prevent="cropAvatarAndSave" class="space-y-4">
+            <div class="flex flex-col items-center gap-3">
+              <!-- circular crop boundary -->
+              <div 
+                class="relative w-32 h-32 rounded-full overflow-hidden border-2 border-emerald-400 shadow-md group cursor-pointer select-none bg-gray-50 flex items-center justify-center"
+                @click="triggerAvatarFileSelect"
+                title="Nhấp để chọn ảnh từ thiết bị"
+              >
+                <!-- overlay -->
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[10px] font-bold transition-opacity z-10">
+                  <i class="fa-solid fa-camera text-base mb-1"></i>
+                  <span>Chọn ảnh</span>
+                </div>
+                
+                <!-- crop preview image -->
+                <img 
+                  v-if="cropImageSrc" 
+                  :src="cropImageSrc"
+                  :style="{ transform: `translate(${avatarOffsetX}px, ${avatarOffsetY}px) scale(${avatarZoom})` }"
+                  @mousedown="onDragStart"
+                  @touchstart="onDragStart"
+                  class="absolute w-full h-full object-cover pointer-events-auto origin-center cursor-move"
+                />
+                <img 
+                  v-else 
+                  :src="editForm.avatar || defaultAvatar" 
+                  class="absolute w-full h-full object-cover" 
+                />
+              </div>
+
+              <!-- hidden file input -->
+              <input 
+                type="file" 
+                ref="avatarFileInputRef" 
+                accept="image/*" 
+                class="hidden" 
+                @change="onAvatarFileSelected" 
+              />
+              
+              <button 
+                type="button" 
+                @click="triggerAvatarFileSelect"
+                class="px-3.5 py-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <i class="fa-solid fa-upload"></i>
+                <span>Chọn ảnh từ máy</span>
+              </button>
+            </div>
+
+            <!-- Zoom control slider when custom image selected -->
+            <div v-if="cropImageSrc" class="space-y-1 select-none px-4">
+              <div class="flex items-center justify-between text-xs font-semibold text-gray-500">
+                <span>Căn chỉnh (Kéo thả để di chuyển)</span>
+                <span>Thu phóng: {{ Math.round(avatarZoom * 100) }}%</span>
+              </div>
+              <input 
+                type="range" 
+                v-model.number="avatarZoom" 
+                min="1" 
+                max="3" 
+                step="0.05" 
+                class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-500" 
               />
             </div>
 
@@ -220,6 +277,9 @@
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import axios from 'axios'
+
+const defaultAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -243,7 +303,7 @@ const triggerImport = () => {
 const currentUser = computed(() => authStore.user || {
   name: 'Minh',
   email: 'minh@xuongrong.vn',
-  avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=120'
+  avatar: defaultAvatar
 })
 
 const editForm = reactive({
@@ -251,6 +311,63 @@ const editForm = reactive({
   email: '',
   avatar: ''
 })
+
+// Crop avatar states
+const isDragging = ref(false)
+const dragStart = { x: 0, y: 0 }
+const avatarOffsetX = ref(0)
+const avatarOffsetY = ref(0)
+const avatarZoom = ref(1)
+const cropImageSrc = ref(null)
+const avatarFileInputRef = ref(null)
+
+const triggerAvatarFileSelect = () => {
+  avatarFileInputRef.value?.click()
+}
+
+const onAvatarFileSelected = (e) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = (event) => {
+    cropImageSrc.value = event.target.result
+    avatarZoom.value = 1
+    avatarOffsetX.value = 0
+    avatarOffsetY.value = 0
+  }
+  reader.readAsDataURL(file)
+}
+
+const onDragStart = (e) => {
+  e.preventDefault()
+  isDragging.value = true
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY
+  dragStart.x = clientX - avatarOffsetX.value
+  dragStart.y = clientY - avatarOffsetY.value
+
+  document.addEventListener('mousemove', onDragMove)
+  document.addEventListener('mouseup', onDragEnd)
+  document.addEventListener('touchmove', onDragMove, { passive: false })
+  document.addEventListener('touchend', onDragEnd)
+}
+
+const onDragMove = (e) => {
+  if (!isDragging.value) return
+  if (e.cancelable) e.preventDefault()
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY
+  avatarOffsetX.value = clientX - dragStart.x
+  avatarOffsetY.value = clientY - dragStart.y
+}
+
+const onDragEnd = () => {
+  isDragging.value = false
+  document.removeEventListener('mousemove', onDragMove)
+  document.removeEventListener('mouseup', onDragEnd)
+  document.removeEventListener('touchmove', onDragMove)
+  document.removeEventListener('touchend', onDragEnd)
+}
 
 const toggleDropdown = () => {
   isDropdownOpen.value = !isDropdownOpen.value
@@ -260,19 +377,75 @@ const openEditProfile = () => {
   editForm.name = currentUser.value.name
   editForm.email = currentUser.value.email
   editForm.avatar = currentUser.value.avatar
+  cropImageSrc.value = null
+  avatarZoom.value = 1
+  avatarOffsetX.value = 0
+  avatarOffsetY.value = 0
   isDropdownOpen.value = false
   isProfileModalOpen.value = true
 }
 
-const handleSaveProfile = () => {
-  if (authStore.user) {
-    authStore.user.name = editForm.name
-    authStore.user.email = editForm.email
-    authStore.user.avatar = editForm.avatar
-    localStorage.setItem('user', JSON.stringify(authStore.user))
+const handleSaveProfile = async () => {
+  try {
+    const res = await axios.put('/api/me', {
+      name: editForm.name,
+      email: editForm.email,
+      avatar: editForm.avatar
+    })
+    
+    if (authStore.user) {
+      authStore.user.name = res.data.name
+      authStore.user.email = res.data.email
+      authStore.user.avatar = res.data.avatar
+      localStorage.setItem('user', JSON.stringify(authStore.user))
+    }
+    isProfileModalOpen.value = false
+    toastStore.success('Đã cập nhật thông tin tài khoản!')
+  } catch (err) {
+    toastStore.error(err.response?.data?.message || 'Không thể lưu thay đổi!')
   }
-  isProfileModalOpen.value = false
-  toastStore.success('Đã cập nhật thông tin tài khoản!')
+}
+
+const cropAvatarAndSave = () => {
+  if (!cropImageSrc.value) {
+    handleSaveProfile()
+    return
+  }
+
+  const canvas = document.createElement('canvas')
+  canvas.width = 150
+  canvas.height = 150
+  const ctx = canvas.getContext('2d')
+
+  const img = new Image()
+  img.onload = () => {
+    const previewSize = 128
+    const imgRatio = img.width / img.height
+    let renderW, renderH
+    if (imgRatio > 1) {
+      renderH = previewSize
+      renderW = previewSize * imgRatio
+    } else {
+      renderW = previewSize
+      renderH = previewSize / imgRatio
+    }
+
+    const zoomedW = renderW * avatarZoom.value
+    const zoomedH = renderH * avatarZoom.value
+
+    const initialX = (previewSize - zoomedW) / 2
+    const initialY = (previewSize - zoomedH) / 2
+
+    const finalX = initialX + avatarOffsetX.value
+    const finalY = initialY + avatarOffsetY.value
+
+    const scaleFactor = 150 / previewSize
+    ctx.drawImage(img, finalX * scaleFactor, finalY * scaleFactor, zoomedW * scaleFactor, zoomedH * scaleFactor)
+
+    editForm.avatar = canvas.toDataURL('image/jpeg', 0.9)
+    handleSaveProfile()
+  }
+  img.src = cropImageSrc.value
 }
 
 const handleLogout = async () => {

@@ -66,6 +66,8 @@ export const useAuthStore = defineStore('auth', {
         console.error('Logout error on server:', err)
       } finally {
         this.clearAuth()
+        const { useProjectStore } = await import('./project')
+        useProjectStore().reset()
       }
     },
 

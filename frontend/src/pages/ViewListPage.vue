@@ -1158,10 +1158,12 @@ const onGroupedDrop = async (event, group, dropIdx) => {
 
 // Pinned & star functions
 const togglePinProject = async (project) => {
+  if (!project?.id) return
   try {
     await projectStore.togglePin(project.id)
   } catch (err) {
     console.error('Failed to toggle pin:', err)
+    toast.error('Thay đổi ghim thất bại!')
   }
 }
 

@@ -52,7 +52,7 @@ class TaskController extends Controller
             'project_id' => $task->project_id,
             'task_id' => $task->id,
             'user_id' => auth()->id() ?? $task->created_by ?? 1,
-            'content' => "Đã tạo công việc: {$task->title}",
+            'content' => $task->title,
             'type' => 'status_change',
         ]);
 
@@ -91,7 +91,7 @@ class TaskController extends Controller
         $validated = $request->validate([
             'milestone_id' => 'nullable|exists:milestones,id',
             'assignee_id' => 'nullable|exists:users,id',
-            'title' => 'required|string|max:255',
+            'title' => 'required|string',
             'due_date' => 'nullable',
             'status' => 'required|in:todo,in_progress,review,done',
             'priority' => 'required|in:low,medium,high,urgent',

@@ -57,19 +57,21 @@ class Project extends Model
         return $this->hasMany(Milestone::class)->orderBy('created_at', 'asc');
     }
 
-    public function getIsPinnedAttribute()
+    public function isPinnedForUser(?int $userId): bool
     {
-        $userId = auth()->id() ?? request()->user_id;
-        if ($userId) {
-            $isPinnedForUser = \Illuminate\Support\Facades\DB::table('pinned_projects')
-                ->where('user_id', $userId)
-                ->where('project_id', $this->id)
-                ->exists();
-            if ($isPinnedForUser) {
-                return true;
-            }
+        if (!$userId || !$this->id) {
+            return false;
         }
 
-        return (bool) ($this->attributes['is_pinned'] ?? false);
+        return \Illuminate\Support\Facades\DB::table('pinned_projects')
+            ->where('user_id', $userId)
+            ->where('project_id', $this->id)
+            ->exists();
+    }
+
+    public function applyPinnedStateForUser(?int $userId): self
+    {
+        $this->setAttribute('is_pinned', $this->isPinnedForUser($userId));
+        return $this;
     }
 }

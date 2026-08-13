@@ -1096,14 +1096,7 @@ const saveUpdate = async (projectId) => {
       created_by: currentUserId
     })
 
-    // 2. Also post to /api/comments for activity logs
-    try {
-      await axios.post('/api/comments', {
-        project_id: projectId,
-        user_id: currentUserId,
-        content: titleText
-      })
-    } catch (cErr) { }
+
 
     // Set saved state
     isSaved[projectId] = true
