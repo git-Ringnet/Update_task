@@ -1,5 +1,5 @@
 <template>
-  <header class="bg-[#f4f5f0] border-b border-stone-200/80 sticky top-0 z-50 py-2">
+  <header class="bg-[#F9F4EE] border-b border-stone-200/80 sticky top-0 z-50 py-2">
     <!-- Navbar Container: Centered workspace dropdown -->
     <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-center relative" ref="dropdownRef">
       
@@ -7,11 +7,12 @@
       <button
         @click="toggleDropdown"
         type="button"
-        class="bg-white px-6 py-2.5 rounded-full border border-gray-200/80 hover:border-emerald-300 shadow-3xs hover:shadow-2xs flex items-center gap-2 transition-all duration-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:ring-offset-1 text-sm font-bold text-gray-900"
+        class="bg-transparent px-5 py-2 rounded-full border border-gray-300 hover:border-emerald-350 shadow-3xs hover:shadow-2xs flex items-center gap-2 transition-all duration-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:ring-offset-1 text-sm font-bold text-gray-900"
       >
+        <img src="/cactus-logo.png" alt="Logo Xương Rồng" class="w-6 h-6 object-contain" />
         <span>Xương Rồng</span>
         <i 
-          class="fa-solid fa-chevron-down text-xs text-gray-400 ml-1 transition-transform duration-200"
+          class="fa-solid fa-chevron-down text-xs text-gray-400 ml-0.5 transition-transform duration-200"
           :class="{ 'rotate-180': isDropdownOpen }"
         ></i>
       </button>

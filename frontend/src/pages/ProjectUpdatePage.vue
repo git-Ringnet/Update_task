@@ -1,17 +1,37 @@
 <template>
-  <div class="min-h-screen bg-[#f4f5f0] flex flex-col justify-between pb-24 font-sans select-none">
+  <div class="min-h-screen bg-[#F9F4EE] flex flex-col justify-between pb-24 font-sans select-none">
     <div>
+      <!-- STICKY FLOATING TOP BAR (appears on scroll) -->
+      <transition enter-active-class="transition duration-200 ease-out" enter-from-class="-translate-y-full opacity-0"
+        enter-to-class="translate-y-0 opacity-100" leave-active-class="transition duration-150 ease-in"
+        leave-from-class="translate-y-0 opacity-100" leave-to-class="-translate-y-full opacity-0">
+        <div v-if="showStickyBar"
+          class="fixed top-[57px] left-0 right-0 z-[40] bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-sm">
+          <div class="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+            <button @click="goBack" type="button"
+              class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-[#45A246] font-bold transition-colors cursor-pointer focus:outline-none">
+              <i class="fa-solid fa-arrow-left text-xs"></i>
+              <span>Quay lại</span>
+            </button>
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-bold text-gray-500">{{ updatedCount }}/{{ totalCount }}</span>
+              <button @click="handleFinishAll" type="button"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-[#45A246] hover:bg-[#3a903b] text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
+                <i class="fa-solid fa-check text-[10px]"></i>
+                <span>Cập nhật tất cả</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
       <!-- Navbar Component matching standard app header -->
       <Navbar />
 
       <!-- Main Container -->
       <main class="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Back Button -->
-        <button
-          @click="goBack"
-          type="button"
-          class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-emerald-700 font-medium mb-4 transition-colors cursor-pointer focus:outline-none"
-        >
+        <button @click="goBack" type="button"
+          class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-emerald-700 font-medium mb-4 transition-colors cursor-pointer focus:outline-none">
           <i class="fa-solid fa-arrow-left text-xs"></i>
           <span>Quay lại</span>
         </button>
@@ -19,7 +39,8 @@
         <!-- Header Info (Progress & Keyboard hints) -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-6">
           <div>
-            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight font-heading">Chào buổi chiều, {{ currentUser.name }}! 👋</h1>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight font-heading">Chào buổi chiều, {{
+              currentUser.name }}! 👋</h1>
             <p class="text-gray-500 text-sm mt-1 font-medium">Hôm nay bạn đã làm những gì?</p>
           </div>
 
@@ -30,23 +51,19 @@
                 Đã cập nhật {{ updatedCount }} / {{ totalCount }}
               </span>
             </div>
-            
+
             <!-- Progress Bar -->
             <div class="w-48 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-              <div 
-                class="h-full bg-emerald-600 rounded-full transition-all duration-300"
-                :style="{ width: `${progressPercentage}%` }"
-              ></div>
+              <div class="h-full bg-emerald-600 rounded-full transition-all duration-300"
+                :style="{ width: `${progressPercentage}%` }"></div>
             </div>
 
             <!-- Finish All Action Button -->
-            <button
-              @click="handleFinishAll"
-              type="button"
-              class="mt-1 text-emerald-700 hover:text-emerald-950 font-bold text-xs flex items-center gap-1.5 transition-colors focus:outline-none cursor-pointer"
-            >
+            <button @click="handleFinishAll" type="button"
+              class="mt-1 text-emerald-700 hover:text-emerald-950 font-bold text-xs flex items-center gap-1.5 transition-colors focus:outline-none cursor-pointer">
               <span>Hoàn thành tất cả</span>
-              <kbd class="px-1.5 py-0.5 text-[9px] font-bold bg-gray-50 border border-emerald-200 text-emerald-800 rounded shadow-3xs select-none">F</kbd>
+              <kbd
+                class="px-1.5 py-0.5 text-[9px] font-bold bg-gray-50 border border-emerald-200 text-emerald-800 rounded shadow-3xs select-none">F</kbd>
               <span class="text-[10px] text-gray-400 font-normal ml-0.5">(Ctrl + Enter)</span>
             </button>
           </div>
@@ -54,7 +71,8 @@
 
         <!-- Skeleton Loading -->
         <div v-if="isLoading" class="space-y-4">
-          <div v-for="i in 3" :key="'skel-' + i" class="bg-white rounded-2xl p-6 border border-gray-100 flex items-center gap-4 animate-pulse">
+          <div v-for="i in 3" :key="'skel-' + i"
+            class="bg-white rounded-2xl p-6 border border-gray-100 flex items-center gap-4 animate-pulse">
             <div class="w-12 h-12 rounded-full bg-gray-200"></div>
             <div class="flex-1 space-y-2">
               <div class="h-4 bg-gray-200 w-1/4 rounded-md"></div>
@@ -70,18 +88,16 @@
           </div>
           <p class="text-gray-700 font-bold text-base mb-1">Không thể tải danh sách dự án</p>
           <p class="text-gray-400 text-sm font-medium mb-5">{{ loadError }}</p>
-          <button
-            @click="loadProjects"
-            type="button"
-            class="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-sm transition-colors cursor-pointer focus:outline-none"
-          >
+          <button @click="loadProjects" type="button"
+            class="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-sm transition-colors cursor-pointer focus:outline-none">
             <i class="fa-solid fa-rotate-right text-xs"></i>
             <span>Thử lại</span>
           </button>
         </div>
 
         <!-- Empty state -->
-        <div v-else-if="projects.length === 0" class="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-2xs">
+        <div v-else-if="projects.length === 0"
+          class="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-2xs">
           <p class="text-gray-400 font-medium">Không có dự án nào được chọn để cập nhật.</p>
           <router-link to="/projects" class="mt-4 inline-block text-sm font-semibold text-emerald-700 hover:underline">
             Quay lại danh sách dự án
@@ -90,12 +106,10 @@
 
         <!-- SELECTED PROJECTS LIST: EACH CARD USES HÚ HÚ FORM LAYOUT (MAX-W 720PX CENTERED MATCHING DETAIL PAGE) -->
         <div v-else class="space-y-4 max-w-[720px] mx-auto w-full">
-          <div
-            v-for="project in projects"
-            :key="project.id"
-            class="bg-white border border-gray-200 shadow-xl rounded-2xl p-4 sm:p-5 relative ring-1 ring-black/5"
-          >
-            <form @submit.prevent="saveUpdate(project.id)" class="flex flex-col lg:flex-row items-stretch gap-4 lg:gap-5">
+          <div v-for="project in projects" :key="project.id"
+            class="bg-white border border-gray-200 shadow-xl rounded-2xl p-4 sm:p-5 relative ring-1 ring-black/5">
+            <form @submit.prevent="saveUpdate(project.id)"
+              class="flex flex-col lg:flex-row items-stretch lg:items-start gap-4 lg:gap-5">
 
               <!-- LEFT SECTION: MỤC TIÊU HƯỚNG ĐẾN (CHẶNG CHƯA HOÀN THÀNH CỦA DỰ ÁN) -->
               <div class="flex flex-col gap-2 lg:pr-5 lg:border-r lg:border-gray-200 flex-shrink-0 min-w-[240px]">
@@ -104,31 +118,40 @@
                   {{ project.title }}
                 </div>
 
-                <div class="flex items-center gap-1 text-[11px] font-extrabold text-gray-500 tracking-wider uppercase font-sans">
+                <div
+                  class="flex items-center gap-1 text-[11px] font-bold text-gray-500 tracking-wider uppercase font-sans">
                   <span>MỤC TIÊU HƯỚNG ĐẾN</span>
-                  <i class="fa-regular fa-circle-question text-gray-400 text-xs" title="Chọn chặng mục tiêu hướng đến cho cập nhật"></i>
                 </div>
 
                 <!-- IF <= 3 ACTIVE STAGES: DISPLAY STAGE BUTTONS SIDE BY SIDE -->
-                <div v-if="getActiveMilestonesForProject(project).length <= 3 && getActiveMilestonesForProject(project).length > 0" class="flex items-center gap-2">
+                <div
+                  v-if="getActiveMilestonesForProject(project).length <= 3 && getActiveMilestonesForProject(project).length > 0"
+                  class="flex items-center gap-2">
                   <div v-for="ms in getActiveMilestonesForProject(project)" :key="ms.id"
                     @click="selectedMilestoneMap[project.id] = ms.id"
                     class="flex flex-col items-center justify-between p-2 rounded-xl border transition-all cursor-pointer select-none min-w-[72px] sm:min-w-[84px] h-[78px]"
                     :class="selectedMilestoneMap[project.id] === ms.id
-                      ? 'bg-rose-50/70 border-rose-200 text-rose-600 shadow-2xs'
+                      ? 'bg-[#45A246]/10 border-[#45A246]/35 text-[#45A246] shadow-2xs'
                       : 'bg-white border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'">
-                    <!-- Circle with task count -->
-                    <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-colors"
+                    <!-- Circle with SVG flag -->
+                    <div
+                      class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-colors"
                       :class="selectedMilestoneMap[project.id] === ms.id
-                        ? 'border-2 border-rose-500 bg-white text-rose-600'
-                        : 'border border-gray-300 bg-white text-gray-700'">
-                      {{ getMilestoneTaskCount(ms) }}
+                        ? 'border-2 border-[#45A246] bg-white text-[#45A246]'
+                        : 'border border-gray-300 bg-white text-gray-400'">
+                      <svg class="w-3.5 h-3.5" :class="selectedMilestoneMap[project.id] === ms.id ? 'fill-[#45A246]' : 'fill-gray-400'" viewBox="0 0 512 512">
+                        <g transform="translate(0,512) scale(0.1,-0.1)">
+                          <path d="M560 4828 c-18 -13 -43 -36 -54 -51 l-21 -28 0 -2189 0 -2189 21 -28 c73 -98 195 -98 268 0 21 28 21 34 24 850 l3 822 1874 562 c1031 309 1886 570 1900 580 31 22 65 90 65 128 0 39 -36 110 -66 130 -19 12 -2490 923 -3748 1381 -168 61 -215 66 -266 32z m1834 -948 c861 -316 1566 -577 1566 -580 0 -3 -706 -216 -1568 -474 -862 -258 -1573 -471 -1579 -474 -10 -3 -13 212 -13 1053 0 885 2 1056 14 1053 7 -2 718 -262 1580 -578z"/>
+                        </g>
+                      </svg>
                     </div>
 
                     <!-- Stage Name -->
-                    <span class="text-[10px] font-black tracking-tight text-center uppercase leading-tight line-clamp-2 mt-0.5"
-                      :class="selectedMilestoneMap[project.id] === ms.id ? 'text-gray-900 font-extrabold' : 'text-gray-600'">
-                      {{ ms.title }}
+                    <span
+                      class="text-[10px] font-black tracking-tight text-center uppercase leading-tight line-clamp-2 mt-0.5"
+                      :class="selectedMilestoneMap[project.id] === ms.id ? 'text-gray-900 font-bold' : 'text-gray-600'"
+                      :title="ms.title">
+                      {{ truncateMilestoneTitle(ms.title) }}
                     </span>
                   </div>
                 </div>
@@ -138,64 +161,29 @@
                   <select v-model="selectedMilestoneMap[project.id]"
                     class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors cursor-pointer">
                     <option v-for="ms in getActiveMilestonesForProject(project)" :key="ms.id" :value="ms.id">
-                      🚩 {{ ms.title }} ({{ getMilestoneTaskCount(ms) }})
+                      🚩 {{ truncateMilestoneTitle(ms.title) }} ({{ getMilestoneTaskCount(ms) }})
                     </option>
                   </select>
                 </div>
 
-                <!-- IF 0 ACTIVE STAGES: SHOW WARNING & QUICK ADD STAGE BUTTON / INLINE FORM -->
+                <!-- IF 0 ACTIVE STAGES: Tự động dùng chặng Bắt đầu -->
+                <!-- IF 0 ACTIVE STAGES: Tự động dùng chặng Bắt đầu -->
                 <div v-else class="flex flex-col gap-2">
-                  <div class="text-[11px] text-amber-800 font-bold bg-amber-50 border border-amber-200/80 rounded-xl p-2 flex items-center gap-1.5">
-                    <i class="fa-solid fa-triangle-exclamation text-amber-500 text-xs flex-shrink-0"></i>
-                    <span>Dự án chưa có chặng mục tiêu.</span>
-                  </div>
-
-                  <!-- Button to trigger inline add stage form -->
-                  <button v-if="activeAddStageProjectId !== project.id"
-                    type="button"
-                    @click="openQuickAddStage(project.id)"
-                    class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
-                    <i class="fa-solid fa-plus text-xs"></i>
-                    <span>+ Thêm chặng mới</span>
-                  </button>
-
-                  <!-- INLINE QUICK ADD STAGE FORM -->
-                  <div v-if="activeAddStageProjectId === project.id" class="p-2.5 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-2 animate-fade-in-up">
-                    <div class="text-[10px] font-extrabold text-emerald-800 uppercase flex items-center justify-between">
-                      <span>Tạo chặng mới</span>
-                      <button type="button" @click="activeAddStageProjectId = null" class="text-gray-400 hover:text-rose-600">
-                        <i class="fa-solid fa-xmark"></i>
-                      </button>
-                    </div>
-                    <input
-                      :ref="(el) => setStageTitleInputRef(el, project.id)"
-                      v-model="newStageTitleMap[project.id]"
-                      type="text"
-                      placeholder="Tên chặng..."
-                      class="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500"
-                      @keydown.enter.prevent="quickCreateStage(project.id)"
-                    />
-                    <input
-                      v-model="newStageDueDateMap[project.id]"
-                      type="date"
-                      class="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500"
-                    />
-                    <div class="flex items-center justify-end gap-1.5 pt-0.5">
-                      <button
-                        type="button"
-                        @click="activeAddStageProjectId = null"
-                        class="px-2 py-1 text-xs font-bold text-gray-500 hover:text-gray-700"
-                      >
-                        Hủy
-                      </button>
-                      <button
-                        type="button"
-                        @click="quickCreateStage(project.id)"
-                        :disabled="isCreatingStageMap[project.id]"
-                        class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-lg shadow-xs transition-colors cursor-pointer disabled:opacity-50"
-                      >
-                        {{ isCreatingStageMap[project.id] ? 'Đang tạo...' : 'Tạo chặng' }}
-                      </button>
+                  <div class="flex items-center gap-2">
+                    <div
+                      class="flex flex-col items-center justify-between p-2 rounded-xl border bg-[#45A246]/10 border-[#45A246]/35 text-[#45A246] shadow-2xs select-none min-w-[72px] sm:min-w-[84px] h-[78px]">
+                      <div
+                        class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 border-[#45A246] bg-white text-[#45A246]">
+                        <svg class="w-3.5 h-3.5 fill-[#45A246]" viewBox="0 0 512 512">
+                          <g transform="translate(0,512) scale(0.1,-0.1)">
+                            <path d="M560 4828 c-18 -13 -43 -36 -54 -51 l-21 -28 0 -2189 0 -2189 21 -28 c73 -98 195 -98 268 0 21 28 21 34 24 850 l3 822 1874 562 c1031 309 1886 570 1900 580 31 22 65 90 65 128 0 39 -36 110 -66 130 -19 12 -2490 923 -3748 1381 -168 61 -215 66 -266 32z m1834 -948 c861 -316 1566 -577 1566 -580 0 -3 -706 -216 -1568 -474 -862 -258 -1573 -471 -1579 -474 -10 -3 -13 212 -13 1053 0 885 2 1056 14 1053 7 -2 718 -262 1580 -578z"/>
+                          </g>
+                        </svg>
+                      </div>
+                      <span
+                        class="text-[10px] font-black tracking-tight text-center uppercase leading-tight text-gray-900 font-bold mt-0.5">
+                        Bắt đầu
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -212,30 +200,27 @@
 
                   <!-- Textarea input -->
                   <div class="flex-1 min-w-0 relative">
-                    <textarea
-                      :ref="(el) => setTextareaRef(el, project.id)"
-                      v-model="updateTexts[project.id]"
-                      @input="onInputText(project.id, $event)"
-                      @keydown="onTextareaKeydown(project.id, $event)"
-                      @paste="handlePaste(project.id, $event)"
-                      rows="1"
+                    <textarea :ref="(el) => setTextareaRef(el, project.id)" v-model="updateTexts[project.id]"
+                      @input="onInputText(project.id, $event)" @keydown="onTextareaKeydown(project.id, $event)"
+                      @paste="handlePaste(project.id, $event)" rows="1" maxlength="600"
                       placeholder="Chia sẻ cập nhật với team... (Gõ @ để nhắc tên, 'ngày mai', 'hôm nay' để đặt ngày)"
-                      class="w-full bg-transparent text-sm sm:text-base font-bold text-gray-900 leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none m-0 border-0"
-                    ></textarea>
+                      class="w-full bg-transparent text-sm sm:text-base font-bold text-gray-900 leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none m-0 border-0"></textarea>
 
                     <!-- MENTION DROPDOWN POPUP -->
-                    <div v-if="activeMentionProjectId === project.id && showMentionDropdown && filteredUsersForMention.length > 0"
+                    <div
+                      v-if="activeMentionProjectId === project.id && showMentionDropdown && filteredUsersForMention.length > 0"
                       class="absolute left-0 top-full mt-1 z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-2xl py-1 text-gray-800 ring-1 ring-black/5 animate-fade-in-up">
-                      <div class="px-3 py-1 text-[10px] uppercase font-bold text-gray-400 border-b border-gray-100 mb-1 flex items-center justify-between">
+                      <div
+                        class="px-3 py-1 text-[10px] uppercase font-bold text-gray-400 border-b border-gray-100 mb-1 flex items-center justify-between">
                         <span>Gắn thẻ thành viên</span>
                         <span class="text-[9px] text-emerald-600 font-extrabold">↑↓ Enter</span>
                       </div>
-                      <button v-for="(u, idx) in filteredUsersForMention" :key="u.id" type="button"
-                        @mousedown.prevent
+                      <button v-for="(u, idx) in filteredUsersForMention" :key="u.id" type="button" @mousedown.prevent
                         @click="selectMentionUser(project.id, u)"
                         class="w-full px-3 py-2 flex items-center gap-2.5 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left cursor-pointer"
                         :class="{ 'bg-emerald-50 text-emerald-800 font-bold': idx === mentionIndex }">
-                        <img :src="u.avatar || defaultAvatar" class="w-6 h-6 rounded-full object-cover border border-gray-200" />
+                        <img :src="u.avatar || defaultAvatar"
+                          class="w-6 h-6 rounded-full object-cover border border-gray-200" />
                         <div class="flex flex-col min-w-0 flex-1">
                           <span class="truncate font-bold">{{ u.name }}</span>
                           <span class="text-[10px] text-gray-400 truncate">@{{ u.name }}</span>
@@ -246,15 +231,17 @@
                 </div>
 
                 <!-- ATTACHED FILES & PASTED IMAGES PREVIEW BAR -->
-                <div v-if="attachedFiles[project.id]?.length > 0" class="w-full flex items-center gap-2 overflow-x-auto py-1 border-t border-gray-100 custom-scrollbar">
-                  <div v-for="(file, fIdx) in attachedFiles[project.id]" :key="fIdx" class="relative group flex-shrink-0">
+                <div v-if="attachedFiles[project.id]?.length > 0"
+                  class="w-full flex items-center gap-2 overflow-x-auto py-1 border-t border-gray-100 custom-scrollbar">
+                  <div v-for="(file, fIdx) in attachedFiles[project.id]" :key="fIdx"
+                    class="relative group flex-shrink-0">
                     <!-- Image Thumbnail -->
-                    <div v-if="file.isImage"
-                      @click="openImageModal(file.url)"
+                    <div v-if="file.isImage" @click="openImageModal(file.url)"
                       class="w-14 h-14 rounded-xl border border-gray-200 overflow-hidden bg-gray-100 shadow-2xs relative cursor-pointer hover:opacity-90 group transition-all"
                       title="Nhấn để xem ảnh phóng to">
                       <img :src="file.url" class="w-full h-full object-cover" />
-                      <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs">
+                      <div
+                        class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs">
                         <i class="fa-solid fa-eye"></i>
                       </div>
                       <button type="button" @click.stop="removeAttachment(project.id, fIdx)"
@@ -265,10 +252,12 @@
                     </div>
 
                     <!-- File Pill -->
-                    <div v-else class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 max-w-[200px]">
+                    <div v-else
+                      class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 max-w-[200px]">
                       <i class="fa-solid fa-file text-gray-500"></i>
                       <span class="truncate">{{ file.name }}</span>
-                      <button type="button" @click="removeAttachment(project.id, fIdx)" class="text-gray-400 hover:text-rose-600 transition-colors ml-1" title="Xóa file">
+                      <button type="button" @click="removeAttachment(project.id, fIdx)"
+                        class="text-gray-400 hover:text-rose-600 transition-colors ml-1" title="Xóa file">
                         <i class="fa-solid fa-xmark text-xs"></i>
                       </button>
                     </div>
@@ -279,29 +268,28 @@
                 <div class="flex items-center justify-between gap-2 pt-0.5 flex-wrap">
 
                   <!-- LEFT: Attachment File / Image Button -->
-                  <div class="flex items-center gap-1.5">
-                    <input
-                      :id="'file-input-' + project.id"
-                      type="file"
-                      multiple
-                      accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
-                      class="hidden"
-                      @change="handleFileSelect(project.id, $event)"
-                    />
-                    <label
-                      :for="'file-input-' + project.id"
+                  <div class="flex items-center gap-2">
+                    <input :id="'file-input-' + project.id" type="file" multiple
+                      accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar" class="hidden"
+                      @change="handleFileSelect(project.id, $event)" />
+                    <label :for="'file-input-' + project.id"
                       class="inline-flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none shadow-3xs bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-500 w-9 h-9"
-                      title="Đính kèm tệp / ảnh (hoặc Ctrl+V dán ảnh từ bộ nhớ tạm)"
-                    >
+                      title="Đính kèm tệp / ảnh (hoặc Ctrl+V dán ảnh từ bộ nhớ tạm)">
                       <i class="fa-solid fa-paperclip text-sm"></i>
                     </label>
+                    
+                    <HealthStatusSelector
+                      v-model="healthMap[project.id]"
+                      :show-label="false"
+                    />
                   </div>
 
                   <!-- RIGHT: Status + Person Picker + Date Picker + Submit Button -->
                   <div class="flex items-center gap-2">
                     <!-- Status indicator -->
                     <template v-if="isSaved[project.id]">
-                      <span class="text-xs text-gray-400 font-semibold whitespace-nowrap">{{ savedTimes[project.id] }}</span>
+                      <span class="text-xs text-gray-400 font-semibold whitespace-nowrap">{{ savedTimes[project.id]
+                      }}</span>
                       <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
                     </template>
 
@@ -317,10 +305,12 @@
 
                       <div v-if="activePersonPickerProjectId === project.id"
                         class="absolute right-0 bottom-full mb-2 z-50 w-56 bg-white border border-gray-200 rounded-xl shadow-xl py-1 max-h-52 overflow-y-auto ring-1 ring-black/5">
-                        <div class="px-3 py-1 text-[10px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1">
+                        <div
+                          class="px-3 py-1 text-[10px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1">
                           Chọn người phụ trách
                         </div>
-                        <button v-if="assigneeMap[project.id]" type="button" @click="assigneeMap[project.id] = null; activePersonPickerProjectId = null"
+                        <button v-if="assigneeMap[project.id]" type="button"
+                          @click="assigneeMap[project.id] = null; activePersonPickerProjectId = null"
                           class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-rose-50 text-rose-500 transition-colors text-left">
                           <i class="fa-solid fa-xmark text-xs"></i><span>Bỏ chọn</span>
                         </button>
@@ -328,7 +318,8 @@
                           @click="assigneeMap[project.id] = u.id; activePersonPickerProjectId = null"
                           class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left"
                           :class="{ 'bg-emerald-50 text-emerald-800 font-bold': u.id === assigneeMap[project.id] }">
-                          <img :src="u.avatar || defaultAvatar" class="w-5 h-5 rounded-full object-cover border border-gray-200" />
+                          <img :src="u.avatar || defaultAvatar"
+                            class="w-5 h-5 rounded-full object-cover border border-gray-200" />
                           <span class="truncate flex-1">{{ u.name }}</span>
                         </button>
                       </div>
@@ -341,7 +332,9 @@
                         :class="(dueDateMap[project.id] || dueTimeMap[project.id]) ? 'bg-blue-50 hover:bg-blue-100/80 border border-blue-200 text-blue-700 px-3 py-1.5' : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 w-9 h-9'"
                         title="Chọn ngày & giờ">
                         <i class="fa-regular fa-calendar-days text-sm"></i>
-                        <span v-if="dueDateMap[project.id] || dueTimeMap[project.id]">{{ formatDueDateTag(dueDateMap[project.id], dueTimeMap[project.id]) }}</span>
+                        <span v-if="dueDateMap[project.id] || dueTimeMap[project.id]">{{
+                          formatDueDateTag(dueDateMap[project.id],
+                            dueTimeMap[project.id]) }}</span>
                       </button>
                       <div v-if="activeDatePickerProjectId === project.id"
                         class="absolute right-0 bottom-full mb-2 z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-xl p-3 ring-1 ring-black/5">
@@ -349,11 +342,13 @@
                         <div class="space-y-2">
                           <div>
                             <label class="text-[10px] font-bold text-gray-400 block mb-1">Ngày hết hạn</label>
-                            <input type="date" v-model="dueDateMap[project.id]" class="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500" />
+                            <input type="date" v-model="dueDateMap[project.id]"
+                              class="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500" />
                           </div>
                           <div>
                             <label class="text-[10px] font-bold text-gray-400 block mb-1">Giờ (hh:mm)</label>
-                            <input type="time" v-model="dueTimeMap[project.id]" class="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500" />
+                            <input type="time" v-model="dueTimeMap[project.id]"
+                              class="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500" />
                           </div>
                         </div>
                         <button type="button" @click="activeDatePickerProjectId = null"
@@ -361,9 +356,10 @@
                       </div>
                     </div>
 
-                    <!-- Submit "Hú hú!" Button (Vô hiệu hóa khi chưa có chặng) -->
-                    <button type="submit" :disabled="getActiveMilestonesForProject(project).length === 0 || !selectedMilestoneMap[project.id] || isSaving[project.id]"
-                      class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#10b981] hover:bg-emerald-600 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                    <!-- Submit "Hú hú!" Button (Vô hiệu hóa khi có chặng nhưng chưa chọn chặng) -->
+                    <button type="submit"
+                      :disabled="(getActiveMilestonesForProject(project).length > 0 && !selectedMilestoneMap[project.id]) || isSaving[project.id]"
+                      class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#45A246] hover:bg-[#3a903b] text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                       <i class="fa-solid fa-dove text-sm"></i>
                       <span>{{ isSaving[project.id] ? 'Đang lưu...' : 'Hú hú!' }}</span>
                       <i class="fa-solid fa-chevron-down text-[10px] opacity-80"></i>
@@ -401,10 +397,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
+import HealthStatusSelector from '../components/HealthStatusSelector.vue'
 
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toast'
@@ -415,6 +412,12 @@ const authStore = useAuthStore()
 const toast = useToastStore()
 
 const defaultAvatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120'
+
+// Sticky floating bar state
+const showStickyBar = ref(false)
+const handleScroll = () => {
+  showStickyBar.value = window.scrollY > 120
+}
 
 const goBack = () => {
   if (window.history.state && window.history.state.back) {
@@ -460,6 +463,7 @@ const selectedMilestoneMap = reactive({})
 const assigneeMap = reactive({})
 const dueDateMap = reactive({})
 const dueTimeMap = reactive({})
+const healthMap = reactive({})
 
 const activePersonPickerProjectId = ref(null)
 const activeDatePickerProjectId = ref(null)
@@ -922,6 +926,25 @@ const getMilestoneTaskCount = (ms) => {
   return 0
 }
 
+const getStartStageTaskCount = (p) => {
+  if (!p || !p.tasks || !Array.isArray(p.tasks)) return 0
+  return p.tasks.filter(t => !t.milestone_id).length
+}
+
+const truncateMilestoneTitle = (title) => {
+  if (!title) return ''
+  const trimmed = title.trim()
+  const words = trimmed.split(/\s+/)
+  let result = trimmed
+  if (words.length > 3) {
+    result = words.slice(0, 3).join(' ') + '...'
+  }
+  if (result.length > 15) {
+    return result.slice(0, 12) + '...'
+  }
+  return result
+}
+
 const toggleProjectPersonPicker = (projectId) => {
   if (activePersonPickerProjectId.value === projectId) {
     activePersonPickerProjectId.value = null
@@ -1006,6 +1029,7 @@ const loadProjects = async () => {
       if (savedTimes[p.id] === undefined) savedTimes[p.id] = null
       if (isSaved[p.id] === undefined) isSaved[p.id] = false
       if (isSaving[p.id] === undefined) isSaving[p.id] = false
+      if (healthMap[p.id] === undefined) healthMap[p.id] = p.health
 
       const activeMs = getActiveMilestonesForProject(p)
       if (!selectedMilestoneMap[p.id] && activeMs.length > 0) {
@@ -1058,14 +1082,16 @@ const saveUpdate = async (projectId) => {
     }
   }
 
+  const project = projects.value.find(p => p.id === projectId)
+  const activeMs = project ? getActiveMilestonesForProject(project) : []
   const selectedMsId = selectedMilestoneMap[projectId] || null
-  if (!selectedMsId) {
-    toast.warning('Dự án này chưa có chặng mục tiêu! Vui lòng tạo/chọn chặng trước khi cập nhật.')
+  if (activeMs.length > 0 && !selectedMsId) {
+    toast.warning('Vui lòng chọn chặng mục tiêu trước khi cập nhật.')
     isSaving[projectId] = false
     return
   }
   const selectedAssigneeId = assigneeMap[projectId] ? Number(assigneeMap[projectId]) : null
-  
+
   let selectedDueDate = null
   const dateVal = dueDateMap[projectId]
   const timeVal = dueTimeMap[projectId]
@@ -1073,7 +1099,7 @@ const saveUpdate = async (projectId) => {
   if (dateVal && timeVal) {
     selectedDueDate = `${dateVal} ${timeVal}:00`
   } else if (dateVal) {
-    selectedDueDate = `${dateVal} 18:00:00`
+    selectedDueDate = `${dateVal} 00:00:00`
   } else if (timeVal) {
     const now = new Date()
     const yyyy = now.getFullYear()
@@ -1104,6 +1130,13 @@ const saveUpdate = async (projectId) => {
   const currentUserId = authStore.user?.id || 1
 
   try {
+    // 0. Update Health of the Project if it has changed
+    const newHealth = healthMap[projectId]
+    if (newHealth && newHealth !== project.health) {
+      await axios.patch(`/api/projects/${projectId}/health`, { health: newHealth })
+      project.health = newHealth
+    }
+
     // 1. Post to /api/tasks (creates task under selected project & milestone)
     await axios.post('/api/tasks', {
       project_id: projectId,
@@ -1191,9 +1224,11 @@ const handleGlobalKeyDown = (e) => {
 onMounted(() => {
   loadProjects()
   window.addEventListener('keydown', handleGlobalKeyDown)
+  window.addEventListener('scroll', handleScroll)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleGlobalKeyDown)
+  window.removeEventListener('scroll', handleScroll)
 })
 </script>

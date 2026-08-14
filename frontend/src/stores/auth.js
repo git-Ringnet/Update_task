@@ -100,6 +100,36 @@ export const useAuthStore = defineStore('auth', {
       this.user = res.data
       localStorage.setItem('user', JSON.stringify(this.user))
       return this.user
+    },
+
+    async updateViewMode(mode) {
+      if (this.user) {
+        this.user.view_mode = mode
+        localStorage.setItem('user', JSON.stringify(this.user))
+      }
+      try {
+        const res = await axios.put('/api/me', { view_mode: mode })
+        this.user = res.data
+        localStorage.setItem('user', JSON.stringify(this.user))
+        return this.user
+      } catch (err) {
+        console.error('Failed to update view mode:', err)
+      }
+    },
+
+    async updatePinnedCustomers(pinned) {
+      if (this.user) {
+        this.user.pinned_customers = pinned
+        localStorage.setItem('user', JSON.stringify(this.user))
+      }
+      try {
+        const res = await axios.put('/api/me', { pinned_customers: pinned })
+        this.user = res.data
+        localStorage.setItem('user', JSON.stringify(this.user))
+        return this.user
+      } catch (err) {
+        console.error('Failed to update pinned customers:', err)
+      }
     }
   }
 })

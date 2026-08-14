@@ -2,7 +2,7 @@
 
 @layer base {
   body {
-    background-color: #f4f5f0 !important;
+    background-color: #F9F4EE !important;
   }
   body, h1, h2, h3, h4, button, input, select, textarea {
     font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -55,8 +55,9 @@
   box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
 }
 .health-dot-yellow {
-  background-color: #eab308;
-  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.2);
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.15);
 }
 .health-dot-red {
   background-color: #ef4444;

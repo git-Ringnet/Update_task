@@ -15,6 +15,9 @@ export const useProjectStore = defineStore('project', {
     customers: [],
     users: [],
     pinningProjectIds: {},
+    lastRequestId: 0,
+    listSearchQuery: '',
+    activePage: 'home',
   }),
 
   actions: {
@@ -31,17 +34,24 @@ export const useProjectStore = defineStore('project', {
     },
 
     async fetchProjects(isSilent = false) {
+      this.lastRequestId = (this.lastRequestId || 0) + 1
+      const currentId = this.lastRequestId
+
       if (!isSilent && this.projects.length === 0) {
         this.isLoading = true
       }
       try {
+        const queryToUse = this.activePage === 'list' ? this.listSearchQuery : this.searchQuery
         const params = {
-          search: this.searchQuery,
+          search: queryToUse || '',
         }
         if (this.activeStatus) {
           params.tracking_status = this.activeStatus
         }
         const res = await axios.get('/api/projects', { params })
+        if (currentId !== this.lastRequestId) {
+          return
+        }
         const rawProjects = res.data.projects || []
         const incoming = rawProjects.map(p => ({
           ...p,

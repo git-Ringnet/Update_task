@@ -205,20 +205,6 @@ class ProjectController extends Controller
         
         $project->save();
 
-        // Create log comment for health update
-        $statusNames = [
-            'yellow' => 'Đang theo (Vàng)',
-            'red' => 'Không theo (Đỏ)',
-            'green' => 'Hoàn thành (Xanh)',
-        ];
-
-        Comment::create([
-            'project_id' => $project->id,
-            'user_id' => auth()->id() ?? $request->user_id ?? $project->lead_id ?? \App\Models\User::first()->id ?? null,
-            'content' => "Đã chuyển trạng thái dự án sang [{$statusNames[$project->health]}]",
-            'type' => 'health_update',
-        ]);
-
         $project->load(['customer', 'lead']);
 
         return response()->json([

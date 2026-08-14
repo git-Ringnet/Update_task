@@ -8,8 +8,8 @@
       :class="showLabel ? 'px-3 py-1 bg-gray-50 border border-gray-200' : 'w-8 h-8'"
       :title="`Trạng thái: ${healthText(modelValue)} - Click để thay đổi`"
     >
-      <i v-if="modelValue === 'green'" class="fa-solid fa-face-smile text-[22px] text-emerald-600"></i>
-      <i v-else-if="modelValue === 'yellow'" class="fa-solid fa-face-meh text-[22px] text-amber-500"></i>
+      <i v-if="modelValue === 'green'" class="fa-solid fa-face-smile text-[22px] text-[#45A246]"></i>
+      <i v-else-if="modelValue === 'yellow' || modelValue === 'white'" class="fa-solid fa-face-meh text-[22px] text-gray-400"></i>
       <i v-else-if="modelValue === 'red'" class="fa-solid fa-face-frown text-[22px] text-rose-500"></i>
       <span v-if="showLabel" class="text-xs font-bold" :class="labelColor(modelValue)">
         {{ healthLabel(modelValue) }}
@@ -36,17 +36,17 @@
           class="w-7.5 h-7.5 rounded-full hover:bg-emerald-50 flex items-center justify-center transition-colors cursor-pointer"
           title="Healthy"
         >
-          <i class="fa-solid fa-face-smile text-[19px] text-emerald-600"></i>
+          <i class="fa-solid fa-face-smile text-[19px] text-[#45A246]"></i>
         </button>
 
-        <!-- Yellow option (At Risk) -->
+        <!-- White option (Default) -->
         <button
           @click.stop="selectHealth('yellow')"
           type="button"
-          class="w-7.5 h-7.5 rounded-full hover:bg-amber-50 flex items-center justify-center transition-colors cursor-pointer"
-          title="At Risk"
+          class="w-7.5 h-7.5 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors cursor-pointer"
+          title="Mặc định"
         >
-          <i class="fa-solid fa-face-meh text-[19px] text-amber-500"></i>
+          <i class="fa-solid fa-face-meh text-[19px] text-gray-400"></i>
         </button>
 
         <!-- Red option (Needs Care) -->
@@ -69,7 +69,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 const props = defineProps({
   modelValue: {
     type: String,
-    default: 'yellow', // 'yellow', 'red', 'green'
+    default: 'yellow', // 'yellow' (white/default), 'red', 'green'
   },
   showLabel: {
     type: Boolean,
@@ -78,8 +78,8 @@ const props = defineProps({
 })
 
 const labelColor = (val) => {
-  if (val === 'green') return 'text-emerald-600'
-  if (val === 'yellow') return 'text-amber-500'
+  if (val === 'green') return 'text-[#45A246]'
+  if (val === 'yellow' || val === 'white') return 'text-gray-400'
   if (val === 'red') return 'text-rose-600'
   return 'text-gray-500'
 }
@@ -101,14 +101,14 @@ const selectHealth = (color) => {
 
 const healthLabel = (val) => {
   if (val === 'green') return 'Healthy'
-  if (val === 'yellow') return 'At Risk'
+  if (val === 'yellow' || val === 'white') return 'Mặc định'
   if (val === 'red') return 'Needs Care'
   return val
 }
 
 const healthText = (val) => {
   if (val === 'green') return '🟢 Healthy'
-  if (val === 'yellow') return '🟡 At Risk'
+  if (val === 'yellow' || val === 'white') return '⚪ Mặc định'
   if (val === 'red') return '🔴 Needs Care'
   return val
 }

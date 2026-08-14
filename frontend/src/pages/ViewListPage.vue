@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen flex flex-col pb-12 transition-colors duration-200"
-       :class="viewMode === 'notes' ? 'sticky-board-bg' : 'bg-[#f4f5f0]'">
+       :class="viewMode === 'notes' ? 'sticky-board-bg' : 'bg-[#F9F4EE]'">
     <!-- Navbar Component -->
     <Navbar @search="handleSearch" />
 
@@ -23,7 +23,7 @@
           <button
             @click="isModalOpen = true"
             type="button"
-            class="w-full bg-[#10b981] hover:bg-emerald-600 text-white font-extrabold text-sm rounded-xl p-3.5 flex items-center justify-center gap-2.5 transition-colors shadow-3xs cursor-pointer focus:outline-none select-none"
+            class="w-full bg-[#45A246] hover:bg-[#3a903b] text-white font-extrabold text-sm rounded-xl p-3.5 flex items-center justify-center gap-2.5 transition-colors shadow-3xs cursor-pointer focus:outline-none select-none"
             title="Tạo dự án mới (Ctrl + K)"
           >
             <i class="fa-solid fa-square-plus text-base"></i>
@@ -34,8 +34,8 @@
           <button
             @click="toggleCustomerGroup"
             type="button"
-            class="w-full bg-[#f1f5f9] hover:bg-[#e2e8f0] border border-gray-200 text-slate-800 font-extrabold text-sm rounded-xl p-3.5 flex items-center justify-center transition-colors shadow-3xs cursor-pointer focus:outline-none select-none"
-            :class="isGroupedByCustomer ? 'ring-2 ring-emerald-500/30 border-emerald-500 bg-emerald-50/40 text-emerald-950' : ''"
+            class="w-full bg-transparent hover:bg-gray-200/50 border border-gray-300 text-slate-800 font-extrabold text-sm rounded-xl p-3.5 flex items-center justify-center transition-colors shadow-3xs cursor-pointer focus:outline-none select-none"
+            :class="isGroupedByCustomer ? 'ring-2 ring-emerald-500/30 border-emerald-500 bg-emerald-50/10 text-emerald-950' : ''"
             title="Chuyển đổi chế độ xem (Ctrl + B)"
           >
             <div class="flex items-center gap-2.5">
@@ -52,12 +52,12 @@
               v-model="projectStore.searchQuery"
               type="text"
               placeholder="Tìm kiếm gì đó (Ctrl + F)"
-              class="w-full bg-white border border-gray-200 rounded-xl pl-10 pr-4 py-3.5 text-sm font-bold focus:outline-none focus:border-emerald-500 placeholder-gray-400"
+              class="w-full bg-transparent border border-gray-300 rounded-xl pl-10 pr-4 py-3.5 text-sm font-bold focus:outline-none focus:border-emerald-500 placeholder-gray-400"
             />
           </div>
 
           <!-- Keyboard Shortcuts Hint -->
-          <div class="bg-white border border-gray-200 rounded-xl p-3 shadow-3xs">
+          <div class="bg-transparent border border-gray-300 rounded-xl p-3 shadow-3xs">
             <div class="flex items-center gap-2 mb-2">
               <i class="fa-solid fa-keyboard text-emerald-600 text-sm"></i>
               <span class="text-xs font-black text-gray-900 uppercase tracking-wider">Phím tắt</span>
@@ -127,7 +127,7 @@
                 >
                   <i 
                     class="text-base transition-colors"
-                    :class="group.is_pinned ? 'fa-solid fa-star text-amber-500' : 'fa-regular fa-star text-gray-400 hover:text-amber-500'"
+                    :class="group.is_pinned ? 'fa-solid fa-star text-gray-600' : 'fa-regular fa-star text-gray-400 hover:text-gray-600'"
                   ></i>
                 </button>
               </div>
@@ -345,7 +345,7 @@
         <!-- RIGHT PANEL: Hoạt động gần đây (Block 3 - Hidden in notes view) -->
         <section 
           v-if="viewMode !== 'notes'"
-          class="lg:col-span-4 bg-white border border-gray-200 rounded-3xl p-5 shadow-3xs flex flex-col h-[calc(100vh-200px)] select-none"
+          class="lg:col-span-4 bg-transparent border border-gray-300 rounded-3xl p-5 shadow-3xs flex flex-col h-[calc(100vh-200px)] select-none"
         >
           <h2 class="text-sm font-black text-gray-900 uppercase tracking-wider pb-3 flex items-center justify-between border-b border-gray-100 flex-shrink-0">
             <span>Hoạt động gần đây</span>
@@ -353,7 +353,7 @@
           </h2>
 
           <!-- Skeleton Loading State -->
-          <div v-if="isActivitiesLoading && activities.length === 0" class="space-y-3.5 flex-1 overflow-hidden pt-2">
+          <div v-if="isActivitiesLoading && displayedActivities.length === 0" class="space-y-3.5 flex-1 overflow-hidden pt-2">
             <div v-for="i in 4" :key="'sk-act-' + i" class="animate-pulse space-y-2 pb-3 border-b border-gray-100">
               <div class="flex justify-between items-center">
                 <div class="w-1/3 h-4 bg-gray-200 rounded-md"></div>
@@ -374,74 +374,76 @@
               leave-to-class="opacity-0 -translate-y-2"
             >
               <div 
-                v-for="log in activities.slice(0, 15)" 
+                v-for="log in displayedActivities.slice(0, 15)" 
                 :key="log.id" 
-                class="bg-white border border-gray-100 rounded-2xl p-3.5 hover:border-emerald-200 transition-all shadow-3xs hover:shadow-2xs"
+                class="rounded-2xl p-3.5 hover:border-emerald-200 transition-all shadow-3xs hover:shadow-2xs"
+                :class="getActivityStyle(log)"
               >
-                <!-- Top Row: User Avatar/Name & Timestamp -->
+                <!-- Top Row: User Avatar/Name + "hỗ trợ" Customer & Timestamp -->
                 <div class="flex items-center justify-between gap-2">
-                  <div class="flex items-center gap-2 min-w-0">
+                  <div class="flex items-center gap-1.5 min-w-0">
                     <img 
                       :src="log.user?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=60'" 
-                      class="w-6 h-6 rounded-full object-cover border border-gray-200 flex-shrink-0" 
+                      class="w-8 h-8 rounded-full object-cover border border-gray-200 flex-shrink-0" 
                     />
-                    <span class="font-extrabold text-xs sm:text-sm text-gray-900 truncate">
-                      {{ log.user ? log.user.name : 'Hệ thống' }}
-                    </span>
+                    <span class="font-extrabold text-sm text-gray-900 flex-shrink-0">{{ log.user ? log.user.name : 'Hệ thống' }}</span>
+                    <span v-if="log.project?.customer" class="text-sm font-extrabold text-gray-900 flex-shrink-0">hỗ trợ</span>
+                    <span 
+                      v-if="log.project?.customer" 
+                      class="text-sm font-extrabold text-emerald-700 truncate cursor-pointer hover:underline"
+                      @click.stop="$router.push(`/customers/${log.project.customer.id}`)"
+                    >{{ log.project.customer.name }}</span>
                   </div>
                   <span class="text-[11px] text-gray-400 font-bold flex-shrink-0">
                     {{ formatCommentRelativeTime(log.created_at) }}
                   </span>
                 </div>
 
-                <!-- Project Link Pill (Sleek Truncated Badge) -->
+                <!-- Project Link Pill (Dynamic color based on health) -->
                 <div 
                   v-if="log.project" 
                   @click="goToProjectDetail(log.project.id, $event)" 
-                  class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50/80 hover:bg-emerald-100/90 border border-emerald-200/60 rounded-lg text-xs font-extrabold text-emerald-800 cursor-pointer transition-all max-w-full"
+                  class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 border rounded-lg text-xs font-extrabold cursor-pointer transition-all max-w-full"
+                  :class="getProjectPillStyle(log)"
                   :title="log.project.title"
                 >
-                  <i class="fa-solid fa-folder-closed text-[11px] text-emerald-600 flex-shrink-0"></i>
+                  <i class="fa-solid fa-folder-closed text-[11px] flex-shrink-0"></i>
                   <span class="truncate min-w-0">{{ log.project.title }}</span>
                 </div>
 
                 <!-- Comment Content Box with Compact Image & File Attachment Pills -->
-                <div class="mt-2 text-xs font-semibold text-gray-700 leading-relaxed break-words bg-gray-50/70 border border-gray-100 rounded-xl p-2.5 space-y-2">
+                <div class="mt-2 text-xs font-semibold text-gray-700 leading-relaxed break-words bg-gray-50/30 border border-gray-300/50 rounded-xl p-2.5 space-y-2">
                   <div v-if="parseCommentText(log.content)" class="whitespace-pre-line">
                     {{ parseCommentText(log.content) }}
                   </div>
 
-                  <!-- Render Compact Image Pills -->
-                  <div v-if="parseCommentImages(log.content).length > 0" class="flex flex-wrap gap-1.5 pt-0.5">
+                  <!-- Render Attachments (Images & Files side-by-side) -->
+                  <div v-if="parseCommentImages(log.content).length > 0 || parseCommentFiles(log.content).length > 0" class="flex flex-wrap items-end gap-1.5 pt-0.5">
+                    <!-- Images -->
                     <button 
                       v-for="(img, imgIdx) in parseCommentImages(log.content)" 
-                      :key="imgIdx" 
+                      :key="'img-' + imgIdx" 
                       type="button"
                       @click.stop="openImagePreview(img.url)"
-                      class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100/90 border border-emerald-200/80 text-emerald-800 rounded-lg text-xs font-bold transition-colors cursor-pointer max-w-full select-none shadow-3xs"
-                      :title="img.name"
+                      class="w-10 h-10 rounded border border-gray-200 overflow-hidden bg-gray-50 cursor-pointer hover:ring-2 hover:ring-emerald-300 transition-all flex-shrink-0"
+                      :title="'Xem ảnh: ' + img.name"
                     >
-                      <i class="fa-solid fa-image text-emerald-600 text-[11px]"></i>
-                      <span class="truncate max-w-[150px]">{{ img.name }}</span>
-                      <i class="fa-solid fa-expand text-[9px] text-emerald-500 ml-0.5"></i>
+                      <img :src="img.url" class="w-full h-full object-cover" alt="" loading="lazy" />
                     </button>
-                  </div>
 
-                  <!-- Render Compact File Pills -->
-                  <div v-if="parseCommentFiles(log.content).length > 0" class="flex flex-wrap gap-1.5 pt-0.5">
+                    <!-- Files -->
                     <a 
                       v-for="(file, fIdx) in parseCommentFiles(log.content)" 
-                      :key="fIdx" 
+                      :key="'file-' + fIdx" 
                       :href="file.url" 
                       :download="file.name" 
                       target="_blank"
                       @click.stop
-                      class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 hover:bg-slate-200/90 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer max-w-full select-none shadow-3xs"
-                      :title="file.name"
+                      class="w-7 h-9 rounded-sm border border-[#d4a574] bg-[#f5e6d0] hover:bg-[#edd9bc] flex flex-col items-center justify-end overflow-hidden cursor-pointer transition-colors flex-shrink-0"
+                      :title="'Tải xuống: ' + file.name"
                     >
-                      <i class="fa-solid fa-paperclip text-slate-500 text-[11px]"></i>
-                      <span class="truncate max-w-[150px]">{{ file.name }}</span>
-                      <i class="fa-solid fa-download text-[9px] text-slate-400 ml-0.5"></i>
+                      <i class="fa-solid fa-file text-[#c87828] text-[11px] mb-0.5"></i>
+                      <span class="text-[7px] font-bold text-[#8b5a2b] bg-[#e8c99a] w-full text-center py-0.5 leading-none">FILE</span>
                     </a>
                   </div>
                 </div>
@@ -449,7 +451,7 @@
             </transition-group>
 
             <!-- Empty activities state -->
-            <div v-if="activities.length === 0" class="py-12 text-center text-gray-450 text-xs font-semibold">
+            <div v-if="displayedActivities.length === 0" class="py-12 text-center text-gray-450 text-xs font-semibold">
               Chưa có cập nhật hoạt động nào mới.
             </div>
           </div>
@@ -557,7 +559,7 @@
         <button
           @click="goToBulkUpdate"
           type="button"
-          class="px-3.5 py-1.5 sm:px-5 sm:py-2.5 bg-[#10b981] hover:bg-emerald-600 text-white font-extrabold text-xs sm:text-sm rounded-xl flex items-center gap-1.5 sm:gap-2 shadow-xs transition-colors cursor-pointer flex-shrink-0"
+          class="px-3.5 py-1.5 sm:px-5 sm:py-2.5 bg-[#45A246] hover:bg-[#3a903b] text-white font-extrabold text-xs sm:text-sm rounded-xl flex items-center gap-1.5 sm:gap-2 shadow-xs transition-colors cursor-pointer flex-shrink-0"
         >
           <i class="fa-solid fa-dove text-sm"></i>
           <span>Hú Hú</span>
@@ -629,7 +631,7 @@
               </button>
               <button
                 type="submit"
-                class="px-5 py-2 bg-[#10b981] hover:bg-emerald-600 text-white text-sm font-bold rounded-xl shadow-2xs transition-colors cursor-pointer"
+                class="px-5 py-2 bg-[#45A246] hover:bg-[#3a903b] text-white text-sm font-bold rounded-xl shadow-2xs transition-colors cursor-pointer"
               >
                 Lưu thay đổi
               </button>
@@ -726,7 +728,7 @@
               type="button"
               @click="saveNewView"
               :disabled="!newViewName.trim()"
-              class="px-5 py-2 bg-[#10b981] hover:bg-emerald-600 disabled:bg-emerald-300 text-white font-bold text-xs rounded-xl transition-colors shadow-2xs cursor-pointer"
+              class="px-5 py-2 bg-[#45A246] hover:bg-[#3a903b] disabled:bg-emerald-300 text-white font-bold text-xs rounded-xl transition-colors shadow-2xs cursor-pointer"
             >
               Tạo View
             </button>
@@ -753,7 +755,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
@@ -896,16 +898,32 @@ const handleCloseModal = () => {
 }
 
 const goToProjectDetail = (projectId, event) => {
-  if (event.ctrlKey || event.metaKey) return
-  
   // Double-click navigates to detail
   if (event.detail === 2) {
     router.push(`/projects/${projectId}`)
     return
   }
   
-  // Single click toggles checkbox selection
-  toggleProjectSelect(projectId)
+  // Single click selection logic
+  const isCtrlOrMeta = event && (event.ctrlKey || event.metaKey)
+  
+  if (isCtrlOrMeta) {
+    // Ctrl + Click: Toggle selection
+    const idx = selectedProjectIds.value.indexOf(projectId)
+    if (idx > -1) {
+      selectedProjectIds.value.splice(idx, 1)
+      if (selectedProjectIds.value.length === 0) {
+        showAllCheckboxes.value = false
+      }
+    } else {
+      selectedProjectIds.value.push(projectId)
+      showAllCheckboxes.value = true
+    }
+  } else {
+    // Normal Click: Select only this project
+    selectedProjectIds.value = [projectId]
+    showAllCheckboxes.value = true
+  }
 }
 
 // Pagination for ViewListPage (Infinite Scroll)
@@ -979,31 +997,44 @@ const removeVietnameseAccents = (str) => {
 const isGroupedByCustomer = ref(false)
 const viewMode = ref('list') // 'list', 'grouped', 'notes'
 
-const toggleCustomerGroup = () => {
-  // Cycle through view modes: list -> grouped -> notes -> list
-  if (viewMode.value === 'list') {
-    viewMode.value = 'grouped'
-    isGroupedByCustomer.value = true
-  } else if (viewMode.value === 'grouped') {
-    viewMode.value = 'notes'
-    isGroupedByCustomer.value = false
-  } else {
-    viewMode.value = 'list'
-    isGroupedByCustomer.value = false
+watch(() => authStore.user?.view_mode, (newVal) => {
+  if (newVal && ['list', 'grouped', 'notes'].includes(newVal)) {
+    viewMode.value = newVal
+    isGroupedByCustomer.value = (newVal === 'grouped')
   }
+}, { immediate: true })
+
+const toggleCustomerGroup = async () => {
+  // Cycle through view modes: list -> grouped -> notes -> list
+  let nextMode = 'list'
+  if (viewMode.value === 'list') {
+    nextMode = 'grouped'
+  } else if (viewMode.value === 'grouped') {
+    nextMode = 'notes'
+  }
+  
+  viewMode.value = nextMode
+  isGroupedByCustomer.value = (nextMode === 'grouped')
+  await authStore.updateViewMode(nextMode)
 }
 
 // Pinned Customers logic
-const pinnedCustomerNames = ref(JSON.parse(localStorage.getItem('pinned_customers') || '[]'))
+const pinnedCustomerNames = ref([])
 
-const togglePinCustomer = (customerName) => {
-  const idx = pinnedCustomerNames.value.indexOf(customerName)
+watch(() => authStore.user?.pinned_customers, (newVal) => {
+  pinnedCustomerNames.value = newVal ? [...newVal] : []
+}, { immediate: true })
+
+const togglePinCustomer = async (customerName) => {
+  const currentPinned = [...pinnedCustomerNames.value]
+  const idx = currentPinned.indexOf(customerName)
   if (idx > -1) {
-    pinnedCustomerNames.value.splice(idx, 1)
+    currentPinned.splice(idx, 1)
   } else {
-    pinnedCustomerNames.value.push(customerName)
+    currentPinned.push(customerName)
   }
-  localStorage.setItem('pinned_customers', JSON.stringify(pinnedCustomerNames.value))
+  pinnedCustomerNames.value = currentPinned
+  await authStore.updatePinnedCustomers(currentPinned)
 }
 
 const projectsByCustomer = computed(() => {
@@ -1038,10 +1069,8 @@ const getGroupedProjectCardStyle = (project) => {
     return 'bg-[#86efac] border-emerald-400 text-emerald-950 font-bold shadow-3xs'
   } else if (health === 'red') {
     return 'bg-[#fca5a5] border-rose-400 text-rose-950 font-bold shadow-3xs'
-  } else if (health === 'yellow') {
-    return 'bg-[#fde047] border-amber-400 text-amber-950 font-bold shadow-3xs'
   } else {
-    return 'bg-white border-gray-300 text-gray-900 font-bold shadow-3xs'
+    return 'bg-white border-gray-200 text-gray-900 font-bold shadow-3xs'
   }
 }
 
@@ -1159,7 +1188,7 @@ const togglePinProject = async (project) => {
 }
 
 const getProjectStatusStyle = (project) => {
-  const health = project.health || 'green'
+  const health = project.health || 'yellow'
   
   // Card color based on HEALTH (Sức khỏe) - Darker colors with thicker borders and less rounded corners
   let cardBg = ''
@@ -1171,9 +1200,9 @@ const getProjectStatusStyle = (project) => {
   } else if (health === 'red') {
     cardBg = 'bg-[#fca5a5] border-[#f87171]' // Darker red
     borderClass = 'border-2' // Thicker border
-  } else { // yellow
-    cardBg = 'bg-[#fcd34d] border-[#fbbf24]' // Darker yellow
-    borderClass = 'border-2' // Thicker border
+  } else { // yellow / white / default
+    cardBg = 'bg-white border-gray-200 shadow-sm'
+    borderClass = 'border-2'
   }
   
   return {
@@ -1188,16 +1217,14 @@ const getStickyNoteStyle = (project) => {
   const health = project.health
   if (health === 'green') return 'note-green'
   if (health === 'red') return 'note-red'
-  if (health === 'white') return 'note-white'
-  return 'note-yellow'
+  return 'note-white'
 }
 
 const getStickyNotePinStyle = (project) => {
   const health = project.health
   if (health === 'green') return 'pin-green'
   if (health === 'red') return 'pin-red'
-  if (health === 'white') return 'pin-grey'
-  return 'pin-yellow'
+  return 'pin-grey'
 }
 
 const isSelected = (id) => selectedProjectIds.value.includes(id)
@@ -1218,10 +1245,30 @@ const getLatestComment = (project) => {
 }
 
 const statusDotClass = (health) => {
-  if (health === 'yellow') return 'bg-amber-400'
+  if (health === 'yellow' || health === 'white') return 'bg-white border border-gray-300 shadow-3xs'
   if (health === 'red') return 'bg-rose-500'
-  if (health === 'green') return 'bg-emerald-500'
+  if (health === 'green') return 'bg-[#45A246]'
   return 'bg-gray-400'
+}
+
+const getActivityStyle = (log) => {
+  const health = log.project_health
+  if (health === 'green') {
+    return 'bg-[#86efac] border-[#4ade80] border-2 text-gray-900'
+  } else if (health === 'red') {
+    return 'bg-[#fca5a5] border-[#f87171] border-2 text-gray-900'
+  }
+  return 'bg-white border-gray-300 border text-gray-800'
+}
+
+const getProjectPillStyle = (log) => {
+  const health = log.project_health
+  if (health === 'green') {
+    return 'bg-[#4ade80]/20 hover:bg-[#4ade80]/30 border-[#4ade80]/60 text-green-900'
+  } else if (health === 'red') {
+    return 'bg-[#f87171]/20 hover:bg-[#f87171]/30 border-[#f87171]/60 text-red-900'
+  }
+  return 'bg-emerald-50/80 hover:bg-emerald-100/90 border-emerald-200/60 text-emerald-800'
 }
 
 const formatActivityTime = (dateTimeStr) => {
@@ -1542,13 +1589,11 @@ const toggleProjectSelect = (id) => {
   const idx = selectedProjectIds.value.indexOf(id)
   if (idx > -1) {
     selectedProjectIds.value.splice(idx, 1)
-    // If no selections left, hide checkboxes again
     if (selectedProjectIds.value.length === 0) {
       showAllCheckboxes.value = false
     }
   } else {
     selectedProjectIds.value.push(id)
-    // Show all checkboxes when any checkbox is clicked
     showAllCheckboxes.value = true
   }
 }
@@ -1638,6 +1683,16 @@ const parseCommentFiles = (content) => {
 // Activities feed fetching and styling
 const activities = ref([])
 const isActivitiesLoading = ref(true)
+
+const displayedActivities = computed(() => {
+  if (selectedProjectIds.value.length === 0) {
+    return activities.value
+  }
+  return activities.value.filter(log => {
+    const pId = log.project_id || log.project?.id
+    return pId && selectedProjectIds.value.includes(Number(pId))
+  })
+})
 
 const fetchActivities = async () => {
   try {
@@ -1800,6 +1855,7 @@ const handleScroll = (event) => {
 }
 
 onMounted(async () => {
+  projectStore.activePage = 'home'
   projectStore.activeStatus = null
   loadCustomViews()
   await projectStore.fetchProjects()

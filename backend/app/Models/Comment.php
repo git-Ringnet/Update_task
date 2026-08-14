@@ -16,7 +16,20 @@ class Comment extends Model
         'user_id',
         'content',
         'type',
+        'project_health',
     ];
+
+    protected static function booted()
+    {
+        static::creating(function ($comment) {
+            if ($comment->project_id && !$comment->project_health) {
+                $project = \App\Models\Project::find($comment->project_id);
+                if ($project) {
+                    $comment->project_health = $project->health;
+                }
+            }
+        });
+    }
 
     public function project(): BelongsTo
     {

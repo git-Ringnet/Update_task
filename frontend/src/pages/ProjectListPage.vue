@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#f4f5f0] flex flex-col justify-between pb-24">
+  <div class="min-h-screen bg-[#F9F4EE] flex flex-col justify-between pb-24">
     <div>
       <!-- Navbar Component -->
       <Navbar @search="handleSearch" />
@@ -20,7 +20,7 @@
             <button
               @click="isModalOpen = true"
               type="button"
-              class="px-5 py-2.5 bg-[#10b981] hover:bg-emerald-600 text-white font-bold text-sm rounded-xl transition-colors flex items-center gap-2 shadow-2xs cursor-pointer"
+              class="px-5 py-2.5 bg-[#45A246] hover:bg-[#3a903b] text-white font-bold text-sm rounded-xl transition-colors flex items-center gap-2 shadow-2xs cursor-pointer"
             >
               <i class="fa-solid fa-plus text-xs"></i>
               <span>Tạo dự án</span>
@@ -49,11 +49,12 @@
           <div v-if="isSearchOpen" class="mb-8 bg-gray-50/50 p-4 border border-gray-200/60 rounded-2xl">
             <div class="relative max-w-md">
               <input
+                ref="searchInputRef"
                 v-model="searchQueryLocal"
                 @input="handleSearchLocal"
                 type="text"
                 placeholder="Tìm kiếm dự án theo tên hoặc khách hàng..."
-                class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-white"
+                class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#45A246] focus:ring-1 focus:ring-[#45A246] bg-white"
               />
               <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
                 <i class="fa-solid fa-magnifying-glass text-sm"></i>
@@ -462,7 +463,7 @@
         <button
           @click="goToBulkUpdate"
           type="button"
-          class="px-3.5 py-1.5 sm:px-5 sm:py-2.5 bg-[#10b981] hover:bg-emerald-600 text-white font-extrabold text-xs sm:text-sm rounded-xl flex items-center gap-1.5 sm:gap-2 shadow-xs transition-colors cursor-pointer flex-shrink-0"
+          class="px-3.5 py-1.5 sm:px-5 sm:py-2.5 bg-[#45A246] hover:bg-[#3a903b] text-white font-extrabold text-xs sm:text-sm rounded-xl flex items-center gap-1.5 sm:gap-2 shadow-xs transition-colors cursor-pointer flex-shrink-0"
         >
           <i class="fa-solid fa-dove text-sm"></i>
           <span>Hú Hú</span>
@@ -473,7 +474,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
@@ -492,9 +493,9 @@ const toast = useToastStore()
 const confirmStore = useConfirmStore()
 
 const statusDotClass = (health) => {
-  if (health === 'yellow') return 'bg-amber-400'
+  if (health === 'yellow' || health === 'white') return 'bg-white border border-gray-300 shadow-3xs'
   if (health === 'red') return 'bg-rose-500'
-  if (health === 'green') return 'bg-emerald-500'
+  if (health === 'green') return 'bg-[#45A246]'
   return 'bg-gray-400'
 }
 
@@ -537,6 +538,26 @@ const editingProject = ref(null)
 
 const isSearchOpen = ref(false)
 const searchQueryLocal = ref('')
+const searchInputRef = ref(null)
+let debounceTimeout = null
+
+const handleSearchLocal = () => {
+  if (debounceTimeout) clearTimeout(debounceTimeout)
+  debounceTimeout = setTimeout(() => {
+    handleSearch(searchQueryLocal.value)
+  }, 300)
+}
+
+watch(isSearchOpen, async (newVal) => {
+  if (newVal) {
+    await nextTick()
+    searchInputRef.value?.focus()
+  } else {
+    searchQueryLocal.value = ''
+    if (debounceTimeout) clearTimeout(debounceTimeout)
+    handleSearch('')
+  }
+})
 const isMoreMenuOpen = ref(false)
 const activeBulkMenu = ref(null)
 
@@ -885,7 +906,7 @@ const setTab = (status) => {
 
 const handleSearch = (query) => {
   displayLimit.value = 15
-  projectStore.searchQuery = query
+  projectStore.listSearchQuery = query
   projectStore.fetchProjects()
 }
 
@@ -959,6 +980,9 @@ const formatRelativeTime = (dateStr) => {
 }
 
 onMounted(() => {
+  projectStore.activePage = 'list'
+  searchQueryLocal.value = projectStore.listSearchQuery || ''
+  isSearchOpen.value = !!projectStore.listSearchQuery
   projectStore.activeStatus = null
   projectStore.fetchProjects()
   projectStore.fetchAuxData()
@@ -972,6 +996,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  projectStore.activePage = 'home'
   if (pollTimer) clearInterval(pollTimer)
   window.removeEventListener('mouseup', handleMouseUp)
   window.removeEventListener('click', closeAllActionMenus)

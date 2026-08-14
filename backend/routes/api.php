@@ -182,9 +182,11 @@ Route::middleware('auth.token')->group(function () {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'avatar' => 'nullable|string',
+            'name' => 'sometimes|required|string|max:255',
+            'email' => 'sometimes|required|email|unique:users,email,' . $user->id,
+            'avatar' => 'sometimes|nullable|string',
+            'view_mode' => 'sometimes|nullable|string|in:list,grouped,notes',
+            'pinned_customers' => 'sometimes|nullable|array',
         ]);
         $user->update($validated);
         return response()->json($user);

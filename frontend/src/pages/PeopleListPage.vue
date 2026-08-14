@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#f4f5f0] flex flex-col justify-between pb-24">
+  <div class="min-h-screen bg-[#F9F4EE] flex flex-col justify-between pb-24">
     <div>
       <!-- Navbar Component -->
       <Navbar />

@@ -1,7 +1,49 @@
 <template>
-  <div class="min-h-screen bg-[#f4f5f0] text-gray-800 pb-24 font-sans select-none">
+  <div class="min-h-screen bg-[#F9F4EE] text-gray-800 pb-24 font-sans select-none">
     <!-- Navbar Component -->
     <Navbar />
+
+    <!-- STICKY FLOATING TOP BAR (appears on scroll) -->
+    <transition enter-active-class="transition duration-200 ease-out" enter-from-class="-translate-y-full opacity-0"
+      enter-to-class="translate-y-0 opacity-100" leave-active-class="transition duration-150 ease-in"
+      leave-from-class="translate-y-0 opacity-100" leave-to-class="-translate-y-full opacity-0">
+      <div v-if="showDetailStickyBar && project"
+        class="fixed top-[57px] left-0 right-0 z-[40] bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-sm">
+        <div class="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+          <button @click="goBack" type="button"
+            class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-[#45A246] font-bold transition-colors cursor-pointer focus:outline-none">
+            <i class="fa-solid fa-arrow-left text-xs"></i>
+            <span>Danh sách dự án</span>
+          </button>
+          <div class="flex items-center gap-2.5">
+            <div class="relative" ref="stickyActionMenuRef">
+              <button @click="toggleActionMenu" type="button"
+                class="w-10 h-10 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl flex items-center justify-center text-gray-800 shadow-2xs transition-colors cursor-pointer text-base"
+                title="Menu tùy chọn">
+                <i class="fa-solid fa-bars"></i>
+              </button>
+
+              <!-- Dropdown Menu for Sticky Bar -->
+              <div v-if="isActionMenuOpen"
+                class="absolute right-0 top-full mt-2 w-60 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 py-2 text-left ring-1 ring-black/5 animate-fade-in-up">
+                <button @click="handleEditProject" type="button"
+                  class="w-full text-left px-4.5 py-2.5 hover:bg-amber-50 text-gray-800 hover:text-amber-800 text-xs sm:text-sm font-bold transition-colors flex items-center gap-3 cursor-pointer">
+                  <i class="fa-solid fa-pen-to-square text-amber-500 text-sm"></i>
+                  <span>Chỉnh sửa dự án</span>
+                </button>
+                <div class="border-t border-gray-100 my-1"></div>
+                <button @click="handleDeleteProject" type="button" :disabled="!canDeleteProject"
+                  class="w-full text-left px-4.5 py-2.5 text-xs sm:text-sm font-bold transition-colors flex items-center gap-3 cursor-pointer"
+                  :class="canDeleteProject ? 'hover:bg-rose-50 text-rose-600' : 'text-gray-300 cursor-not-allowed'">
+                  <i class="fa-solid fa-trash-can text-sm"></i>
+                  <span>Xóa dự án</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
 
     <!-- Loading Spinner State -->
     <div v-if="isDetailLoading && !project"
@@ -88,7 +130,7 @@
 
       <!-- SOFT ELEGANT MOUNTAIN ROADMAP CONTAINER -->
       <div
-        class="relative bg-[#f4f5f0] rounded-3xl pt-4 pb-2 px-4 sm:pt-5 sm:pb-3 sm:px-6 select-none overflow-hidden min-h-[250px]">
+        class="relative bg-[#F9F4EE] rounded-3xl pt-4 pb-2 px-4 sm:pt-5 sm:pb-3 sm:px-6 select-none overflow-hidden min-h-[250px]">
 
         <!-- Mountain graphic container -->
         <div class="relative min-w-[980px] h-[240px] mx-auto px-4 sm:px-6">
@@ -116,16 +158,13 @@
               stroke-linecap="round" />
           </svg>
 
-          <!-- Expand/Collapse completed stages float toggle badge -->
-          <div v-if="hasCompletedPrefix" class="absolute top-2.5 left-3 z-40">
-            <button 
-              type="button"
-              @click="isCompletedCollapsed = !isCompletedCollapsed"
-              class="px-2.5 py-1 bg-white border border-gray-200 hover:border-emerald-500 rounded-full text-[10px] font-bold text-gray-500 hover:text-emerald-700 transition-all flex items-center gap-1 shadow-3xs cursor-pointer select-none"
-            >
-              <i :class="['fa-solid text-[9px]', isCompletedCollapsed ? 'fa-angles-right text-emerald-600' : 'fa-angles-left text-slate-500']"></i>
-              <span>{{ isCompletedCollapsed ? 'Mở rộng chặng hoàn thành' : 'Thu gọn chặng hoàn thành' }}</span>
-            </button>
+          <!-- Small collapse completed stages button on the dashed line -->
+          <div v-if="canCollapseCompletedPrefix && !isCompletedCollapsed && milestoneLayout.collapseBtnLeftPct"
+            @click="isCompletedCollapsed = true"
+            class="absolute top-[160px] -translate-x-1/2 z-35 cursor-pointer flex items-center justify-center w-5 h-5 rounded-full border border-[#45A246] bg-white hover:bg-[#45A246]/10 shadow-3xs transition-all hover:scale-110"
+            :style="{ left: milestoneLayout.collapseBtnLeftPct }"
+            title="Thu gọn chặng hoàn thành">
+            <i class="fa-solid fa-chevron-left text-[9px] text-[#45A246] font-bold"></i>
           </div>
 
           <!-- Render all roadmap items (Start, Group, Done milestone, Active milestone) -->
@@ -137,17 +176,17 @@
               class="absolute top-[146px] -translate-x-1/2 flex flex-col items-center z-30 cursor-pointer group transition-all duration-300 hover:scale-105"
               :style="{ left: item.leftPct }">
               <!-- Rounded Capsule shape matching the user's image, with expandable icon -->
-              <div class="relative h-10 px-3.5 rounded-full border border-emerald-500 bg-emerald-50/95 flex items-center justify-between gap-2.5 shadow-sm group-hover:bg-emerald-100 transition-colors">
+              <div class="relative h-10 px-3.5 rounded-full border border-[#45A246] bg-white flex items-center justify-between gap-2.5 shadow-sm group-hover:bg-slate-50 transition-colors">
                 <!-- Stacked Avatars preview inside capsule -->
                 <div class="flex items-center -space-x-2">
                   <template v-for="(u, uIdx) in getGroupedAvatars(item.stage.stages).slice(0, 3)" :key="u.id || uIdx">
-                    <img :src="u.avatar || defaultAvatar" class="w-6 h-6 rounded-full object-cover border border-emerald-400 bg-white" />
+                    <img :src="u.avatar || defaultAvatar" class="w-6 h-6 rounded-full object-cover border border-[#45A246]/40 bg-white" />
                   </template>
                 </div>
                 <!-- Text -->
-                <span class="text-[10px] font-black text-emerald-800 uppercase tracking-tight whitespace-nowrap">{{ item.stage.stages.length }} Chặng Xong</span>
+                <span class="text-[10px] font-black text-[#45A246] uppercase tracking-tight whitespace-nowrap">{{ item.stage.stages.length }} Chặng Xong</span>
                 <!-- Expand chevron button inside capsule border -->
-                <div class="w-5 h-5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-3xs transition-colors cursor-pointer border border-emerald-400">
+                <div class="w-5 h-5 rounded-full bg-[#45A246] hover:bg-[#3a903b] text-white flex items-center justify-center shadow-3xs transition-colors cursor-pointer border border-[#45A246]/60">
                   <i class="fa-solid fa-chevron-right text-[8px]"></i>
                 </div>
               </div>
@@ -158,23 +197,23 @@
               @click="selectStartStage"
               class="absolute top-[150px] -translate-x-1/2 flex flex-col items-center z-30 cursor-pointer group transition-all duration-300 hover:scale-108"
               :style="{ left: item.leftPct }">
-              <div class="relative w-10 h-10 rounded-full border-2 border-emerald-600 bg-emerald-50 flex items-center justify-center shadow-2xs transition-colors group-hover:bg-emerald-100">
-                <svg class="w-5 h-5 fill-emerald-600" viewBox="0 0 512 512">
+              <div class="relative w-10 h-10 rounded-full border-2 border-[#45A246] bg-white flex items-center justify-center shadow-2xs transition-colors group-hover:bg-slate-50">
+                <svg class="w-5 h-5 fill-[#45A246]" viewBox="0 0 512 512">
                   <g transform="translate(0,512) scale(0.1,-0.1)">
                     <path d="M560 4828 c-18 -13 -43 -36 -54 -51 l-21 -28 0 -2189 0 -2189 21 -28 c73 -98 195 -98 268 0 21 28 21 34 24 850 l3 822 1874 562 c1031 309 1886 570 1900 580 31 22 65 90 65 128 0 39 -36 110 -66 130 -19 12 -2490 923 -3748 1381 -168 61 -215 66 -266 32z m1834 -948 c861 -316 1566 -577 1566 -580 0 -3 -706 -216 -1568 -474 -862 -258 -1573 -471 -1579 -474 -10 -3 -13 212 -13 1053 0 885 2 1056 14 1053 7 -2 718 -262 1580 -578z"/>
                   </g>
                 </svg>
                 <!-- Tick Done Badge hoặc số task -->
-                <div v-if="startStageTasks.length === 0" class="w-4.5 h-4.5 rounded-full bg-emerald-600 border-2 border-white text-white flex items-center justify-center absolute -bottom-1 left-1/2 -translate-x-1/2 shadow-2xs">
+                <div v-if="startStageTasks.length === 0" class="w-4.5 h-4.5 rounded-full bg-[#45A246] border-2 border-white text-white flex items-center justify-center absolute -bottom-1 left-1/2 -translate-x-1/2 shadow-2xs">
                   <i class="fa-solid fa-check text-[8px]"></i>
                 </div>
-                <div v-else class="w-4.5 h-4.5 rounded-full bg-emerald-600 border-2 border-white text-white flex items-center justify-center absolute -bottom-1 left-1/2 -translate-x-1/2 shadow-2xs text-[9px] font-black leading-none">
+                <div v-else class="w-4.5 h-4.5 rounded-full bg-[#45A246] border-2 border-white text-white flex items-center justify-center absolute -bottom-1 left-1/2 -translate-x-1/2 shadow-2xs text-[9px] font-black leading-none">
                   {{ startStageTasks.length }}
                 </div>
               </div>
               <div class="text-center mt-1.5 whitespace-nowrap font-sans">
                 <div class="text-xs font-black tracking-tight uppercase transition-colors"
-                  :class="isStartStageSelected ? 'text-emerald-700 underline underline-offset-4 decoration-2' : 'text-gray-900 group-hover:text-emerald-700'">
+                  :class="isStartStageSelected ? 'text-[#45A246] underline underline-offset-4 decoration-2' : 'text-gray-900 group-hover:text-[#45A246]'">
                   Bắt đầu
                 </div>
                 <div v-if="project.created_at" class="text-[11px] font-bold text-gray-400 mt-0.5">
@@ -190,24 +229,24 @@
               :style="{ left: item.leftPct }">
 
               <!-- Cờ xanh SVG hoàn thành với badge tick checkmark -->
-              <div class="relative w-10 h-10 rounded-full border-2 border-emerald-600 bg-emerald-50 flex items-center justify-center shadow-2xs transition-colors group-hover:bg-emerald-100"
+              <div class="relative w-10 h-10 rounded-full border-2 border-[#45A246] bg-white flex items-center justify-center shadow-2xs transition-colors group-hover:bg-slate-50"
                 :title="`Chặng đã hoàn thành: ${item.stage.title}`">
 
                 <!-- AVATARS CỦA RIÊNG CHẶNG ĐÃ HOÀN THÀNH -->
                 <div v-if="(milestoneAvatarsMap[item.stage.id] || []).length > 0"
                   class="absolute -top-8.5 left-1/2 -translate-x-1/2 flex items-center -space-x-1.5 mb-1 pointer-events-none whitespace-nowrap">
                   <div v-for="u in (milestoneAvatarsMap[item.stage.id] || [])" :key="u.id"
-                    class="w-7.5 h-7.5 rounded-full bg-white p-0.5 shadow-sm border-2 border-emerald-500 transition-all hover:scale-115">
+                    class="w-7.5 h-7.5 rounded-full bg-white p-0.5 shadow-sm border-2 border-[#45A246] transition-all hover:scale-115">
                     <img :src="u.avatar || defaultAvatar" class="w-full h-full rounded-full object-cover" />
                   </div>
                 </div>
 
-                <svg class="w-5 h-5 fill-emerald-600" viewBox="0 0 512 512">
+                <svg class="w-5 h-5 fill-[#45A246]" viewBox="0 0 512 512">
                   <g transform="translate(0,512) scale(0.1,-0.1)">
                     <path d="M560 4828 c-18 -13 -43 -36 -54 -51 l-21 -28 0 -2189 0 -2189 21 -28 c73 -98 195 -98 268 0 21 28 21 34 24 850 l3 822 1874 562 c1031 309 1886 570 1900 580 31 22 65 90 65 128 0 39 -36 110 -66 130 -19 12 -2490 923 -3748 1381 -168 61 -215 66 -266 32z m1834 -948 c861 -316 1566 -577 1566 -580 0 -3 -706 -216 -1568 -474 -862 -258 -1573 -471 -1579 -474 -10 -3 -13 212 -13 1053 0 885 2 1056 14 1053 7 -2 718 -262 1580 -578z" />
                   </g>
                 </svg>
-                <div class="w-4.5 h-4.5 rounded-full bg-emerald-600 border-2 border-white text-white flex items-center justify-center absolute -bottom-1 left-1/2 -translate-x-1/2 shadow-2xs">
+                <div class="w-4.5 h-4.5 rounded-full bg-[#45A246] border-2 border-white text-white flex items-center justify-center absolute -bottom-1 left-1/2 -translate-x-1/2 shadow-2xs">
                   <i class="fa-solid fa-check text-[8px]"></i>
                 </div>
               </div>
@@ -215,7 +254,7 @@
               <!-- Tên chặng & Ngày hoàn thành -->
               <div class="text-center mt-1.5 whitespace-nowrap font-sans max-w-[100px]">
                 <div class="text-xs font-black tracking-tight leading-tight uppercase transition-colors truncate"
-                  :class="selectedMilestone && selectedMilestone.id === item.stage.id ? 'text-emerald-700 underline underline-offset-4 decoration-2' : 'text-gray-900 group-hover:text-emerald-700'"
+                  :class="selectedMilestone && selectedMilestone.id === item.stage.id ? 'text-[#45A246] underline underline-offset-4 decoration-2' : 'text-gray-900 group-hover:text-[#45A246]'"
                   :title="item.stage.title">
                   {{ truncateMilestoneTitle(item.stage.title) }}
                 </div>
@@ -253,7 +292,7 @@
                   <div v-for="(u, uIdx) in (milestoneAvatarsMap[item.stage.id] || []).slice(0, 7)" :key="u.id || uIdx"
                     class="absolute w-8 h-8 rounded-full bg-white p-0.5 shadow-md border-2 border-emerald-500 transition-all hover:scale-125 filter drop-shadow-2xs"
                     :style="{
-                      transform: `translate(${(uIdx - (Math.min((milestoneAvatarsMap[item.stage.id] || []).length, 7) - 1) / 2) * 20}px, ${-(uIdx - (Math.min((milestoneAvatarsMap[item.stage.id] || []).length, 7) - 1) / 2) * 16}px)`,
+                      transform: getAvatarTransform(uIdx, milestoneAvatarsMap[item.stage.id] || [], item.spanW),
                       zIndex: uIdx + 1
                     }" :title="`Thành viên thực hiện ${item.stage.title}: ${u.name}`">
                     <img :src="u.avatar || defaultAvatar" class="w-full h-full rounded-full object-cover" />
@@ -309,7 +348,7 @@
       <div v-if="!selectedMilestone || !selectedMilestone.is_completed"
         class="flex flex-col items-center justify-center mt-[-16px] mb-4 gap-1.5">
         <button @click="toggleInlineForm" type="button"
-          class="px-8 py-3 bg-[#10b981] hover:bg-emerald-600 text-white font-extrabold text-base sm:text-xl rounded-full shadow-md hover:shadow-lg hover:scale-103 active:scale-97 transition-all flex items-center gap-3 cursor-pointer group">
+          class="px-8 py-3 bg-[#45A246] hover:bg-[#3a903b] text-white font-extrabold text-base sm:text-xl rounded-full shadow-md hover:shadow-lg hover:scale-103 active:scale-97 transition-all flex items-center gap-3 cursor-pointer group">
           <div
             class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
             <i class="fa-solid fa-dove text-lg text-white"></i>
@@ -323,7 +362,7 @@
       <div @click="handleActivityContainerClick"
         class="bg-white rounded-3xl p-5 sm:p-6 shadow-xl border border-gray-100 max-w-[720px] mx-auto w-full space-y-4 animate-fade-in-up relative">
 
-        <!-- Header Row: Title "DẤU CHÂN HOẠT ĐỘNG" & Xem tất cả -->
+        <!-- Header Row: Title "HÀNH TRÌNH DỰ ÁN" & Xem tất cả -->
         <div class="border-b border-gray-100 pb-3.5">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3 min-w-0 flex-1">
@@ -334,22 +373,17 @@
                 <i class="fa-solid fa-arrow-left"></i>
               </button>
 
-              <h3 v-if="!selectedMilestone"
-                class="text-base sm:text-lg font-black text-gray-900 uppercase tracking-tight font-heading break-words min-w-0">
-                {{ isStartStageSelected ? 'BẮT ĐẦU' : 'DẤU CHÂN HOẠT ĐỘNG' }}
-              </h3>
-              <h3 v-else
-                class="text-base sm:text-lg font-black text-gray-500 uppercase tracking-tight font-heading break-words min-w-0">
-                DẤU CHÂN HOẠT ĐỘNG
+              <h3 class="text-base sm:text-lg font-black text-gray-900 uppercase tracking-tight font-heading break-all break-words min-w-0">
+                {{ selectedMilestone ? selectedMilestone.title : (isStartStageSelected ? 'BẮT ĐẦU' : 'HÀNH TRÌNH DỰ ÁN') }}
               </h3>
             </div>
 
             <!-- Xem tất cả link với hiệu ứng loading -->
             <button @click="handleViewAll" type="button" :disabled="isViewingAllLoading"
-              class="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all select-none flex-shrink-0"
+              class="text-xs font-bold text-[#45A246] hover:text-[#3a903b] flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all select-none flex-shrink-0"
               title="Xem tất cả hoạt động của dự án">
               <span v-if="isViewingAllLoading"
-                class="w-3.5 h-3.5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></span>
+                class="w-3.5 h-3.5 border-2 border-[#45A246] border-t-transparent rounded-full animate-spin"></span>
               <i v-else class="fa-solid fa-layer-group text-[11px]"></i>
               <span>{{ isViewingAllLoading ? 'Đang tải...' : 'Xem tất cả' }}</span>
               <i v-if="!isViewingAllLoading" class="fa-solid fa-arrow-right text-[10px]"></i>
@@ -358,18 +392,21 @@
 
           <!-- Separate section for selected Milestone Details (prevent crowding) -->
           <div v-if="selectedMilestone" class="mt-3">
-            <h4
-              class="text-lg sm:text-xl font-black text-gray-900 uppercase tracking-tight font-heading break-words leading-tight">
-              {{ selectedMilestone.title }}
-            </h4>
-
-            <!-- BUTTONS ĐÁNH DẤU HOÀN THÀNH & XÓA CHẶNG — ĐẶT DƯỚI TÊN CHẶNG -->
+            <!-- BUTTONS HOÀN THÀNH, CẬP NHẬT & XÓA CHẶNG -->
             <div class="flex items-center gap-2 mt-2 flex-wrap">
               <button @click="toggleMilestoneCompleted(selectedMilestone)" type="button"
                 class="px-3 py-1 rounded-xl font-bold text-xs shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
                 :class="selectedMilestone.is_completed ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200' : 'bg-emerald-600 hover:bg-emerald-700 text-white'">
                 <i class="fa-solid fa-circle-check text-xs"></i>
-                <span>{{ selectedMilestone.is_completed ? 'Đã hoàn thành chặng' : 'Đánh dấu hoàn thành chặng' }}</span>
+                <span>{{ selectedMilestone.is_completed ? 'Đã hoàn thành' : 'Hoàn thành' }}</span>
+              </button>
+
+              <button v-if="!selectedMilestone.is_completed" @click="openRenameMilestone(selectedMilestone)"
+                type="button"
+                class="px-3 py-1 rounded-xl font-bold text-xs shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-600 hover:text-white"
+                title="Đổi tên chặng này">
+                <i class="fa-solid fa-pen text-xs"></i>
+                <span>Cập nhật</span>
               </button>
 
               <button v-if="!selectedMilestone.is_completed" @click="handleDeleteMilestone(selectedMilestone.id)"
@@ -377,7 +414,33 @@
                 class="px-3 py-1 rounded-xl font-bold text-xs shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-600 hover:text-white"
                 title="Xóa chặng này">
                 <i class="fa-solid fa-trash-can text-xs"></i>
-                <span>Xóa chặng</span>
+                <span>Xóa</span>
+              </button>
+            </div>
+
+            <!-- INLINE RENAME INPUT (appears when clicking Cập nhật) -->
+            <div v-if="isRenamingMilestone" class="mt-2 flex items-center gap-2">
+              <input
+                ref="renameInputRef"
+                v-model="renameMilestoneTitle"
+                @keydown.enter="saveRenameMilestone"
+                @keydown.escape="isRenamingMilestone = false"
+                type="text"
+                maxlength="255"
+                placeholder="Nhập tên chặng mới..."
+                class="flex-1 px-3 py-1.5 bg-white border border-blue-300 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
+              />
+              <button @click="saveRenameMilestone" type="button"
+                :disabled="isRenamingSaving"
+                class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5">
+                <i v-if="isRenamingSaving" class="fa-solid fa-spinner fa-spin text-[10px]"></i>
+                <i v-else class="fa-solid fa-check text-[10px]"></i>
+                <span>Lưu</span>
+              </button>
+              <button @click="isRenamingMilestone = false" type="button"
+                class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1.5">
+                <i class="fa-solid fa-xmark text-[10px]"></i>
+                <span>Hủy</span>
               </button>
             </div>
           </div>
@@ -431,7 +494,7 @@
                 </div>
 
                 <!-- Body: message content -->
-                <div class="mt-1 text-[17px] font-bold text-gray-900 leading-snug whitespace-pre-wrap"
+                <div class="mt-1 text-[17px] font-bold text-gray-900 leading-snug whitespace-pre-wrap break-all break-words"
                   v-html="formatTitleText(t.title)"></div>
 
                 <!-- Attachments -->
@@ -501,15 +564,13 @@
           </button>
 
           <form @submit.prevent="handleAddStageTaskSubmit"
-            class="flex flex-col lg:flex-row items-stretch lg:items-center gap-4 lg:gap-5">
+            class="flex flex-col lg:flex-row items-stretch lg:items-start gap-4 lg:gap-5">
 
             <!-- LEFT SECTION: MỤC TIÊU HƯỚNG ĐẾN (CHẶNG / MILESTONE SELECTOR) -->
             <div class="flex flex-col gap-2 lg:pr-5 lg:border-r lg:border-gray-200 flex-shrink-0">
               <div
                 class="flex items-center gap-1 text-[11px] font-extrabold text-gray-500 tracking-wider uppercase font-sans">
                 <span>MỤC TIÊU HƯỚNG ĐẾN</span>
-                <i class="fa-regular fa-circle-question text-gray-400 text-xs"
-                  title="Chọn chặng mục tiêu hướng đến cho cập nhật"></i>
               </div>
 
               <!-- IF <= 3 STAGES: DISPLAY STAGE BUTTONS SIDE BY SIDE LIKE IN THE IMAGE -->
@@ -518,15 +579,19 @@
                 <div v-for="ms in activeTargetMilestones" :key="ms.id" @click="newStageTaskMilestoneId = ms.id"
                   class="flex flex-col items-center justify-between p-2 rounded-xl border transition-all cursor-pointer select-none min-w-[72px] sm:min-w-[84px] h-[78px]"
                   :class="newStageTaskMilestoneId === ms.id
-                    ? 'bg-rose-50/70 border-rose-200 text-rose-600 shadow-2xs'
+                    ? 'bg-[#45A246]/10 border-[#45A246]/35 text-[#45A246] shadow-2xs'
                     : 'bg-white border-gray-200 hover:border-gray-300 text-gray-600 hover:bg-gray-50'">
-                  <!-- Circle with task count -->
+                  <!-- Circle with SVG flag -->
                   <div
                     class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-colors"
                     :class="newStageTaskMilestoneId === ms.id
-                      ? 'border-2 border-rose-500 bg-white text-rose-600'
-                      : 'border border-gray-300 bg-white text-gray-700'">
-                    {{ getStageTaskCount(ms) }}
+                      ? 'border-2 border-[#45A246] bg-white text-[#45A246]'
+                      : 'border border-gray-300 bg-white text-gray-400'">
+                    <svg class="w-3.5 h-3.5" :class="newStageTaskMilestoneId === ms.id ? 'fill-[#45A246]' : 'fill-gray-400'" viewBox="0 0 512 512">
+                      <g transform="translate(0,512) scale(0.1,-0.1)">
+                        <path d="M560 4828 c-18 -13 -43 -36 -54 -51 l-21 -28 0 -2189 0 -2189 21 -28 c73 -98 195 -98 268 0 21 28 21 34 24 850 l3 822 1874 562 c1031 309 1886 570 1900 580 31 22 65 90 65 128 0 39 -36 110 -66 130 -19 12 -2490 923 -3748 1381 -168 61 -215 66 -266 32z m1834 -948 c861 -316 1566 -577 1566 -580 0 -3 -706 -216 -1568 -474 -862 -258 -1573 -471 -1579 -474 -10 -3 -13 212 -13 1053 0 885 2 1056 14 1053 7 -2 718 -262 1580 -578z"/>
+                      </g>
+                    </svg>
                   </div>
 
                   <!-- Stage Name -->
@@ -552,10 +617,14 @@
               <!-- IF 0 STAGES: Tự động dùng chặng Bắt đầu -->
               <div v-else class="flex items-center gap-2">
                 <div
-                  class="flex flex-col items-center justify-between p-2 rounded-xl border bg-emerald-50/70 border-emerald-200 text-emerald-600 shadow-2xs select-none min-w-[72px] sm:min-w-[84px] h-[78px]">
+                  class="flex flex-col items-center justify-between p-2 rounded-xl border bg-[#45A246]/10 border-[#45A246]/35 text-[#45A246] shadow-2xs select-none min-w-[72px] sm:min-w-[84px] h-[78px]">
                   <div
-                    class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 border-emerald-500 bg-white text-emerald-600">
-                    {{ startStageTasks.length }}
+                    class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 border-[#45A246] bg-white text-[#45A246]">
+                    <svg class="w-3.5 h-3.5 fill-[#45A246]" viewBox="0 0 512 512">
+                      <g transform="translate(0,512) scale(0.1,-0.1)">
+                        <path d="M560 4828 c-18 -13 -43 -36 -54 -51 l-21 -28 0 -2189 0 -2189 21 -28 c73 -98 195 -98 268 0 21 28 21 34 24 850 l3 822 1874 562 c1031 309 1886 570 1900 580 31 22 65 90 65 128 0 39 -36 110 -66 130 -19 12 -2490 923 -3748 1381 -168 61 -215 66 -266 32z m1834 -948 c861 -316 1566 -577 1566 -580 0 -3 -706 -216 -1568 -474 -862 -258 -1573 -471 -1579 -474 -10 -3 -13 212 -13 1053 0 885 2 1056 14 1053 7 -2 718 -262 1580 -578z"/>
+                      </g>
+                    </svg>
                   </div>
                   <span
                     class="text-[10px] font-black tracking-tight text-center uppercase leading-tight text-gray-900 font-extrabold mt-0.5">Bắt
@@ -642,7 +711,7 @@
               <div class="flex items-center justify-between gap-2 pt-0.5">
 
                 <!-- LEFT: Attachment button only -->
-                <div class="flex items-center gap-1.5">
+                <div class="flex items-center gap-2">
                   <div class="relative inline-flex items-center gap-1">
                     <button type="button" @click="triggerFileInput"
                       class="inline-flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none shadow-3xs bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-500 w-9 h-9"
@@ -653,6 +722,11 @@
                       accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar" class="hidden"
                       @change="onFileSelected" />
                   </div>
+                  
+                  <HealthStatusSelector
+                    v-model="newStageTaskHealth"
+                    :show-label="false"
+                  />
                 </div>
 
                 <!-- RIGHT: Person + Date + Submit -->
@@ -724,9 +798,9 @@
                     </div>
                   </div>
 
-                  <!-- Submit button -->
+                   <!-- Submit button -->
                   <button type="submit"
-                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#10b981] hover:bg-emerald-600 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer">
+                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#45A246] hover:bg-[#3a903b] text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer">
                     <i class="fa-solid fa-dove text-sm"></i>
                     <span>{{ editingTaskId ? 'Lưu' : 'Hú hú!' }}</span>
                     <i class="fa-solid fa-chevron-down text-[10px] opacity-80"></i>
@@ -813,6 +887,7 @@ import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
 import ProjectModal from '../components/ProjectModal.vue'
+import HealthStatusSelector from '../components/HealthStatusSelector.vue'
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toast'
 import { useConfirmStore } from '../stores/confirm'
@@ -833,6 +908,13 @@ const goBack = () => {
   } else {
     router.push('/projects')
   }
+}
+
+// Sticky floating bar state
+const showDetailStickyBar = ref(false)
+const stickyActionMenuRef = ref(null)
+const handleDetailScroll = () => {
+  showDetailStickyBar.value = window.scrollY > 150
 }
 
 // States
@@ -1673,6 +1755,7 @@ const openAddStageTaskForm = () => {
   newStageTaskDueDate.value = ''
   newStageTaskDueTime.value = ''
   newStageTaskAssignee.value = ''
+  newStageTaskHealth.value = project.value ? project.value.health : 'yellow'
   if (!newStageTaskMilestoneId.value) {
     newStageTaskMilestoneId.value = selectedMilestone.value ? selectedMilestone.value.id : (effectiveMilestones.value[0]?.id || null)
   }
@@ -1691,8 +1774,9 @@ const openEditStageTaskForm = (task) => {
   newStageTaskTitle.value = stripAttachmentsFromTitle(task.title)
   newStageTaskAssignee.value = task.assignee_id ? String(task.assignee_id) : ''
   newStageTaskMilestoneId.value = task.milestone_id || (selectedMilestone.value ? selectedMilestone.value.id : (effectiveMilestones.value[0]?.id || null))
+  newStageTaskHealth.value = project.value ? project.value.health : 'yellow'
 
-  const parsed = parseDateTimeStrings(task.due_date || task.created_at)
+  const parsed = parseDateTimeStrings(task.due_date)
   newStageTaskDueDate.value = parsed.date
   newStageTaskDueTime.value = parsed.time
 
@@ -1924,6 +2008,26 @@ const hasCompletedPrefix = computed(() => {
   return effectiveMilestones.value.some(ms => isStageCompleted(ms))
 })
 
+const completedPrefixStagesCount = computed(() => {
+  const allMilestones = effectiveMilestones.value
+  const startTasks = startStageTasks.value
+  const startStage = { isStart: true, is_completed: true, tasks: startTasks }
+  const allStages = [startStage, ...allMilestones]
+  let count = 0
+  for (const stage of allStages) {
+    if (stage.isStart || isStageCompleted(stage)) {
+      count++
+    } else {
+      break
+    }
+  }
+  return count
+})
+
+const canCollapseCompletedPrefix = computed(() => {
+  return completedPrefixStagesCount.value >= 3
+})
+
 const getGroupedAvatars = (stages) => {
   if (!stages || !Array.isArray(stages)) return []
   const userMap = new Map()
@@ -1987,7 +2091,7 @@ const milestoneLayout = computed(() => {
   
   let layoutItems = []
   
-  const collapsed = isCompletedCollapsed.value && completedPrefix.length > 1
+  const collapsed = isCompletedCollapsed.value && canCollapseCompletedPrefix.value
   
   if (collapsed) {
     // We group all completed prefix stages into a single node
@@ -2041,7 +2145,8 @@ const milestoneLayout = computed(() => {
     return itemData
   })
   
-  let dPath = `M 35 170 L ${startX} 170`
+  const firstItem = items[0]
+  let dPath = firstItem ? `M ${firstItem.peakX} 170` : `M 35 170 L ${startX} 170`
   const hillPaths = []
   
   items.forEach((item) => {
@@ -2060,12 +2165,18 @@ const milestoneLayout = computed(() => {
   const btnX = Math.min(1040, curX + 12)
   const btnPosPct = `${((btnX / 1100) * 100).toFixed(2)}%`
   
+  const lastCompletedItem = items[completedPrefix.length - 1]
+  const collapseBtnLeftPct = lastCompletedItem
+    ? `${((lastCompletedItem.endX / 1100) * 100).toFixed(2)}%`
+    : null
+  
   return {
     visibleItems: items,
     pageCount: 1,
     hills: hillPaths,
     ridgeline: dPath,
-    btnPos: btnPosPct
+    btnPos: btnPosPct,
+    collapseBtnLeftPct
   }
 })
 
@@ -2126,11 +2237,27 @@ const milestoneAvatarsMap = computed(() => {
 })
 
 
+const getAvatarTransform = (uIdx, avatars, spanW) => {
+  const count = Math.min(avatars.length, 7)
+  const middle = (count - 1) / 2
+  const dx = (uIdx - middle) * 20
+  const W = spanW || 240
+  const dy = -195 * (dx / W) + 390 * (dx / W) * (dx / W)
+  return `translate(${dx}px, ${dy}px)`
+}
+
 const truncateMilestoneTitle = (title) => {
   if (!title) return ''
-  const words = title.trim().split(/\s+/)
-  if (words.length <= 3) return title
-  return words.slice(0, 3).join(' ') + '...'
+  const trimmed = title.trim()
+  const words = trimmed.split(/\s+/)
+  let result = trimmed
+  if (words.length > 3) {
+    result = words.slice(0, 3).join(' ') + '...'
+  }
+  if (result.length > 15) {
+    return result.slice(0, 12) + '...'
+  }
+  return result
 }
 
 const getStageTaskCount = (stage) => {
@@ -2202,6 +2329,54 @@ const handleDeleteMilestone = async (msId) => {
     await fetchProjectDetail()
   } catch (err) {
     toast.error('Không thể xóa chặng!')
+  }
+}
+
+// RENAME MILESTONE STATE & FUNCTIONS
+const isRenamingMilestone = ref(false)
+const renameMilestoneTitle = ref('')
+const isRenamingSaving = ref(false)
+const renameInputRef = ref(null)
+const renamingMilestoneId = ref(null)
+
+const openRenameMilestone = (milestone) => {
+  if (!milestone) return
+  isRenamingMilestone.value = true
+  renameMilestoneTitle.value = milestone.title || ''
+  renamingMilestoneId.value = milestone.id
+  nextTick(() => {
+    if (renameInputRef.value) {
+      renameInputRef.value.focus()
+      renameInputRef.value.select()
+    }
+  })
+}
+
+const saveRenameMilestone = async () => {
+  const newTitle = renameMilestoneTitle.value?.trim()
+  if (!newTitle) {
+    toast.warning('Vui lòng nhập tên chặng!')
+    return
+  }
+  if (!renamingMilestoneId.value) return
+
+  const msId = renamingMilestoneId.value
+  isRenamingSaving.value = true
+  try {
+    await axios.put(`/api/milestones/${msId}`, { title: newTitle })
+    toast.success('Đã đổi tên chặng thành công!')
+    isRenamingMilestone.value = false
+    await fetchProjectDetail()
+    // Re-select the renamed milestone from the refreshed data
+    const updatedMs = effectiveMilestones.value.find(m => m.id === msId)
+    if (updatedMs) {
+      selectedMilestone.value = updatedMs
+      selectedTargetMilestoneId.value = updatedMs.id
+    }
+  } catch (err) {
+    toast.error('Đổi tên chặng thất bại!')
+  } finally {
+    isRenamingSaving.value = false
   }
 }
 
@@ -2398,10 +2573,14 @@ const parseDateTimeStrings = (dateStr) => {
   const yyyy = d.getFullYear()
   const mm = String(d.getMonth() + 1).padStart(2, '0')
   const dd = String(d.getDate()).padStart(2, '0')
-  const hh = String(d.getHours()).padStart(2, '0')
-  const min = String(d.getMinutes()).padStart(2, '0')
+  const hh = d.getHours()
+  const min = d.getMinutes()
 
-  return { date: `${yyyy}-${mm}-${dd}`, time: `${hh}:${min}` }
+  if (hh === 0 && min === 0) {
+    return { date: `${yyyy}-${mm}-${dd}`, time: '' }
+  }
+
+  return { date: `${yyyy}-${mm}-${dd}`, time: `${String(hh).padStart(2, '0')}:${String(min).padStart(2, '0')}` }
 }
 
 const formatDueDateTagForCard = (dateStr) => {
@@ -2409,9 +2588,14 @@ const formatDueDateTagForCard = (dateStr) => {
   const d = parseDateObj(dateStr)
   if (!d) return ''
   const hh = d.getHours()
-  const mm = String(d.getMinutes()).padStart(2, '0')
+  const mm = d.getMinutes()
   const date = `${d.getDate()}/${d.getMonth() + 1}`
-  return `${hh}:${mm} ${date}`
+  
+  if (hh === 0 && mm === 0) {
+    return date
+  }
+  
+  return `${hh}:${String(mm).padStart(2, '0')} ${date}`
 }
 
 const isPdfAttachment = (name) => /\.pdf$/i.test(name || '')
@@ -2469,7 +2653,9 @@ const handleQuickAssignTask = async (task, newUserId) => {
 
 const handleDocumentClick = (e) => {
   activeAssigneeDropdownTaskId.value = null
-  if (actionMenuDropdownRef.value && e && e.target && !actionMenuDropdownRef.value.contains(e.target)) {
+  const clickedOutsideMenu = actionMenuDropdownRef.value && e && e.target && !actionMenuDropdownRef.value.contains(e.target)
+  const clickedOutsideStickyMenu = stickyActionMenuRef.value && e && e.target && !stickyActionMenuRef.value.contains(e.target)
+  if (clickedOutsideMenu && clickedOutsideStickyMenu) {
     isActionMenuOpen.value = false
   }
 }
@@ -2478,6 +2664,17 @@ const handleDocumentClick = (e) => {
 const handleAddStageTaskSubmit = async () => {
   if (!newStageTaskTitle.value.trim() && attachedFiles.value.length === 0) return
   const pId = projectId.value
+
+  // Update project health if it changed before submitting task
+  if (newStageTaskHealth.value && newStageTaskHealth.value !== project.value.health) {
+    try {
+      await axios.patch(`/api/projects/${project.value.id}/health`, { health: newStageTaskHealth.value })
+      project.value.health = newStageTaskHealth.value
+    } catch (err) {
+      console.error('Failed to update inline project health on submit:', err)
+    }
+  }
+
   const msId = newStageTaskMilestoneId.value || (selectedTargetMilestoneId.value && !selectedMilestone.value?.is_completed ? selectedTargetMilestoneId.value : null) || (activeTargetMilestones.value[0]?.id || null)
 
   let titleText = newStageTaskTitle.value.trim()
@@ -2496,10 +2693,7 @@ const handleAddStageTaskSubmit = async () => {
     if (finalDueTime) {
       selectedDueDate = `${finalDueDate} ${finalDueTime}:00`
     } else {
-      const now = new Date()
-      const hh = String(now.getHours()).padStart(2, '0')
-      const mm = String(now.getMinutes()).padStart(2, '0')
-      selectedDueDate = `${finalDueDate} ${hh}:${mm}:00`
+      selectedDueDate = `${finalDueDate} 00:00:00`
     }
   }
 
@@ -2803,6 +2997,8 @@ const handleUpdateProjectSubmit = async (data) => {
   }
 }
 
+const newStageTaskHealth = ref('yellow')
+
 // Helpers
 const parseDateObj = (dateStr) => {
   if (!dateStr) return null
@@ -2880,11 +3076,13 @@ const handleKeydown = (e) => {
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('click', handleDocumentClick)
+  window.addEventListener('scroll', handleDetailScroll)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('click', handleDocumentClick)
+  window.removeEventListener('scroll', handleDetailScroll)
 })
 
 watch(

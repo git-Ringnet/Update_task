@@ -96,40 +96,27 @@
             </div>
           </div>
 
-          <!-- Lead -->
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-1">Lead hiện tại</label>
-            <select
-              v-model="form.lead_id"
-              class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-white cursor-pointer"
-            >
-              <option :value="null">-- Chọn lead --</option>
-              <option v-for="u in users" :key="u.id" :value="u.id">
-                {{ u.name }}
-              </option>
-            </select>
-          </div>
 
-          <!-- Health - Chỉ icon -->
-          <div>
+           <!-- Health - Chỉ icon (Chỉ hiện khi chỉnh sửa) -->
+          <div v-if="editProject">
             <label class="block text-sm font-semibold text-gray-700 mb-2">Health</label>
             <div class="grid grid-cols-3 gap-3">
               <!-- Green (Happy) -->
               <label 
                 class="flex items-center justify-center p-3 rounded-xl border cursor-pointer transition-all"
-                :class="form.health === 'green' ? 'border-emerald-400 bg-emerald-50/80 ring-2 ring-emerald-400/20 scale-105' : 'border-gray-200 hover:bg-gray-50'"
+                :class="form.health === 'green' ? 'border-[#45A246] bg-emerald-50/80 ring-2 ring-[#45A246]/20 scale-105' : 'border-gray-200 hover:bg-gray-50'"
               >
                 <input type="radio" v-model="form.health" value="green" class="hidden" />
-                <i class="fa-solid fa-face-smile text-3xl text-emerald-600"></i>
+                <i class="fa-solid fa-face-smile text-3xl text-[#45A246]"></i>
               </label>
 
               <!-- Yellow (Neutral) -->
               <label 
                 class="flex items-center justify-center p-3 rounded-xl border cursor-pointer transition-all"
-                :class="form.health === 'yellow' ? 'border-amber-400 bg-amber-50/80 ring-2 ring-amber-400/20 scale-105' : 'border-gray-200 hover:bg-gray-50'"
+                :class="form.health === 'yellow' ? 'border-gray-400 bg-white ring-2 ring-gray-400/20 scale-105 shadow-sm' : 'border-gray-200 hover:bg-gray-50'"
               >
                 <input type="radio" v-model="form.health" value="yellow" class="hidden" />
-                <i class="fa-solid fa-face-meh text-3xl text-amber-500"></i>
+                <i class="fa-solid fa-face-meh text-3xl text-gray-400"></i>
               </label>
 
               <!-- Red (Sad) -->
@@ -143,8 +130,8 @@
             </div>
           </div>
 
-          <!-- Trạng thái Dự án (Tracking Status) - Không có màu -->
-          <div>
+          <!-- Trạng thái Dự án (Tracking Status) - Không có màu (Chỉ hiện khi chỉnh sửa) -->
+          <div v-if="editProject">
             <label class="block text-sm font-semibold text-gray-700 mb-2">Trạng thái</label>
             <div class="grid grid-cols-3 gap-3">
               <!-- Đang theo -->
@@ -190,7 +177,7 @@
               :disabled="!isFormValid || isSubmitting"
               :class="[
                 'px-5 py-2 text-sm font-medium text-white rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer',
-                isFormValid && !isSubmitting ? 'bg-[#10b981] hover:bg-emerald-600' : 'bg-gray-300 cursor-not-allowed'
+                isFormValid && !isSubmitting ? 'bg-[#45A246] hover:bg-[#3a903b]' : 'bg-gray-300 cursor-not-allowed'
               ]"
             >
               <Plus class="w-4 h-4" v-if="!editProject" />
@@ -319,7 +306,7 @@ const form = reactive({
   title: '',
   customer_id: '',
   lead_id: null,
-  health: 'green',
+  health: 'yellow',
   tracking_status: 'following',
   is_pinned: false,
 })
@@ -358,7 +345,7 @@ watch(() => props.isOpen, async (newVal) => {
       // Default lead to current user
       form.lead_id = authStore.user?.id || null
       console.log('Setting default lead_id to:', form.lead_id)
-      form.health = 'green'
+      form.health = 'yellow'
       form.tracking_status = 'following'
       searchQuery.value = ''
     }

@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#f4f5f0] flex flex-col justify-between pb-24">
+  <div class="min-h-screen bg-[#F9F4EE] flex flex-col justify-between pb-24">
     <div>
       <!-- Navbar Component -->
       <Navbar />
@@ -345,7 +345,7 @@
               />
               <button
                 type="submit"
-                class="p-2.5 bg-[#10b981] text-white rounded-xl hover:bg-emerald-600 transition-colors"
+                class="p-2.5 bg-[#45A246] text-white rounded-xl hover:bg-[#3a903b] transition-colors"
               >
                 <i class="fa-solid fa-paper-plane text-sm"></i>
               </button>
@@ -658,17 +658,17 @@ const sendComment = async () => {
 }
 
 const statusDotClass = (status) => {
-  if (status === 'yellow') return 'bg-amber-400 health-dot-yellow'
+  if (status === 'yellow' || status === 'white') return 'bg-white border border-gray-300 shadow-3xs'
   if (status === 'red') return 'bg-rose-500 health-dot-red'
-  if (status === 'green') return 'bg-emerald-500 health-dot-green'
+  if (status === 'green') return 'bg-[#45A246] health-dot-green'
   return 'bg-gray-400'
 }
 
 const projectTitleColorClass = (health) => {
-  if (health === 'yellow') return 'text-amber-700'
+  if (health === 'yellow' || health === 'white') return 'text-slate-600'
   if (health === 'red') return 'text-rose-600'
-  if (health === 'green') return 'text-emerald-700'
-  return 'text-emerald-700'
+  if (health === 'green') return 'text-[#45A246]'
+  return 'text-[#45A246]'
 }
 
 const formatRelativeTime = (dateStr) => {

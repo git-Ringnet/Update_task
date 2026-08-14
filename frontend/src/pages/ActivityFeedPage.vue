@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#f4f5f0] pb-24">
+  <div class="min-h-screen bg-[#F9F4EE] pb-24">
     <Navbar />
 
     <main class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -49,7 +49,8 @@
               v-for="act in group"
               :key="act.id"
               @click="goToProject(act.project_id)"
-              class="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs hover:shadow-xs hover:border-emerald-100/70 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex items-start gap-4 select-none group"
+              class="rounded-2xl p-5 shadow-2xs hover:shadow-xs hover:border-emerald-100/70 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex items-start gap-4 select-none group"
+              :class="getActivityStyle(act)"
             >
               <!-- Left: Timestamp -->
               <span class="text-xs font-semibold text-gray-400 w-12 pt-1 flex-shrink-0">
@@ -128,7 +129,7 @@
           </div>
 
           <!-- Load more container -->
-          <div v-if="activities.length > displayLimit" class="pt-4 flex justify-center bg-[#f4f5f0] mb-4">
+          <div v-if="activities.length > displayLimit" class="pt-4 flex justify-center bg-[#F9F4EE] mb-4">
             <button
               @click="displayLimit += 15"
               type="button"
@@ -230,10 +231,20 @@ const formatTime = (dateStr) => {
 }
 
 const statusDotClass = (health) => {
-  if (health === 'yellow') return 'bg-amber-400'
+  if (health === 'yellow' || health === 'white') return 'bg-white border border-gray-300 shadow-3xs'
   if (health === 'red') return 'bg-rose-500'
-  if (health === 'green') return 'bg-emerald-500'
+  if (health === 'green') return 'bg-[#45A246]'
   return 'bg-gray-400'
+}
+
+const getActivityStyle = (act) => {
+  const health = act.project_health
+  if (health === 'green') {
+    return 'bg-[#86efac] border-[#4ade80] border-2 text-gray-900'
+  } else if (health === 'red') {
+    return 'bg-[#fca5a5] border-[#f87171] border-2 text-gray-900'
+  }
+  return 'bg-white border-gray-300 border text-gray-800'
 }
 
 const activePreviewImage = ref(null)

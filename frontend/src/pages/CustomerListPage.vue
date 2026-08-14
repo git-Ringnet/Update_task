@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#f4f5f0] flex flex-col justify-between pb-24">
+  <div class="min-h-screen bg-[#F9F4EE] flex flex-col justify-between pb-24">
     <div>
       <!-- Navbar Component -->
       <Navbar />
@@ -83,7 +83,7 @@
 
           <!-- Add Button -->
           <button @click="startCreateCustomer()" type="button"
-            class="px-5 py-2.5 bg-[#10b981] hover:bg-emerald-600 text-white font-bold text-sm rounded-xl shadow-2xs transition-colors flex items-center gap-2 flex-shrink-0">
+            class="px-5 py-2.5 bg-[#45A246] hover:bg-[#3a903b] text-white font-bold text-sm rounded-xl shadow-2xs transition-colors flex items-center gap-2 flex-shrink-0">
             <i class="fa-solid fa-plus text-xs"></i>
             <span>Thêm mối quan hệ</span>
           </button>
@@ -342,8 +342,8 @@
           <form @submit.prevent="handleCreateCustomer" class="space-y-4">
             <div>
               <label class="block text-xs font-semibold text-gray-700 mb-1">Tên đối tác / Khách hàng *</label>
-              <input v-model="form.name" required type="text"
-                class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-3xs"
+              <input ref="nameInputRef" v-model="form.name" required type="text"
+                class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-[#45A246] focus:ring-2 focus:ring-[#45A246]/20 transition-all shadow-3xs"
                 placeholder="VD: Dell Technologies" />
             </div>
             <div class="grid grid-cols-2 gap-3">
@@ -371,7 +371,7 @@
               <button type="button" @click="isModalOpen = false"
                 class="px-4 py-2 text-sm text-gray-600 font-semibold cursor-pointer">Hủy</button>
               <button type="submit"
-                class="px-5 py-2 bg-[#10b981] hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold shadow-3xs cursor-pointer">
+                class="px-5 py-2 bg-[#45A246] hover:bg-[#3a903b] text-white rounded-xl text-sm font-semibold shadow-3xs cursor-pointer">
                 {{ editingCustomerId ? 'Lưu thay đổi' : 'Tạo ngay' }}
               </button>
             </div>
@@ -385,7 +385,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, watch, nextTick, onMounted } from 'vue'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
 
@@ -403,6 +403,14 @@ const counts = ref({ all: 0, customer: 0, vendor: 0, internal: 0, other: 0 })
 const activeType = ref('all')
 const isLoading = ref(false)
 const isModalOpen = ref(false)
+const nameInputRef = ref(null)
+
+watch(isModalOpen, async (newVal) => {
+  if (newVal) {
+    await nextTick()
+    nameInputRef.value?.focus()
+  }
+})
 const editingCustomerId = ref(null)
 
 const displayLimit = ref(15)
@@ -550,8 +558,8 @@ const statusColorClass = (status) => {
 }
 
 const statusDotClass = (status) => {
-  if (status === 'green') return 'bg-emerald-500 health-dot-green'
-  if (status === 'yellow') return 'bg-amber-400 health-dot-yellow'
+  if (status === 'green') return 'bg-[#45A246] health-dot-green'
+  if (status === 'yellow' || status === 'white') return 'bg-white border border-gray-300 health-dot-yellow'
   if (status === 'red') return 'bg-rose-500 health-dot-red'
   return 'bg-gray-400'
 }

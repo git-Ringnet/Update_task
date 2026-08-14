@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#f4f5f0] pb-24">
+  <div class="min-h-screen bg-[#F9F4EE] pb-24">
     <!-- Navbar Component -->
     <Navbar />
 
@@ -10,7 +10,7 @@
         <button
           @click="goBack"
           type="button"
-          class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-emerald-700 font-medium mb-3 transition-colors cursor-pointer focus:outline-none"
+          class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#45A246] font-medium mb-3 transition-colors cursor-pointer focus:outline-none"
         >
           <i class="fa-solid fa-arrow-left text-xs"></i>
           <span>Quay lại</span>
@@ -27,6 +27,13 @@
               {{ formatType(customer.type) }}
             </p>
           </div>
+
+          <!-- Edit Relationship Button -->
+          <button @click="startEditCustomer" type="button"
+            class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-bold text-xs rounded-xl shadow-3xs transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none">
+            <i class="fa-regular fa-pen-to-square text-xs text-[#45A246]"></i>
+            <span class="text-gray-800">Chỉnh sửa</span>
+          </button>
         </div>
       </div>
 
@@ -43,10 +50,10 @@
             v-for="p in displayedProjects"
             :key="p.id"
             :to="`/projects/${p.id}`"
-            class="py-3.5 flex items-center justify-between gap-4 hover:bg-emerald-50/30 px-2 rounded-xl transition-colors group"
+            class="py-3.5 flex items-center justify-between gap-4 hover:bg-[#45A246]/10 px-2 rounded-xl transition-colors group"
           >
             <div>
-              <div class="font-bold text-gray-900 text-sm group-hover:text-emerald-700 flex items-center gap-2">
+              <div class="font-bold text-gray-900 text-sm group-hover:text-[#45A246] flex items-center gap-2">
                 <span class="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0" :class="statusDotClass(p.health)"></span>
                 <span>{{ p.title }}</span>
               </div>
@@ -66,7 +73,7 @@
             <button
               @click="displayLimit += 10"
               type="button"
-              class="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none"
+              class="px-4 py-2 bg-[#45A246]/10 hover:bg-[#45A246]/20 text-[#45A246] font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-none"
             >
               <i class="fa-solid fa-angles-down text-[10px]"></i>
               <span>Xem thêm dự án (Còn {{ relatedProjects.length - displayLimit }})</span>
@@ -82,12 +89,65 @@
 
     </main>
 
+    <!-- Edit Relationship Modal -->
+    <div v-if="isModalOpen" class="fixed inset-0 z-50 overflow-y-auto">
+      <div class="fixed inset-0 bg-gray-900/50 backdrop-blur-xs" @click="isModalOpen = false"></div>
+      <div class="flex min-h-full items-center justify-center p-4">
+        <div class="relative w-full max-w-md bg-white rounded-2xl p-6 shadow-xl border border-gray-100">
+          <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+            <h3 class="text-lg font-bold text-gray-900">
+              Chỉnh Sửa Mối Quan Hệ
+            </h3>
+            <button @click="isModalOpen = false" class="text-gray-400 hover:text-gray-600">
+              <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+          </div>
+          <form @submit.prevent="handleUpdateCustomer" class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 mb-1">Tên đối tác / Khách hàng *</label>
+              <input ref="nameInputRef" v-model="form.name" required type="text"
+                class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-[#45A246] focus:ring-2 focus:ring-[#45A246]/20 transition-all shadow-3xs"
+                placeholder="VD: Trung Nguyên Coffee" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Phân loại *</label>
+                <select v-model="form.type" required
+                  class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white font-semibold focus:outline-none focus:border-[#45A246] focus:ring-2 focus:ring-[#45A246]/20 transition-all">
+                  <option value="customer">Khách hàng</option>
+                  <option value="vendor">Vendor / Partner</option>
+                  <option value="internal">Nội bộ</option>
+                  <option value="other">Khác</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Tình trạng *</label>
+                <select v-model="form.status" required
+                  class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white font-semibold focus:outline-none focus:border-[#45A246] focus:ring-2 focus:ring-[#45A246]/20 transition-all">
+                  <option value="green">🟢 Xanh (Đang tốt)</option>
+                  <option value="yellow">🟡 Vàng (Thiếu quan tâm)</option>
+                  <option value="red">🔴 Đỏ (Bỏ mặc)</option>
+                </select>
+              </div>
+            </div>
+            <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
+              <button type="button" @click="isModalOpen = false"
+                class="px-4 py-2 text-sm text-gray-600 font-semibold cursor-pointer">Hủy</button>
+              <button type="submit"
+                class="px-5 py-2 bg-[#45A246] hover:bg-[#3a903b] text-white rounded-xl text-sm font-semibold shadow-3xs cursor-pointer">
+                Lưu thay đổi
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
 
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, watch, nextTick, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
@@ -114,6 +174,42 @@ const customer = ref({
 const relatedProjects = ref([])
 const displayLimit = ref(10)
 
+const isModalOpen = ref(false)
+const nameInputRef = ref(null)
+
+watch(isModalOpen, async (newVal) => {
+  if (newVal) {
+    await nextTick()
+    nameInputRef.value?.focus()
+  }
+})
+const form = reactive({
+  name: '',
+  type: 'customer',
+  status: 'green'
+})
+
+const startEditCustomer = () => {
+  form.name = customer.value.name
+  form.type = customer.value.type
+  form.status = customer.value.status
+  isModalOpen.value = true
+}
+
+const handleUpdateCustomer = async () => {
+  try {
+    await axios.put(`/api/customers/${customerId}`, {
+      name: form.name,
+      type: form.type,
+      status: form.status
+    })
+    isModalOpen.value = false
+    fetchCustomerDetail()
+  } catch (err) {
+    console.error('Failed to update customer:', err)
+  }
+}
+
 const displayedProjects = computed(() => {
   return relatedProjects.value.slice(0, displayLimit.value)
 })
@@ -139,9 +235,9 @@ const formatType = (type) => {
 }
 
 const statusDotClass = (status) => {
-  if (status === 'yellow') return 'bg-amber-400 health-dot-yellow'
+  if (status === 'yellow' || status === 'white') return 'bg-white border border-gray-300 health-dot-yellow'
   if (status === 'red') return 'bg-rose-500 health-dot-red'
-  if (status === 'green') return 'bg-emerald-500 health-dot-green'
+  if (status === 'green') return 'bg-[#45A246] health-dot-green'
   return 'bg-gray-400'
 }
 
