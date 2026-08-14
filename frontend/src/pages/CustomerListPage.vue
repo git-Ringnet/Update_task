@@ -90,12 +90,12 @@
         </div>
 
         <!-- Table Card Container -->
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden">
+        <div class="bg-transparent rounded-2xl border border-gray-300 shadow-xs overflow-hidden">
           <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-left border-collapse">
               <thead>
                 <tr
-                  class="border-b border-gray-100 text-xs font-bold text-gray-400 uppercase tracking-wider bg-gray-50/50">
+                  class="border-b border-gray-300 text-xs font-bold text-gray-400 uppercase tracking-wider bg-transparent">
                   <th scope="col" class="py-3.5 px-6">MỐI QUAN HỆ</th>
                   <th scope="col" class="py-3.5 px-6 text-center">TÌNH TRẠNG</th>
                   <th scope="col" class="py-3.5 px-6">SỐ DỰ ÁN</th>
@@ -103,7 +103,7 @@
                   <th scope="col" class="py-3.5 px-4 text-right"></th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-100 text-sm">
+              <tbody class="divide-y divide-gray-300 text-sm">
                 <!-- Skeleton Loading Rows -->
                 <template v-if="isLoading">
                   <tr v-for="i in 5" :key="'skeleton-' + i" class="animate-pulse">
@@ -199,7 +199,7 @@
           </div>
 
           <!-- Giao diện Điện thoại: Danh sách Card Khách hàng (Ẩn trên Desktop) -->
-          <div class="block md:hidden divide-y divide-gray-100 bg-white rounded-t-2xl overflow-hidden">
+          <div class="block md:hidden divide-y divide-gray-300 bg-transparent rounded-t-2xl overflow-hidden">
             <!-- Skeleton loading state -->
             <template v-if="isLoading && customers.length === 0">
               <div v-for="i in 3" :key="'skeleton-card-' + i" class="p-4 animate-pulse space-y-3">
@@ -287,7 +287,7 @@
           </div>
 
           <!-- Load more container -->
-          <div v-if="customers.length > displayLimit" class="p-4 border-t border-gray-100 flex justify-center bg-white">
+          <div v-if="customers.length > displayLimit" class="p-4 border-t border-gray-300 flex justify-center bg-transparent">
             <button @click="displayLimit += 15" type="button"
               class="px-5 py-2.5 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 font-extrabold text-xs rounded-xl shadow-3xs transition-all cursor-pointer flex items-center gap-1.5 focus:outline-none">
               <i class="fa-solid fa-angles-down text-[10px]"></i>

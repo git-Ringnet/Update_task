@@ -8,17 +8,17 @@
       enter-to-class="translate-y-0 opacity-100" leave-active-class="transition duration-150 ease-in"
       leave-from-class="translate-y-0 opacity-100" leave-to-class="-translate-y-full opacity-0">
       <div v-if="showDetailStickyBar && project"
-        class="fixed top-[57px] left-0 right-0 z-[40] bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-sm">
+        class="fixed top-[57px] left-0 right-0 z-[40] bg-[#F9F4EE]/95 backdrop-blur-md border-b border-gray-300 shadow-sm">
         <div class="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
           <button @click="goBack" type="button"
-            class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-[#45A246] font-bold transition-colors cursor-pointer focus:outline-none">
+            class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-emerald-700 font-bold transition-colors cursor-pointer focus:outline-none">
             <i class="fa-solid fa-arrow-left text-xs"></i>
             <span>Danh sách dự án</span>
           </button>
           <div class="flex items-center gap-2.5">
             <div class="relative" ref="stickyActionMenuRef">
               <button @click="toggleActionMenu" type="button"
-                class="w-10 h-10 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl flex items-center justify-center text-gray-800 shadow-2xs transition-colors cursor-pointer text-base"
+                class="w-10 h-10 bg-transparent border border-gray-300 hover:bg-gray-100/50 rounded-xl flex items-center justify-center text-gray-800 shadow-2xs transition-colors cursor-pointer text-base"
                 title="Menu tùy chọn">
                 <i class="fa-solid fa-bars"></i>
               </button>
@@ -82,7 +82,7 @@
       <div class="flex items-center justify-between">
         <!-- Back link -->
         <button @click="goBack" type="button"
-          class="inline-flex items-center gap-2.5 text-sm sm:text-base font-black text-gray-800 hover:text-emerald-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-2xl px-4 py-2.5 shadow-2xs transition-all cursor-pointer focus:outline-none">
+          class="inline-flex items-center gap-2.5 text-sm sm:text-base font-black text-gray-800 hover:text-emerald-700 bg-transparent border border-gray-300 hover:bg-gray-100/50 rounded-2xl px-4 py-2.5 shadow-2xs transition-all cursor-pointer focus:outline-none">
           <i class="fa-solid fa-arrow-left text-sm"></i>
           <span>Danh sách dự án</span>
         </button>
@@ -92,7 +92,7 @@
           <!-- Menu Button / Dropdown -->
           <div class="relative" ref="actionMenuDropdownRef">
             <button @click="toggleActionMenu" type="button"
-              class="w-11 h-11 bg-white border border-gray-200 hover:bg-gray-50 rounded-2xl flex items-center justify-center text-gray-800 shadow-2xs transition-colors cursor-pointer text-lg"
+              class="w-11 h-11 bg-transparent border border-gray-300 hover:bg-gray-100/50 rounded-2xl flex items-center justify-center text-gray-800 shadow-2xs transition-colors cursor-pointer text-lg"
               title="Menu tùy chọn">
               <i class="fa-solid fa-bars"></i>
             </button>
@@ -2317,7 +2317,15 @@ const toggleMilestoneCompleted = async (ms) => {
 
 const handleDeleteMilestone = async (msId) => {
   if (!msId) return
-  if (!confirm('Bạn có chắc chắn muốn xóa chặng này?')) return
+  
+  const confirmed = await confirmStore.show({
+    title: 'Xóa chặng',
+    message: 'Bạn có chắc chắn muốn xóa chặng này?',
+    confirmText: 'Xóa',
+    cancelText: 'Hủy',
+    type: 'danger'
+  })
+  if (!confirmed) return
 
   try {
     await axios.delete(`/api/milestones/${msId}`)

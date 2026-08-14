@@ -64,11 +64,11 @@
         </transition>
 
         <!-- Main Desktop Table Card Container -->
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-3xs select-none">
+        <div class="bg-transparent rounded-2xl border border-gray-300 shadow-3xs select-none">
           <div class="hidden md:block">
             <table class="w-full text-left border-collapse">
               <thead>
-                <tr class="border-b border-gray-100 text-xs font-black text-gray-450 uppercase tracking-wider bg-gray-50/50">
+                <tr class="border-b border-gray-300 text-xs font-black text-gray-450 uppercase tracking-wider bg-transparent">
                   <th scope="col" class="py-4 px-6 text-center select-none w-12">
                     <input
                       type="checkbox"
@@ -85,7 +85,7 @@
                   <th scope="col" class="py-4 px-6 min-w-[320px]">Update</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-100 text-sm">
+              <tbody class="divide-y divide-gray-300 text-sm">
                 <!-- Skeleton Loading Rows -->
                 <template v-if="projectStore.isLoading && displayedProjects.length === 0">
                   <tr v-for="i in 5" :key="'skeleton-' + i" class="animate-pulse">
@@ -262,7 +262,7 @@
           </div>
 
           <!-- Phone View: Mobile Card List -->
-          <div class="block md:hidden divide-y divide-gray-100 bg-white">
+          <div class="block md:hidden divide-y divide-gray-300 bg-transparent">
             <template v-if="projectStore.isLoading && displayedProjects.length === 0">
               <div v-for="i in 3" :key="'skeleton-card-' + i" class="p-5 animate-pulse space-y-3">
                 <div class="h-4 bg-gray-250 rounded-md w-2/3"></div>
@@ -308,7 +308,7 @@
           </div>
 
           <!-- Pagination -->
-          <div v-if="totalPages > 1" class="p-4 border-t border-gray-100 flex items-center justify-between bg-white">
+          <div v-if="totalPages > 1" class="p-4 border-t border-gray-300 flex items-center justify-between bg-transparent">
             <div class="text-xs text-gray-500 font-semibold">
               Trang {{ currentPage }} / {{ totalPages }} ({{ projectStore.projects.length }} dự án)
             </div>
