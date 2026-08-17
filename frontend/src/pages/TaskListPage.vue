@@ -660,15 +660,15 @@ const sendComment = async () => {
 const statusDotClass = (status) => {
   if (status === 'yellow' || status === 'white') return 'bg-white border border-gray-300 shadow-3xs'
   if (status === 'red') return 'bg-rose-500 health-dot-red'
-  if (status === 'green') return 'bg-[#45A246] health-dot-green'
+  if (status === 'green') return 'bg-white border border-gray-300 shadow-3xs'
   return 'bg-gray-400'
 }
 
 const projectTitleColorClass = (health) => {
   if (health === 'yellow' || health === 'white') return 'text-slate-600'
   if (health === 'red') return 'text-rose-600'
-  if (health === 'green') return 'text-[#45A246]'
-  return 'text-[#45A246]'
+  if (health === 'green') return 'text-slate-600'
+  return 'text-slate-600'
 }
 
 const formatRelativeTime = (dateStr) => {

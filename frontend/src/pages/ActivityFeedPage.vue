@@ -233,14 +233,14 @@ const formatTime = (dateStr) => {
 const statusDotClass = (health) => {
   if (health === 'yellow' || health === 'white') return 'bg-white border border-gray-300 shadow-3xs'
   if (health === 'red') return 'bg-rose-500'
-  if (health === 'green') return 'bg-[#45A246]'
+  if (health === 'green') return 'bg-white border border-gray-300 shadow-3xs'
   return 'bg-gray-400'
 }
 
 const getActivityStyle = (act) => {
   const health = act.project_health
   if (health === 'green') {
-    return 'bg-[#86efac] border-[#4ade80] border-2 text-gray-900'
+    return 'bg-white border-gray-300 border text-gray-800'
   } else if (health === 'red') {
     return 'bg-[#fca5a5] border-[#f87171] border-2 text-gray-900'
   }

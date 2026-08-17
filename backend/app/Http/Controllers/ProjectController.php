@@ -283,4 +283,35 @@ class ProjectController extends Controller
 
         return response()->json(['message' => 'Cập nhật thứ tự dự án thành công']);
     }
+
+    public function bulkUpdate(Request $request)
+    {
+        $validated = $request->validate([
+            'project_ids' => 'required|array',
+            'project_ids.*' => 'integer|exists:projects,id',
+            'tracking_status' => 'sometimes|in:following,not_following,completed',
+            'health' => 'sometimes|in:green,yellow,red',
+            'lead_id' => 'sometimes|nullable|exists:users,id',
+        ]);
+
+        $projectIds = $validated['project_ids'];
+        $updateData = [];
+
+        if (isset($validated['tracking_status'])) {
+            $updateData['tracking_status'] = $validated['tracking_status'];
+        }
+        if (isset($validated['health'])) {
+            $updateData['health'] = $validated['health'];
+        }
+        if (array_key_exists('lead_id', $validated)) {
+            $updateData['lead_id'] = $validated['lead_id'];
+        }
+
+        if (!empty($updateData)) {
+            $updateData['last_activity_at'] = \Illuminate\Support\Carbon::now();
+            Project::whereIn('id', $projectIds)->update($updateData);
+        }
+
+        return response()->json(['message' => 'Cập nhật hàng loạt thành công']);
+    }
 }

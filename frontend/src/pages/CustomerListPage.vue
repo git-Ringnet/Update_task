@@ -7,10 +7,58 @@
       <!-- Main Container -->
       <main class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        <!-- Page Title -->
-        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight mb-6 font-heading">Mối quan hệ</h1>
+        <!-- Page Title & Actions -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
+          <div>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight font-heading">Mối quan hệ</h1>
+          </div>
+          
+          <div class="flex items-center gap-2">
+            <!-- Add Button -->
+            <button @click="startCreateCustomer()" type="button"
+              class="px-5 py-2.5 bg-[#45A246] hover:bg-[#3a903b] text-white font-bold text-sm rounded-xl shadow-2xs transition-colors flex items-center gap-2 flex-shrink-0 cursor-pointer">
+              <i class="fa-solid fa-plus text-xs"></i>
+              <span>Thêm mối quan hệ</span>
+            </button>
 
-        <!-- Status Filter Tabs & Action Button -->
+            <!-- Search Toggle Button -->
+            <button
+              @click="isSearchOpen = !isSearchOpen"
+              type="button"
+              class="w-10 h-10 border border-gray-200 hover:bg-gray-50 rounded-xl flex items-center justify-center text-gray-600 transition-colors cursor-pointer bg-white"
+            >
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Search Bar Drawer -->
+        <transition
+          enter-active-class="transition duration-150 ease-out"
+          enter-from-class="transform opacity-0 -translate-y-2"
+          enter-to-class="transform opacity-100 translate-y-0"
+          leave-active-class="transition duration-100 ease-in"
+          leave-from-class="transform opacity-100 translate-y-0"
+          leave-to-class="transform opacity-0 -translate-y-2"
+        >
+          <div v-if="isSearchOpen" class="mb-6 bg-gray-50/50 p-4 border border-gray-200/60 rounded-2xl">
+            <div class="relative max-w-md">
+              <input
+                ref="searchInputRef"
+                v-model="searchQueryLocal"
+                @input="handleSearchLocal"
+                type="text"
+                placeholder="Tìm kiếm mối quan hệ theo tên hoặc mã..."
+                class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#45A246] focus:ring-1 focus:ring-[#45A246] bg-white"
+              />
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                <i class="fa-solid fa-magnifying-glass text-sm"></i>
+              </span>
+            </div>
+          </div>
+        </transition>
+
+        <!-- Status Filter Tabs -->
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
 
           <!-- Filter Tabs -->
@@ -80,13 +128,6 @@
               </span>
             </button>
           </div>
-
-          <!-- Add Button -->
-          <button @click="startCreateCustomer()" type="button"
-            class="px-5 py-2.5 bg-[#45A246] hover:bg-[#3a903b] text-white font-bold text-sm rounded-xl shadow-2xs transition-colors flex items-center gap-2 flex-shrink-0">
-            <i class="fa-solid fa-plus text-xs"></i>
-            <span>Thêm mối quan hệ</span>
-          </button>
         </div>
 
         <!-- Table Card Container -->
@@ -405,6 +446,25 @@ const isLoading = ref(false)
 const isModalOpen = ref(false)
 const nameInputRef = ref(null)
 
+const searchQueryLocal = ref('')
+const isSearchOpen = ref(false)
+const searchInputRef = ref(null)
+
+const handleSearchLocal = () => {
+  fetchCustomers()
+}
+
+watch(isSearchOpen, (newVal) => {
+  if (newVal) {
+    nextTick(() => {
+      searchInputRef.value?.focus()
+    })
+  } else {
+    searchQueryLocal.value = ''
+    fetchCustomers()
+  }
+})
+
 watch(isModalOpen, async (newVal) => {
   if (newVal) {
     await nextTick()
@@ -482,7 +542,10 @@ const fetchCustomers = async (isSilent = false) => {
   }
   try {
     const res = await axios.get('/api/customers', {
-      params: { type: activeType.value }
+      params: { 
+        type: activeType.value,
+        search: searchQueryLocal.value
+      }
     })
     customers.value = res.data.customers
     counts.value = res.data.counts

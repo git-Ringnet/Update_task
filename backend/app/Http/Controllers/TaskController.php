@@ -39,6 +39,7 @@ class TaskController extends Controller
             'status' => 'required|in:todo,in_progress,review,done',
             'priority' => 'required|in:low,medium,high,urgent',
             'due_date' => 'nullable',
+            'health' => 'nullable|string',
         ]);
 
         $task = Task::create($validated);
@@ -95,6 +96,7 @@ class TaskController extends Controller
             'due_date' => 'nullable',
             'status' => 'required|in:todo,in_progress,review,done',
             'priority' => 'required|in:low,medium,high,urgent',
+            'health' => 'nullable|string',
         ]);
 
         $task = Task::findOrFail($id);

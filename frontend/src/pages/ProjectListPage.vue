@@ -495,7 +495,7 @@ const confirmStore = useConfirmStore()
 const statusDotClass = (health) => {
   if (health === 'yellow' || health === 'white') return 'bg-white border border-gray-300 shadow-3xs'
   if (health === 'red') return 'bg-rose-500'
-  if (health === 'green') return 'bg-[#45A246]'
+  if (health === 'green') return 'bg-white border border-gray-300 shadow-3xs'
   return 'bg-gray-400'
 }
 
@@ -651,10 +651,8 @@ const toggleBulkMenu = (menu) => {
 }
 
 const bulkUpdateHealth = async (color) => {
-  // Save selected IDs before clearing
   const idsToUpdate = [...selectedProjectIds.value]
   
-  // Optimistically update local project state
   idsToUpdate.forEach(id => {
     const p = projectStore.projects.find(proj => proj.id === id)
     if (p) {
@@ -662,30 +660,28 @@ const bulkUpdateHealth = async (color) => {
     }
   })
 
-  // Show success message immediately (optimistic update already done)
   toast.success(`Đã cập nhật sức khỏe cho ${idsToUpdate.length} dự án!`)
   selectedProjectIds.value = []
   activeBulkMenu.value = null
 
   try {
-    // Fire and forget - update in background
-    await Promise.all(idsToUpdate.map(id => 
-      axios.patch(`/api/projects/${id}/health`, { health: color })
-    ))
-    // ❌ REMOVED: No need to fetch all projects again
+    await axios.put('/api/projects/bulk', {
+      project_ids: idsToUpdate,
+      health: color
+    })
   } catch (err) {
     console.error('Failed bulk update health:', err)
     toast.error('Cập nhật thất bại!')
-    // On error, refresh to get correct state from server
     await projectStore.fetchProjects(true)
   }
 }
 
 const bulkUpdateLead = async (userId) => {
   try {
-    await Promise.all(selectedProjectIds.value.map(id => 
-      axios.put(`/api/projects/${id}`, { lead_id: userId })
-    ))
+    await axios.put('/api/projects/bulk', {
+      project_ids: selectedProjectIds.value,
+      lead_id: userId
+    })
     toast.success(`Đã chuyển lead cho ${selectedProjectIds.value.length} dự án!`)
     await projectStore.fetchProjects(true)
     selectedProjectIds.value = []
@@ -714,9 +710,10 @@ const selectBulkStatusOption = (status) => {
 
 const bulkUpdateStatus = async (status) => {
   try {
-    await Promise.all(selectedProjectIds.value.map(id => 
-      axios.put(`/api/projects/${id}`, { tracking_status: status })
-    ))
+    await axios.put('/api/projects/bulk', {
+      project_ids: selectedProjectIds.value,
+      tracking_status: status
+    })
     toast.success(`Đã cập nhật trạng thái cho ${selectedProjectIds.value.length} dự án!`)
     await projectStore.fetchProjects(true)
     selectedProjectIds.value = []

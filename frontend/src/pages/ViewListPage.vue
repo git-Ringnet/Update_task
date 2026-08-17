@@ -113,6 +113,7 @@
           <div 
             v-else-if="isGroupedByCustomer" 
             ref="scrollContainerGrouped"
+            @scroll="handleScroll"
             class="space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto pr-1 scrollbar-none"
           >
             <div v-for="group in projectsByCustomer" :key="group.name" class="space-y-2.5">
@@ -200,6 +201,7 @@
           <div 
             v-else-if="viewMode === 'notes'" 
             ref="scrollContainerNotes"
+            @scroll="handleScroll"
             class="overflow-y-auto pr-1 pt-4 pb-8 max-h-[calc(100vh-200px)] scrollbar-none"
           >
             <div class="sticky-grid">
@@ -255,6 +257,7 @@
           <div 
             v-else 
             ref="scrollContainerDefault"
+            @scroll="handleScroll"
             class="space-y-3.5 max-h-[calc(100vh-200px)] overflow-y-auto pr-1 scrollbar-none"
           >
             <transition-group
@@ -974,6 +977,9 @@ const displayedProjects = computed(() => {
   })
   
   // Apply limit for pagination (load 20 initially, then load more)
+  if (isGroupedByCustomer.value) {
+    return list
+  }
   return list.slice(0, displayLimit.value)
 })
 
@@ -1195,8 +1201,8 @@ const getProjectStatusStyle = (project) => {
   let borderClass = ''
   
   if (health === 'green') {
-    cardBg = 'bg-[#86efac] border-[#4ade80]' // Darker green
-    borderClass = 'border-2' // Thicker border
+    cardBg = 'bg-white border-gray-200 shadow-sm'
+    borderClass = 'border-2'
   } else if (health === 'red') {
     cardBg = 'bg-[#fca5a5] border-[#f87171]' // Darker red
     borderClass = 'border-2' // Thicker border
@@ -1215,14 +1221,14 @@ const getProjectStatusStyle = (project) => {
 
 const getStickyNoteStyle = (project) => {
   const health = project.health
-  if (health === 'green') return 'note-green'
+  if (health === 'green') return 'note-white'
   if (health === 'red') return 'note-red'
   return 'note-white'
 }
 
 const getStickyNotePinStyle = (project) => {
   const health = project.health
-  if (health === 'green') return 'pin-green'
+  if (health === 'green') return 'pin-grey'
   if (health === 'red') return 'pin-red'
   return 'pin-grey'
 }
@@ -1247,14 +1253,14 @@ const getLatestComment = (project) => {
 const statusDotClass = (health) => {
   if (health === 'yellow' || health === 'white') return 'bg-white border border-gray-300 shadow-3xs'
   if (health === 'red') return 'bg-rose-500'
-  if (health === 'green') return 'bg-[#45A246]'
+  if (health === 'green') return 'bg-white border border-gray-300 shadow-3xs'
   return 'bg-gray-400'
 }
 
 const getActivityStyle = (log) => {
   const health = log.project_health
   if (health === 'green') {
-    return 'bg-[#86efac] border-[#4ade80] border-2 text-gray-900'
+    return 'bg-white border-gray-300 border text-gray-800'
   } else if (health === 'red') {
     return 'bg-[#fca5a5] border-[#f87171] border-2 text-gray-900'
   }
@@ -1264,7 +1270,7 @@ const getActivityStyle = (log) => {
 const getProjectPillStyle = (log) => {
   const health = log.project_health
   if (health === 'green') {
-    return 'bg-[#4ade80]/20 hover:bg-[#4ade80]/30 border-[#4ade80]/60 text-green-900'
+    return 'bg-emerald-50/80 hover:bg-emerald-100/90 border-emerald-200/60 text-emerald-800'
   } else if (health === 'red') {
     return 'bg-[#f87171]/20 hover:bg-[#f87171]/30 border-[#f87171]/60 text-red-900'
   }
@@ -1757,12 +1763,10 @@ const bulkUpdateHealth = async (color) => {
   activeBulkMenu.value = null
 
   try {
-    // Fire and forget - update in background
-    await Promise.all(idsToUpdate.map(id => 
-      axios.put(`/api/projects/${id}`, { 
-        health: color
-      })
-    ))
+    await axios.put('/api/projects/bulk', {
+      project_ids: idsToUpdate,
+      health: color
+    })
   } catch (err) {
     console.error(err)
     // On error, refresh to get correct state from server
@@ -1772,9 +1776,10 @@ const bulkUpdateHealth = async (color) => {
 
 const bulkUpdateLead = async (userId) => {
   try {
-    await Promise.all(selectedProjectIds.value.map(id => 
-      axios.put(`/api/projects/${id}`, { lead_id: userId })
-    ))
+    await axios.put('/api/projects/bulk', {
+      project_ids: selectedProjectIds.value,
+      lead_id: userId
+    })
     await projectStore.fetchProjects(true)
     selectedProjectIds.value = []
     showAllCheckboxes.value = false
@@ -1804,12 +1809,10 @@ const bulkUpdateStatus = async (status) => {
   activeBulkMenu.value = null
 
   try {
-    // Fire and forget - update in background
-    await Promise.all(idsToUpdate.map(id => 
-      axios.put(`/api/projects/${id}`, { 
-        tracking_status: status
-      })
-    ))
+    await axios.put('/api/projects/bulk', {
+      project_ids: idsToUpdate,
+      tracking_status: status
+    })
   } catch (err) {
     console.error(err)
     // On error, refresh to get correct state from server
@@ -1870,19 +1873,6 @@ onMounted(async () => {
   window.addEventListener('mousemove', updateSelection)
   window.addEventListener('mouseup', endSelection)
   
-  // Infinite scroll - wait for refs to be available
-  setTimeout(() => {
-    if (scrollContainerDefault.value) {
-      scrollContainerDefault.value.addEventListener('scroll', handleScroll)
-    }
-    if (scrollContainerGrouped.value) {
-      scrollContainerGrouped.value.addEventListener('scroll', handleScroll)
-    }
-    if (scrollContainerNotes.value) {
-      scrollContainerNotes.value.addEventListener('scroll', handleScroll)
-    }
-  }, 100)
-
   pollTimer = setInterval(() => {
     projectStore.fetchProjects(true)
     fetchActivities()
@@ -1898,17 +1888,6 @@ onUnmounted(() => {
   window.removeEventListener('mousedown', startSelection)
   window.removeEventListener('mousemove', updateSelection)
   window.removeEventListener('mouseup', endSelection)
-  
-  // Clean up infinite scroll
-  if (scrollContainerDefault.value) {
-    scrollContainerDefault.value.removeEventListener('scroll', handleScroll)
-  }
-  if (scrollContainerGrouped.value) {
-    scrollContainerGrouped.value.removeEventListener('scroll', handleScroll)
-  }
-  if (scrollContainerNotes.value) {
-    scrollContainerNotes.value.removeEventListener('scroll', handleScroll)
-  }
 })
 </script>
 

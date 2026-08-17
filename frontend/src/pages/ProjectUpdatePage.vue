@@ -281,6 +281,7 @@
                     <HealthStatusSelector
                       v-model="healthMap[project.id]"
                       :show-label="false"
+                      is-toggle
                     />
                   </div>
 
@@ -555,10 +556,11 @@ const removeVietnameseAccents = (str) => {
 
 const filteredUsersForMention = computed(() => {
   if (!mentionQuery.value) return usersList.value
-  const q = removeVietnameseAccents(mentionQuery.value)
+  const q = removeVietnameseAccents(mentionQuery.value).toLowerCase()
   return usersList.value.filter(u => {
-    const nameAcc = removeVietnameseAccents(u.name)
-    return nameAcc.includes(q) || u.name.toLowerCase().includes(mentionQuery.value.toLowerCase())
+    const nameAcc = removeVietnameseAccents(u.name).toLowerCase()
+    const words = nameAcc.split(/\s+/)
+    return nameAcc.startsWith(q) || words.some(w => w.startsWith(q))
   })
 })
 

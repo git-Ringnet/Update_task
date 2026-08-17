@@ -257,6 +257,7 @@ Route::middleware('auth.token')->group(function () {
     });
 
     // Projects
+    Route::put('/projects/bulk', [ProjectController::class, 'bulkUpdate']);
     Route::get('/projects', [ProjectController::class, 'index']);
     Route::post('/projects', [ProjectController::class, 'store']);
     Route::post('/projects/reorder', [ProjectController::class, 'reorder']);

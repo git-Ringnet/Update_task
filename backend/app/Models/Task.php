@@ -21,6 +21,7 @@ class Task extends Model
         'status',
         'priority',
         'due_date',
+        'health',
     ];
 
     protected $casts = [

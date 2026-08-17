@@ -100,16 +100,7 @@
            <!-- Health - Chỉ icon (Chỉ hiện khi chỉnh sửa) -->
           <div v-if="editProject">
             <label class="block text-sm font-semibold text-gray-700 mb-2">Health</label>
-            <div class="grid grid-cols-3 gap-3">
-              <!-- Green (Happy) -->
-              <label 
-                class="flex items-center justify-center p-3 rounded-xl border cursor-pointer transition-all"
-                :class="form.health === 'green' ? 'border-[#45A246] bg-emerald-50/80 ring-2 ring-[#45A246]/20 scale-105' : 'border-gray-200 hover:bg-gray-50'"
-              >
-                <input type="radio" v-model="form.health" value="green" class="hidden" />
-                <i class="fa-solid fa-face-smile text-3xl text-[#45A246]"></i>
-              </label>
-
+            <div class="grid grid-cols-2 gap-3">
               <!-- Yellow (Neutral) -->
               <label 
                 class="flex items-center justify-center p-3 rounded-xl border cursor-pointer transition-all"

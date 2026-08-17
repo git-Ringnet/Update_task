@@ -1,5 +1,31 @@
 <template>
-  <div class="relative inline-block text-left" ref="containerRef">
+  <!-- Toggle Segmented Control Mode -->
+  <div v-if="isToggle" class="flex items-center bg-gray-200/60 p-0.5 rounded-full border border-gray-200/80 shadow-3xs" @click.stop>
+    <!-- White / Neutral Option -->
+    <button
+      type="button"
+      @click="selectHealth('yellow')"
+      class="w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer select-none focus:outline-none"
+      :class="modelValue !== 'red' ? 'bg-gray-400 text-white shadow-3xs' : 'text-gray-400 hover:text-gray-600'"
+      title="Mặc định"
+    >
+      <i class="fa-solid fa-face-meh text-[17px]"></i>
+    </button>
+
+    <!-- Red / Angry Option -->
+    <button
+      type="button"
+      @click="selectHealth('red')"
+      class="w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer select-none focus:outline-none"
+      :class="modelValue === 'red' ? 'bg-rose-500 text-white shadow-3xs' : 'text-gray-400 hover:text-rose-500'"
+      title="Needs Care"
+    >
+      <i class="fa-solid fa-face-frown text-[17px]"></i>
+    </button>
+  </div>
+
+  <!-- Standard Popover Mode -->
+  <div v-else class="relative inline-block text-left" ref="containerRef">
     <!-- Standard Health Badge Button: Icon and optional Label -->
     <button 
       @click.stop="toggleOpen"
@@ -29,16 +55,6 @@
         v-if="isOpen"
         class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-50 bg-white rounded-full shadow-lg border border-gray-200 p-1 flex items-center gap-1.5 ring-1 ring-black/5"
       >
-        <!-- Green option (Healthy) -->
-        <button
-          @click.stop="selectHealth('green')"
-          type="button"
-          class="w-7.5 h-7.5 rounded-full hover:bg-emerald-50 flex items-center justify-center transition-colors cursor-pointer"
-          title="Healthy"
-        >
-          <i class="fa-solid fa-face-smile text-[19px] text-[#45A246]"></i>
-        </button>
-
         <!-- White option (Default) -->
         <button
           @click.stop="selectHealth('yellow')"
@@ -74,11 +90,15 @@ const props = defineProps({
   showLabel: {
     type: Boolean,
     default: false
+  },
+  isToggle: {
+    type: Boolean,
+    default: false
   }
 })
 
 const labelColor = (val) => {
-  if (val === 'green') return 'text-[#45A246]'
+  if (val === 'green') return 'text-gray-400'
   if (val === 'yellow' || val === 'white') return 'text-gray-400'
   if (val === 'red') return 'text-rose-600'
   return 'text-gray-500'
@@ -100,14 +120,14 @@ const selectHealth = (color) => {
 }
 
 const healthLabel = (val) => {
-  if (val === 'green') return 'Healthy'
+  if (val === 'green') return 'Mặc định'
   if (val === 'yellow' || val === 'white') return 'Mặc định'
   if (val === 'red') return 'Needs Care'
   return val
 }
 
 const healthText = (val) => {
-  if (val === 'green') return '🟢 Healthy'
+  if (val === 'green') return '⚪ Mặc định'
   if (val === 'yellow' || val === 'white') return '⚪ Mặc định'
   if (val === 'red') return '🔴 Needs Care'
   return val
