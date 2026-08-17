@@ -1,49 +1,60 @@
 <template>
-  <div class="min-h-screen bg-[#F9F4EE] text-gray-800 pb-24 font-sans select-none">
-    <!-- Navbar Component -->
-    <Navbar />
-
-    <!-- STICKY FLOATING TOP BAR (appears on scroll) -->
-    <transition enter-active-class="transition duration-200 ease-out" enter-from-class="-translate-y-full opacity-0"
-      enter-to-class="translate-y-0 opacity-100" leave-active-class="transition duration-150 ease-in"
-      leave-from-class="translate-y-0 opacity-100" leave-to-class="-translate-y-full opacity-0">
-      <div v-if="showDetailStickyBar && project"
-        class="fixed top-[57px] left-0 right-0 z-[40] bg-[#F9F4EE]/95 backdrop-blur-md border-b border-gray-300 shadow-sm">
-        <div class="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-          <button @click="goBack" type="button"
-            class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-emerald-700 font-bold transition-colors cursor-pointer focus:outline-none">
-            <i class="fa-solid fa-arrow-left text-xs"></i>
+  <div class="min-h-screen bg-[#F9F4EE] text-gray-800 pb-24 font-sans">
+    <!-- Navbar Component with slots for back and options buttons on scroll -->
+    <Navbar>
+      <template #left>
+        <transition
+          enter-active-class="transition duration-200 ease-out"
+          enter-from-class="opacity-0 translate-y-4"
+          enter-to-class="opacity-100 translate-y-0"
+          leave-active-class="transition duration-150 ease-in"
+          leave-from-class="opacity-100 translate-y-0"
+          leave-to-class="opacity-0 translate-y-4"
+        >
+          <button v-if="showDetailStickyBar" @click="goBack" type="button"
+            class="inline-flex items-center gap-2 text-sm sm:text-base font-black text-gray-800 hover:text-emerald-700 bg-transparent border border-gray-300 hover:bg-gray-100/50 rounded-2xl px-4 py-2.5 shadow-2xs transition-all cursor-pointer focus:outline-none">
+            <i class="fa-solid fa-arrow-left text-sm"></i>
             <span>Danh sách dự án</span>
           </button>
-          <div class="flex items-center gap-2.5">
-            <div class="relative" ref="stickyActionMenuRef">
-              <button @click="toggleActionMenu" type="button"
-                class="w-10 h-10 bg-transparent border border-gray-300 hover:bg-gray-100/50 rounded-xl flex items-center justify-center text-gray-800 shadow-2xs transition-colors cursor-pointer text-base"
-                title="Menu tùy chọn">
-                <i class="fa-solid fa-bars"></i>
-              </button>
+        </transition>
+      </template>
 
-              <!-- Dropdown Menu for Sticky Bar -->
-              <div v-if="isActionMenuOpen"
-                class="absolute right-0 top-full mt-2 w-60 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 py-2 text-left ring-1 ring-black/5 animate-fade-in-up">
-                <button @click="handleEditProject" type="button"
-                  class="w-full text-left px-4.5 py-2.5 hover:bg-amber-50 text-gray-800 hover:text-amber-800 text-xs sm:text-sm font-bold transition-colors flex items-center gap-3 cursor-pointer">
-                  <i class="fa-solid fa-pen-to-square text-amber-500 text-sm"></i>
-                  <span>Chỉnh sửa dự án</span>
-                </button>
-                <div class="border-t border-gray-100 my-1"></div>
-                <button @click="handleDeleteProject" type="button" :disabled="!canDeleteProject"
-                  class="w-full text-left px-4.5 py-2.5 text-xs sm:text-sm font-bold transition-colors flex items-center gap-3 cursor-pointer"
-                  :class="canDeleteProject ? 'hover:bg-rose-50 text-rose-600' : 'text-gray-300 cursor-not-allowed'">
-                  <i class="fa-solid fa-trash-can text-sm"></i>
-                  <span>Xóa dự án</span>
-                </button>
-              </div>
+      <template #right>
+        <transition
+          enter-active-class="transition duration-200 ease-out"
+          enter-from-class="opacity-0 translate-y-4"
+          enter-to-class="opacity-100 translate-y-0"
+          leave-active-class="transition duration-150 ease-in"
+          leave-from-class="opacity-100 translate-y-0"
+          leave-to-class="opacity-0 translate-y-4"
+        >
+          <div v-if="showDetailStickyBar" class="relative" ref="stickyActionMenuRef">
+            <button @click="toggleActionMenu" type="button"
+              class="w-11 h-11 bg-transparent border border-gray-300 hover:bg-gray-100/50 rounded-2xl flex items-center justify-center text-gray-800 shadow-2xs transition-colors cursor-pointer text-lg"
+              title="Menu tùy chọn">
+              <i class="fa-solid fa-bars"></i>
+            </button>
+
+            <!-- Dropdown Menu for Sticky Bar -->
+            <div v-if="isActionMenuOpen && showDetailStickyBar"
+              class="absolute right-0 top-full mt-2 w-60 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 py-2 text-left ring-1 ring-black/5 animate-fade-in-up">
+              <button @click="handleEditProject" type="button"
+                class="w-full text-left px-4.5 py-2.5 hover:bg-amber-50 text-gray-800 hover:text-amber-800 text-xs sm:text-sm font-bold transition-colors flex items-center gap-3 cursor-pointer">
+                <i class="fa-solid fa-pen-to-square text-amber-500 text-sm"></i>
+                <span>Chỉnh sửa dự án</span>
+              </button>
+              <div class="border-t border-gray-100 my-1"></div>
+              <button @click="handleDeleteProject" type="button" :disabled="!canDeleteProject"
+                class="w-full text-left px-4.5 py-2.5 text-xs sm:text-sm font-bold transition-colors flex items-center gap-3 cursor-pointer"
+                :class="canDeleteProject ? 'hover:bg-rose-50 text-rose-600' : 'text-gray-300 cursor-not-allowed'">
+                <i class="fa-solid fa-trash-can text-sm"></i>
+                <span>Xóa dự án</span>
+              </button>
             </div>
           </div>
-        </div>
-      </div>
-    </transition>
+        </transition>
+      </template>
+    </Navbar>
 
     <!-- Loading Spinner State -->
     <div v-if="isDetailLoading && !project"
@@ -76,61 +87,71 @@
     </div>
 
     <!-- Main Project Content -->
-    <main v-else-if="project" class="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-16 space-y-4">
+    <main v-else-if="project" class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-16 space-y-4">
 
-      <!-- TOP NAVIGATION BAR & ACTION CONTROLS -->
-      <div class="flex items-center justify-between">
-        <!-- Back link -->
-        <button @click="goBack" type="button"
-          class="inline-flex items-center gap-2.5 text-sm sm:text-base font-black text-gray-800 hover:text-emerald-700 bg-transparent border border-gray-300 hover:bg-gray-100/50 rounded-2xl px-4 py-2.5 shadow-2xs transition-all cursor-pointer focus:outline-none">
-          <i class="fa-solid fa-arrow-left text-sm"></i>
-          <span>Danh sách dự án</span>
-        </button>
-
-        <!-- Right Header Action Tools (Main Menu Dropdown) -->
-        <div class="flex items-center gap-2.5">
-          <!-- Menu Button / Dropdown -->
-          <div class="relative" ref="actionMenuDropdownRef">
-            <button @click="toggleActionMenu" type="button"
-              class="w-11 h-11 bg-transparent border border-gray-300 hover:bg-gray-100/50 rounded-2xl flex items-center justify-center text-gray-800 shadow-2xs transition-colors cursor-pointer text-lg"
-              title="Menu tùy chọn">
-              <i class="fa-solid fa-bars"></i>
-            </button>
-
-            <!-- Dropdown Menu -->
-            <div v-if="isActionMenuOpen"
-              class="absolute right-0 top-full mt-2 w-60 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 py-2 text-left ring-1 ring-black/5 animate-fade-in-up">
-              <button @click="handleEditProject" type="button"
-                class="w-full text-left px-4.5 py-2.5 hover:bg-amber-50 text-gray-800 hover:text-amber-800 text-xs sm:text-sm font-bold transition-colors flex items-center gap-3 cursor-pointer">
-                <i class="fa-solid fa-pen-to-square text-amber-500 text-sm"></i>
-                <span>Chỉnh sửa dự án</span>
+      <div class="space-y-1.5">
+        <!-- TOP NAVIGATION BAR, PROJECT TITLE & ACTION CONTROLS -->
+        <div ref="headerButtonsRowRef" class="space-y-1 pt-1">
+          <!-- Row 1: Back link + Project Title + Action Controls -->
+          <div class="flex items-center justify-between gap-4">
+            <!-- Back link -->
+            <div class="flex-shrink-0">
+              <button @click="goBack" type="button"
+                class="inline-flex items-center gap-2 text-sm sm:text-base font-black text-gray-800 hover:text-emerald-700 bg-transparent border border-gray-300 hover:bg-gray-100/50 rounded-2xl px-4 py-2.5 shadow-2xs transition-all cursor-pointer focus:outline-none">
+                <i class="fa-solid fa-arrow-left text-sm"></i>
+                <span>Danh sách dự án</span>
               </button>
-              <div class="border-t border-gray-100 my-1"></div>
-              <button @click="handleDeleteProject" type="button" :disabled="!canDeleteProject"
-                class="w-full text-left px-4.5 py-2.5 text-xs sm:text-sm font-bold transition-colors flex items-center gap-3 cursor-pointer"
-                :class="canDeleteProject ? 'hover:bg-rose-50 text-rose-600' : 'text-gray-300 cursor-not-allowed'">
-                <i class="fa-solid fa-trash-can text-sm"></i>
-                <span>Xóa dự án</span>
-              </button>
+            </div>
+
+            <!-- MAIN PROJECT TITLE (CĂN GIỮA) -->
+            <div class="text-center flex-1 min-w-0">
+              <h1
+                class="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight font-heading uppercase break-words max-w-full leading-tight mx-auto">
+                {{ project.title }}
+              </h1>
+            </div>
+
+            <!-- Right Header Action Tools (Main Menu Dropdown) -->
+            <div class="flex-shrink-0 flex items-center gap-2.5">
+              <!-- Menu Button / Dropdown -->
+              <div class="relative" ref="actionMenuDropdownRef">
+                <button @click="toggleActionMenu" type="button"
+                  class="w-11 h-11 bg-transparent border border-gray-300 hover:bg-gray-100/50 rounded-2xl flex items-center justify-center text-gray-800 shadow-2xs transition-colors cursor-pointer text-lg"
+                  title="Menu tùy chọn">
+                  <i class="fa-solid fa-bars"></i>
+                </button>
+
+                <!-- Dropdown Menu -->
+                <div v-if="isActionMenuOpen && !showDetailStickyBar"
+                  class="absolute right-0 top-full mt-2 w-60 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 py-2 text-left ring-1 ring-black/5 animate-fade-in-up">
+                  <button @click="handleEditProject" type="button"
+                    class="w-full text-left px-4.5 py-2.5 hover:bg-amber-50 text-gray-800 hover:text-amber-800 text-xs sm:text-sm font-bold transition-colors flex items-center gap-3 cursor-pointer">
+                    <i class="fa-solid fa-pen-to-square text-amber-500 text-sm"></i>
+                    <span>Chỉnh sửa dự án</span>
+                  </button>
+                  <div class="border-t border-gray-100 my-1"></div>
+                  <button @click="handleDeleteProject" type="button" :disabled="!canDeleteProject"
+                    class="w-full text-left px-4.5 py-2.5 text-xs sm:text-sm font-bold transition-colors flex items-center gap-3 cursor-pointer"
+                    :class="canDeleteProject ? 'hover:bg-rose-50 text-rose-600' : 'text-gray-300 cursor-not-allowed'">
+                    <i class="fa-solid fa-trash-can text-sm"></i>
+                    <span>Xóa dự án</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 2: Customer Name (centered below title) -->
+          <div class="text-center">
+            <div class="flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold text-gray-500 font-sans">
+              <span>{{ project.customer ? project.customer.name : '' }}</span>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- MAIN PROJECT TITLE & CUSTOMER NAME BELOW (CĂN GIỮA) -->
-      <div class="text-center space-y-0.5 pt-1 pb-2">
-        <h1
-          class="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 tracking-tight font-heading uppercase break-words max-w-full leading-tight mx-auto">
-          {{ project.title }}
-        </h1>
-        <div class="flex items-center justify-center gap-1.5 text-sm sm:text-base font-bold text-gray-500 font-sans">
-          <span>{{ project.customer ? project.customer.name : '' }}</span>
-        </div>
-      </div>
-
-      <!-- SOFT ELEGANT MOUNTAIN ROADMAP CONTAINER -->
-      <div
-        class="relative bg-[#F9F4EE] rounded-3xl pt-4 pb-2 px-4 sm:pt-5 sm:pb-3 sm:px-6 select-none overflow-hidden min-h-[250px]">
+        <!-- SOFT ELEGANT MOUNTAIN ROADMAP CONTAINER -->
+        <div
+          class="relative bg-[#F9F4EE] rounded-3xl pt-1.5 pb-2 px-4 sm:pt-2 sm:pb-3 sm:px-6 select-none overflow-hidden min-h-[250px]">
 
         <!-- Mountain graphic container -->
         <div class="relative min-w-[980px] h-[240px] mx-auto px-4 sm:px-6">
@@ -343,6 +364,7 @@
         </div>
 
       </div>
+    </div>
 
       <!-- CENTER PROMINENT "HÚ HÚ" BUTTON (Luôn hiện trừ khi đang chọn chặng đã hoàn thành) -->
       <div v-if="!selectedMilestone || !selectedMilestone.is_completed"
@@ -360,10 +382,10 @@
 
       <!-- MAIN CARDS / ACTIVITIES CONTAINER ("DẤU CHÂN HOẠT ĐỘNG") -->
       <div @click="handleActivityContainerClick"
-        class="bg-white rounded-3xl p-5 sm:p-6 shadow-xl border border-gray-100 max-w-[720px] mx-auto w-full space-y-4 animate-fade-in-up relative">
+        class="bg-transparent rounded-3xl p-5 sm:p-6 max-w-[720px] mx-auto w-full space-y-4 animate-fade-in-up relative">
 
         <!-- Header Row: Title "HÀNH TRÌNH DỰ ÁN" & Xem tất cả -->
-        <div class="border-b border-gray-100 pb-3.5">
+        <div class="border-b border-stone-300/60 pb-3.5">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3 min-w-0 flex-1">
               <!-- Clear Filter / Back Button if Milestone is Selected -->
@@ -373,7 +395,7 @@
                 <i class="fa-solid fa-arrow-left"></i>
               </button>
 
-              <h3 class="text-base sm:text-lg font-black text-gray-900 uppercase tracking-tight font-heading break-all break-words min-w-0">
+              <h3 class="text-base sm:text-lg font-black text-gray-900 uppercase tracking-tight font-heading break-words min-w-0">
                 {{ selectedMilestone ? selectedMilestone.title : (isStartStageSelected ? 'BẮT ĐẦU' : 'HÀNH TRÌNH DỰ ÁN') }}
               </h3>
             </div>
@@ -471,11 +493,11 @@
               <div class="flex-1 min-w-0 pt-2 pb-4 px-4 sm:pt-2 sm:pb-5 sm:px-5 flex flex-col justify-center">
                 <!-- Header: name + hú + tags + date -->
                 <div class="flex items-start justify-between gap-2">
-                  <div class="flex items-center gap-1 min-w-0 flex-wrap">
-                    <span class="text-[15px] font-semibold text-gray-500">{{ getCreatorDisplayName(t) }}</span>
-
-                    <span v-if="getAssigneeDisplayName(t)"
-                      class="text-[15px] font-semibold text-gray-500 leading-none">hú</span>
+                  <div class="flex items-center gap-1.5 min-w-0 flex-wrap">
+                    <span class="text-[15px] font-semibold text-gray-500">
+                      {{ getCreatorDisplayName(t) }}
+                      <template v-if="getAssigneeDisplayName(t)"> hú</template>
+                    </span>
 
                     <span v-if="getAssigneeDisplayName(t)"
                       class="inline-flex items-center px-2 py-0.5 bg-[#E69138] rounded-sm text-[12px] font-bold text-white leading-none">
@@ -494,7 +516,7 @@
                 </div>
 
                 <!-- Body: message content -->
-                <div class="mt-1 text-[17px] font-bold text-gray-900 leading-snug whitespace-pre-wrap break-all break-words"
+                <div class="mt-1 text-[17px] font-bold text-gray-900 leading-snug whitespace-pre-wrap break-words"
                   v-html="formatTitleText(t.title)"></div>
 
                 <!-- Attachments -->
@@ -913,8 +935,16 @@ const goBack = () => {
 // Sticky floating bar state
 const showDetailStickyBar = ref(false)
 const stickyActionMenuRef = ref(null)
+const headerButtonsRowRef = ref(null)
+
 const handleDetailScroll = () => {
-  showDetailStickyBar.value = window.scrollY > 150
+  if (!headerButtonsRowRef.value) return
+  const rect = headerButtonsRowRef.value.getBoundingClientRect()
+  // Đo chiều cao thực tế của Navbar sticky từ DOM
+  const navbar = document.querySelector('header.sticky')
+  const navbarHeight = navbar ? navbar.offsetHeight : 0
+  // Khi đáy dòng nút gốc chui dưới Navbar -> hiện sticky buttons
+  showDetailStickyBar.value = rect.bottom <= navbarHeight
 }
 
 // States
@@ -3084,7 +3114,7 @@ const handleKeydown = (e) => {
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('click', handleDocumentClick)
-  window.addEventListener('scroll', handleDetailScroll)
+  window.addEventListener('scroll', handleDetailScroll, { passive: true })
 })
 
 onUnmounted(() => {
@@ -3100,6 +3130,10 @@ watch(
   },
   { immediate: true }
 )
+
+watch(showDetailStickyBar, () => {
+  isActionMenuOpen.value = false
+})
 </script>
 
 <style scoped>

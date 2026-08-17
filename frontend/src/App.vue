@@ -108,8 +108,27 @@
 </template>
 
 <script setup>
+import { onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useToastStore } from './stores/toast'
 import { useConfirmStore } from './stores/confirm'
+
 const toastStore = useToastStore()
 const confirmStore = useConfirmStore()
+const router = useRouter()
+
+const handleGlobalKeydown = (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'h') {
+    e.preventDefault()
+    router.push('/views')
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleGlobalKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleGlobalKeydown)
+})
 </script>

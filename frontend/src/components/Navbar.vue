@@ -2,6 +2,10 @@
   <header class="bg-[#F9F4EE] border-b border-stone-200/80 sticky top-0 z-50 py-2">
     <!-- Navbar Container: Centered workspace dropdown -->
     <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-center relative" ref="dropdownRef">
+      <!-- Left Slot Content (Dynamic Back / Actions) -->
+      <div class="absolute left-4 sm:left-6 lg:left-8 top-1/2 -translate-y-1/2 flex items-center">
+        <slot name="left"></slot>
+      </div>
       
       <!-- Top Center Dropdown Trigger -->
       <button
@@ -141,6 +145,11 @@
           </div>
         </div>
       </transition>
+
+      <!-- Right Slot Content (Dynamic Options/Menu) -->
+      <div class="absolute right-4 sm:right-6 lg:right-8 top-1/2 -translate-y-1/2 flex items-center">
+        <slot name="right"></slot>
+      </div>
     </div>
 
     <!-- Edit Profile Modal -->

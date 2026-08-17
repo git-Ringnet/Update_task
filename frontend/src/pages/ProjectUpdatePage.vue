@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#F9F4EE] flex flex-col justify-between pb-24 font-sans select-none">
+  <div class="min-h-screen bg-[#F9F4EE] flex flex-col justify-between pb-24 font-sans">
     <div>
       <!-- STICKY FLOATING TOP BAR (appears on scroll) -->
       <transition enter-active-class="transition duration-200 ease-out" enter-from-class="-translate-y-full opacity-0"
