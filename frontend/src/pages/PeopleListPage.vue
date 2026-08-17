@@ -99,16 +99,27 @@
             </div>
 
             <!-- Footer Action -->
-            <div class="pt-3 border-t border-gray-100 flex items-center justify-between">
+            <div class="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
               <span class="text-xs text-gray-400 font-semibold">Hoạt động trong hệ thống</span>
-              <button
-                @click="filterProjectsByUser(user.id)"
-                type="button"
-                class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
-              >
-                <span>Xem dự án</span>
-                <i class="fa-solid fa-arrow-right text-[10px]"></i>
-              </button>
+              <div class="flex items-center gap-1.5">
+                <button
+                  v-if="user.id !== currentUserId"
+                  @click="confirmDeleteUser(user)"
+                  type="button"
+                  class="p-1.5 bg-red-50 hover:bg-red-100 text-red-650 hover:text-red-700 rounded-xl transition-colors cursor-pointer flex items-center justify-center"
+                  title="Xóa thành viên"
+                >
+                  <i class="fa-solid fa-trash-can text-sm"></i>
+                </button>
+                <button
+                  @click="filterProjectsByUser(user.id)"
+                  type="button"
+                  class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>Xem dự án</span>
+                  <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -123,11 +134,18 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
+import { useAuthStore } from '../stores/auth'
+import { useConfirmStore } from '../stores/confirm'
 
 const router = useRouter()
+const authStore = useAuthStore()
+const confirmStore = useConfirmStore()
+
 const users = ref([])
 const isLoading = ref(true)
 const searchQuery = ref('')
+
+const currentUserId = computed(() => authStore.user?.id)
 
 const fetchUsers = async () => {
   try {
@@ -138,6 +156,23 @@ const fetchUsers = async () => {
     console.error('Failed to load users:', err)
   } finally {
     isLoading.value = false
+  }
+}
+
+const confirmDeleteUser = async (user) => {
+  const confirmed = await confirmStore.show({
+    title: 'Xóa thành viên',
+    message: `Bạn có chắc chắn muốn xóa thành viên "${user.name}" khỏi hệ thống? Tất cả các bình luận của họ sẽ bị xóa, và các dự án, công việc họ đang quản lý/phụ trách sẽ trống người đảm nhiệm.`
+  })
+
+  if (!confirmed) return
+
+  try {
+    await axios.delete(`/api/users/${user.id}`)
+    await fetchUsers()
+  } catch (err) {
+    console.error('Failed to delete user:', err)
+    alert(err.response?.data?.message || 'Xóa thành viên thất bại')
   }
 }
 

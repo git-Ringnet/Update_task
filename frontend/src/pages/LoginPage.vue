@@ -37,11 +37,23 @@
       <div class="space-y-3 mb-6">
         <div class="flex items-center justify-between px-1">
           <span class="text-xs font-black text-gray-700 tracking-wide uppercase">Chọn tài khoản thành viên:</span>
-          <span class="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">8 Thành viên</span>
+          <span class="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{{ teamMembers.length }} Thành viên</span>
+        </div>
+
+        <!-- Loading state skeleton -->
+        <div v-if="isUsersLoading" class="grid grid-cols-4 gap-2.5">
+          <div 
+            v-for="i in 8" 
+            :key="'sk-' + i" 
+            class="flex flex-col items-center p-2.5 rounded-2xl border border-gray-100/50 bg-[#fbfdfc] animate-pulse"
+          >
+            <div class="w-11 h-11 rounded-full bg-gray-200"></div>
+            <div class="h-3 bg-gray-150 rounded-md w-12 mt-2"></div>
+          </div>
         </div>
 
         <!-- 4x2 Grid of 8 Team Members -->
-        <div class="grid grid-cols-4 gap-2.5">
+        <div v-else class="grid grid-cols-4 gap-2.5">
           <button 
             v-for="member in teamMembers" 
             :key="member.username" 
@@ -131,10 +143,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, nextTick } from 'vue'
+import { ref, reactive, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import CactusLogo from '../components/CactusLogo.vue'
+import axios from 'axios'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -148,8 +161,8 @@ const loginForm = reactive({
   password: 'Ringnet@123'
 })
 
-// 8 Internal Team Members with Standard Unaccented Usernames
-const teamMembers = [
+// Fallback Internal Team Members with Standard Unaccented Usernames
+const teamMembers = ref([
   {
     name: 'Ân',
     username: 'an',
@@ -198,7 +211,27 @@ const teamMembers = [
     email: 'thao@xuongrong.vn',
     avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=120'
   }
-]
+])
+
+const isUsersLoading = ref(true)
+
+const fetchActiveUsers = async () => {
+  try {
+    isUsersLoading.value = true
+    const res = await axios.get('/api/active-users')
+    if (res.data && res.data.length > 0) {
+      teamMembers.value = res.data
+    }
+  } catch (err) {
+    console.error('Failed to fetch active users list:', err)
+  } finally {
+    isUsersLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchActiveUsers()
+})
 
 const isMemberSelected = (member) => {
   if (!loginForm.username) return false

@@ -79,6 +79,7 @@ Route::post('/login', function (Request $request) {
     }
 
     $user->api_token = Str::random(60);
+    $user->api_token_expires_at = now()->addHours(24);
     $user->save();
 
     return response()->json([
@@ -105,6 +106,7 @@ Route::post('/google-login', function (Request $request) {
 
     // Refresh token
     $user->api_token = Str::random(60);
+    $user->api_token_expires_at = now()->addHours(24);
     $user->save();
 
     return response()->json([
@@ -162,12 +164,26 @@ Route::post('/google-login-real', function (Request $request) {
 
     // Refresh local token session
     $user->api_token = Str::random(60);
+    $user->api_token_expires_at = now()->addHours(24);
     $user->save();
 
     return response()->json([
         'user' => $user,
         'token' => $user->api_token
     ]);
+});
+
+Route::get('/active-users', function () {
+    return response()->json(User::select('id', 'name', 'email', 'avatar')->get()->map(function($user) {
+        $username = explode('@', $user->email)[0];
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'username' => $username,
+            'email' => $user->email,
+            'avatar' => $user->avatar
+        ];
+    }));
 });
 
 // Protected Group
@@ -196,6 +212,7 @@ Route::middleware('auth.token')->group(function () {
         $user = auth()->user();
         if ($user) {
             $user->api_token = null;
+            $user->api_token_expires_at = null;
             $user->save();
         }
         return response()->json(['message' => 'Đăng xuất thành công']);
@@ -203,6 +220,22 @@ Route::middleware('auth.token')->group(function () {
 
     Route::get('/users', function () {
         return response()->json(User::withCount('ledProjects')->get());
+    });
+
+    Route::delete('/users/{id}', function ($id) {
+        $currentUser = auth()->user();
+        if ($currentUser->id == $id) {
+            return response()->json(['message' => 'Bạn không thể tự xóa chính mình khỏi hệ thống.'], 400);
+        }
+
+        $user = User::find($id);
+        if (!$user) {
+            return response()->json(['message' => 'Thành viên không tồn tại.'], 404);
+        }
+
+        $user->delete();
+
+        return response()->json(['message' => 'Xóa thành viên thành công.']);
     });
 
     // Projects

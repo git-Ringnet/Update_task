@@ -38,6 +38,19 @@ class AuthenticateToken
             return response()->json(['message' => 'Unauthorized. Session expired.'], 401);
         }
 
+        if (!$user->api_token_expires_at || $user->api_token_expires_at->isPast()) {
+            $user->api_token = null;
+            $user->api_token_expires_at = null;
+            $user->save();
+            return response()->json(['message' => 'Unauthorized. Session expired.'], 401);
+        }
+
+        // Sliding expiration: extend session token lifetime by 24 hours if less than 23 hours left
+        if ($user->api_token_expires_at->lt(now()->addHours(23))) {
+            $user->api_token_expires_at = now()->addHours(24);
+            $user->save();
+        }
+
         // Authenticate the user globally for the lifecycle of the request
         auth()->login($user);
 

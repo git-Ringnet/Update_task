@@ -47,6 +47,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'pinned_customers' => 'array',
+            'api_token_expires_at' => 'datetime',
         ];
     }
 
