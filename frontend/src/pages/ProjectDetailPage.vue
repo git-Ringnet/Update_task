@@ -348,7 +348,7 @@
 
           <!-- NÚT (+) THÊM CHẶNG ĐẶT TẠI ĐIỂM KẾT THÚC CỦA ĐƯỜNG NẾT NÚI -->
           <div v-if="effectiveMilestones.length < 5" @click="openAddMilestoneModal"
-            class="absolute top-[165px] flex flex-col items-center cursor-pointer group transition-all duration-300 hover:scale-108 z-30"
+            class="absolute top-[154px] flex flex-col items-center cursor-pointer group transition-all duration-300 hover:scale-108 z-30"
             :style="{ left: addMilestoneBtnPosition }">
             <button type="button"
               class="w-8 h-8 rounded-full border border-dashed border-gray-400 bg-white text-gray-500 group-hover:border-emerald-600 group-hover:text-emerald-600 flex items-center justify-center text-sm shadow-2xs transition-colors cursor-pointer">

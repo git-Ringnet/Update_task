@@ -21,17 +21,27 @@
             </p>
           </div>
 
-          <!-- Search Bar -->
-          <div class="relative w-full sm:w-72">
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="Tìm kiếm thành viên..."
-              class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-white shadow-3xs font-semibold"
-            />
-            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
-              <i class="fa-solid fa-magnifying-glass text-sm"></i>
-            </span>
+          <!-- Search & Add Actions -->
+          <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            <div class="relative w-full sm:w-64">
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="Tìm kiếm thành viên..."
+                class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-white shadow-3xs font-semibold"
+              />
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                <i class="fa-solid fa-magnifying-glass text-sm"></i>
+              </span>
+            </div>
+            <button
+              @click="openAddModal"
+              type="button"
+              class="w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <i class="fa-solid fa-user-plus"></i>
+              <span>Thêm thành viên</span>
+            </button>
           </div>
         </div>
 
@@ -123,14 +133,71 @@
             </div>
           </div>
         </div>
-
       </main>
+
+    <!-- Modal Thêm thành viên -->
+    <div v-if="isAddModalOpen" class="fixed inset-0 z-50 overflow-y-auto">
+      <div class="fixed inset-0 bg-gray-950/60 backdrop-blur-xs" @click="isAddModalOpen = false"></div>
+      <div class="flex min-h-full items-center justify-center p-4">
+        <div class="relative w-full max-w-md bg-white rounded-2xl p-6 shadow-xl border border-gray-100">
+          <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+            <h3 class="text-lg font-bold text-gray-900">
+              Thêm thành viên mới
+            </h3>
+            <button @click="isAddModalOpen = false" class="text-gray-400 hover:text-gray-600">
+              <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+          </div>
+          <form @submit.prevent="handleAddUser" class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 mb-1">Họ và tên *</label>
+              <input v-model="addForm.name" required type="text"
+                class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-3xs text-gray-805"
+                placeholder="VD: Nguyễn Văn Tín" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 mb-1">Email *</label>
+              <input v-model="addForm.email" required type="email"
+                class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-3xs text-gray-805"
+                placeholder="VD: tin.nguyen@xuongrong.vn" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 mb-1">Mật khẩu *</label>
+              <input v-model="addForm.password" required type="password"
+                class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-3xs text-gray-805"
+                placeholder="Tối thiểu 6 ký tự (Mặc định: Ringnet@123)" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 mb-1">Đường dẫn ảnh đại diện (URL)</label>
+              <input v-model="addForm.avatar" type="text"
+                class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-3xs text-gray-805"
+                placeholder="Bỏ trống để dùng ảnh mặc định" />
+            </div>
+
+            <!-- Error message if any -->
+            <div v-if="addError" class="text-xs text-red-650 font-semibold bg-red-50 p-2.5 rounded-xl border border-red-100">
+              {{ addError }}
+            </div>
+
+            <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
+              <button type="button" @click="isAddModalOpen = false"
+                class="px-4 py-2 text-sm text-gray-600 font-semibold cursor-pointer">Hủy</button>
+              <button type="submit" :disabled="isSubmitting"
+                class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-3xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5">
+                <i v-if="isSubmitting" class="fa-solid fa-circle-notch animate-spin mr-1"></i>
+                <span>Tạo thành viên</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
+  </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
@@ -146,6 +213,42 @@ const isLoading = ref(true)
 const searchQuery = ref('')
 
 const currentUserId = computed(() => authStore.user?.id)
+
+// Add Member Modal State
+const isAddModalOpen = ref(false)
+const isSubmitting = ref(false)
+const addError = ref('')
+
+const addForm = reactive({
+  name: '',
+  email: '',
+  password: 'Ringnet@123',
+  avatar: ''
+})
+
+const openAddModal = () => {
+  addForm.name = ''
+  addForm.email = ''
+  addForm.password = 'Ringnet@123'
+  addForm.avatar = ''
+  addError.value = ''
+  isAddModalOpen.value = true
+}
+
+const handleAddUser = async () => {
+  try {
+    isSubmitting.value = true
+    addError.value = ''
+    await axios.post('/api/users', addForm)
+    isAddModalOpen.value = false
+    await fetchUsers()
+  } catch (err) {
+    console.error('Failed to create user:', err)
+    addError.value = err.response?.data?.message || 'Không thể tạo thành viên.'
+  } finally {
+    isSubmitting.value = false
+  }
+}
 
 const fetchUsers = async () => {
   try {

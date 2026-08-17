@@ -222,6 +222,24 @@ Route::middleware('auth.token')->group(function () {
         return response()->json(User::withCount('ledProjects')->get());
     });
 
+    Route::post('/users', function (Request $request) {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6',
+            'avatar' => 'nullable|string',
+        ]);
+
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'avatar' => $validated['avatar'] ?? 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=120',
+        ]);
+
+        return response()->json($user, 201);
+    });
+
     Route::delete('/users/{id}', function ($id) {
         $currentUser = auth()->user();
         if ($currentUser->id == $id) {
