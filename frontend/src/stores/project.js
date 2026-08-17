@@ -37,8 +37,9 @@ export const useProjectStore = defineStore('project', {
       this.lastRequestId = (this.lastRequestId || 0) + 1
       const currentId = this.lastRequestId
 
-      if (!isSilent && this.projects.length === 0) {
+      if (!isSilent) {
         this.isLoading = true
+        this.projects = []
       }
       try {
         const queryToUse = this.activePage === 'list' ? this.listSearchQuery : this.searchQuery

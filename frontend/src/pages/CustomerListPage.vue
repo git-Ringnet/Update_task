@@ -25,7 +25,7 @@
             <button
               @click="isSearchOpen = !isSearchOpen"
               type="button"
-              class="w-10 h-10 border border-gray-200 hover:bg-gray-50 rounded-xl flex items-center justify-center text-gray-600 transition-colors cursor-pointer bg-white"
+              class="w-10 h-10 border border-gray-200 hover:bg-gray-50 rounded-xl flex items-center justify-center text-gray-600 transition-colors cursor-pointer bg-transparent"
             >
               <i class="fa-solid fa-magnifying-glass"></i>
             </button>
@@ -138,7 +138,6 @@
                 <tr
                   class="border-b border-gray-300 text-xs font-bold text-gray-400 uppercase tracking-wider bg-transparent">
                   <th scope="col" class="py-3.5 px-6">MỐI QUAN HỆ</th>
-                  <th scope="col" class="py-3.5 px-6 text-center">TÌNH TRẠNG</th>
                   <th scope="col" class="py-3.5 px-6">SỐ DỰ ÁN</th>
                   <th scope="col" class="py-3.5 px-6">CẬP NHẬT GẦN NHẤT</th>
                   <th scope="col" class="py-3.5 px-4 text-right"></th>
@@ -151,9 +150,6 @@
                     <td class="py-4 px-6">
                       <div class="h-4 bg-gray-200/80 rounded-md w-3/4 mb-2"></div>
                       <div class="h-3 bg-gray-100/90 rounded-md w-1/2"></div>
-                    </td>
-                    <td class="py-4 px-6 text-center align-middle">
-                      <div class="w-4 h-4 bg-gray-200/80 rounded-full mx-auto"></div>
                     </td>
                     <td class="py-4 px-6 align-middle">
                       <div class="h-4 bg-gray-200/80 rounded-md w-12"></div>
@@ -170,7 +166,7 @@
 
                 <!-- Empty State -->
                 <tr v-else-if="customers.length === 0">
-                  <td colspan="5" class="py-12 text-center text-gray-400">
+                  <td colspan="4" class="py-12 text-center text-gray-400">
                     Không tìm thấy mối quan hệ nào trong mục này.
                   </td>
                 </tr>
@@ -188,12 +184,6 @@
                     <div class="text-xs text-gray-500 font-medium mt-0.5">
                       {{ formatType(c.type) }}
                     </div>
-                  </td>
-
-                  <!-- Status (Centered color dot) -->
-                  <td class="py-4 px-6 text-center align-middle">
-                    <HealthStatusSelector :model-value="c.status"
-                      @change="(newColor) => handleStatusChange(c.id, newColor)" />
                   </td>
 
                   <!-- Projects count -->
@@ -249,7 +239,6 @@
                   <div class="w-10 h-4 bg-gray-200 rounded-md"></div>
                 </div>
                 <div class="flex items-center gap-3">
-                  <div class="w-3.5 h-3.5 bg-gray-200 rounded-full"></div>
                   <div class="h-3 bg-gray-100 rounded-md w-20"></div>
                 </div>
               </div>
@@ -291,18 +280,9 @@
                 </div>
               </div>
 
-              <!-- Row 2: Statusselector + Projects count + Time -->
+              <!-- Row 2: Projects count + Time -->
               <div class="flex items-center justify-between gap-3 pt-1 text-xs text-gray-500">
                 <div class="flex flex-wrap items-center gap-3 min-w-0">
-                  <!-- Health status selector -->
-                  <div @click.stop>
-                    <HealthStatusSelector :model-value="c.status"
-                      @change="(newColor) => handleStatusChange(c.id, newColor)" />
-                  </div>
-
-                  <!-- Divider -->
-                  <span class="text-gray-300">•</span>
-
                   <!-- Projects count -->
                   <span class="font-bold text-gray-800">
                     {{ c.projects_count || 0 }} dự án
@@ -327,38 +307,47 @@
             </div>
           </div>
 
-          <!-- Load more container -->
-          <div v-if="customers.length > displayLimit" class="p-4 border-t border-gray-300 flex justify-center bg-transparent">
-            <button @click="displayLimit += 15" type="button"
-              class="px-5 py-2.5 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 font-extrabold text-xs rounded-xl shadow-3xs transition-all cursor-pointer flex items-center gap-1.5 focus:outline-none">
-              <i class="fa-solid fa-angles-down text-[10px]"></i>
-              <span>Xem thêm mối quan hệ (Còn {{ customers.length - displayLimit }} đối tác)</span>
-            </button>
-          </div>
-
-          <!-- Bottom Footer Bar matching mockup 6 -->
-          <div
-            class="bg-[#f2faf3] px-6 py-3.5 border-t border-emerald-100/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-medium text-emerald-800">
-            <div class="flex items-center gap-6 flex-wrap">
-              <span class="flex items-center gap-1.5">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
-                <strong>Xanh:</strong> Đang tốt
-              </span>
-              <span class="flex items-center gap-1.5">
-                <span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span>
-                <strong>Vàng:</strong> Thiếu quan tâm
-              </span>
-              <span class="flex items-center gap-1.5">
-                <span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>
-                <strong>Đỏ:</strong> Bỏ mặc
-              </span>
+          <!-- Pagination -->
+          <div v-if="totalPages > 1" class="p-4 border-t border-gray-300 flex items-center justify-between bg-transparent select-none">
+            <div class="text-xs text-gray-500 font-semibold">
+              Trang {{ currentPage }} / {{ totalPages }} ({{ customers.length }} đối tác)
             </div>
-
-            <button @click="scrollToTop" type="button"
-              class="flex items-center gap-1.5 text-emerald-700 hover:text-emerald-900 font-semibold transition-colors">
-              <i class="fa-solid fa-arrow-up text-xs"></i>
-              <span>Lên đầu trang</span>
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                @click="goToPage(currentPage - 1)"
+                :disabled="currentPage === 1"
+                type="button"
+                class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+                :class="currentPage === 1 ? 'text-gray-400' : 'text-gray-700'"
+              >
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              
+              <div class="flex items-center gap-1">
+                <template v-for="page in totalPages" :key="page">
+                  <button
+                    v-if="page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)"
+                    @click="goToPage(page)"
+                    type="button"
+                    class="w-8 h-8 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                    :class="page === currentPage ? 'bg-emerald-600 text-white' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'"
+                  >
+                    {{ page }}
+                  </button>
+                  <span v-else-if="page === currentPage - 2 || page === currentPage + 2" class="px-1 text-gray-400">...</span>
+                </template>
+              </div>
+              
+              <button
+                @click="goToPage(currentPage + 1)"
+                :disabled="currentPage === totalPages"
+                type="button"
+                class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+                :class="currentPage === totalPages ? 'text-gray-400' : 'text-gray-700'"
+              >
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
           </div>
 
         </div>
@@ -451,10 +440,12 @@ const isSearchOpen = ref(false)
 const searchInputRef = ref(null)
 
 const handleSearchLocal = () => {
+  currentPage.value = 1
   fetchCustomers()
 }
 
 watch(isSearchOpen, (newVal) => {
+  currentPage.value = 1
   if (newVal) {
     nextTick(() => {
       searchInputRef.value?.focus()
@@ -473,10 +464,25 @@ watch(isModalOpen, async (newVal) => {
 })
 const editingCustomerId = ref(null)
 
-const displayLimit = ref(15)
+const currentPage = ref(1)
+const itemsPerPage = 15
+
 const displayedCustomers = computed(() => {
-  return customers.value.slice(0, displayLimit.value)
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return customers.value.slice(start, end)
 })
+
+const totalPages = computed(() => {
+  return Math.ceil(customers.value.length / itemsPerPage)
+})
+
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
 
 const startCreateCustomer = () => {
   editingCustomerId.value = null
@@ -557,7 +563,7 @@ const fetchCustomers = async (isSilent = false) => {
 }
 
 const setTab = (type) => {
-  displayLimit.value = 15
+  currentPage.value = 1
   activeType.value = type
   fetchCustomers()
 }

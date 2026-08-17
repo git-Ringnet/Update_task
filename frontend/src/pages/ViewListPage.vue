@@ -151,14 +151,6 @@
                     'ring-2 ring-emerald-500 bg-emerald-50/50 p-1': dragOverGroupedIndex === pIdx && dragOverGroupId === group.name && (draggedGroupedIndex !== pIdx || draggedGroupId !== group.name)
                   }"
                 >
-                  <!-- Checkbox for multi-select (hidden by default, show on hover or when any checkbox is clicked) -->
-                  <input
-                    type="checkbox"
-                    :checked="isSelected(project.id)"
-                    @click.stop="toggleProjectSelect(project.id)"
-                    class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer flex-shrink-0 transition-opacity duration-200"
-                    :class="showAllCheckboxes ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100'"
-                  />
 
                   <!-- Colored Project Rectangular Card (Identical to default mode) -->
                   <div
@@ -384,18 +376,21 @@
               >
                 <!-- Top Row: User Avatar/Name + "hỗ trợ" Customer & Timestamp -->
                 <div class="flex items-center justify-between gap-2">
-                  <div class="flex items-center gap-1.5 min-w-0">
+                  <div class="flex items-center gap-1.5 min-w-0 flex-1">
                     <img 
                       :src="log.user?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=60'" 
                       class="w-8 h-8 rounded-full object-cover border border-gray-200 flex-shrink-0" 
                     />
-                    <span class="font-extrabold text-sm text-gray-900 flex-shrink-0">{{ log.user ? log.user.name : 'Hệ thống' }}</span>
-                    <span v-if="log.project?.customer" class="text-sm font-extrabold text-gray-900 flex-shrink-0">hỗ trợ</span>
-                    <span 
-                      v-if="log.project?.customer" 
-                      class="text-sm font-extrabold text-emerald-700 truncate cursor-pointer hover:underline"
-                      @click.stop="$router.push(`/customers/${log.project.customer.id}`)"
-                    >{{ log.project.customer.name }}</span>
+                    <span class="font-extrabold text-sm text-gray-900 truncate">
+                      <span>{{ log.user ? log.user.name : 'Hệ thống' }}</span>
+                      <template v-if="log.project?.customer">
+                        <span class="font-extrabold text-gray-900"> hỗ trợ </span>
+                        <span 
+                          class="text-emerald-700 cursor-pointer hover:underline"
+                          @click.stop="$router.push(`/customers/${log.project.customer.id}`)"
+                        >{{ log.project.customer.name }}</span>
+                      </template>
+                    </span>
                   </div>
                   <span class="text-[11px] text-gray-400 font-bold flex-shrink-0">
                     {{ formatCommentRelativeTime(log.created_at) }}

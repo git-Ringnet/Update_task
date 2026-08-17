@@ -128,18 +128,18 @@
             </div>
           </div>
 
-          <!-- Load more container -->
-          <div v-if="activities.length > displayLimit" class="pt-4 flex justify-center bg-[#F9F4EE] mb-4">
-            <button
-              @click="displayLimit += 15"
-              type="button"
-              class="px-5 py-2.5 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 font-extrabold text-xs rounded-xl shadow-3xs transition-all cursor-pointer flex items-center gap-1.5 focus:outline-none"
-            >
-              <i class="fa-solid fa-angles-down text-[10px]"></i>
-              <span>Xem thêm hoạt động (Còn {{ activities.length - displayLimit }} hoạt động)</span>
-            </button>
-          </div>
+        </div>
 
+        <!-- Load more container -->
+        <div v-if="activities.length > displayLimit" class="pt-4 flex justify-center bg-[#F9F4EE] mb-4">
+          <button
+            @click="displayLimit += 15"
+            type="button"
+            class="px-5 py-2.5 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 font-extrabold text-xs rounded-xl shadow-3xs transition-all cursor-pointer flex items-center gap-1.5 focus:outline-none"
+          >
+            <i class="fa-solid fa-angles-down text-[10px]"></i>
+            <span>Xem thêm hoạt động (Còn {{ activities.length - displayLimit }} hoạt động)</span>
+          </button>
         </div>
       </div>
     </main>

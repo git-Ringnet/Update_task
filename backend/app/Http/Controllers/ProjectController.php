@@ -13,7 +13,7 @@ class ProjectController extends Controller
     {
         $userId = auth()->id();
 
-        $query = Project::with(['customer', 'lead', 'tasks', 'milestones.tasks', 'latestComment.user'])
+        $query = Project::with(['customer'])
             ->withCount(['tasks', 'comments']);
 
         if ($userId) {

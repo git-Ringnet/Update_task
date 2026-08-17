@@ -63,6 +63,63 @@
           </div>
         </transition>
 
+        <!-- Status Filter Tabs -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <div class="flex flex-wrap items-center gap-3 select-none">
+            <!-- Tất cả -->
+            <button @click="setTab('all')" type="button"
+              class="px-4 py-2 rounded-xl font-medium text-sm transition-all duration-150 flex items-center gap-2 cursor-pointer"
+              :class="(!projectStore.activeStatus || projectStore.activeStatus === 'all')
+                ? 'bg-emerald-100 text-emerald-800 shadow-2xs font-semibold'
+                : 'bg-gray-100/80 text-gray-600 hover:bg-gray-200/70'">
+              <span>Tất cả</span>
+              <span class="px-2 py-0.5 rounded-md text-xs font-bold"
+                :class="(!projectStore.activeStatus || projectStore.activeStatus === 'all') ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'">
+                {{ projectCounts.all }}
+              </span>
+            </button>
+
+            <!-- Đang theo -->
+            <button @click="setTab('following')" type="button"
+              class="px-4 py-2 rounded-xl font-medium text-sm transition-all duration-150 flex items-center gap-2 cursor-pointer"
+              :class="projectStore.activeStatus === 'following'
+                ? 'bg-emerald-100 text-emerald-800 shadow-2xs font-semibold'
+                : 'bg-gray-100/80 text-gray-600 hover:bg-gray-200/70'">
+              <span>Đang theo</span>
+              <span class="px-2 py-0.5 rounded-md text-xs font-bold"
+                :class="projectStore.activeStatus === 'following' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'">
+                {{ projectCounts.following }}
+              </span>
+            </button>
+
+            <!-- Không theo -->
+            <button @click="setTab('not_following')" type="button"
+              class="px-4 py-2 rounded-xl font-medium text-sm transition-all duration-150 flex items-center gap-2 cursor-pointer"
+              :class="projectStore.activeStatus === 'not_following'
+                ? 'bg-emerald-100 text-emerald-800 shadow-2xs font-semibold'
+                : 'bg-gray-100/80 text-gray-600 hover:bg-gray-200/70'">
+              <span>Không theo</span>
+              <span class="px-2 py-0.5 rounded-md text-xs font-bold"
+                :class="projectStore.activeStatus === 'not_following' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'">
+                {{ projectCounts.not_following }}
+              </span>
+            </button>
+
+            <!-- Hoàn thành -->
+            <button @click="setTab('completed')" type="button"
+              class="px-4 py-2 rounded-xl font-medium text-sm transition-all duration-150 flex items-center gap-2 cursor-pointer"
+              :class="projectStore.activeStatus === 'completed'
+                ? 'bg-emerald-100 text-emerald-800 shadow-2xs font-semibold'
+                : 'bg-gray-100/80 text-gray-600 hover:bg-gray-200/70'">
+              <span>Hoàn thành</span>
+              <span class="px-2 py-0.5 rounded-md text-xs font-bold"
+                :class="projectStore.activeStatus === 'completed' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'">
+                {{ projectCounts.completed }}
+              </span>
+            </button>
+          </div>
+        </div>
+
         <!-- Main Desktop Table Card Container -->
         <div class="bg-transparent rounded-2xl border border-gray-300 shadow-3xs select-none">
           <div class="hidden md:block">
@@ -81,8 +138,6 @@
                   <th scope="col" class="py-4 px-6 w-56">Relationship</th>
                   <th scope="col" class="py-4 px-6 min-w-[240px]">Project</th>
                   <th scope="col" class="py-4 px-6 w-32 text-center">Health</th>
-                  <th scope="col" class="py-4 px-6 w-48 text-center">Lead</th>
-                  <th scope="col" class="py-4 px-6 min-w-[320px]">Update</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-300 text-sm">
@@ -104,18 +159,12 @@
                     <td class="py-5 px-6">
                       <div class="h-4 bg-gray-200 rounded-full w-12"></div>
                     </td>
-                    <td class="py-5 px-6">
-                      <div class="h-4 bg-gray-200 rounded-md w-28"></div>
-                    </td>
-                    <td class="py-5 px-6">
-                      <div class="h-4 bg-gray-200 rounded-md w-64"></div>
-                    </td>
                   </tr>
                 </template>
 
                 <!-- Empty state -->
                 <tr v-else-if="displayedProjects.length === 0">
-                  <td colspan="7" class="py-16 text-center text-gray-400 font-medium">
+                  <td colspan="5" class="py-16 text-center text-gray-400 font-medium">
                     Không tìm thấy dự án nào trong mục này.
                   </td>
                 </tr>
@@ -171,9 +220,6 @@
                   <!-- Project Column -->
                   <td class="py-4 px-6 max-w-[300px] min-w-[200px]">
                     <div class="font-extrabold text-gray-900 text-sm leading-snug group-hover:text-emerald-700 transition-colors flex items-start gap-2 min-w-0">
-                      <span v-if="project.tracking_status === 'completed'" class="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0 mt-1" title="Hoàn thành"></span>
-                      <span v-else-if="project.tracking_status === 'following'" class="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0 mt-1" title="Đang theo"></span>
-                      <span v-else-if="project.tracking_status === 'not_following'" class="w-2.5 h-2.5 rounded-full bg-rose-500 flex-shrink-0 mt-1" title="Không theo"></span>
                       <span class="break-all min-w-0 flex-1">{{ project.title }}</span>
                     </div>
                   </td>
@@ -185,75 +231,6 @@
                         :model-value="project.health"
                         @change="(newColor) => handleHealthChange(project.id, newColor)"
                       />
-                    </div>
-                  </td>
-
-                  <!-- Lead Info -->
-                  <td class="py-4 px-6 align-middle relative text-center" @click.stop>
-                    <div
-                      @click="toggleLeadMenu(project.id)"
-                      class="inline-flex items-center gap-2 px-2.5 py-1.5 hover:bg-emerald-50/70 border border-transparent hover:border-emerald-100 rounded-xl transition-all cursor-pointer select-none font-bold justify-center"
-                    >
-                      <img
-                        :src="project.lead ? (project.lead.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120') : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'"
-                        :alt="project.lead ? project.lead.name : 'Chưa giao'"
-                        class="w-6.5 h-6.5 rounded-full object-cover border border-emerald-100 shadow-3xs"
-                      />
-                      <span class="text-gray-808 text-sm font-bold border-b border-dashed border-gray-300 pb-0.5">
-                        {{ project.lead ? project.lead.name : 'Chưa giao' }}
-                      </span>
-                    </div>
-
-                    <!-- Lead Dropdown Selection -->
-                    <div
-                      v-if="openLeadMenuId === project.id"
-                      class="absolute left-1/2 -translate-x-1/2 w-48 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1.5 text-left ring-1 ring-black/5 max-h-48 overflow-y-auto"
-                      :class="index === 0 ? 'top-full mt-1.5' : 'bottom-full mb-1.5'"
-                    >
-                      <div class="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider select-none border-b border-gray-100 mb-1">
-                        Chuyển lead dự án
-                      </div>
-                      <button
-                        @click="handleUpdateLead(project.id, null)"
-                        type="button"
-                        class="w-full text-left px-3.5 py-2 hover:bg-emerald-50 text-gray-500 hover:text-emerald-900 text-xs font-bold transition-colors flex items-center gap-2.5 cursor-pointer"
-                      >
-                        <span class="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px]">
-                          <i class="fa-solid fa-user-slash text-gray-400"></i>
-                        </span>
-                        <span>Không giao cho ai</span>
-                      </button>
-                      <button
-                        v-for="u in projectStore.users"
-                        :key="u.id"
-                        @click="handleUpdateLead(project.id, u.id)"
-                        type="button"
-                        class="w-full text-left px-3.5 py-2 hover:bg-emerald-50 text-gray-700 hover:text-emerald-900 text-xs font-bold transition-colors flex items-center gap-2.5 cursor-pointer"
-                      >
-                        <img :src="u.avatar" :alt="u.name" class="w-6 h-6 rounded-full object-cover" />
-                        <span class="truncate flex-1">{{ u.name }}</span>
-                        <i v-if="project.lead && project.lead.id === u.id" class="fa-solid fa-check text-[10px] text-emerald-600"></i>
-                      </button>
-                    </div>
-                  </td>
-
-                  <!-- Update (Latest Comment) -->
-                  <td class="py-4 px-6 max-w-[450px]">
-                    <div v-if="getLatestComment(project)">
-                      <div class="font-bold text-gray-955 text-sm leading-snug break-words line-clamp-1 max-w-[400px]">
-                        {{ getLatestComment(project).content }}
-                      </div>
-                      <div class="text-xs text-gray-400 font-semibold mt-1">
-                        {{ getLatestComment(project).user ? getLatestComment(project).user.name : 'Thành viên' }}
-                      </div>
-                    </div>
-                    <div v-else>
-                      <div class="font-bold text-gray-400 text-sm leading-snug">
-                        Chưa có hoạt động nào mới.
-                      </div>
-                      <div class="text-xs text-gray-400 font-semibold mt-1">
-                        Hệ thống
-                      </div>
                     </div>
                   </td>
                 </tr>
@@ -891,9 +868,21 @@ const handleMouseUp = () => {
 
 let pollTimer = null
 
+const projectCounts = computed(() => {
+  const f = projectStore.counts?.following || 0
+  const nf = projectStore.counts?.not_following || 0
+  const c = projectStore.counts?.completed || 0
+  return {
+    all: f + nf + c,
+    following: f,
+    not_following: nf,
+    completed: c
+  }
+})
+
 const setTab = (status) => {
-  displayLimit.value = 15
-  if (projectStore.activeStatus === status) {
+  currentPage.value = 1
+  if (status === 'all') {
     projectStore.activeStatus = null
   } else {
     projectStore.activeStatus = status
@@ -902,7 +891,7 @@ const setTab = (status) => {
 }
 
 const handleSearch = (query) => {
-  displayLimit.value = 15
+  currentPage.value = 1
   projectStore.listSearchQuery = query
   projectStore.fetchProjects()
 }
