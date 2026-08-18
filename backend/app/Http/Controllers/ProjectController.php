@@ -13,8 +13,9 @@ class ProjectController extends Controller
     {
         $userId = auth()->id();
 
-        $query = Project::with(['customer'])
-            ->withCount(['tasks', 'comments']);
+        $query = Project::with(['customer', 'milestones' => function ($q) {
+            $q->withCount('tasks');
+        }])->withCount(['tasks', 'comments']);
 
         if ($userId) {
             $query->select('projects.*')
