@@ -11,13 +11,8 @@ class AdminUserSeeder extends Seeder
 {
     public function run(): void
     {
-        $email = env('ADMIN_EMAIL');
-        $password = env('ADMIN_PASSWORD');
-
-        if (!$email || !$password) {
-            $this->command?->warn('Bỏ qua admin: cần cấu hình ADMIN_EMAIL và ADMIN_PASSWORD.');
-            return;
-        }
+        $email = env('ADMIN_EMAIL', 'admin@xuongrong.vn');
+        $password = env('ADMIN_PASSWORD', 'password');
 
         $admin = User::updateOrCreate(
             ['email' => $email],
