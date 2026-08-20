@@ -35,6 +35,7 @@
               </span>
             </div>
             <button
+              v-if="authStore.user?.is_admin"
               @click="openAddModal"
               type="button"
               class="w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
@@ -113,7 +114,7 @@
               <span class="text-xs text-gray-400 font-semibold">Hoạt động trong hệ thống</span>
               <div class="flex items-center gap-1.5">
                 <button
-                  v-if="user.id !== currentUserId"
+                  v-if="authStore.user?.is_admin && user.id !== currentUserId"
                   @click="confirmDeleteUser(user)"
                   type="button"
                   class="p-1.5 bg-red-50 hover:bg-red-100 text-red-650 hover:text-red-700 rounded-xl transition-colors cursor-pointer flex items-center justify-center"

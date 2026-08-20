@@ -33,6 +33,13 @@
                 <i class="fa-solid fa-pen-to-square text-amber-500 text-sm"></i>
                 <span>Chỉnh sửa dự án</span>
               </button>
+
+              <button v-if="project?.can_manage_members" @click.stop="openMemberManager" type="button"
+                class="w-full text-left px-4.5 py-2.5 hover:bg-[#F9F4EE] text-gray-800 text-xs sm:text-sm font-bold transition-colors flex items-center gap-3 cursor-pointer">
+                <i class="fa-solid fa-user-plus text-emerald-600 text-sm"></i>
+                <span>Thành viên dự án</span>
+              </button>
+
               <div class="border-t border-gray-100 my-1"></div>
               <button @click="handleDeleteProject" type="button" :disabled="!canDeleteProject"
                 class="w-full text-left px-4.5 py-2.5 text-xs sm:text-sm font-bold transition-colors flex items-center gap-3 cursor-pointer"
@@ -40,6 +47,29 @@
                 <i class="fa-solid fa-trash-can text-sm"></i>
                 <span>Xóa dự án</span>
               </button>
+            </div>
+
+            <!-- Member Manager Popover for Sticky Bar -->
+            <div v-if="false && showMemberManager && showDetailStickyBar"
+              class="absolute right-0 top-full mt-2 w-60 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1.5 max-h-60 overflow-y-auto text-left ring-1 ring-black/5 animate-fade-in-up">
+              <div class="px-3 py-1 text-[9px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1 flex items-center justify-between">
+                <span>Quản lý thành viên</span>
+                <i class="fa-solid fa-users text-[10px]"></i>
+              </div>
+              <div class="px-2 py-0.5 space-y-0.5">
+                <button v-for="u in users" :key="u.id" type="button"
+                  @click="toggleProjectMember(u)"
+                  :disabled="isCreator(u.id)"
+                  class="w-full px-2 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left rounded-lg disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                  :class="{ 'bg-emerald-50 text-emerald-800 font-bold': isMember(u.id) }">
+                  <input type="checkbox" :checked="isMember(u.id)" :disabled="isCreator(u.id)"
+                    class="rounded text-emerald-600 accent-emerald-600 w-3.5 h-3.5 cursor-pointer disabled:cursor-not-allowed" @click.stop="toggleProjectMember(u)" />
+                  <img :src="u.avatar || defaultAvatar"
+                    class="w-4.5 h-4.5 rounded-full object-cover border border-gray-200" />
+                  <span class="truncate flex-1">{{ u.name }}</span>
+                  <span v-if="isCreator(u.id)" class="text-[8px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-md flex-shrink-0">Người tạo</span>
+                </button>
+              </div>
             </div>
           </div>
         </transition>
@@ -119,6 +149,13 @@
                     <i class="fa-solid fa-pen-to-square text-amber-500 text-sm"></i>
                     <span>Chỉnh sửa dự án</span>
                   </button>
+
+                  <button v-if="project?.can_manage_members" @click.stop="openMemberManager" type="button"
+                    class="w-full text-left px-4.5 py-2.5 hover:bg-[#F9F4EE] text-gray-800 text-xs sm:text-sm font-bold transition-colors flex items-center gap-3 cursor-pointer">
+                    <i class="fa-solid fa-user-plus text-emerald-600 text-sm"></i>
+                    <span>Thành viên dự án</span>
+                  </button>
+
                   <div class="border-t border-gray-100 my-1"></div>
                   <button @click="handleDeleteProject" type="button" :disabled="!canDeleteProject"
                     class="w-full text-left px-4.5 py-2.5 text-xs sm:text-sm font-bold transition-colors flex items-center gap-3 cursor-pointer"
@@ -126,6 +163,29 @@
                     <i class="fa-solid fa-trash-can text-sm"></i>
                     <span>Xóa dự án</span>
                   </button>
+                </div>
+
+                <!-- Member Manager Popover/Dropdown -->
+                <div v-if="false && showMemberManager && !showDetailStickyBar"
+                  class="absolute right-0 top-full mt-2 w-60 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1.5 max-h-60 overflow-y-auto text-left ring-1 ring-black/5 animate-fade-in-up">
+                  <div class="px-3 py-1 text-[9px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1 flex items-center justify-between">
+                    <span>Quản lý thành viên</span>
+                    <i class="fa-solid fa-users text-[10px]"></i>
+                  </div>
+                  <div class="px-2 py-0.5 space-y-0.5">
+                    <button v-for="u in users" :key="u.id" type="button"
+                      @click="toggleProjectMember(u)"
+                      :disabled="isCreator(u.id)"
+                      class="w-full px-2 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left rounded-lg disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                      :class="{ 'bg-emerald-50 text-emerald-800 font-bold': isMember(u.id) }">
+                      <input type="checkbox" :checked="isMember(u.id)" :disabled="isCreator(u.id)"
+                        class="rounded text-emerald-600 accent-emerald-600 w-3.5 h-3.5 cursor-pointer disabled:cursor-not-allowed" @click.stop="toggleProjectMember(u)" />
+                      <img :src="u.avatar || defaultAvatar"
+                        class="w-4.5 h-4.5 rounded-full object-cover border border-gray-200" />
+                      <span class="truncate flex-1">{{ u.name }}</span>
+                      <span v-if="isCreator(u.id)" class="text-[8px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-md flex-shrink-0">Người tạo</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -136,6 +196,22 @@
             <div class="flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold text-gray-500 font-sans">
               <span>{{ project.customer ? project.customer.name : '' }}</span>
             </div>
+          </div>
+
+          <!-- Project Members Section -->
+          <div class="flex flex-wrap items-center justify-center gap-2 mt-2">
+            <!-- Members list -->
+            <div class="flex items-center -space-x-1.5 overflow-hidden">
+              <template v-for="m in project.members" :key="m.id">
+                <img :src="m.avatar || defaultAvatar"
+                  :title="`${m.name} ${m.id === project.creator_id ? '(Người tạo)' : ''}`"
+                  class="w-6 h-6 rounded-full object-cover border-2 border-[#F9F4EE] bg-white ring-1 ring-gray-200" />
+              </template>
+            </div>
+
+            <span class="text-xs font-bold text-gray-500">
+              ({{ project.members ? project.members.length : 0 }} thành viên)
+            </span>
           </div>
         </div>
 
@@ -466,15 +542,36 @@
 
           <div v-else class="space-y-3">
             <!-- CARDS LIST -->
-            <div v-for="t in displayedCards" :key="t.id" @dblclick="!isTaskInDoneStage(t) && openEditStageTaskForm(t)"
-              class="bg-white border border-gray-200/80 hover:border-gray-300 rounded-2xl shadow-2xs hover:shadow-xs transition-all group cursor-pointer flex items-stretch overflow-hidden"
-              :title="isTaskInDoneStage(t) ? 'Chặng đã hoàn thành (Không thể chỉnh sửa)' : 'Nhấn đúp (Double-click) để chỉnh sửa hoạt động này'">
+            <div v-for="t in displayedCards" :key="t.id"
+              class="bg-white border border-gray-200/80 hover:border-gray-300 rounded-2xl shadow-2xs hover:shadow-xs transition-all group flex items-stretch overflow-hidden"
+              :title="isTaskInDoneStage(t) ? 'Chặng đã hoàn thành (Không thể chỉnh sửa)' : undefined">
 
-              <!-- LEFT: Icon block (full-height bar) -->
-              <div class="w-14 sm:w-16 flex items-center justify-center flex-shrink-0 transition-colors"
+              <!-- LEFT: Icon block; reveal card actions on hover -->
+              <div class="w-14 sm:w-16 relative flex items-center justify-center flex-shrink-0 transition-colors"
                 :class="t.health === 'red' ? 'bg-[#EF4444]' : (isAssignedHuhuTask(t) ? 'bg-[#EF8511]' : 'bg-[#45A246]')">
                 <i
-                  :class="[t.health === 'red' ? 'fa-solid fa-circle-exclamation' : getTaskCardIcon(t), 'text-white text-2xl', getTaskCardIcon(t) === 'fa-solid fa-shoe-prints' && t.health !== 'red' ? '-rotate-90' : '']"></i>
+                  :class="[
+                    t.health === 'red' ? 'fa-solid fa-circle-exclamation' : getTaskCardIcon(t),
+                    'text-white text-2xl transition-all duration-200',
+                    !isTaskInDoneStage(t) ? 'group-hover:opacity-0 group-hover:scale-75' : '',
+                    getTaskCardIcon(t) === 'fa-solid fa-shoe-prints' && t.health !== 'red' ? '-rotate-90' : ''
+                  ]"></i>
+
+                <div v-if="!isTaskInDoneStage(t)"
+                  class="absolute inset-0 flex flex-col opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200">
+                  <button type="button"
+                    class="w-full flex-1 bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center transition-colors cursor-pointer"
+                    title="Chỉnh sửa hoạt động" aria-label="Chỉnh sửa hoạt động"
+                    @mousedown.stop @click.stop="openEditStageTaskForm(t)">
+                    <i class="fa-solid fa-pen-to-square text-base"></i>
+                  </button>
+                  <button type="button"
+                    class="w-full flex-1 border-t border-white/50 bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors cursor-pointer"
+                    title="Xóa hoạt động" aria-label="Xóa hoạt động"
+                    @mousedown.stop @click.stop="handleDeleteTask(t.id)">
+                    <i class="fa-solid fa-trash-can text-base"></i>
+                  </button>
+                </div>
               </div>
 
               <!-- RIGHT: Content area with padding -->
@@ -555,6 +652,61 @@
     <!-- Modal for Project Edit -->
     <ProjectModal :is-open="isModalOpen" :customers="customers" :users="users" :edit-project="project"
       @close="handleCloseModal" @submit="handleUpdateProjectSubmit" @customer-created="fetchCustomers" />
+
+    <!-- Dedicated project member manager -->
+    <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0"
+      enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="showMemberManager"
+        class="fixed inset-0 z-[90] bg-slate-950/45 backdrop-blur-sm flex items-center justify-center p-4"
+        @click="showMemberManager = false">
+        <div ref="memberManagerRef"
+          class="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-white/80 overflow-visible"
+          @click.stop>
+          <div class="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+                <i class="fa-solid fa-user-group"></i>
+              </div>
+              <div class="min-w-0">
+                <h3 class="text-lg font-black text-gray-900">Thành viên dự án</h3>
+                <p class="text-xs font-semibold text-gray-400 truncate">{{ project?.title }}</p>
+              </div>
+            </div>
+            <button type="button" @click="showMemberManager = false"
+              class="w-9 h-9 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-500 flex items-center justify-center cursor-pointer">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <div class="px-6 py-5">
+            <p class="text-xs font-semibold text-gray-500 mb-3">
+              Tìm theo tên, email hoặc tên đăng nhập. Nhấn dấu × trên avatar để gỡ thành viên.
+            </p>
+            <MemberPicker
+              v-model="draftMemberIds"
+              :users="users"
+              :creator-id="project?.creator_id"
+              placeholder="@+tên thành viên muốn thêm"
+            />
+          </div>
+
+          <div class="px-6 py-4 bg-gray-50/80 border-t border-gray-100 rounded-b-3xl flex items-center justify-between gap-3">
+            <span class="text-xs font-bold text-gray-400">{{ draftMemberIds.length }} thành viên được chọn</span>
+            <div class="flex items-center gap-2">
+              <button type="button" @click="showMemberManager = false"
+                class="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-200 rounded-xl cursor-pointer">Hủy</button>
+              <button type="button" :disabled="isSavingMembers" @click="saveProjectMembers"
+                class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-black rounded-xl shadow-sm cursor-pointer flex items-center gap-2">
+                <i v-if="isSavingMembers" class="fa-solid fa-circle-notch animate-spin"></i>
+                <i v-else class="fa-solid fa-check"></i>
+                Lưu thành viên
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
 
     <!-- FIXED BOTTOM UPDATE CREATION CARD (COLLAPSED BY DEFAULT, FIXED AT BOTTOM OF SCREEN WHEN OPEN) -->
     <transition enter-active-class="transition duration-300 ease-out transform"
@@ -745,28 +897,35 @@
                   <!-- Person picker toggle button -->
                   <div class="relative" ref="personPickerRef">
                     <button type="button" @click="showPersonPicker = !showPersonPicker"
-                      class="inline-flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none shadow-3xs"
-                      :class="newStageTaskAssignee ? 'bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-700 px-3 py-1.5' : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 w-9 h-9'"
-                      title="Chọn người phụ trách">
+                      class="inline-flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none shadow-3xs px-3 py-1.5"
+                      :class="newStageTaskTaggedUsers.length > 0 ? 'bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-700' : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600'"
+                      title="Chọn người phụ trách / Tag tên">
                       <i class="fa-regular fa-user text-sm"></i>
-                      <span v-if="newStageTaskAssignee">@{{ selectedAssigneeName }}</span>
+                      <span v-if="newStageTaskTaggedUsers.length > 0">
+                        {{ newStageTaskTaggedUsers.map(id => {
+                          const u = users.find(user => String(user.id) === String(id));
+                          return u ? '@' + u.name : '';
+                        }).filter(Boolean).join(' ') }}
+                      </span>
+                      <span v-else>Tag tên</span>
                     </button>
                     <!-- Person picker dropdown -->
                     <div v-if="showPersonPicker"
                       class="absolute left-0 bottom-full mb-2 z-50 w-56 bg-white border border-gray-200 rounded-xl shadow-xl py-1 max-h-52 overflow-y-auto ring-1 ring-black/5">
                       <div
                         class="px-3 py-1 text-[10px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1">
-                        Chọn người phụ trách</div>
-                      <button v-if="newStageTaskAssignee" type="button"
-                        @click="clearAssignee(); showPersonPicker = false"
-                        class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-rose-50 text-rose-500 transition-colors text-left">
+                        Chọn người phụ trách / Tag tên</div>
+                      <button v-if="newStageTaskTaggedUsers.length > 0" type="button"
+                        @click="clearAssignees"
+                        class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-rose-50 text-rose-500 transition-colors text-left border-b border-gray-100">
                         <i class="fa-solid fa-xmark text-xs"></i>
-                        <span>Bỏ chọn</span>
+                        <span>Bỏ chọn tất cả</span>
                       </button>
                       <button v-for="u in users" :key="u.id" type="button"
-                        @click="newStageTaskAssignee = String(u.id); showPersonPicker = false"
+                        @click="toggleTaggedUser(u)"
                         class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left"
-                        :class="{ 'bg-emerald-50 text-emerald-800 font-bold': String(u.id) === String(newStageTaskAssignee) }">
+                        :class="{ 'bg-emerald-50 text-emerald-800 font-bold': newStageTaskTaggedUsers.includes(String(u.id)) }">
+                        <input type="checkbox" :checked="newStageTaskTaggedUsers.includes(String(u.id))" class="rounded text-emerald-600 accent-emerald-600 cursor-pointer w-3.5 h-3.5" @click.stop="toggleTaggedUser(u)" />
                         <img :src="u.avatar || defaultAvatar"
                           class="w-5 h-5 rounded-full object-cover border border-gray-200" />
                         <span class="truncate flex-1">{{ u.name }}</span>
@@ -898,6 +1057,7 @@ import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
 import ProjectModal from '../components/ProjectModal.vue'
+import MemberPicker from '../components/MemberPicker.vue'
 import HealthStatusSelector from '../components/HealthStatusSelector.vue'
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toast'
@@ -912,6 +1072,18 @@ const toast = useToastStore()
 const confirmStore = useConfirmStore()
 
 const projectId = computed(() => route.params.id)
+let accessCheckInterval = null
+
+const verifyProjectAccess = async () => {
+  if (!projectId.value) return
+  try {
+    await axios.get(`/api/projects/${projectId.value}/access`)
+  } catch (err) {
+    if ([403, 404].includes(err.response?.status)) {
+      router.replace('/views')
+    }
+  }
+}
 
 const goBack = () => {
   if (window.history.state && window.history.state.back) {
@@ -925,6 +1097,102 @@ const goBack = () => {
 const showDetailStickyBar = ref(false)
 const stickyActionMenuRef = ref(null)
 const headerButtonsRowRef = ref(null)
+
+const showMemberManager = ref(false)
+const memberManagerRef = ref(null)
+const draftMemberIds = ref([])
+const isSavingMembers = ref(false)
+
+const openMemberManager = () => {
+  draftMemberIds.value = project.value?.members?.map(member => Number(member.id)) || []
+  const creatorId = project.value?.creator_id
+  const creatorIsSelectable = users.value.some(user => String(user.id) === String(creatorId))
+  if (creatorId && creatorIsSelectable && !draftMemberIds.value.includes(Number(creatorId))) {
+    draftMemberIds.value.push(Number(creatorId))
+  }
+  isActionMenuOpen.value = false
+  showMemberManager.value = true
+}
+
+const saveProjectMembers = async () => {
+  if (!project.value || isSavingMembers.value) return
+  isSavingMembers.value = true
+  try {
+    const response = await axios.put(`/api/projects/${project.value.id}`, {
+      member_ids: draftMemberIds.value,
+    })
+    project.value.members = response.data.members || []
+    showMemberManager.value = false
+    toast.success('Đã cập nhật thành viên dự án!')
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Cập nhật thành viên thất bại!')
+  } finally {
+    isSavingMembers.value = false
+  }
+}
+
+const isMember = (userId) => {
+  if (!project.value || !project.value.members) return false
+  return project.value.members.some(m => String(m.id) === String(userId))
+}
+
+const isCreator = (userId) => {
+  if (!project.value) return false
+  return project.value.creator_id && String(project.value.creator_id) === String(userId)
+}
+
+const toggleProjectMember = async (user) => {
+  if (!project.value) return
+  if (isCreator(user.id)) return
+
+  const currentMembers = project.value.members ? project.value.members.map(m => m.id) : []
+  const idx = currentMembers.indexOf(user.id)
+
+  if (idx > -1) {
+    currentMembers.splice(idx, 1)
+  } else {
+    currentMembers.push(user.id)
+  }
+
+  try {
+    const res = await axios.put(`/api/projects/${project.value.id}`, {
+      member_ids: currentMembers
+    })
+    project.value.members = res.data.members || []
+    toast.success('Đã cập nhật danh sách thành viên dự án!')
+  } catch (err) {
+    console.error('Failed to update project members:', err)
+    toast.error('Cập nhật thành viên thất bại!')
+  }
+}
+
+const autoAddTaggedUsersToProject = async (taggedUserIds) => {
+  if (!project.value || !taggedUserIds || taggedUserIds.length === 0) return
+
+  const currentMemberIds = project.value.members ? project.value.members.map(m => m.id) : []
+  let updated = false
+  const nextMemberIds = [...currentMemberIds]
+
+  taggedUserIds.forEach(id => {
+    const idNum = Number(id)
+    if (idNum && !nextMemberIds.includes(idNum)) {
+      nextMemberIds.push(idNum)
+      updated = true
+    }
+  })
+
+  if (updated) {
+    try {
+      const res = await axios.put(`/api/projects/${project.value.id}`, {
+        member_ids: nextMemberIds
+      })
+      project.value.members = res.data.members || []
+      toast.success('Thành viên được tag đã tự động được thêm vào dự án!')
+    } catch (err) {
+      console.error('Failed to auto add tagged users as project members:', err)
+    }
+  }
+}
 
 const handleDetailScroll = () => {
   if (!headerButtonsRowRef.value) return
@@ -1140,6 +1408,7 @@ const inlineFormRef = ref(null)
 const editingTaskId = ref(null)
 const newStageTaskTitle = ref('')
 const newStageTaskAssignee = ref('')
+const newStageTaskTaggedUsers = ref([])
 const newStageTaskDueDate = ref('')
 const newStageTaskDueTime = ref('')
 const newStageTaskMilestoneId = ref(null)
@@ -1392,6 +1661,7 @@ const toggleInlineForm = () => {
     newStageTaskDueDate.value = ''
     newStageTaskDueTime.value = ''
     newStageTaskAssignee.value = ''
+    newStageTaskTaggedUsers.value = []
     showPersonPicker.value = false
     showDateTimePicker.value = false
     clearAttachedFiles()
@@ -1730,7 +2000,11 @@ const onTitleKeydown = (e) => {
 
 const selectMentionUser = (user) => {
   if (!user) return
-  newStageTaskAssignee.value = String(user.id)
+  const idStr = String(user.id)
+  if (!newStageTaskTaggedUsers.value.includes(idStr)) {
+    newStageTaskTaggedUsers.value.push(idStr)
+  }
+  newStageTaskAssignee.value = newStageTaskTaggedUsers.value[0]
 
   const text = newStageTaskTitle.value
   const cursorPos = stageTaskTitleInputRef.value?.selectionStart || text.length
@@ -1758,7 +2032,32 @@ const selectMentionUser = (user) => {
   })
 }
 
-const clearAssignee = () => {
+const toggleTaggedUser = (user) => {
+  if (!user) return
+  const idStr = String(user.id)
+  const idx = newStageTaskTaggedUsers.value.indexOf(idStr)
+  let title = newStageTaskTitle.value || ''
+
+  if (idx > -1) {
+    // Uncheck
+    newStageTaskTaggedUsers.value.splice(idx, 1)
+    const escapedName = user.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const regex = new RegExp(`@${escapedName}\\s*`, 'gi')
+    title = title.replace(regex, '').trim()
+  } else {
+    // Check
+    newStageTaskTaggedUsers.value.push(idStr)
+    if (!title.includes(`@${user.name}`)) {
+      title = (title + ` @${user.name}`).trim() + ' '
+    }
+  }
+  newStageTaskTitle.value = title
+  newStageTaskAssignee.value = newStageTaskTaggedUsers.value.length > 0 ? newStageTaskTaggedUsers.value[0] : ''
+  adjustTextareaHeight()
+}
+
+const clearAssignees = () => {
+  newStageTaskTaggedUsers.value = []
   newStageTaskAssignee.value = ''
 }
 
@@ -1772,6 +2071,7 @@ const cancelEditTask = () => {
   editingTaskId.value = null
   newStageTaskTitle.value = ''
   newStageTaskAssignee.value = ''
+  newStageTaskTaggedUsers.value = []
   newStageTaskDueDate.value = ''
   newStageTaskDueTime.value = ''
   showPersonPicker.value = false
@@ -1785,6 +2085,7 @@ const openAddStageTaskForm = () => {
   newStageTaskDueDate.value = ''
   newStageTaskDueTime.value = ''
   newStageTaskAssignee.value = ''
+  newStageTaskTaggedUsers.value = []
   newStageTaskHealth.value = project.value ? project.value.health : 'yellow'
   if (!newStageTaskMilestoneId.value) {
     newStageTaskMilestoneId.value = selectedMilestone.value ? selectedMilestone.value.id : (effectiveMilestones.value[0]?.id || null)
@@ -1803,6 +2104,18 @@ const openEditStageTaskForm = (task) => {
   attachedFiles.value = parseAttachmentsFromTitle(task.title)
   newStageTaskTitle.value = stripAttachmentsFromTitle(task.title)
   newStageTaskAssignee.value = task.assignee_id ? String(task.assignee_id) : ''
+  newStageTaskTaggedUsers.value = []
+  if (task.assignee_id) {
+    newStageTaskTaggedUsers.value.push(String(task.assignee_id))
+  }
+  const matches = [...(task.title || '').matchAll(/@([^\s@,.:;!?()\n]+)/g)]
+  matches.forEach(m => {
+    const term = m[1]
+    const u = users.value.find(user => removeVietnameseAccents(user.name) === removeVietnameseAccents(term))
+    if (u && !newStageTaskTaggedUsers.value.includes(String(u.id))) {
+      newStageTaskTaggedUsers.value.push(String(u.id))
+    }
+  })
   newStageTaskMilestoneId.value = task.milestone_id || (selectedMilestone.value ? selectedMilestone.value.id : (effectiveMilestones.value[0]?.id || null))
   newStageTaskHealth.value = task.health || (project.value ? project.value.health : 'yellow')
 
@@ -2786,7 +3099,8 @@ const handleAddStageTaskSubmit = async () => {
         status: 'todo',
         priority: 'medium',
         due_date: selectedDueDate,
-        health: newStageTaskHealth.value
+        health: newStageTaskHealth.value,
+        tagged_user_ids: newStageTaskTaggedUsers.value.map(Number)
       })
       toast.success('Đã cập nhật thông tin hoạt động!')
       await fetchProjectDetail()
@@ -2797,6 +3111,7 @@ const handleAddStageTaskSubmit = async () => {
       editingTaskId.value = null
       newStageTaskTitle.value = ''
       newStageTaskAssignee.value = ''
+      newStageTaskTaggedUsers.value = []
       newStageTaskDueDate.value = ''
       newStageTaskDueTime.value = ''
       isInlineFormOpen.value = false
@@ -2830,7 +3145,8 @@ const handleAddStageTaskSubmit = async () => {
       priority: 'medium',
       due_date: selectedDueDate,
       created_by: currentUserId,
-      health: newStageTaskHealth.value
+      health: newStageTaskHealth.value,
+      tagged_user_ids: newStageTaskTaggedUsers.value.map(Number)
     })
 
     const created = res.data || newTaskObj
@@ -2862,6 +3178,7 @@ const handleAddStageTaskSubmit = async () => {
     editingTaskId.value = null
     newStageTaskTitle.value = ''
     newStageTaskAssignee.value = ''
+    newStageTaskTaggedUsers.value = []
     newStageTaskDueDate.value = ''
     newStageTaskDueTime.value = ''
     isInlineFormOpen.value = false
@@ -2930,6 +3247,9 @@ const loadAllData = async () => {
 // Actions
 const toggleActionMenu = () => {
   isActionMenuOpen.value = !isActionMenuOpen.value
+  if (isActionMenuOpen.value) {
+    showMemberManager.value = false
+  }
 }
 
 const handleEditProject = () => {
@@ -3133,12 +3453,14 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('click', handleDocumentClick)
   window.addEventListener('scroll', handleDetailScroll, { passive: true })
+  accessCheckInterval = window.setInterval(verifyProjectAccess, 15000)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('click', handleDocumentClick)
   window.removeEventListener('scroll', handleDetailScroll)
+  if (accessCheckInterval) window.clearInterval(accessCheckInterval)
 })
 
 watch(

@@ -4,10 +4,10 @@
     <div class="fixed inset-0 bg-gray-900/50 backdrop-blur-xs transition-opacity" @click="close"></div>
 
     <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-      <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-gray-100">
+      <div class="relative transform overflow-visible rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-gray-100">
         
         <!-- Modal Header -->
-        <div class="bg-gradient-to-r from-emerald-50 to-teal-50 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div class="rounded-t-2xl bg-gradient-to-r from-emerald-50 to-teal-50 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <div class="flex items-center gap-3">
             <img src="/cactus-logo.png" alt="Logo Xương Rồng" class="w-8 h-8 object-contain" />
             <h3 class="text-lg font-bold text-gray-900" id="modal-title">{{ editProject ? 'Cập Nhật Dự Án' : 'Tạo Dự Án Mới' }}</h3>
@@ -18,7 +18,7 @@
         </div>
 
         <!-- Form Body -->
-        <form @submit.prevent="handleSubmit" class="p-6 space-y-4">
+        <form @submit.prevent="handleSubmit" class="p-6 space-y-4 rounded-b-2xl bg-white">
           <!-- Title -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-1">Tên dự án <span class="text-rose-500">*</span></label>
@@ -154,6 +154,23 @@
             </div>
           </div>
 
+          <!-- Thành viên dự án -->
+          <div>
+            <div class="flex items-center justify-between gap-3 mb-2">
+              <label class="block text-sm font-semibold text-gray-700">Thành viên dự án</label>
+              <span class="text-[10px] font-bold text-gray-400">Có thể thêm/xóa sau</span>
+            </div>
+            <MemberPicker
+              v-model="form.member_ids"
+              :users="users"
+              :creator-id="effectiveCreatorId"
+              placeholder="@+tên thành viên muốn thêm"
+            />
+            <p class="mt-2 text-[11px] leading-relaxed text-gray-400 font-medium">
+              Thành viên được thêm sẽ xem được dự án và toàn bộ hoạt động liên quan.
+            </p>
+          </div>
+
           <!-- Modal Footer -->
           <div class="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
             <button
@@ -274,6 +291,7 @@ import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from
 import { X, Plus } from 'lucide-vue-next'
 import axios from 'axios'
 import { useAuthStore } from '../stores/auth'
+import MemberPicker from './MemberPicker.vue'
 
 const authStore = useAuthStore()
 
@@ -300,6 +318,7 @@ const form = reactive({
   health: 'yellow',
   tracking_status: 'following',
   is_pinned: false,
+  member_ids: [],
 })
 
 // Global keydown handler for the modal
@@ -330,15 +349,23 @@ watch(() => props.isOpen, async (newVal) => {
       form.tracking_status = props.editProject.tracking_status || 'following'
       const c = props.customers.find(item => item.id === form.customer_id)
       searchQuery.value = c ? `${c.name} ${c.code ? `(${c.code})` : ''}` : ''
+
+      form.member_ids = props.editProject.members ? props.editProject.members.map(m => m.id) : []
+      const creatorId = props.editProject.creator_id || props.editProject.created_by
+      const creatorCanBeMember = props.users.some(user => String(user.id) === String(creatorId))
+      if (creatorId && creatorCanBeMember && !form.member_ids.includes(creatorId)) {
+        form.member_ids.push(creatorId)
+      }
     } else {
       form.title = ''
       form.customer_id = ''
       // Default lead to current user
-      form.lead_id = authStore.user?.id || null
+      form.lead_id = authStore.user?.is_admin ? null : (authStore.user?.id || null)
       console.log('Setting default lead_id to:', form.lead_id)
       form.health = 'yellow'
       form.tracking_status = 'following'
       searchQuery.value = ''
+      form.member_ids = authStore.user?.id && !authStore.user?.is_admin ? [authStore.user.id] : []
     }
     
     // Auto-focus title input when modal opens
@@ -573,4 +600,15 @@ const handleSubmit = async () => {
 const isFormValid = computed(() => {
   return form.title.trim() && form.customer_id
 })
+
+const effectiveCreatorId = computed(() => {
+  return props.editProject?.creator_id || props.editProject?.created_by || authStore.user?.id || null
+})
+
+const isCreator = (userId) => {
+  if (props.editProject) {
+    return props.editProject.creator_id && String(props.editProject.creator_id) === String(userId)
+  }
+  return authStore.user?.id && String(authStore.user.id) === String(userId)
+}
 </script>

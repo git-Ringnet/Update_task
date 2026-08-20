@@ -297,28 +297,35 @@
                     <!-- Person picker button -->
                     <div class="relative">
                       <button type="button" @click="toggleProjectPersonPicker(project.id)"
-                        class="inline-flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none shadow-3xs"
-                        :class="assigneeMap[project.id] ? 'bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-700 px-3 py-1.5' : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 w-9 h-9'"
-                        title="Chọn người phụ trách">
+                        class="inline-flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none shadow-3xs px-3 py-1.5"
+                        :class="(taggedUsersMap[project.id] && taggedUsersMap[project.id].length > 0) ? 'bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-700' : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600'"
+                        title="Chọn người phụ trách / Tag tên">
                         <i class="fa-regular fa-user text-sm"></i>
-                        <span v-if="assigneeMap[project.id]">@{{ getAssigneeName(assigneeMap[project.id]) }}</span>
+                        <span v-if="taggedUsersMap[project.id] && taggedUsersMap[project.id].length > 0">
+                          {{ taggedUsersMap[project.id].map(id => {
+                            const u = usersList.find(user => String(user.id) === String(id));
+                            return u ? '@' + u.name : '';
+                          }).filter(Boolean).join(' ') }}
+                        </span>
+                        <span v-else>Tag tên</span>
                       </button>
 
                       <div v-if="activePersonPickerProjectId === project.id"
                         class="absolute right-0 bottom-full mb-2 z-50 w-56 bg-white border border-gray-200 rounded-xl shadow-xl py-1 max-h-52 overflow-y-auto ring-1 ring-black/5">
                         <div
                           class="px-3 py-1 text-[10px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1">
-                          Chọn người phụ trách
+                          Chọn người phụ trách / Tag tên
                         </div>
-                        <button v-if="assigneeMap[project.id]" type="button"
-                          @click="assigneeMap[project.id] = null; activePersonPickerProjectId = null"
-                          class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-rose-50 text-rose-500 transition-colors text-left">
-                          <i class="fa-solid fa-xmark text-xs"></i><span>Bỏ chọn</span>
+                        <button v-if="taggedUsersMap[project.id] && taggedUsersMap[project.id].length > 0" type="button"
+                          @click="clearTaggedUsers(project.id)"
+                          class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-rose-50 text-rose-500 transition-colors text-left border-b border-gray-100">
+                          <i class="fa-solid fa-xmark text-xs"></i><span>Bỏ chọn tất cả</span>
                         </button>
                         <button v-for="u in usersList" :key="u.id" type="button"
-                          @click="assigneeMap[project.id] = u.id; activePersonPickerProjectId = null"
+                          @click="toggleTaggedUser(project.id, u)"
                           class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left"
-                          :class="{ 'bg-emerald-50 text-emerald-800 font-bold': u.id === assigneeMap[project.id] }">
+                          :class="{ 'bg-emerald-50 text-emerald-800 font-bold': taggedUsersMap[project.id] && taggedUsersMap[project.id].includes(String(u.id)) }">
+                          <input type="checkbox" :checked="taggedUsersMap[project.id] && taggedUsersMap[project.id].includes(String(u.id))" class="rounded text-emerald-600 accent-emerald-600 cursor-pointer w-3.5 h-3.5" @click.stop="toggleTaggedUser(project.id, u)" />
                           <img :src="u.avatar || defaultAvatar"
                             class="w-5 h-5 rounded-full object-cover border border-gray-200" />
                           <span class="truncate flex-1">{{ u.name }}</span>
@@ -462,6 +469,7 @@ const isSaving = reactive({})
 // Per-project milestone, assignee, date and time maps
 const selectedMilestoneMap = reactive({})
 const assigneeMap = reactive({})
+const taggedUsersMap = reactive({})
 const dueDateMap = reactive({})
 const dueTimeMap = reactive({})
 const healthMap = reactive({})
@@ -775,7 +783,14 @@ const onTextareaKeydown = (projectId, event) => {
 
 const selectMentionUser = (projectId, user) => {
   if (!user) return
-  assigneeMap[projectId] = String(user.id)
+  const idStr = String(user.id)
+  if (!taggedUsersMap[projectId]) {
+    taggedUsersMap[projectId] = []
+  }
+  if (!taggedUsersMap[projectId].includes(idStr)) {
+    taggedUsersMap[projectId].push(idStr)
+  }
+  assigneeMap[projectId] = taggedUsersMap[projectId][0]
 
   const text = updateTexts[projectId] || ''
   const el = textareaRefs[projectId]
@@ -807,6 +822,44 @@ const selectMentionUser = (projectId, user) => {
       el.scrollTop = el.scrollHeight
     }
   })
+}
+
+const toggleTaggedUser = (projectId, user) => {
+  if (!user) return
+  if (!taggedUsersMap[projectId]) {
+    taggedUsersMap[projectId] = []
+  }
+  const idStr = String(user.id)
+  const idx = taggedUsersMap[projectId].indexOf(idStr)
+  let text = updateTexts[projectId] || ''
+
+  if (idx > -1) {
+    // Uncheck
+    taggedUsersMap[projectId].splice(idx, 1)
+    const escapedName = user.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const regex = new RegExp(`@${escapedName}\\s*`, 'gi')
+    text = text.replace(regex, '').trim()
+  } else {
+    // Check
+    taggedUsersMap[projectId].push(idStr)
+    if (!text.includes(`@${user.name}`)) {
+      text = (text + ` @${user.name}`).trim() + ' '
+    }
+  }
+  updateTexts[projectId] = text
+  assigneeMap[projectId] = taggedUsersMap[projectId].length > 0 ? taggedUsersMap[projectId][0] : null
+
+  // Resize textarea if element exists
+  const el = textareaRefs[projectId]
+  if (el) {
+    el.style.height = 'auto'
+    el.style.height = `${Math.max(el.scrollHeight, 32)}px`
+  }
+}
+
+const clearTaggedUsers = (projectId) => {
+  taggedUsersMap[projectId] = []
+  assigneeMap[projectId] = null
 }
 
 const compressImage = (file) => {
@@ -1139,6 +1192,31 @@ const saveUpdate = async (projectId) => {
       project.health = newHealth
     }
 
+    // Auto-add tagged users to project members
+    const taggedIds = taggedUsersMap[projectId] || []
+    if (taggedIds.length > 0) {
+      const currentMemberIds = project.members ? project.members.map(m => m.id) : []
+      const nextMemberIds = [...currentMemberIds]
+      let updated = false
+      taggedIds.forEach(id => {
+        const idNum = Number(id)
+        if (idNum && !nextMemberIds.includes(idNum)) {
+          nextMemberIds.push(idNum)
+          updated = true
+        }
+      })
+      if (updated) {
+        try {
+          const res = await axios.put(`/api/projects/${projectId}`, {
+            member_ids: nextMemberIds
+          })
+          project.members = res.data.members || []
+        } catch (err) {
+          console.error('Failed to auto-add tagged users to project members in bulk page:', err)
+        }
+      }
+    }
+
     // 1. Post to /api/tasks (creates task under selected project & milestone)
     await axios.post('/api/tasks', {
       project_id: projectId,
@@ -1148,7 +1226,8 @@ const saveUpdate = async (projectId) => {
       status: 'todo',
       priority: 'medium',
       due_date: selectedDueDate,
-      created_by: currentUserId
+      created_by: currentUserId,
+      tagged_user_ids: taggedIds.map(Number)
     })
 
 

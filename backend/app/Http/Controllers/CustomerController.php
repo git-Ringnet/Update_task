@@ -91,7 +91,10 @@ class CustomerController extends Controller
 
     public function show($id)
     {
-        $customer = Customer::with(['projects.lead', 'updater'])->findOrFail($id);
+        $customer = Customer::with([
+            'projects' => fn ($query) => $query->visibleTo(auth()->user())->with('lead'),
+            'updater',
+        ])->findOrFail($id);
         return response()->json($customer);
     }
 

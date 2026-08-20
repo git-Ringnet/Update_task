@@ -22,6 +22,7 @@ class User extends Authenticatable
         'email',
         'password',
         'avatar',
+        'is_admin',
         'view_mode',
         'pinned_customers',
     ];
@@ -34,6 +35,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'api_token',
+        'api_token_expires_at',
     ];
 
     /**
@@ -48,11 +51,18 @@ class User extends Authenticatable
             'password' => 'hashed',
             'pinned_customers' => 'array',
             'api_token_expires_at' => 'datetime',
+            'is_admin' => 'boolean',
         ];
     }
 
     public function ledProjects()
     {
         return $this->hasMany(Project::class, 'lead_id');
+    }
+
+    public function projects()
+    {
+        return $this->belongsToMany(Project::class, 'project_members', 'user_id', 'project_id')
+            ->withTimestamps();
     }
 }

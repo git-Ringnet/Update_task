@@ -1,63 +1,55 @@
 <template>
   <div class="min-h-screen flex flex-col pb-12 transition-colors duration-200"
-       :class="viewMode === 'notes' ? 'sticky-board-bg' : 'bg-[#F9F4EE]'">
+    :class="viewMode === 'notes' ? 'sticky-board-bg' : 'bg-[#F9F4EE]'">
     <!-- Navbar Component -->
     <Navbar @search="handleSearch" />
 
     <!-- Main Container -->
-    <main class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-4 w-full">
-      
+    <main class="max-w-[1260px] mx-auto px-4 sm:px-6 lg:px-8 py-4 w-full">
+
       <!-- Header (Top Center) -->
       <div class="flex flex-col items-center text-center mt-1 mb-6 select-none">
-        <h1 class="text-2xl font-black text-gray-900 tracking-tight font-heading mb-1">Help IT Managers become badass.</h1>
-        <p class="text-[11px] text-gray-400 font-bold uppercase tracking-wider">You must think about how IT managers appear in the eyes of their audiences</p>
+        <h1 class="text-2xl font-black text-gray-900 tracking-tight font-heading mb-1">Help IT Managers become badass.
+        </h1>
+        <p class="text-[11px] text-gray-400 font-bold uppercase tracking-wider">You must think about how IT managers
+          appear in the eyes of their audiences</p>
       </div>
 
-      <!-- Main Layout Grid: 12-col Grid (Left Panel 3 | Center Panel 5 or 9 | Right Panel 4 or hidden) -->
-      <div class="grid grid-cols-1 gap-6 items-start"
-           :class="viewMode === 'notes' ? 'lg:grid-cols-12' : 'lg:grid-cols-12'">
-        
+      <!-- Main Layout Container -->
+      <div
+        :class="viewMode === 'notes' ? 'grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 w-full items-start' : 'w-full flex justify-center items-start gap-10'">
+
         <!-- LEFT PANEL: Actions, Switcher & Search (Block 1) -->
-        <aside class="lg:col-span-3 space-y-3.5 select-none">
+        <aside
+          :class="viewMode === 'notes' ? 'space-y-3.5 select-none flex flex-col items-end w-full' : 'space-y-3.5 select-none flex flex-col items-end w-[390px] flex-shrink-0'">
           <!-- Button Tạo dự án -->
-          <button
-            @click="isModalOpen = true"
-            type="button"
-            class="w-full bg-[#45A246] hover:bg-[#3a903b] text-white font-extrabold text-sm rounded-xl p-3.5 flex items-center justify-center gap-2.5 transition-colors shadow-3xs cursor-pointer focus:outline-none select-none"
-            title="Tạo dự án mới (Ctrl + K)"
-          >
-            <i class="fa-solid fa-square-plus text-base"></i>
-            <span>Tạo dự án</span>
+          <button @click="isModalOpen = true" type="button"
+            class="w-fit bg-transparent hover:bg-gray-200/40 border-2 border-[#4d4d4d] text-gray-900 font-extrabold text-sm rounded-md px-4.5 py-2.5 flex items-center justify-center gap-1 transition-colors cursor-pointer focus:outline-none select-none"
+            title="Tạo dự án mới (Ctrl + K)">
+            <span class="text-base font-normal mr-0.5">+</span>
+            <span>Tạo dự án mới</span>
           </button>
 
           <!-- Project / Customer Switcher (Simple Button) -->
-          <button
-            @click="toggleCustomerGroup"
-            type="button"
-            class="w-full bg-transparent hover:bg-gray-200/50 border border-gray-300 text-slate-800 font-extrabold text-sm rounded-xl p-3.5 flex items-center justify-center transition-colors shadow-3xs cursor-pointer focus:outline-none select-none"
-            :class="isGroupedByCustomer ? 'ring-2 ring-emerald-500/30 border-emerald-500 bg-emerald-50/10 text-emerald-950' : ''"
-            title="Chuyển đổi chế độ xem (Ctrl + B)"
-          >
-            <div class="flex items-center gap-2.5">
-              <i class="fa-solid fa-right-left text-xs" :class="isGroupedByCustomer ? 'text-emerald-600' : 'text-slate-500'"></i>
+          <button @click="toggleCustomerGroup" type="button"
+            class="w-fit bg-transparent hover:bg-gray-200/40 border-2 border-[#4d4d4d] text-gray-900 font-extrabold text-sm rounded-md px-4.5 py-2.5 flex items-center justify-center transition-colors cursor-pointer focus:outline-none select-none"
+            :class="isGroupedByCustomer ? 'bg-emerald-50/10' : ''" title="Chuyển đổi chế độ xem (Ctrl + B)">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-list-ol text-sm text-[#4d4d4d]"></i>
               <span>Đổi kiểu xem</span>
             </div>
           </button>
 
           <!-- Tìm kiếm gì đó -->
-          <div class="relative shadow-3xs rounded-xl overflow-hidden">
-            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-            <input
-              ref="searchInputRef"
-              v-model="projectStore.searchQuery"
-              type="text"
-              placeholder="Tìm kiếm gì đó (Ctrl + F)"
-              class="w-full bg-transparent border border-gray-300 rounded-xl pl-10 pr-4 py-3.5 text-sm font-bold focus:outline-none focus:border-emerald-500 placeholder-gray-400"
-            />
+          <div class="relative w-full max-w-[270px]">
+            <i
+              class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4d4d4d] text-sm"></i>
+            <input ref="searchInputRef" v-model="projectStore.searchQuery" type="text" placeholder="Tìm kiếm"
+              class="w-full bg-transparent border-2 border-[#4d4d4d] rounded-md pl-10 pr-4 py-2.5 text-sm font-extrabold text-gray-900 focus:outline-none placeholder-gray-400" />
           </div>
 
           <!-- Keyboard Shortcuts Hint -->
-          <div class="bg-transparent border border-gray-300 rounded-xl p-3 shadow-3xs">
+          <div class="bg-transparent border border-gray-300 rounded-xl p-3 shadow-3xs w-full max-w-[270px]">
             <div class="flex items-center gap-2 mb-2">
               <i class="fa-solid fa-keyboard text-emerald-600 text-sm"></i>
               <span class="text-xs font-black text-gray-900 uppercase tracking-wider">Phím tắt</span>
@@ -65,39 +57,52 @@
             <div class="space-y-1.5 text-xs">
               <div class="flex items-center justify-between">
                 <span class="text-gray-600 font-semibold">Tạo dự án mới</span>
-                <kbd class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl + K</kbd>
+                <kbd
+                  class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl
+                  + K</kbd>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-gray-600 font-semibold">Tìm kiếm</span>
-                <kbd class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl + F</kbd>
+                <kbd
+                  class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl
+                  + F</kbd>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-gray-600 font-semibold">Chọn tất cả</span>
-                <kbd class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl + A</kbd>
+                <kbd
+                  class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl
+                  + A</kbd>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-gray-600 font-semibold">Bỏ chọn tất cả</span>
-                <kbd class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl + Shift + A</kbd>
+                <kbd
+                  class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl
+                  + Shift + A</kbd>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-gray-600 font-semibold">Chuyển đổi view</span>
-                <kbd class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl + B</kbd>
+                <kbd
+                  class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl
+                  + B</kbd>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-gray-600 font-semibold">Đóng/Thoát</span>
-                <kbd class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">ESC</kbd>
+                <kbd
+                  class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">ESC</kbd>
               </div>
             </div>
           </div>
         </aside>
 
         <!-- CENTER PANEL: Projects List (Block 2 - Wider Column, expands when notes view) -->
-        <section class="space-y-3.5 select-none"
-                 :class="viewMode === 'notes' ? 'lg:col-span-9' : 'lg:col-span-5'">
+        <section
+          :class="viewMode === 'notes' ? 'space-y-3.5 select-none w-full' : 'space-y-3.5 select-none w-[420px] flex-shrink-0'">
 
           <!-- Skeleton Loading State -->
-          <div v-if="projectStore.isLoading && displayedProjects.length === 0" class="space-y-3 max-h-[calc(100vh-200px)]">
-            <div v-for="i in 3" :key="'sk-proj-' + i" class="rounded-2xl p-4 bg-white/80 border border-gray-200 animate-pulse flex items-center justify-between h-20 shadow-3xs">
+          <div v-if="projectStore.isLoading && displayedProjects.length === 0"
+            class="space-y-3 max-h-[calc(100vh-200px)]">
+            <div v-for="i in 3" :key="'sk-proj-' + i"
+              class="rounded-2xl p-4 bg-white/80 border border-gray-200 animate-pulse flex items-center justify-between h-20 shadow-3xs">
               <div class="flex items-center gap-3.5 flex-1">
                 <div class="w-4.5 h-4.5 bg-gray-200 rounded"></div>
                 <div class="space-y-2 flex-1">
@@ -110,54 +115,41 @@
           </div>
 
           <!-- Grouped by Customer Mode (Matches Mockup) -->
-          <div 
-            v-else-if="isGroupedByCustomer" 
-            ref="scrollContainerGrouped"
-            @scroll="handleScroll"
-            class="space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto pr-1 scrollbar-none"
-          >
+          <div v-else-if="isGroupedByCustomer" ref="scrollContainerGrouped" @scroll="handleScroll"
+            class="space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-none">
             <div v-for="group in projectsByCustomer" :key="group.name" class="space-y-2.5">
               <!-- Customer Header -->
               <div class="flex items-center gap-2 pt-1 select-none">
                 <h3 class="text-xl font-black text-gray-900 tracking-tight font-heading">{{ group.name }}</h3>
-                <button 
-                  @click.stop="togglePinCustomer(group.name)"
-                  type="button"
+                <button @click.stop="togglePinCustomer(group.name)" type="button"
                   class="p-1 transition-colors hover:opacity-80"
-                  :title="group.is_pinned ? 'Bỏ ghim khách hàng' : 'Ghim khách hàng'"
-                >
-                  <i 
-                    class="text-base transition-colors"
-                    :class="group.is_pinned ? 'fa-solid fa-star text-gray-600' : 'fa-regular fa-star text-gray-400 hover:text-gray-600'"
-                  ></i>
+                  :title="group.is_pinned ? 'Bỏ ghim khách hàng' : 'Ghim khách hàng'">
+                  <i class="text-base transition-colors"
+                    :class="group.is_pinned ? 'fa-solid fa-star text-gray-600' : 'fa-regular fa-star text-gray-400 hover:text-gray-600'"></i>
                 </button>
               </div>
 
               <!-- Customer Projects List -->
               <div class="space-y-2">
-                <div
-                  v-for="(project, pIdx) in group.projects"
-                  :key="project.id"
-                  :data-project-id="project.id"
-                  draggable="true"
-                  @dragstart="onGroupedDragStart($event, project, group, pIdx)"
-                  @dragover.prevent="onGroupedDragOver($event, pIdx)"
-                  @dragleave="onGroupedDragLeave"
-                  @drop="onGroupedDrop($event, group, pIdx)"
-                  @dragend="onGroupedDragEnd"
-                  class="flex items-center gap-2.5 transition-all duration-150 rounded-2xl group/project-row"
+                <div v-for="(project, pIdx) in group.projects" :key="project.id" :data-project-id="project.id"
+                  draggable="true" @dragstart="onGroupedDragStart($event, project, group, pIdx)"
+                  @dragover.prevent="onGroupedDragOver($event, pIdx)" @dragleave="onGroupedDragLeave"
+                  @drop="onGroupedDrop($event, group, pIdx)" @dragend="onGroupedDragEnd"
+                  class="flex items-center transition-all duration-150 rounded-2xl group/project-row relative w-full"
                   :class="{
                     'opacity-40 scale-[0.98]': draggedGroupedIndex === pIdx && draggedGroupId === group.name,
                     'ring-2 ring-emerald-500 bg-emerald-50/50 p-1': dragOverGroupedIndex === pIdx && dragOverGroupId === group.name && (draggedGroupedIndex !== pIdx || draggedGroupId !== group.name)
-                  }"
-                >
+                  }">
+
+                  <!-- Same multi-select behavior as the default project view -->
+                  <input type="checkbox" :checked="isSelected(project.id)" @click.stop="toggleProjectSelect(project.id)"
+                    class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer transition-opacity duration-200 absolute left-2 top-1/2 -translate-y-1/2"
+                    :class="showAllCheckboxes ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100'" />
 
                   <!-- Colored Project Rectangular Card (Identical to default mode) -->
-                  <div
-                    @click="goToProjectDetail(project.id, $event)"
-                    class="flex-1 rounded-lg p-4 flex items-start justify-between gap-4 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden border min-w-0"
-                    :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]"
-                  >
+                  <div @click="goToProjectDetail(project.id, $event)"
+                    class="w-[388px] ml-auto rounded-lg p-4 flex items-start justify-between gap-4 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
+                    :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]">
                     <div class="min-w-0 flex-1">
                       <div class="font-extrabold text-gray-900 text-sm sm:text-base leading-snug break-words min-w-0">
                         {{ project.title }}
@@ -166,16 +158,11 @@
 
                     <div class="flex-shrink-0">
                       <!-- Pin/Star Button -->
-                      <button 
-                        @click.stop="togglePinProject(project)" 
-                        type="button" 
+                      <button @click.stop="togglePinProject(project)" type="button"
                         class="p-1 cursor-pointer transition-colors"
-                        :title="Boolean(project.is_pinned) ? 'Bỏ ghim dự án' : 'Ghim dự án'"
-                      >
-                        <i 
-                          class="text-lg transition-colors" 
-                          :class="Boolean(project.is_pinned) ? 'fa-solid fa-star text-gray-600' : 'fa-regular fa-star text-gray-500 hover:text-gray-700'"
-                        ></i>
+                        :title="Boolean(project.is_pinned) ? 'Bỏ ghim dự án' : 'Ghim dự án'">
+                        <i class="text-lg transition-colors"
+                          :class="Boolean(project.is_pinned) ? 'fa-solid fa-star text-gray-600' : 'fa-regular fa-star text-gray-500 hover:text-gray-700'"></i>
                       </button>
                     </div>
                   </div>
@@ -184,41 +171,31 @@
             </div>
 
             <!-- Empty state for grouped mode -->
-            <div v-if="projectsByCustomer.length === 0" class="bg-white border border-gray-200 rounded-2xl py-12 text-center text-gray-450 text-sm font-semibold shadow-3xs select-none">
+            <div v-if="projectsByCustomer.length === 0"
+              class="bg-white border border-gray-200 rounded-2xl py-12 text-center text-gray-450 text-sm font-semibold shadow-3xs select-none">
               Không tìm thấy dự án nào trong mục này.
             </div>
           </div>
 
           <!-- Sticky Notes View (Grid Layout) -->
-          <div 
-            v-else-if="viewMode === 'notes'" 
-            ref="scrollContainerNotes"
-            @scroll="handleScroll"
-            class="overflow-y-auto pr-1 pt-4 pb-8 max-h-[calc(100vh-200px)] scrollbar-none"
-          >
+          <div v-else-if="viewMode === 'notes'" ref="scrollContainerNotes" @scroll="handleScroll"
+            class="overflow-y-auto pr-1 pt-4 pb-8 max-h-[calc(100vh-200px)] scrollbar-none">
             <div class="sticky-grid">
-              <div
-                v-for="project in displayedProjects"
-                :key="project.id"
-                :data-project-id="project.id"
-                @click="goToProjectDetail(project.id, $event)"
-                class="note-card"
-                :class="getStickyNoteStyle(project)"
-              >
+              <div v-for="project in displayedProjects" :key="project.id" :data-project-id="project.id"
+                @click="goToProjectDetail(project.id, $event)" class="note-card" :class="getStickyNoteStyle(project)">
                 <!-- Pin top center -->
                 <span class="note-pin" :class="getStickyNotePinStyle(project)"></span>
 
+                <!-- Checkmark (top left) when selected -->
+                <div v-if="isSelected(project.id)" class="absolute top-[6px] left-[6px] z-20 flex items-center justify-center" style="position: absolute !important; z-index: 20 !important;">
+                  <i class="fa-solid fa-circle-check text-[#1A7A56] text-xl bg-white rounded-full shadow-3xs"></i>
+                </div>
+
                 <!-- Star icon (top right) -->
-                <button 
-                  @click.stop="togglePinProject(project)" 
-                  type="button" 
-                  class="note-star"
-                  :title="Boolean(project.is_pinned) ? 'Bỏ ghim dự án' : 'Ghim dự án'"
-                >
-                  <i 
-                    class="text-lg transition-colors" 
-                    :class="Boolean(project.is_pinned) ? 'fa-solid fa-star text-gray-600' : 'fa-regular fa-star text-gray-500 hover:text-gray-700'"
-                  ></i>
+                <button @click.stop="togglePinProject(project)" type="button" class="note-star"
+                  :title="Boolean(project.is_pinned) ? 'Bỏ ghim dự án' : 'Ghim dự án'">
+                  <i class="text-lg transition-colors"
+                    :class="Boolean(project.is_pinned) ? 'fa-solid fa-star text-gray-600' : 'fa-regular fa-star text-gray-500 hover:text-gray-700'"></i>
                 </button>
 
                 <!-- Content upper -->
@@ -240,57 +217,37 @@
             </div>
 
             <!-- Empty state for notes mode -->
-            <div v-if="displayedProjects.length === 0" class="bg-white/80 backdrop-blur-xs border border-gray-200 rounded-2xl py-12 text-center text-gray-500 text-sm font-bold shadow-3xs select-none">
+            <div v-if="displayedProjects.length === 0"
+              class="bg-white/80 backdrop-blur-xs border border-gray-200 rounded-2xl py-12 text-center text-gray-500 text-sm font-bold shadow-3xs select-none">
               Không có dự án đã ghim nào.
             </div>
           </div>
 
           <!-- Default Cards list -->
-          <div 
-            v-else 
-            ref="scrollContainerDefault"
-            @scroll="handleScroll"
-            class="space-y-3.5 max-h-[calc(100vh-200px)] overflow-y-auto pr-1 scrollbar-none"
-          >
-            <transition-group
-              enter-active-class="transition duration-300 ease-out"
-              enter-from-class="opacity-0 translate-y-2"
-              enter-to-class="opacity-100 translate-y-0"
-              leave-active-class="transition duration-200 ease-in"
-              leave-from-class="opacity-100 translate-y-0"
-              leave-to-class="opacity-0 -translate-y-2"
-            >
-              <div
-                v-for="(project, index) in displayedProjects"
-                :key="project.id"
-                :data-project-id="project.id"
-                draggable="true"
-                @dragstart="onDragStart($event, project, index)"
-                @dragover.prevent="onDragOver($event, index)"
-                @dragleave="onDragLeave($event)"
-                @drop="onDrop($event, index)"
-                @dragend="onDragEnd($event)"
-                class="flex items-center gap-2.5 transition-all duration-150 rounded-2xl group/project-row"
+          <div v-else ref="scrollContainerDefault" @scroll="handleScroll"
+            class="space-y-3.5 max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-none ml-[-16px] mr-[16px]">
+            <transition-group enter-active-class="transition duration-300 ease-out"
+              enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0"
+              leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
+              leave-to-class="opacity-0 -translate-y-2">
+              <div v-for="(project, index) in displayedProjects" :key="project.id" :data-project-id="project.id"
+                draggable="true" @dragstart="onDragStart($event, project, index)"
+                @dragover.prevent="onDragOver($event, index)" @dragleave="onDragLeave($event)"
+                @drop="onDrop($event, index)" @dragend="onDragEnd($event)"
+                class="flex items-center transition-all duration-150 rounded-2xl group/project-row relative w-full"
                 :class="{
                   'opacity-40 scale-[0.98]': draggedProjectIndex === index,
                   'ring-2 ring-emerald-500 bg-emerald-50/50 p-1': dragOverIndex === index && draggedProjectIndex !== index
-                }"
-              >
-                <!-- Checkbox for multi-select (hidden by default, show on hover or when any checkbox is clicked) -->
-                <input
-                  type="checkbox"
-                  :checked="isSelected(project.id)"
-                  @click.stop="toggleProjectSelect(project.id)"
-                  class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer flex-shrink-0 transition-opacity duration-200"
-                  :class="showAllCheckboxes ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100'"
-                />
+                }">
+                <!-- Checkbox for multi-select (outside the card, but inside the scroll container) -->
+                <input type="checkbox" :checked="isSelected(project.id)" @click.stop="toggleProjectSelect(project.id)"
+                  class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer transition-opacity duration-200 absolute left-2 top-1/2 -translate-y-1/2"
+                  :class="showAllCheckboxes ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100'" />
 
                 <!-- Card Container -->
-                <div
-                  @click="goToProjectDetail(project.id, $event)"
-                  class="flex-1 rounded-lg p-4 flex items-start justify-between gap-4 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden border min-w-0"
-                  :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]"
-                >
+                <div @click="goToProjectDetail(project.id, $event)"
+                  class="w-[388px] ml-auto rounded-lg p-4 flex items-start justify-between gap-4 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
+                  :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]">
                   <div class="min-w-0 flex-1">
                     <div class="font-extrabold text-gray-900 text-sm sm:text-base leading-snug break-words min-w-0">
                       {{ project.title }}
@@ -302,16 +259,11 @@
 
                   <div class="flex-shrink-0">
                     <!-- Pin/Star Button -->
-                    <button 
-                      @click.stop="togglePinProject(project)" 
-                      type="button" 
+                    <button @click.stop="togglePinProject(project)" type="button"
                       class="p-1 cursor-pointer transition-colors"
-                      :title="Boolean(project.is_pinned) ? 'Bỏ ghim dự án' : 'Ghim dự án'"
-                    >
-                      <i 
-                        class="text-lg transition-colors" 
-                        :class="Boolean(project.is_pinned) ? 'fa-solid fa-star text-gray-600' : 'fa-regular fa-star text-gray-500 hover:text-gray-700'"
-                      ></i>
+                      :title="Boolean(project.is_pinned) ? 'Bỏ ghim dự án' : 'Ghim dự án'">
+                      <i class="text-lg transition-colors"
+                        :class="Boolean(project.is_pinned) ? 'fa-solid fa-star text-gray-600' : 'fa-regular fa-star text-gray-500 hover:text-gray-700'"></i>
                     </button>
                   </div>
                 </div>
@@ -319,36 +271,32 @@
             </transition-group>
 
             <!-- Empty projects state -->
-            <div v-if="displayedProjects.length === 0" class="bg-white border border-gray-200 rounded-2xl py-12 text-center text-gray-450 text-sm font-semibold shadow-3xs select-none">
+            <div v-if="displayedProjects.length === 0"
+              class="bg-white border border-gray-200 rounded-2xl py-12 text-center text-gray-450 text-sm font-semibold shadow-3xs select-none">
               Không tìm thấy dự án nào trong mục này.
             </div>
 
             <!-- Load More Button -->
-            <div v-if="displayedProjects.length < projectStore.projects.filter(p => p.tracking_status === 'following').length" class="flex justify-center pt-2">
-              <button
-                @click="loadMore"
-                type="button"
-                class="px-5 py-2.5 bg-white hover:bg-emerald-50 border border-gray-200 hover:border-emerald-500 text-gray-700 hover:text-emerald-700 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-3xs focus:outline-none"
-              >
+            <div
+              v-if="displayedProjects.length < projectStore.projects.filter(p => p.tracking_status === 'following').length"
+              class="flex justify-center pt-2">
+              <button @click="loadMore" type="button"
+                class="px-5 py-2.5 bg-white hover:bg-emerald-50 border border-gray-200 hover:border-emerald-500 text-gray-700 hover:text-emerald-700 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-3xs focus:outline-none">
                 <i class="fa-solid fa-angles-down text-[10px]"></i>
-                <span>Xem thêm dự án (Còn {{ projectStore.projects.filter(p => p.tracking_status === 'following').length - displayedProjects.length }} dự án)</span>
+                <span>Xem thêm dự án (Còn {{projectStore.projects.filter(p => p.tracking_status === 'following').length
+                  - displayedProjects.length}} dự án)</span>
               </button>
             </div>
           </div>
         </section>
 
         <!-- RIGHT PANEL: Hoạt động gần đây (Block 3 - Hidden in notes view) -->
-        <section 
-          v-if="viewMode !== 'notes'"
-          class="lg:col-span-4 bg-transparent border border-gray-300 rounded-3xl p-5 shadow-3xs flex flex-col h-[calc(100vh-200px)] select-none"
-        >
-          <h2 class="text-sm font-black text-gray-900 uppercase tracking-wider pb-3 flex items-center justify-between border-b border-gray-100 flex-shrink-0">
-            <span>Hoạt động gần đây</span>
-            <button @click="router.push('/feed')" type="button" class="text-xs text-emerald-700 hover:underline font-bold">Chi tiết →</button>
-          </h2>
+        <section v-if="viewMode !== 'notes'"
+          class="bg-transparent flex flex-col h-[calc(100vh-200px)] select-none w-[390px] flex-shrink-0">
 
           <!-- Skeleton Loading State -->
-          <div v-if="isActivitiesLoading && displayedActivities.length === 0" class="space-y-3.5 flex-1 overflow-hidden pt-2">
+          <div v-if="isActivitiesLoading && displayedActivities.length === 0"
+            class="space-y-3.5 flex-1 overflow-hidden pt-2">
             <div v-for="i in 4" :key="'sk-act-' + i" class="animate-pulse space-y-2 pb-3 border-b border-gray-100">
               <div class="flex justify-between items-center">
                 <div class="w-1/3 h-4 bg-gray-200 rounded-md"></div>
@@ -359,98 +307,97 @@
           </div>
 
           <!-- Activity Feed List -->
-          <div v-else class="space-y-3 flex-1 overflow-y-auto pr-1 pt-2 scrollbar-thin">
-            <transition-group
-              enter-active-class="transition duration-300 ease-out"
-              enter-from-class="opacity-0 translate-y-2"
-              enter-to-class="opacity-100 translate-y-0"
-              leave-active-class="transition duration-200 ease-in"
-              leave-from-class="opacity-100 translate-y-0"
-              leave-to-class="opacity-0 -translate-y-2"
-            >
-              <div 
-                v-for="log in displayedActivities.slice(0, 15)" 
-                :key="log.id" 
-                class="rounded-2xl p-3.5 hover:border-emerald-200 transition-all shadow-3xs hover:shadow-2xs"
-                :class="getActivityStyle(log)"
-              >
-                <!-- Top Row: User Avatar/Name + "hỗ trợ" Customer & Timestamp -->
-                <div class="flex items-center justify-between gap-2">
-                  <div class="flex items-center gap-1.5 min-w-0 flex-1">
-                    <img 
-                      :src="log.user?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=60'" 
-                      class="w-8 h-8 rounded-full object-cover border border-gray-200 flex-shrink-0" 
-                    />
-                    <span class="font-extrabold text-sm text-gray-900 truncate">
-                      <span>{{ log.user ? log.user.name : 'Hệ thống' }}</span>
-                      <template v-if="log.project?.customer">
-                        <span class="font-extrabold text-gray-900"> hỗ trợ </span>
-                        <span 
-                          class="text-emerald-700 cursor-pointer hover:underline"
-                          @click.stop="$router.push(`/customers/${log.project.customer.id}`)"
-                        >{{ log.project.customer.name }}</span>
-                      </template>
-                    </span>
-                  </div>
-                  <span class="text-[11px] text-gray-400 font-bold flex-shrink-0">
-                    {{ formatCommentRelativeTime(log.created_at) }}
-                  </span>
-                </div>
+          <div v-else class="flex-1 flex flex-col justify-between min-h-0">
+            <div class="space-y-0 overflow-y-auto pr-1 scrollbar-none flex-1 pb-2">
+              <transition-group enter-active-class="transition duration-300 ease-out"
+                enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0"
+                leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
+                leave-to-class="opacity-0 -translate-y-2">
+                <div v-for="(log, idx) in displayedActivities.slice(0, 15)" :key="log.id"
+                  class="relative flex gap-3 select-none pb-6">
 
-                <!-- Project Link Pill (Dynamic color based on health) -->
-                <div 
-                  v-if="log.project" 
-                  @click="goToProjectDetail(log.project.id, $event)" 
-                  class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 border rounded-lg text-xs font-extrabold cursor-pointer transition-all max-w-full"
-                  :class="getProjectPillStyle(log)"
-                  :title="log.project.title"
-                >
-                  <i class="fa-solid fa-folder-closed text-[11px] flex-shrink-0"></i>
-                  <span class="truncate min-w-0">{{ log.project.title }}</span>
-                </div>
+                  <!-- Absolute Timeline Line connecting avatars across padding boundaries -->
+                  <div v-if="idx < Math.min(displayedActivities.length, 15) - 1"
+                    class="absolute top-9 bottom-0 left-[18px] w-[1.5px] bg-gray-300 z-0"></div>
 
-                <!-- Comment Content Box with Compact Image & File Attachment Pills -->
-                <div class="mt-2 text-xs font-semibold text-gray-700 leading-relaxed break-words bg-gray-50/30 border border-gray-300/50 rounded-xl p-2.5 space-y-2">
-                  <div v-if="parseCommentText(log.content)" class="whitespace-pre-line">
-                    {{ parseCommentText(log.content) }}
+                  <!-- Left Timeline column: Avatar -->
+                  <div class="flex-shrink-0 w-9 z-10">
+                    <img
+                      :src="log.user?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=60'"
+                      class="w-9 h-9 rounded-full object-cover border border-gray-250 relative z-10" />
                   </div>
 
-                  <!-- Render Attachments (Images & Files side-by-side) -->
-                  <div v-if="parseCommentImages(log.content).length > 0 || parseCommentFiles(log.content).length > 0" class="flex flex-wrap items-end gap-1.5 pt-0.5">
-                    <!-- Images -->
-                    <button 
-                      v-for="(img, imgIdx) in parseCommentImages(log.content)" 
-                      :key="'img-' + imgIdx" 
-                      type="button"
-                      @click.stop="openImagePreview(img.url)"
-                      class="w-10 h-10 rounded border border-gray-200 overflow-hidden bg-gray-50 cursor-pointer hover:ring-2 hover:ring-emerald-300 transition-all flex-shrink-0"
-                      :title="'Xem ảnh: ' + img.name"
-                    >
-                      <img :src="img.url" class="w-full h-full object-cover" alt="" loading="lazy" />
-                    </button>
+                  <!-- Right content column -->
+                  <div class="flex-1 min-w-0 pt-0.5 z-10">
+                    <!-- Top Row: User Name + hỗ trợ Customer & Timestamp -->
+                    <div class="flex items-center justify-between gap-2">
+                      <div class="font-extrabold text-sm text-gray-900 truncate">
+                        <span>{{ log.user ? log.user.name : 'Hệ thống' }}</span>
+                        <template v-if="log.project?.customer">
+                          <span class="font-extrabold text-gray-900"> hỗ trợ </span>
+                          <span class="text-[#1A7A56] cursor-pointer hover:underline"
+                            @click.stop="$router.push(`/customers/${log.project.customer.id}`)">{{
+                              log.project.customer.name }}</span>
+                        </template>
+                      </div>
+                      <span class="text-[11px] text-gray-400 font-bold flex-shrink-0">
+                        {{ formatCommentRelativeTime(log.created_at) }}
+                      </span>
+                    </div>
 
-                    <!-- Files -->
-                    <a 
-                      v-for="(file, fIdx) in parseCommentFiles(log.content)" 
-                      :key="'file-' + fIdx" 
-                      :href="file.url" 
-                      :download="file.name" 
-                      target="_blank"
-                      @click.stop
-                      class="w-7 h-9 rounded-sm border border-[#d4a574] bg-[#f5e6d0] hover:bg-[#edd9bc] flex flex-col items-center justify-end overflow-hidden cursor-pointer transition-colors flex-shrink-0"
-                      :title="'Tải xuống: ' + file.name"
-                    >
-                      <i class="fa-solid fa-file text-[#c87828] text-[11px] mb-0.5"></i>
-                      <span class="text-[7px] font-bold text-[#8b5a2b] bg-[#e8c99a] w-full text-center py-0.5 leading-none">FILE</span>
-                    </a>
+                    <!-- Project Link/Title (Green Bold text matching Image 2) -->
+                    <div v-if="log.project" @click="goToProjectDetail(log.project.id, $event)"
+                      class="text-[#1A7A56] hover:underline font-extrabold text-sm cursor-pointer mt-1 mb-1 max-w-full truncate block"
+                      :title="log.project.title">
+                      {{ log.project.title }}
+                    </div>
+
+                    <!-- Comment Content (Plain text, no border card box) -->
+                    <div class="text-xs font-semibold text-gray-700 leading-relaxed break-words mt-1 space-y-1.5">
+                      <div v-if="parseCommentText(log.content)" class="whitespace-pre-line">
+                        {{ parseCommentText(log.content) }}
+                      </div>
+
+                      <!-- Render Attachments -->
+                      <div
+                        v-if="parseCommentImages(log.content).length > 0 || parseCommentFiles(log.content).length > 0"
+                        class="flex flex-wrap items-end gap-1.5 pt-0.5">
+                        <!-- Images -->
+                        <button v-for="(img, imgIdx) in parseCommentImages(log.content)" :key="'img-' + imgIdx"
+                          type="button" @click.stop="openImagePreview(img.url)"
+                          class="w-10 h-10 rounded border border-gray-200 overflow-hidden bg-gray-50 cursor-pointer hover:ring-2 hover:ring-emerald-300 transition-all flex-shrink-0"
+                          :title="'Xem ảnh: ' + img.name">
+                          <img :src="img.url" class="w-full h-full object-cover" alt="" loading="lazy" />
+                        </button>
+
+                        <!-- Files -->
+                        <a v-for="(file, fIdx) in parseCommentFiles(log.content)" :key="'file-' + fIdx" :href="file.url"
+                          :download="file.name" target="_blank" @click.stop
+                          class="w-7 h-9 rounded-sm border border-[#d4a574] bg-[#f5e6d0] hover:bg-[#edd9bc] flex flex-col items-center justify-end overflow-hidden cursor-pointer transition-colors flex-shrink-0"
+                          :title="'Tải xuống: ' + file.name">
+                          <i class="fa-solid fa-file text-[#c87828] text-[11px] mb-0.5"></i>
+                          <span
+                            class="text-[7px] font-bold text-[#8b5a2b] bg-[#e8c99a] w-full text-center py-0.5 leading-none">FILE</span>
+                        </a>
+                      </div>
+                    </div>
                   </div>
                 </div>
+              </transition-group>
+
+              <!-- Empty activities state -->
+              <div v-if="displayedActivities.length === 0"
+                class="py-12 text-center text-gray-450 text-xs font-semibold">
+                Chưa có cập nhật hoạt động nào mới.
               </div>
-            </transition-group>
+            </div>
 
-            <!-- Empty activities state -->
-            <div v-if="displayedActivities.length === 0" class="py-12 text-center text-gray-450 text-xs font-semibold">
-              Chưa có cập nhật hoạt động nào mới.
+            <!-- Fixed Bottom Button: Tất cả hoạt động gần đây (Image 2) -->
+            <div v-if="displayedActivities.length > 0" class="pt-3 flex-shrink-0">
+              <button @click="router.push('/feed')" type="button"
+                class="w-full py-2.5 bg-[#f6f4ef] hover:bg-gray-150 border border-gray-300 text-gray-900 font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-3xs focus:outline-none text-center">
+                Tất cả hoạt động gần đây
+              </button>
             </div>
           </div>
         </section>
@@ -461,26 +408,26 @@
     <div v-if="selectionBox.visible" :style="getSelectionBoxStyle"></div>
 
     <!-- Floating Bulk Update Action Bar (Command Bar at TOP matching image 2) -->
-    <transition
-      enter-active-class="transition duration-300 ease-out"
+    <transition enter-active-class="transition duration-300 ease-out"
       enter-from-class="transform -translate-y-10 opacity-0 scale-95"
       enter-to-class="transform translate-y-0 opacity-100 scale-100"
       leave-active-class="transition duration-200 ease-in"
       leave-from-class="transform translate-y-0 opacity-100 scale-100"
-      leave-to-class="transform -translate-y-10 opacity-0 scale-95"
-    >
-      <div
-        v-if="selectedProjectIds.length > 0"
-        class="fixed top-20 sm:top-[88px] left-1/2 -translate-x-1/2 z-50 bg-[#fafaf7] sm:bg-white/95 backdrop-blur-md px-3.5 py-2.5 sm:px-6 sm:py-3 rounded-2xl shadow-2xl border border-gray-200/90 flex items-center gap-2.5 sm:gap-4 max-w-4xl select-none transition-all"
-      >
+      leave-to-class="transform -translate-y-10 opacity-0 scale-95">
+      <div v-if="selectedProjectIds.length > 0"
+        class="fixed top-20 sm:top-[88px] left-1/2 -translate-x-1/2 z-50 bg-[#fafaf7] sm:bg-white/95 backdrop-blur-md px-3.5 py-2.5 sm:px-6 sm:py-3 rounded-2xl shadow-2xl border border-gray-200/90 flex items-center gap-2.5 sm:gap-4 max-w-4xl select-none transition-all">
         <!-- LEFT: COUNT BADGE & TEXT -->
         <div class="flex items-center gap-2 sm:gap-2.5">
-          <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#fbd37d] text-gray-900 font-extrabold flex items-center justify-center text-xs sm:text-sm flex-shrink-0 shadow-2xs">
+          <div
+            class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#fbd37d] text-gray-900 font-extrabold flex items-center justify-center text-xs sm:text-sm flex-shrink-0 shadow-2xs">
             {{ selectedProjectIds.length }}
           </div>
           <div class="flex flex-col items-start leading-none">
-            <span class="text-xs sm:text-sm font-extrabold text-gray-900 leading-tight whitespace-nowrap">Đã chọn {{ selectedProjectIds.length }} dự án</span>
-            <button @click="selectedProjectIds = []; showAllCheckboxes = false" type="button" class="text-[10px] sm:text-[11px] text-gray-400 hover:text-gray-600 font-bold cursor-pointer leading-tight mt-0.5">Bỏ chọn</button>
+            <span class="text-xs sm:text-sm font-extrabold text-gray-900 leading-tight whitespace-nowrap">Đã chọn {{
+              selectedProjectIds.length }} dự án</span>
+            <button @click="selectedProjectIds = []; showAllCheckboxes = false" type="button"
+              class="text-[10px] sm:text-[11px] text-gray-400 hover:text-gray-600 font-bold cursor-pointer leading-tight mt-0.5">Bỏ
+              chọn</button>
           </div>
         </div>
 
@@ -489,32 +436,23 @@
 
         <!-- DESKTOP STATUS PILL BUTTONS (hidden on mobile) -->
         <div class="hidden sm:flex items-center gap-2">
-          <button
-            @click="selectBulkStatusOption('following')"
-            type="button"
+          <button @click="selectBulkStatusOption('following')" type="button"
             class="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs border"
-            :class="selectedBulkStatus === 'following' ? 'bg-[#fbd37d] text-gray-900 border-amber-300 hover:bg-[#fcd34d]' : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-200'"
-          >
+            :class="selectedBulkStatus === 'following' ? 'bg-[#fbd37d] text-gray-900 border-amber-300 hover:bg-[#fcd34d]' : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-200'">
             <i class="fa-solid fa-flag text-xs"></i>
             <span>Đang theo</span>
           </button>
 
-          <button
-            @click="selectBulkStatusOption('not_following')"
-            type="button"
+          <button @click="selectBulkStatusOption('not_following')" type="button"
             class="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs border"
-            :class="selectedBulkStatus === 'not_following' ? 'bg-[#fbd37d] text-gray-900 border-amber-300 hover:bg-[#fcd34d]' : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-200'"
-          >
+            :class="selectedBulkStatus === 'not_following' ? 'bg-[#fbd37d] text-gray-900 border-amber-300 hover:bg-[#fcd34d]' : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-200'">
             <i class="fa-solid fa-eye-slash text-xs"></i>
             <span>Không theo</span>
           </button>
 
-          <button
-            @click="selectBulkStatusOption('completed')"
-            type="button"
+          <button @click="selectBulkStatusOption('completed')" type="button"
             class="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs border"
-            :class="selectedBulkStatus === 'completed' ? 'bg-[#fbd37d] text-gray-900 border-amber-300 hover:bg-[#fcd34d]' : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-200'"
-          >
+            :class="selectedBulkStatus === 'completed' ? 'bg-[#fbd37d] text-gray-900 border-amber-300 hover:bg-[#fcd34d]' : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-200'">
             <i class="fa-regular fa-circle-check text-xs"></i>
             <span>Hoàn thành</span>
           </button>
@@ -522,28 +460,26 @@
 
         <!-- MOBILE STATUS DROPDOWN MENU (shown on sm:hidden) -->
         <div class="sm:hidden block relative">
-          <button 
-            @click="isMobileStatusDropdownOpen = !isMobileStatusDropdownOpen" 
-            type="button" 
-            class="px-2.5 py-1.5 bg-white border border-gray-200 text-gray-800 font-extrabold text-xs rounded-xl flex items-center gap-1 shadow-2xs cursor-pointer"
-          >
+          <button @click="isMobileStatusDropdownOpen = !isMobileStatusDropdownOpen" type="button"
+            class="px-2.5 py-1.5 bg-white border border-gray-200 text-gray-800 font-extrabold text-xs rounded-xl flex items-center gap-1 shadow-2xs cursor-pointer">
             <span>{{ getBulkStatusLabel(selectedBulkStatus) }}</span>
             <i class="fa-solid fa-chevron-down text-[9px] text-gray-500"></i>
           </button>
 
-          <div 
-            v-if="isMobileStatusDropdownOpen" 
-            class="absolute top-full mt-2 left-0 bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-1.5 min-w-[135px] flex flex-col gap-1 ring-1 ring-black/5"
-          >
-            <button @click="selectBulkStatusOption('following')" type="button" class="px-2.5 py-1.5 hover:bg-amber-50 text-xs font-bold rounded-lg text-left text-gray-800 flex items-center gap-2">
+          <div v-if="isMobileStatusDropdownOpen"
+            class="absolute top-full mt-2 left-0 bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-1.5 min-w-[135px] flex flex-col gap-1 ring-1 ring-black/5">
+            <button @click="selectBulkStatusOption('following')" type="button"
+              class="px-2.5 py-1.5 hover:bg-amber-50 text-xs font-bold rounded-lg text-left text-gray-800 flex items-center gap-2">
               <i class="fa-solid fa-flag text-amber-500 text-xs"></i>
               <span>Đang theo</span>
             </button>
-            <button @click="selectBulkStatusOption('not_following')" type="button" class="px-2.5 py-1.5 hover:bg-gray-100 text-xs font-bold rounded-lg text-left text-gray-800 flex items-center gap-2">
+            <button @click="selectBulkStatusOption('not_following')" type="button"
+              class="px-2.5 py-1.5 hover:bg-gray-100 text-xs font-bold rounded-lg text-left text-gray-800 flex items-center gap-2">
               <i class="fa-solid fa-eye-slash text-gray-500 text-xs"></i>
               <span>Không theo</span>
             </button>
-            <button @click="selectBulkStatusOption('completed')" type="button" class="px-2.5 py-1.5 hover:bg-emerald-50 text-xs font-bold rounded-lg text-left text-gray-800 flex items-center gap-2">
+            <button @click="selectBulkStatusOption('completed')" type="button"
+              class="px-2.5 py-1.5 hover:bg-emerald-50 text-xs font-bold rounded-lg text-left text-gray-800 flex items-center gap-2">
               <i class="fa-regular fa-circle-check text-emerald-600 text-xs"></i>
               <span>Hoàn thành</span>
             </button>
@@ -554,11 +490,8 @@
         <div class="h-6 w-px bg-gray-200 flex-shrink-0 mx-0.5 sm:mx-1"></div>
 
         <!-- RIGHT: SUBMIT "HÚ HÚ" BUTTON -->
-        <button
-          @click="goToBulkUpdate"
-          type="button"
-          class="px-3.5 py-1.5 sm:px-5 sm:py-2.5 bg-[#45A246] hover:bg-[#3a903b] text-white font-extrabold text-xs sm:text-sm rounded-xl flex items-center gap-1.5 sm:gap-2 shadow-xs transition-colors cursor-pointer flex-shrink-0"
-        >
+        <button @click="goToBulkUpdate" type="button"
+          class="px-3.5 py-1.5 sm:px-5 sm:py-2.5 bg-[#45A246] hover:bg-[#3a903b] text-white font-extrabold text-xs sm:text-sm rounded-xl flex items-center gap-1.5 sm:gap-2 shadow-xs transition-colors cursor-pointer flex-shrink-0">
           <i class="fa-solid fa-dove text-sm"></i>
           <span>Hú Hú</span>
         </button>
@@ -568,22 +501,16 @@
 
 
     <!-- Project Modal -->
-    <ProjectModal
-      :is-open="isModalOpen"
-      :customers="projectStore.customers"
-      :users="projectStore.users"
-      :edit-project="editingProject"
-      @close="handleCloseModal"
-      @submit="handleCreateProject"
-      @customer-created="projectStore.fetchAuxData()"
-    />
+    <ProjectModal :is-open="isModalOpen" :customers="projectStore.customers" :users="projectStore.users"
+      :edit-project="editingProject" @close="handleCloseModal" @submit="handleCreateProject"
+      @customer-created="projectStore.fetchAuxData()" />
 
     <!-- Edit Profile Modal -->
     <div v-if="isProfileModalOpen" class="fixed inset-0 z-50 overflow-y-auto">
       <div class="fixed inset-0 bg-gray-900/50 backdrop-blur-xs" @click="isProfileModalOpen = false"></div>
       <div class="flex min-h-full items-center justify-center p-4">
         <div class="relative w-full max-w-md bg-white rounded-2xl p-6 shadow-xl border border-gray-100">
-          
+
           <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
             <h3 class="text-lg font-bold text-gray-900">Chỉnh Sửa Thông Tin Tài Khoản</h3>
             <button @click="isProfileModalOpen = false" class="text-gray-400 hover:text-gray-600">
@@ -593,44 +520,29 @@
 
           <form @submit.prevent="handleSaveProfile" class="space-y-4">
             <div class="flex justify-center mb-2">
-              <img
-                :src="editForm.avatar"
-                class="w-20 h-20 rounded-full object-cover border-2 border-emerald-400 shadow-md"
-              />
+              <img :src="editForm.avatar"
+                class="w-20 h-20 rounded-full object-cover border-2 border-emerald-400 shadow-md" />
             </div>
 
             <div>
               <label class="block text-xs font-semibold text-gray-700 mb-1">Tên tài khoản</label>
-              <input
-                v-model="editForm.name"
-                required
-                type="text"
-                class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
-              />
+              <input v-model="editForm.name" required type="text"
+                class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500" />
             </div>
 
             <div>
               <label class="block text-xs font-semibold text-gray-700 mb-1">Email</label>
-              <input
-                v-model="editForm.email"
-                required
-                type="email"
-                class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500"
-              />
+              <input v-model="editForm.email" required type="email"
+                class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500" />
             </div>
 
             <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                @click="isProfileModalOpen = false"
-                class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl"
-              >
+              <button type="button" @click="isProfileModalOpen = false"
+                class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl">
                 Hủy
               </button>
-              <button
-                type="submit"
-                class="px-5 py-2 bg-[#45A246] hover:bg-[#3a903b] text-white text-sm font-bold rounded-xl shadow-2xs transition-colors cursor-pointer"
-              >
+              <button type="submit"
+                class="px-5 py-2 bg-[#45A246] hover:bg-[#3a903b] text-white text-sm font-bold rounded-xl shadow-2xs transition-colors cursor-pointer">
                 Lưu thay đổi
               </button>
             </div>
@@ -641,14 +553,18 @@
     </div>
 
     <!-- Create View Modal -->
-    <div v-if="isViewModalOpen" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-      <div class="fixed inset-0 bg-gray-900/50 backdrop-blur-xs transition-opacity" @click="isViewModalOpen = false"></div>
+    <div v-if="isViewModalOpen" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog"
+      aria-modal="true">
+      <div class="fixed inset-0 bg-gray-900/50 backdrop-blur-xs transition-opacity" @click="isViewModalOpen = false">
+      </div>
 
       <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-        <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-gray-100 flex flex-col max-h-[85vh]">
-          
+        <div
+          class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-gray-100 flex flex-col max-h-[85vh]">
+
           <!-- Modal Header -->
-          <div class="bg-gradient-to-r from-emerald-50 to-teal-50 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div
+            class="bg-gradient-to-r from-emerald-50 to-teal-50 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <div class="flex items-center gap-3">
               <i class="fa-solid fa-filter text-emerald-600 text-lg"></i>
               <h3 class="text-lg font-bold text-gray-900">Tạo View Mới</h3>
@@ -662,51 +578,40 @@
           <div class="p-6 space-y-4 overflow-y-auto flex-1 scrollbar-thin">
             <!-- View Name -->
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-1.5">Tên View <span class="text-rose-500">*</span></label>
-              <input
-                v-model="newViewName"
-                type="text"
-                required
-                placeholder="VD: Dự án hạ tầng, Dự án camera..."
-                class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-              />
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">Tên View <span
+                  class="text-rose-500">*</span></label>
+              <input v-model="newViewName" type="text" required placeholder="VD: Dự án hạ tầng, Dự án camera..."
+                class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" />
             </div>
 
             <!-- Choose Projects (Master Data) -->
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Chọn các dự án hiển thị trong View này</label>
-              
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Chọn các dự án hiển thị trong View
+                này</label>
+
               <!-- Search box to filter projects inside modal -->
               <div class="relative mb-3">
-                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-                <input
-                  v-model="modalProjectSearchQuery"
-                  type="text"
-                  placeholder="Tìm nhanh tên dự án..."
-                  class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-emerald-500 bg-gray-50/50"
-                />
+                <i
+                  class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                <input v-model="modalProjectSearchQuery" type="text" placeholder="Tìm nhanh tên dự án..."
+                  class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-emerald-500 bg-gray-50/50" />
               </div>
 
               <!-- Projects list with checkboxes -->
-              <div class="border border-gray-100 rounded-xl divide-y divide-gray-100 max-h-56 overflow-y-auto scrollbar-thin">
-                <label
-                  v-for="p in filteredModalProjects"
-                  :key="p.id"
-                  class="flex items-center gap-3 px-3.5 py-2.5 hover:bg-gray-50 cursor-pointer select-none transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    :value="p.id"
-                    v-model="selectedViewProjectIds"
-                    class="rounded text-emerald-600 accent-emerald-600 cursor-pointer w-4 h-4"
-                  />
+              <div
+                class="border border-gray-100 rounded-xl divide-y divide-gray-100 max-h-56 overflow-y-auto scrollbar-thin">
+                <label v-for="p in filteredModalProjects" :key="p.id"
+                  class="flex items-center gap-3 px-3.5 py-2.5 hover:bg-gray-50 cursor-pointer select-none transition-colors">
+                  <input type="checkbox" :value="p.id" v-model="selectedViewProjectIds"
+                    class="rounded text-emerald-600 accent-emerald-600 cursor-pointer w-4 h-4" />
                   <div class="min-w-0 flex-1">
                     <div class="text-xs font-bold text-gray-888 truncate">{{ p.title }}</div>
                     <div class="text-[10px] text-gray-400 font-semibold mt-0.5">{{ p.customer ? p.customer.name : 'Chưa phân khách hàng' }}</div>
                   </div>
                 </label>
 
-                <div v-if="filteredModalProjects.length === 0" class="p-6 text-center text-xs text-gray-400 font-medium">
+                <div v-if="filteredModalProjects.length === 0"
+                  class="p-6 text-center text-xs text-gray-400 font-medium">
                   Không tìm thấy dự án nào.
                 </div>
               </div>
@@ -715,19 +620,12 @@
 
           <!-- Modal Footer -->
           <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3 bg-gray-50/30">
-            <button
-              type="button"
-              @click="isViewModalOpen = false"
-              class="px-4.5 py-2 hover:bg-gray-100 text-gray-600 font-semibold text-xs rounded-xl transition-colors cursor-pointer"
-            >
+            <button type="button" @click="isViewModalOpen = false"
+              class="px-4.5 py-2 hover:bg-gray-100 text-gray-600 font-semibold text-xs rounded-xl transition-colors cursor-pointer">
               Hủy bỏ
             </button>
-            <button
-              type="button"
-              @click="saveNewView"
-              :disabled="!newViewName.trim()"
-              class="px-5 py-2 bg-[#45A246] hover:bg-[#3a903b] disabled:bg-emerald-300 text-white font-bold text-xs rounded-xl transition-colors shadow-2xs cursor-pointer"
-            >
+            <button type="button" @click="saveNewView" :disabled="!newViewName.trim()"
+              class="px-5 py-2 bg-[#45A246] hover:bg-[#3a903b] disabled:bg-emerald-300 text-white font-bold text-xs rounded-xl transition-colors shadow-2xs cursor-pointer">
               Tạo View
             </button>
           </div>
@@ -737,14 +635,13 @@
     </div>
 
     <!-- Image Lightbox Modal -->
-    <div v-if="activePreviewImage" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md" @click="activePreviewImage = null">
+    <div v-if="activePreviewImage"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
+      @click="activePreviewImage = null">
       <div class="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl shadow-2xl" @click.stop>
         <img :src="activePreviewImage" class="max-w-full max-h-[85vh] object-contain rounded-2xl" />
-        <button 
-          @click="activePreviewImage = null" 
-          type="button" 
-          class="absolute top-3 right-3 w-9 h-9 bg-slate-900/80 hover:bg-slate-900 text-white rounded-full flex items-center justify-center transition-colors shadow-lg cursor-pointer"
-        >
+        <button @click="activePreviewImage = null" type="button"
+          class="absolute top-3 right-3 w-9 h-9 bg-slate-900/80 hover:bg-slate-900 text-white rounded-full flex items-center justify-center transition-colors shadow-lg cursor-pointer">
           <i class="fa-solid fa-xmark text-lg"></i>
         </button>
       </div>
@@ -901,10 +798,10 @@ const goToProjectDetail = (projectId, event) => {
     router.push(`/projects/${projectId}`)
     return
   }
-  
+
   // Single click selection logic
   const isCtrlOrMeta = event && (event.ctrlKey || event.metaKey)
-  
+
   if (isCtrlOrMeta) {
     // Ctrl + Click: Toggle selection
     const idx = selectedProjectIds.value.indexOf(projectId)
@@ -970,7 +867,7 @@ const displayedProjects = computed(() => {
     }
     return new Date(b.last_activity_at || 0) - new Date(a.last_activity_at || 0)
   })
-  
+
   // Apply limit for pagination (load 20 initially, then load more)
   if (isGroupedByCustomer.value) {
     return list
@@ -1013,7 +910,7 @@ const toggleCustomerGroup = async () => {
   } else if (viewMode.value === 'grouped') {
     nextMode = 'notes'
   }
-  
+
   viewMode.value = nextMode
   isGroupedByCustomer.value = (nextMode === 'grouped')
   await authStore.updateViewMode(nextMode)
@@ -1190,22 +1087,18 @@ const togglePinProject = async (project) => {
 
 const getProjectStatusStyle = (project) => {
   const health = project.health || 'yellow'
-  
-  // Card color based on HEALTH (Sức khỏe) - Darker colors with thicker borders and less rounded corners
+
   let cardBg = ''
   let borderClass = ''
-  
-  if (health === 'green') {
-    cardBg = 'bg-white border-gray-200 shadow-sm'
-    borderClass = 'border-2'
-  } else if (health === 'red') {
-    cardBg = 'bg-[#fca5a5] border-[#f87171]' // Darker red
-    borderClass = 'border-2' // Thicker border
-  } else { // yellow / white / default
-    cardBg = 'bg-white border-gray-200 shadow-sm'
-    borderClass = 'border-2'
+
+  if (health === 'red') {
+    cardBg = 'bg-[#fca5a5]' // Darker red
+    borderClass = 'border-2 border-[#f87171]'
+  } else {
+    cardBg = 'bg-transparent shadow-sm' // Transparent background for other health status
+    borderClass = 'border-2 border-[#4d4d4d]' // Dark border matching the buttons
   }
-  
+
   return {
     cardBg,
     borderClass,
@@ -1362,14 +1255,14 @@ const handleGlobalKeydown = (event) => {
       event.preventDefault()
       return
     }
-    
+
     // Close bulk action menu if open
     if (activeBulkMenu.value) {
       activeBulkMenu.value = null
       event.preventDefault()
       return
     }
-    
+
     // Clear selections and hide checkboxes if any projects are selected
     if (selectedProjectIds.value.length > 0) {
       selectedProjectIds.value = []
@@ -1377,33 +1270,33 @@ const handleGlobalKeydown = (event) => {
       event.preventDefault()
       return
     }
-    
+
     // Clear search query if it has content
     if (projectStore.searchQuery) {
       projectStore.searchQuery = ''
       event.preventDefault()
       return
     }
-    
+
     // Blur search input
     if (document.activeElement === searchInputRef.value) {
       searchInputRef.value?.blur()
       event.preventDefault()
       return
     }
-    
+
     return
   }
 
   // Check if user is typing in an input field (but allow Ctrl shortcuts)
   const active = document.activeElement
   const isTyping = active && (
-    active.tagName === 'INPUT' || 
-    active.tagName === 'TEXTAREA' || 
-    active.tagName === 'SELECT' || 
+    active.tagName === 'INPUT' ||
+    active.tagName === 'TEXTAREA' ||
+    active.tagName === 'SELECT' ||
     active.isContentEditable
   )
-  
+
   // Ctrl/Cmd + K: Open create project modal
   if ((event.ctrlKey || event.metaKey) && (event.key === 'k' || event.key === 'K') && !event.shiftKey) {
     event.preventDefault()
@@ -1411,7 +1304,7 @@ const handleGlobalKeydown = (event) => {
     isModalOpen.value = true
     return
   }
-  
+
   // Ctrl/Cmd + F: Focus search input
   if ((event.ctrlKey || event.metaKey) && (event.key === 'f' || event.key === 'F')) {
     event.preventDefault()
@@ -1419,7 +1312,7 @@ const handleGlobalKeydown = (event) => {
     searchInputRef.value?.focus()
     return
   }
-  
+
   // Ctrl/Cmd + A: Select all displayed projects (not when typing unless in search)
   if ((event.ctrlKey || event.metaKey) && (event.key === 'a' || event.key === 'A') && !event.shiftKey) {
     // Allow normal Ctrl+A in input fields
@@ -1431,7 +1324,7 @@ const handleGlobalKeydown = (event) => {
     toggleSelectAll()
     return
   }
-  
+
   // Ctrl/Cmd + Shift + A: Deselect all
   if ((event.ctrlKey || event.metaKey) && event.shiftKey && (event.key === 'a' || event.key === 'A')) {
     event.preventDefault()
@@ -1440,7 +1333,7 @@ const handleGlobalKeydown = (event) => {
     showAllCheckboxes.value = false
     return
   }
-  
+
   // Ctrl/Cmd + B: Toggle project/customer view
   if ((event.ctrlKey || event.metaKey) && (event.key === 'b' || event.key === 'B') && !event.shiftKey) {
     event.preventDefault()
@@ -1448,7 +1341,7 @@ const handleGlobalKeydown = (event) => {
     toggleCustomerGroup()
     return
   }
-  
+
   // Don't handle single-key shortcuts if user is typing
   if (isTyping) {
     return
@@ -1489,12 +1382,12 @@ const selectionContainerRef = ref(null)
 
 const getSelectionBoxStyle = computed(() => {
   if (!selectionBox.value.visible) return { display: 'none' }
-  
+
   const left = Math.min(selectionBox.value.startX, selectionBox.value.currentX)
   const top = Math.min(selectionBox.value.startY, selectionBox.value.currentY)
   const width = Math.abs(selectionBox.value.currentX - selectionBox.value.startX)
   const height = Math.abs(selectionBox.value.currentY - selectionBox.value.startY)
-  
+
   return {
     position: 'fixed',
     left: `${left}px`,
@@ -1511,13 +1404,13 @@ const getSelectionBoxStyle = computed(() => {
 const startSelection = (event) => {
   // Only start on left mouse button and not on interactive elements
   if (event.button !== 0) return
-  
+
   const target = event.target
   // Don't start selection if clicking on interactive elements
   if (target.closest('input, button, a, .cursor-pointer, [draggable="true"]')) {
     return
   }
-  
+
   isSelecting.value = true
   selectionBox.value = {
     startX: event.clientX,
@@ -1526,43 +1419,43 @@ const startSelection = (event) => {
     currentY: event.clientY,
     visible: true
   }
-  
+
   // Prevent text selection
   event.preventDefault()
 }
 
 const updateSelection = (event) => {
   if (!isSelecting.value) return
-  
+
   selectionBox.value.currentX = event.clientX
   selectionBox.value.currentY = event.clientY
-  
+
   // Check which project cards intersect with selection box
   checkProjectIntersections()
 }
 
 const endSelection = () => {
   if (!isSelecting.value) return
-  
+
   isSelecting.value = false
   selectionBox.value.visible = false
 }
 
 const checkProjectIntersections = () => {
   if (!isSelecting.value) return
-  
+
   const boxLeft = Math.min(selectionBox.value.startX, selectionBox.value.currentX)
   const boxRight = Math.max(selectionBox.value.startX, selectionBox.value.currentX)
   const boxTop = Math.min(selectionBox.value.startY, selectionBox.value.currentY)
   const boxBottom = Math.max(selectionBox.value.startY, selectionBox.value.currentY)
-  
+
   // Get all project card elements
   const projectCards = document.querySelectorAll('[data-project-id]')
   const newSelectedIds = []
-  
+
   projectCards.forEach(card => {
     const rect = card.getBoundingClientRect()
-    
+
     // Check if selection box intersects with project card
     const intersects = !(
       rect.right < boxLeft ||
@@ -1570,7 +1463,7 @@ const checkProjectIntersections = () => {
       rect.bottom < boxTop ||
       rect.top > boxBottom
     )
-    
+
     if (intersects) {
       const projectId = parseInt(card.getAttribute('data-project-id'))
       if (!newSelectedIds.includes(projectId)) {
@@ -1578,7 +1471,7 @@ const checkProjectIntersections = () => {
       }
     }
   })
-  
+
   selectedProjectIds.value = newSelectedIds
   // Show all checkboxes when drag selecting
   if (newSelectedIds.length > 0) {
@@ -1636,7 +1529,7 @@ const parseCommentText = (content) => {
 const parseCommentImages = (content) => {
   if (!content) return []
   const matches = []
-  
+
   // 1. Markdown images ![name](url)
   const mdRegex = /!\[(.*?)\]\((.*?)\)/g
   let m
@@ -1699,9 +1592,7 @@ const fetchActivities = async () => {
   try {
     const res = await axios.get('/api/comments')
     const filtered = (res.data || []).filter(c => {
-      if (!c.project_id) return false
-      if (c.content && c.content.includes('Đã tạo dự án mới')) return false
-      return true
+      return Boolean(c.project_id)
     })
     if (JSON.stringify(filtered) !== JSON.stringify(activities.value)) {
       activities.value = filtered
@@ -1741,7 +1632,7 @@ const toggleBulkMenu = (menu) => {
 const bulkUpdateHealth = async (color) => {
   // Save selected IDs before clearing
   const idsToUpdate = [...selectedProjectIds.value]
-  
+
   // ONLY update health, do NOT change tracking_status!
   // Optimistically update local project state
   idsToUpdate.forEach(id => {
@@ -1787,7 +1678,7 @@ const bulkUpdateLead = async (userId) => {
 const bulkUpdateStatus = async (status) => {
   // Save selected IDs before clearing
   const idsToUpdate = [...selectedProjectIds.value]
-  
+
   // ONLY update tracking_status, do NOT change health!
   // Optimistically update local project state
   idsToUpdate.forEach(id => {
@@ -1842,7 +1733,7 @@ let pollTimer = null
 const handleScroll = (event) => {
   const container = event.target
   if (!container) return
-  
+
   const { scrollTop, scrollHeight, clientHeight } = container
   // Load more when scrolled to bottom (with 100px threshold)
   if (scrollTop + clientHeight >= scrollHeight - 100) {
@@ -1862,12 +1753,12 @@ onMounted(async () => {
 
   window.addEventListener('keydown', handleGlobalKeydown)
   window.addEventListener('click', closeAllDropdowns)
-  
+
   // Drag selection events
   window.addEventListener('mousedown', startSelection)
   window.addEventListener('mousemove', updateSelection)
   window.addEventListener('mouseup', endSelection)
-  
+
   pollTimer = setInterval(() => {
     projectStore.fetchProjects(true)
     fetchActivities()
@@ -1878,7 +1769,7 @@ onUnmounted(() => {
   if (pollTimer) clearInterval(pollTimer)
   window.removeEventListener('keydown', handleGlobalKeydown)
   window.removeEventListener('click', closeAllDropdowns)
-  
+
   // Clean up drag selection events
   window.removeEventListener('mousedown', startSelection)
   window.removeEventListener('mousemove', updateSelection)
@@ -1887,10 +1778,30 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.main-grid-standard {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.main-grid-notes {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 1024px) {
+  .main-grid-standard {
+    grid-template-columns: minmax(0, 1fr) 420px minmax(0, 1fr) !important;
+  }
+
+  .main-grid-notes {
+    grid-template-columns: 300px minmax(0, 1fr) !important;
+  }
+}
+
 /* Sticky Board background with dot matrix grid */
 .sticky-board-bg {
   background-color: #f6f4ef !important;
-  background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.04) 1px, transparent 0) !important;
+  background-image: radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.04) 1px, transparent 0) !important;
   background-size: 22px 22px !important;
 }
 
@@ -1908,6 +1819,7 @@ onUnmounted(() => {
     grid-template-columns: repeat(2, minmax(180px, 1fr));
   }
 }
+
 @media (max-width: 520px) {
   .sticky-grid {
     grid-template-columns: 1fr;
@@ -1922,9 +1834,9 @@ onUnmounted(() => {
   border-radius: 2px;
   isolation: isolate;
   box-shadow:
-    0 0.5px 0 rgba(255,255,255,0.6) inset,
-    0 2px 4px rgba(0,0,0,0.06),
-    0 8px 16px -4px rgba(0,0,0,0.12);
+    0 0.5px 0 rgba(255, 255, 255, 0.6) inset,
+    0 2px 4px rgba(0, 0, 0, 0.06),
+    0 8px 16px -4px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -1943,7 +1855,7 @@ onUnmounted(() => {
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background-image: radial-gradient(rgba(0,0,0,0.04) 1px, transparent 0);
+  background-image: radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 0);
   background-size: 8px 8px;
   opacity: 0.4;
 }
@@ -1956,38 +1868,60 @@ onUnmounted(() => {
   z-index: 2;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 28px 10px at 50% 0, rgba(0,0,0,0.1), rgba(0,0,0,0) 75%),
-    linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 15%),
-    linear-gradient(225deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0) 20%);
+    radial-gradient(ellipse 28px 10px at 50% 0, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0) 75%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 15%),
+    linear-gradient(225deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0) 20%);
 }
 
 .note-card:nth-child(6n+2)::after,
 .note-card:nth-child(6n+4)::after,
-.note-card:nth-child(6n+5)::after { transform: scaleX(-1); }
-.note-card:nth-child(6n+3)::after { filter: brightness(1.08); }
+.note-card:nth-child(6n+5)::after {
+  transform: scaleX(-1);
+}
+
+.note-card:nth-child(6n+3)::after {
+  filter: brightness(1.08);
+}
 
 .note-card:hover {
   transform: rotate(0deg) translateY(-4px) scale(1.015) !important;
   box-shadow:
-    0 0.5px 0 rgba(255,255,255,0.6) inset,
-    0 1px 1px rgba(0,0,0,0.08),
-    0 4px 4px -1px rgba(0,0,0,0.08),
-    0 12px 14px -6px rgba(0,0,0,0.15),
-    0 26px 30px -14px rgba(0,0,0,0.22);
+    0 0.5px 0 rgba(255, 255, 255, 0.6) inset,
+    0 1px 1px rgba(0, 0, 0, 0.08),
+    0 4px 4px -1px rgba(0, 0, 0, 0.08),
+    0 12px 14px -6px rgba(0, 0, 0, 0.15),
+    0 26px 30px -14px rgba(0, 0, 0, 0.22);
 }
 
-.note-card > * {
+.note-card>* {
   position: relative;
   z-index: 3;
 }
 
 /* Subtle tilts for natural sticky note look */
-.note-card:nth-child(6n+1) { --tilt: -0.6deg; }
-.note-card:nth-child(6n+2) { --tilt: 0.5deg; }
-.note-card:nth-child(6n+3) { --tilt: -0.4deg; }
-.note-card:nth-child(6n+4) { --tilt: 0.7deg; }
-.note-card:nth-child(6n+5) { --tilt: -0.5deg; }
-.note-card:nth-child(6n+6) { --tilt: 0.4deg; }
+.note-card:nth-child(6n+1) {
+  --tilt: -0.6deg;
+}
+
+.note-card:nth-child(6n+2) {
+  --tilt: 0.5deg;
+}
+
+.note-card:nth-child(6n+3) {
+  --tilt: -0.4deg;
+}
+
+.note-card:nth-child(6n+4) {
+  --tilt: 0.7deg;
+}
+
+.note-card:nth-child(6n+5) {
+  --tilt: -0.5deg;
+}
+
+.note-card:nth-child(6n+6) {
+  --tilt: 0.4deg;
+}
 
 /* Metallic dome pushpin at top center */
 .note-pin {
@@ -2000,10 +1934,10 @@ onUnmounted(() => {
   border-radius: 50%;
   z-index: 4;
   box-shadow:
-    0 4px 5px -1px rgba(0,0,0,0.35),
-    0 2px 2px rgba(0,0,0,0.2),
-    inset -2px -2px 3px rgba(0,0,0,0.25),
-    inset 2px 2px 3px rgba(255,255,255,0.55);
+    0 4px 5px -1px rgba(0, 0, 0, 0.35),
+    0 2px 2px rgba(0, 0, 0, 0.2),
+    inset -2px -2px 3px rgba(0, 0, 0, 0.25),
+    inset 2px 2px 3px rgba(255, 255, 255, 0.55);
 }
 
 .note-pin::before {
@@ -2014,15 +1948,26 @@ onUnmounted(() => {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.85);
+  background: rgba(255, 255, 255, 0.85);
   filter: blur(0.3px);
 }
 
 /* Pin color gradients */
-.pin-yellow { background: radial-gradient(circle at 35% 30%, #ffe082, #e5a11c); }
-.pin-grey   { background: radial-gradient(circle at 35% 30%, #e0e0e0, #a6a6a6); }
-.pin-red    { background: radial-gradient(circle at 35% 30%, #ff8a80, #d32f2f); }
-.pin-green  { background: radial-gradient(circle at 35% 30%, #a5d6a7, #388e3c); }
+.pin-yellow {
+  background: radial-gradient(circle at 35% 30%, #ffe082, #e5a11c);
+}
+
+.pin-grey {
+  background: radial-gradient(circle at 35% 30%, #e0e0e0, #a6a6a6);
+}
+
+.pin-red {
+  background: radial-gradient(circle at 35% 30%, #ff8a80, #d32f2f);
+}
+
+.pin-green {
+  background: radial-gradient(circle at 35% 30%, #a5d6a7, #388e3c);
+}
 
 /* Star button at top right */
 .note-star {
@@ -2039,6 +1984,7 @@ onUnmounted(() => {
   justify-content: center;
   transition: transform 0.15s ease;
 }
+
 .note-star:hover {
   transform: scale(1.15);
 }
@@ -2049,7 +1995,7 @@ onUnmounted(() => {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   font-weight: 700;
-  color: rgba(0,0,0,0.45);
+  color: rgba(0, 0, 0, 0.45);
   margin-bottom: 6px;
 }
 
@@ -2063,28 +2009,57 @@ onUnmounted(() => {
 }
 
 .note-divider-line {
-  border-top: 1px solid rgba(0,0,0,0.12);
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
   margin-bottom: 8px;
 }
 
 .note-sub-text {
   font-size: 14px;
-  color: rgba(0,0,0,0.65);
+  color: rgba(0, 0, 0, 0.65);
   font-weight: 600;
 }
 
 /* Note color themes (Brighter, vibrant pastel tones) */
-.note-yellow { background: #ffd643; }
-.note-yellow .note-sub-text { color: rgba(0,0,0,0.55); }
+.note-yellow {
+  background: #ffd643;
+}
 
-.note-white  { background: #ffffff; border: 1px solid rgba(0,0,0,0.06); }
-.note-white .note-sub-text { color: rgba(0,0,0,0.55); }
+.note-yellow .note-sub-text {
+  color: rgba(0, 0, 0, 0.55);
+}
 
-.note-red    { background: #ff8a80; }
-.note-red .note-title-text, .note-red .note-sub-text { color: #2c1410; }
-.note-red .note-sub-text { color: rgba(30,10,5,0.65); }
+.note-white {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
 
-.note-green  { background: #9de39b; }
-.note-green .note-title-text, .note-green .note-sub-text { color: #16301a; }
-.note-green .note-sub-text { color: rgba(15,35,20,0.65); }
+.note-white .note-sub-text {
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.note-red {
+  background: #ff8a80;
+}
+
+.note-red .note-title-text,
+.note-red .note-sub-text {
+  color: #2c1410;
+}
+
+.note-red .note-sub-text {
+  color: rgba(30, 10, 5, 0.65);
+}
+
+.note-green {
+  background: #9de39b;
+}
+
+.note-green .note-title-text,
+.note-green .note-sub-text {
+  color: #16301a;
+}
+
+.note-green .note-sub-text {
+  color: rgba(15, 35, 20, 0.65);
+}
 </style>

@@ -6,16 +6,18 @@ use App\Models\Project;
 use App\Models\Comment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 
 class ProjectController extends Controller
 {
     public function index(Request $request)
     {
-        $userId = auth()->id();
+        $user = auth()->user();
+        $userId = $user->id;
 
-        $query = Project::with(['customer', 'milestones' => function ($q) {
+        $query = Project::with(['customer', 'lead', 'creator', 'members', 'milestones' => function ($q) {
             $q->withCount('tasks');
-        }])->withCount(['tasks', 'comments']);
+        }])->withCount(['tasks', 'comments'])->visibleTo($user);
 
         if ($userId) {
             $query->select('projects.*')
@@ -44,15 +46,18 @@ class ProjectController extends Controller
             });
         }
 
-        $projects = $query->get()->map(function ($p) use ($userId) {
-            return $p->applyPinnedStateForUser($userId);
+        $projects = $query->get()->map(function ($p) use ($user, $userId) {
+            $p->applyPinnedStateForUser($userId);
+            $p->setAttribute('creator_id', $p->created_by);
+            $p->setAttribute('can_manage_members', $p->canManageMembers($user));
+            return $p;
         });
 
         // Calculate counts based on tracking_status (NOT health)
         $counts = [
-            'following' => Project::where('tracking_status', 'following')->count(),
-            'not_following' => Project::where('tracking_status', 'not_following')->count(),
-            'completed' => Project::where('tracking_status', 'completed')->count(),
+            'following' => Project::visibleTo($user)->where('tracking_status', 'following')->count(),
+            'not_following' => Project::visibleTo($user)->where('tracking_status', 'not_following')->count(),
+            'completed' => Project::visibleTo($user)->where('tracking_status', 'completed')->count(),
         ];
 
         return response()->json([
@@ -63,9 +68,27 @@ class ProjectController extends Controller
 
     public function show($id)
     {
-        $project = Project::with(['customer', 'lead', 'tasks.assignee', 'comments.user', 'milestones.creator', 'milestones.tasks.assignee'])->findOrFail($id);
+        $project = Project::visibleTo(auth()->user())
+            ->with(['customer', 'lead', 'creator', 'tasks.assignee', 'comments.user', 'milestones.creator', 'milestones.tasks.assignee', 'members'])
+            ->findOrFail($id);
         $project->applyPinnedStateForUser(auth()->id());
-        return response()->json($project);
+
+        $data = $project->toArray();
+        $data['creator_id'] = $project->created_by;
+        $data['can_manage_members'] = $project->canManageMembers(auth()->user());
+
+        return response()->json($data);
+    }
+
+    public function access($id)
+    {
+        abort_unless(
+            Project::visibleTo(auth()->user())->whereKey($id)->exists(),
+            404,
+            'Dự án không tồn tại hoặc bạn không còn quyền truy cập.'
+        );
+
+        return response()->noContent();
     }
 
     public function store(Request $request)
@@ -73,10 +96,12 @@ class ProjectController extends Controller
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'title' => 'required|string|max:255',
-            'lead_id' => 'nullable|exists:users,id',
+            'lead_id' => ['nullable', Rule::exists('users', 'id')->where('is_admin', 0)],
             'health' => 'required|in:green,yellow,red',
             'is_pinned' => 'boolean',
             'tracking_status' => 'sometimes|in:following,not_following,completed',
+            'member_ids' => 'nullable|array',
+            'member_ids.*' => Rule::exists('users', 'id')->where('is_admin', 0),
         ]);
 
         // Map health to tracking_status only if not provided
@@ -91,6 +116,7 @@ class ProjectController extends Controller
         }
 
         $validated['last_activity_at'] = Carbon::now();
+        $validated['created_by'] = auth()->id();
 
         $pinOnCreate = $validated['is_pinned'] ?? false;
         unset($validated['is_pinned']);
@@ -106,6 +132,9 @@ class ProjectController extends Controller
             );
         }
         $project->applyPinnedStateForUser($userId);
+
+        $memberIds = $request->member_ids ?? [];
+        $project->members()->sync($memberIds);
 
         // Log comment
         Comment::create([
@@ -123,17 +152,17 @@ class ProjectController extends Controller
         $validated = $request->validate([
             'customer_id' => 'sometimes|exists:customers,id',
             'title' => 'sometimes|string|max:255',
-            'lead_id' => 'nullable|exists:users,id',
+            'lead_id' => ['nullable', Rule::exists('users', 'id')->where('is_admin', 0)],
             'health' => 'sometimes|in:green,yellow,red',
             'is_pinned' => 'boolean',
             'tracking_status' => 'sometimes|in:following,not_following,completed',
+            'member_ids' => 'nullable|array',
+            'member_ids.*' => Rule::exists('users', 'id')->where('is_admin', 0),
         ]);
 
         $project = Project::findOrFail($id);
+        abort_unless($project->canManageMembers(auth()->user()), 403, 'Bạn không có quyền chỉnh sửa dự án này.');
         $oldHealth = $project->health;
-
-        // ❌ REMOVED: Do NOT auto-sync health and tracking_status
-        // They are now completely independent fields
 
         // Only update last_activity_at if it's a meaningful change (not just status/health/pin toggle)
         $shouldUpdateActivity = isset($validated['title']) 
@@ -153,6 +182,11 @@ class ProjectController extends Controller
 
         $project->update($validated);
 
+        if ($request->has('member_ids')) {
+            $memberIds = $request->member_ids ?? [];
+            $project->members()->sync($memberIds);
+        }
+
         if ($pinState !== null && $userId) {
             if ($pinState) {
                 \Illuminate\Support\Facades\DB::table('pinned_projects')->updateOrInsert(
@@ -167,7 +201,7 @@ class ProjectController extends Controller
             }
         }
 
-        $project->load(['customer', 'lead']);
+        $project->load(['customer', 'lead', 'members']);
         $project->applyPinnedStateForUser($userId);
 
         if (isset($validated['health']) && $validated['health'] !== $oldHealth) {
@@ -194,6 +228,7 @@ class ProjectController extends Controller
         ]);
 
         $project = Project::findOrFail($id);
+        abort_unless($project->isVisibleTo(auth()->user()), 403, 'Bạn không có quyền xem dự án này.');
         $oldHealth = $project->health;
         $project->health = $request->health;
 
@@ -221,7 +256,8 @@ class ProjectController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        Project::findOrFail($id);
+        $project = Project::findOrFail($id);
+        abort_unless($project->isVisibleTo(auth()->user()), 403, 'Bạn không có quyền xem dự án này.');
 
         $currentlyPinned = \Illuminate\Support\Facades\DB::table('pinned_projects')
             ->where('user_id', $userId)
@@ -255,6 +291,7 @@ class ProjectController extends Controller
     public function destroy($id)
     {
         $project = Project::findOrFail($id);
+        abort_unless($project->canManageMembers(auth()->user()), 403, 'Bạn không có quyền xóa dự án này.');
 
         $hasRealComments = $project->comments()
             ->where('content', 'not like', 'Đã tạo dự án mới%')
@@ -278,8 +315,13 @@ class ProjectController extends Controller
             'project_ids.*' => 'integer|exists:projects,id',
         ]);
 
+        $visibleIds = Project::visibleTo(auth()->user())
+            ->whereIn('id', $request->project_ids)
+            ->pluck('id');
+        abort_if($visibleIds->count() !== count(array_unique($request->project_ids)), 403, 'Danh sách có dự án bạn không được truy cập.');
+
         foreach ($request->project_ids as $index => $id) {
-            Project::where('id', $id)->update(['sort_order' => $index + 1]);
+            Project::visibleTo(auth()->user())->where('id', $id)->update(['sort_order' => $index + 1]);
         }
 
         return response()->json(['message' => 'Cập nhật thứ tự dự án thành công']);
@@ -292,10 +334,17 @@ class ProjectController extends Controller
             'project_ids.*' => 'integer|exists:projects,id',
             'tracking_status' => 'sometimes|in:following,not_following,completed',
             'health' => 'sometimes|in:green,yellow,red',
-            'lead_id' => 'sometimes|nullable|exists:users,id',
+            'lead_id' => ['sometimes', 'nullable', Rule::exists('users', 'id')->where('is_admin', 0)],
         ]);
 
         $projectIds = $validated['project_ids'];
+        $manageable = Project::whereIn('id', $projectIds)
+            ->when(!auth()->user()->is_admin, function ($query) {
+                $query->where(function ($q) {
+                    $q->where('created_by', auth()->id())->orWhere('lead_id', auth()->id());
+                });
+            });
+        abort_if($manageable->count() !== count(array_unique($projectIds)), 403, 'Bạn không có quyền cập nhật một hoặc nhiều dự án.');
         $updateData = [];
 
         if (isset($validated['tracking_status'])) {
@@ -310,7 +359,7 @@ class ProjectController extends Controller
 
         if (!empty($updateData)) {
             $updateData['last_activity_at'] = \Illuminate\Support\Carbon::now();
-            Project::whereIn('id', $projectIds)->update($updateData);
+            $manageable->update($updateData);
         }
 
         return response()->json(['message' => 'Cập nhật hàng loạt thành công']);

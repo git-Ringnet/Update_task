@@ -32,6 +32,13 @@ axios.interceptors.response.use(
       authStore.clearAuth()
       router.push({ name: 'login' })
     }
+    if (
+      error.response &&
+      [403, 404].includes(error.response.status) &&
+      router.currentRoute.value.name === 'project-detail'
+    ) {
+      router.replace('/views')
+    }
     return Promise.reject(error)
   }
 )

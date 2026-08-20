@@ -31,41 +31,13 @@ Route::post('/login', function (Request $request) {
                 ->orWhere('email', 'LIKE', $input . '@%')
                 ->first();
 
-    // Auto-create on-the-fly if user is in standard internal team list but missing from DB
-    if (!$user) {
-        $internalList = [
-            'an' => ['name' => 'Ân', 'avatar' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'],
-            'thien' => ['name' => 'Thiên', 'avatar' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=120'],
-            'tin' => ['name' => 'Tín', 'avatar' => 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=120'],
-            'khanh' => ['name' => 'Khanh', 'avatar' => 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&q=80&w=120'],
-            'hieu' => ['name' => 'Hiếu', 'avatar' => 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=120'],
-            'canh' => ['name' => 'Cảnh', 'avatar' => 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=120'],
-            'thang' => ['name' => 'Thắng', 'avatar' => 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=120'],
-            'thao' => ['name' => 'Thảo', 'avatar' => 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=120'],
-        ];
-
-        $lowerInput = strtolower($input);
-        if (isset($internalList[$lowerInput])) {
-            $info = $internalList[$lowerInput];
-            $user = User::create([
-                'name' => $info['name'],
-                'email' => $lowerInput . '@xuongrong.vn',
-                'password' => Hash::make('Ringnet@123'),
-                'avatar' => $info['avatar'],
-                'api_token' => Str::random(60)
-            ]);
-        }
-    }
-
     if (!$user) {
         return response()->json([
             'message' => 'Tên đăng nhập không tồn tại.'
         ], 422);
     }
 
-    $passOk = Hash::check($request->password, $user->password) 
-              || $request->password === 'Ringnet@123' 
-              || $request->password === '123456';
+    $passOk = Hash::check($request->password, $user->password);
 
     if (!$passOk) {
         return response()->json([
@@ -78,33 +50,6 @@ Route::post('/login', function (Request $request) {
         $user->password = Hash::make('Ringnet@123');
     }
 
-    $user->api_token = Str::random(60);
-    $user->api_token_expires_at = now()->addHours(24);
-    $user->save();
-
-    return response()->json([
-        'user' => $user,
-        'token' => $user->api_token
-    ]);
-});
-
-Route::post('/google-login', function (Request $request) {
-    $request->validate([
-        'email' => 'required|email',
-        'name' => 'required|string',
-        'avatar' => 'nullable|string',
-    ]);
-
-    $user = User::firstOrCreate(
-        ['email' => $request->email],
-        [
-            'name' => $request->name,
-            'password' => Hash::make(Str::random(24)),
-            'avatar' => $request->avatar ?? 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=120'
-        ]
-    );
-
-    // Refresh token
     $user->api_token = Str::random(60);
     $user->api_token_expires_at = now()->addHours(24);
     $user->save();
@@ -147,15 +92,11 @@ Route::post('/google-login-real', function (Request $request) {
     $name = $payload['name'] ?? $email;
     $avatar = $payload['picture'] ?? 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=120';
 
-    // Find or register user
-    $user = User::firstOrCreate(
-        ['email' => $email],
-        [
-            'name' => $name,
-            'password' => Hash::make(Str::random(24)),
-            'avatar' => $avatar
-        ]
-    );
+    // Only administrators can create accounts. Google login may only use an existing one.
+    $user = User::where('email', $email)->first();
+    if (!$user) {
+        return response()->json(['message' => 'Tài khoản chưa được quản trị viên cấp quyền.'], 403);
+    }
 
     // Update avatar if changed
     if ($avatar && $user->avatar !== $avatar) {
@@ -174,7 +115,8 @@ Route::post('/google-login-real', function (Request $request) {
 });
 
 Route::get('/active-users', function () {
-    return response()->json(User::select('id', 'name', 'email', 'avatar')->get()->map(function($user) {
+    return response()->json(User::where('is_admin', false)
+        ->select('id', 'name', 'email', 'avatar')->get()->map(function($user) {
         $username = explode('@', $user->email)[0];
         return [
             'id' => $user->id,
@@ -219,7 +161,10 @@ Route::middleware('auth.token')->group(function () {
     });
 
     Route::get('/users', function () {
-        return response()->json(User::withCount('ledProjects')->get());
+        return response()->json(User::where('is_admin', false)
+            ->select('id', 'name', 'email', 'avatar')
+            ->withCount('ledProjects')
+            ->get());
     });
 
     Route::post('/users', function (Request $request) {
@@ -238,7 +183,7 @@ Route::middleware('auth.token')->group(function () {
         ]);
 
         return response()->json($user, 201);
-    });
+    })->middleware('admin');
 
     Route::delete('/users/{id}', function ($id) {
         $currentUser = auth()->user();
@@ -246,7 +191,7 @@ Route::middleware('auth.token')->group(function () {
             return response()->json(['message' => 'Bạn không thể tự xóa chính mình khỏi hệ thống.'], 400);
         }
 
-        $user = User::find($id);
+        $user = User::where('is_admin', false)->find($id);
         if (!$user) {
             return response()->json(['message' => 'Thành viên không tồn tại.'], 404);
         }
@@ -254,13 +199,14 @@ Route::middleware('auth.token')->group(function () {
         $user->delete();
 
         return response()->json(['message' => 'Xóa thành viên thành công.']);
-    });
+    })->middleware('admin');
 
     // Projects
     Route::put('/projects/bulk', [ProjectController::class, 'bulkUpdate']);
     Route::get('/projects', [ProjectController::class, 'index']);
     Route::post('/projects', [ProjectController::class, 'store']);
     Route::post('/projects/reorder', [ProjectController::class, 'reorder']);
+    Route::get('/projects/{id}/access', [ProjectController::class, 'access']);
     Route::get('/projects/{id}', [ProjectController::class, 'show']);
     Route::put('/projects/{id}', [ProjectController::class, 'update']);
     Route::patch('/projects/{id}/health', [ProjectController::class, 'updateHealth']);

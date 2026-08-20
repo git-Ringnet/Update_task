@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
 
 class Project extends Model
 {
@@ -15,6 +16,7 @@ class Project extends Model
         'customer_id',
         'title',
         'lead_id',
+        'created_by',
         'health',
         'tracking_status',
         'is_pinned',
@@ -37,6 +39,49 @@ class Project extends Model
         return $this->belongsTo(User::class, 'lead_id');
     }
 
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function scopeVisibleTo(Builder $query, ?User $user): Builder
+    {
+        if (!$user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($user->is_admin) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $q) use ($user) {
+            $q->where('created_by', $user->id)
+                ->orWhere('lead_id', $user->id)
+                ->orWhereHas('members', function (Builder $members) use ($user) {
+                    $members->where('users.id', $user->id);
+                });
+        });
+    }
+
+    public function isVisibleTo(?User $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        return $user->is_admin
+            || (int) $this->created_by === (int) $user->id
+            || (int) $this->lead_id === (int) $user->id
+            || $this->members()->where('users.id', $user->id)->exists();
+    }
+
+    public function canManageMembers(?User $user): bool
+    {
+        return $user && ($user->is_admin
+            || (int) $this->created_by === (int) $user->id
+            || (int) $this->lead_id === (int) $user->id);
+    }
+
     public function tasks(): HasMany
     {
         return $this->hasMany(Task::class);
@@ -55,6 +100,13 @@ class Project extends Model
     public function milestones(): HasMany
     {
         return $this->hasMany(Milestone::class)->orderBy('created_at', 'asc');
+    }
+
+    public function members()
+    {
+        return $this->belongsToMany(User::class, 'project_members', 'project_id', 'user_id')
+            ->where('users.is_admin', false)
+            ->withTimestamps();
     }
 
     public function isPinnedForUser(?int $userId): bool

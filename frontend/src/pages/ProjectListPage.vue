@@ -137,6 +137,8 @@
                   <th scope="col" class="py-4 px-6 w-44">Time</th>
                   <th scope="col" class="py-4 px-6 w-56">Relationship</th>
                   <th scope="col" class="py-4 px-6 min-w-[240px]">Project</th>
+                  <th v-if="authStore.user?.is_admin" scope="col" class="py-4 px-4 min-w-[160px]">Người tạo</th>
+                  <th v-if="authStore.user?.is_admin" scope="col" class="py-4 px-4 min-w-[160px]">Lead</th>
                   <th scope="col" class="py-4 px-6 w-32 text-center">Health</th>
                 </tr>
               </thead>
@@ -156,6 +158,12 @@
                     <td class="py-5 px-6">
                       <div class="h-4 bg-gray-200 rounded-md w-40"></div>
                     </td>
+                    <td v-if="authStore.user?.is_admin" class="py-5 px-4">
+                      <div class="h-4 bg-gray-200 rounded-md w-28"></div>
+                    </td>
+                    <td v-if="authStore.user?.is_admin" class="py-5 px-4">
+                      <div class="h-4 bg-gray-200 rounded-md w-28"></div>
+                    </td>
                     <td class="py-5 px-6">
                       <div class="h-4 bg-gray-200 rounded-full w-12"></div>
                     </td>
@@ -164,7 +172,7 @@
 
                 <!-- Empty state -->
                 <tr v-else-if="displayedProjects.length === 0">
-                  <td colspan="5" class="py-16 text-center text-gray-400 font-medium">
+                  <td :colspan="authStore.user?.is_admin ? 7 : 5" class="py-16 text-center text-gray-400 font-medium">
                     Không tìm thấy dự án nào trong mục này.
                   </td>
                 </tr>
@@ -224,6 +232,27 @@
                     </div>
                   </td>
 
+                  <!-- Admin-only ownership columns -->
+                  <td v-if="authStore.user?.is_admin" class="py-4 px-4 align-middle">
+                    <div v-if="project.creator" class="flex items-center gap-2 min-w-0">
+                      <img :src="project.creator.avatar || '/default-avatar.png'" class="w-7 h-7 rounded-full object-cover border border-gray-200 flex-shrink-0" />
+                      <span class="text-xs font-bold text-gray-800 truncate">{{ project.creator.name }}</span>
+                    </div>
+                    <span v-else class="inline-flex px-2 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-100 text-[11px] font-extrabold">
+                      Chưa có người tạo
+                    </span>
+                  </td>
+
+                  <td v-if="authStore.user?.is_admin" class="py-4 px-4 align-middle">
+                    <div v-if="project.lead" class="flex items-center gap-2 min-w-0">
+                      <img :src="project.lead.avatar || '/default-avatar.png'" class="w-7 h-7 rounded-full object-cover border border-gray-200 flex-shrink-0" />
+                      <span class="text-xs font-bold text-gray-800 truncate">{{ project.lead.name }}</span>
+                    </div>
+                    <span v-else class="inline-flex px-2 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-100 text-[11px] font-extrabold">
+                      Chưa có lead
+                    </span>
+                  </td>
+
                   <!-- Health Selector (Smiley only) -->
                   <td class="py-4 px-6 align-middle text-center">
                     <div class="inline-flex justify-center">
@@ -280,6 +309,21 @@
                   :model-value="project.health"
                   @change="(newColor) => handleHealthChange(project.id, newColor)"
                 />
+              </div>
+
+              <div v-if="authStore.user?.is_admin" class="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
+                <div class="min-w-0">
+                  <p class="text-[10px] font-black uppercase tracking-wide text-gray-400">Người tạo</p>
+                  <p class="text-xs font-bold truncate" :class="project.creator ? 'text-gray-800' : 'text-rose-600'">
+                    {{ project.creator?.name || 'Chưa có người tạo' }}
+                  </p>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-[10px] font-black uppercase tracking-wide text-gray-400">Lead</p>
+                  <p class="text-xs font-bold truncate" :class="project.lead ? 'text-gray-800' : 'text-amber-600'">
+                    {{ project.lead?.name || 'Chưa có lead' }}
+                  </p>
+                </div>
               </div>
             </div>
           </div>

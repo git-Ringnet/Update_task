@@ -12,6 +12,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
         DB::statement('ALTER TABLE tasks MODIFY title LONGTEXT');
     }
 
@@ -20,6 +23,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
         DB::statement('ALTER TABLE tasks MODIFY title VARCHAR(255)');
     }
 };

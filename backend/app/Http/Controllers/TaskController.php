@@ -7,6 +7,8 @@ use App\Models\Project;
 use App\Models\Comment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
+use App\ProjectMemberService;
 
 class TaskController extends Controller
 {
@@ -14,6 +16,8 @@ class TaskController extends Controller
     {
         $query = Task::with(['project.customer', 'assignee', 'creator'])
             ->orderBy('created_at', 'desc');
+
+        $query->whereHas('project', fn ($q) => $q->visibleTo(auth()->user()));
 
         if ($request->has('project_id')) {
             $query->where('project_id', $request->project_id);
@@ -32,16 +36,25 @@ class TaskController extends Controller
         $validated = $request->validate([
             'project_id' => 'required|exists:projects,id',
             'milestone_id' => 'nullable|exists:milestones,id',
-            'assignee_id' => 'nullable|exists:users,id',
-            'created_by' => 'nullable|exists:users,id',
+            'assignee_id' => ['nullable', Rule::exists('users', 'id')->where('is_admin', 0)],
             'title' => 'required|string',
             'description' => 'nullable|string',
             'status' => 'required|in:todo,in_progress,review,done',
             'priority' => 'required|in:low,medium,high,urgent',
             'due_date' => 'nullable',
             'health' => 'nullable|string',
+            'tagged_user_ids' => 'nullable|array',
+            'tagged_user_ids.*' => Rule::exists('users', 'id')->where('is_admin', 0),
         ]);
 
+        $project = Project::findOrFail($validated['project_id']);
+        abort_unless($project->isVisibleTo(auth()->user()), 403, 'Bạn không có quyền cập nhật dự án này.');
+        if (!empty($validated['milestone_id'])) {
+            abort_unless($project->milestones()->whereKey($validated['milestone_id'])->exists(), 422, 'Cột mốc không thuộc dự án.');
+        }
+        $taggedUserIds = $validated['tagged_user_ids'] ?? [];
+        unset($validated['tagged_user_ids']);
+        $validated['created_by'] = auth()->id();
         $task = Task::create($validated);
         $task->load(['project', 'assignee', 'creator']);
 
@@ -57,6 +70,12 @@ class TaskController extends Controller
             'type' => 'status_change',
         ]);
 
+        app(ProjectMemberService::class)->addMentionedMembers(
+            $project,
+            $task->title,
+            array_filter(array_merge($taggedUserIds, [$task->assignee_id]))
+        );
+
         return response()->json($task, 201);
     }
 
@@ -67,6 +86,7 @@ class TaskController extends Controller
         ]);
 
         $task = Task::findOrFail($id);
+        abort_unless($task->project->isVisibleTo(auth()->user()), 403, 'Bạn không có quyền cập nhật hoạt động này.');
         $oldStatus = $task->status;
         $task->status = $request->status;
         $task->save();
@@ -91,15 +111,24 @@ class TaskController extends Controller
     {
         $validated = $request->validate([
             'milestone_id' => 'nullable|exists:milestones,id',
-            'assignee_id' => 'nullable|exists:users,id',
+            'assignee_id' => ['nullable', Rule::exists('users', 'id')->where('is_admin', 0)],
             'title' => 'required|string',
             'due_date' => 'nullable',
             'status' => 'required|in:todo,in_progress,review,done',
             'priority' => 'required|in:low,medium,high,urgent',
             'health' => 'nullable|string',
+            'tagged_user_ids' => 'nullable|array',
+            'tagged_user_ids.*' => Rule::exists('users', 'id')->where('is_admin', 0),
         ]);
 
         $task = Task::findOrFail($id);
+        $project = $task->project;
+        abort_unless($project->isVisibleTo(auth()->user()), 403, 'Bạn không có quyền cập nhật hoạt động này.');
+        if (!empty($validated['milestone_id'])) {
+            abort_unless($project->milestones()->whereKey($validated['milestone_id'])->exists(), 422, 'Cột mốc không thuộc dự án.');
+        }
+        $taggedUserIds = $validated['tagged_user_ids'] ?? [];
+        unset($validated['tagged_user_ids']);
         $task->update($validated);
         $task->load(['project', 'assignee']);
 
@@ -127,12 +156,19 @@ class TaskController extends Controller
             ]);
         }
 
+        app(ProjectMemberService::class)->addMentionedMembers(
+            $project,
+            $task->title,
+            array_filter(array_merge($taggedUserIds, [$task->assignee_id]))
+        );
+
         return response()->json($task);
     }
 
     public function destroy($id)
     {
         $task = Task::findOrFail($id);
+        abort_unless($task->project->isVisibleTo(auth()->user()), 403, 'Bạn không có quyền xóa hoạt động này.');
         $task->delete();
 
         return response()->json(['message' => 'Đã xóa công việc']);

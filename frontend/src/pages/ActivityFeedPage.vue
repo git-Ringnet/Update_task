@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-[#F9F4EE] pb-24">
     <Navbar />
 
-    <main class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <main class="max-w-[800px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <!-- Back Button -->
       <button
         @click="goBack"
@@ -49,80 +49,66 @@
               v-for="act in group"
               :key="act.id"
               @click="goToProject(act.project_id)"
-              class="rounded-2xl p-5 shadow-2xs hover:shadow-xs hover:border-emerald-100/70 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex items-start gap-4 select-none group"
+              class="rounded-2xl p-5 shadow-2xs hover:shadow-xs hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col gap-3.5 select-none w-full group"
               :class="getActivityStyle(act)"
             >
-              <!-- Left: Timestamp -->
-              <span class="text-xs font-semibold text-gray-400 w-12 pt-1 flex-shrink-0">
-                {{ formatTime(act.created_at) }}
-              </span>
-
-              <!-- User avatar -->
-              <img
-                :src="act.user?.avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=120'"
-                :alt="act.user?.name"
-                class="w-10 h-10 rounded-full object-cover border border-emerald-200 flex-shrink-0"
-              />
-
-              <!-- Right: Main Details -->
-              <div class="flex-grow min-w-0">
-                <!-- User name -->
-                <div class="font-bold text-gray-900 text-base leading-snug">
-                  {{ act.user?.name || 'Thành viên' }}
-                </div>
-                
-                <!-- Project Name + Status Dot -->
-                <div class="flex flex-wrap items-start gap-2 mt-1 min-w-0">
-                  <span class="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0 mt-1.5" :class="statusDotClass(act.project?.health)"></span>
-                  <span class="font-bold text-gray-900 text-sm group-hover:text-emerald-700 transition-colors break-words flex-1 min-w-0">
-                    {{ act.project?.title || 'Dự án' }}
+              <!-- Top Row: Avatar + User Name & supports & relative time -->
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                  <img
+                    :src="act.user?.avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=120'"
+                    :alt="act.user?.name"
+                    class="w-10 h-10 rounded-full object-cover border border-emerald-200 flex-shrink-0"
+                  />
+                  <span class="font-extrabold text-sm text-gray-900 truncate">
+                    <span>{{ act.user ? act.user.name : 'Thành viên' }}</span>
+                    <template v-if="act.project?.customer">
+                      <span class="font-extrabold text-gray-900"> hỗ trợ </span>
+                      <span class="text-[#1A7A56] hover:underline cursor-pointer font-extrabold">
+                        {{ act.project.customer.name }}
+                      </span>
+                    </template>
                   </span>
                 </div>
+                <span class="text-[11px] text-gray-400 font-bold flex-shrink-0">
+                  {{ formatCommentRelativeTime(act.created_at) }}
+                </span>
+              </div>
 
-                <!-- Customer Details -->
-                <div v-if="act.project?.customer" class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1 break-words">
-                  Khách hàng: <span class="text-gray-500 font-semibold">{{ act.project.customer.name }}</span>
+              <!-- Second Row: Project Name Pill -->
+              <div v-if="act.project" class="flex-shrink-0 flex items-center">
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#e6f4ea] border border-emerald-250/70 rounded-lg text-xs font-extrabold text-[#1A7A56] cursor-pointer max-w-full">
+                  <i class="fa-solid fa-folder-closed text-[11px] flex-shrink-0"></i>
+                  <span>{{ act.project.title }}</span>
+                </div>
+              </div>
+
+              <!-- Third Row: Comment Content Box (rounded container with light gray background and border) -->
+              <div class="text-xs font-semibold text-gray-700 leading-relaxed break-words bg-gray-50 border border-gray-350/50 rounded-xl p-3.5 space-y-2">
+                <div v-if="parseCommentText(act.content)" class="whitespace-pre-line font-medium text-gray-700">
+                  {{ parseCommentText(act.content) }}
                 </div>
 
-                <!-- Description / Log Content -->
-                <div class="mt-2.5 text-xs text-gray-700 leading-relaxed font-semibold break-words space-y-2">
-                  <p v-if="parseCommentText(act.content)" class="whitespace-pre-line font-medium text-gray-700">
-                    {{ parseCommentText(act.content) }}
-                  </p>
+                <!-- Attachments (Images & Files side-by-side) -->
+                <div v-if="parseCommentImages(act.content).length > 0 || parseCommentFiles(act.content).length > 0"
+                  class="flex flex-wrap items-end gap-1.5 pt-0.5">
+                  <!-- Images -->
+                  <button v-for="(img, imgIdx) in parseCommentImages(act.content)" :key="'img-' + imgIdx"
+                    type="button" @click.stop="openImagePreview(img.url)"
+                    class="w-10 h-10 rounded border border-gray-200 overflow-hidden bg-gray-50 cursor-pointer hover:ring-2 hover:ring-emerald-300 transition-all flex-shrink-0"
+                    :title="'Xem ảnh: ' + img.name">
+                    <img :src="img.url" class="w-full h-full object-cover" alt="" loading="lazy" />
+                  </button>
 
-                  <!-- Render Compact Image Pills -->
-                  <div v-if="parseCommentImages(act.content).length > 0" class="flex flex-wrap gap-1.5 pt-0.5">
-                    <button 
-                      v-for="(img, imgIdx) in parseCommentImages(act.content)" 
-                      :key="imgIdx" 
-                      type="button"
-                      @click.stop="openImagePreview(img.url)"
-                      class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100/90 border border-emerald-200/80 text-emerald-800 rounded-lg text-xs font-bold transition-colors cursor-pointer max-w-full select-none shadow-3xs"
-                      :title="img.name"
-                    >
-                      <i class="fa-solid fa-image text-emerald-600 text-[11px]"></i>
-                      <span class="truncate max-w-[150px]">{{ img.name }}</span>
-                      <i class="fa-solid fa-expand text-[9px] text-emerald-500 ml-0.5"></i>
-                    </button>
-                  </div>
-
-                  <!-- Render Compact File Pills -->
-                  <div v-if="parseCommentFiles(act.content).length > 0" class="flex flex-wrap gap-1.5 pt-0.5">
-                    <a 
-                      v-for="(file, fIdx) in parseCommentFiles(act.content)" 
-                      :key="fIdx" 
-                      :href="file.url" 
-                      :download="file.name" 
-                      target="_blank"
-                      @click.stop
-                      class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 hover:bg-slate-200/90 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer max-w-full select-none shadow-3xs"
-                      :title="file.name"
-                    >
-                      <i class="fa-solid fa-paperclip text-slate-500 text-[11px]"></i>
-                      <span class="truncate max-w-[150px]">{{ file.name }}</span>
-                      <i class="fa-solid fa-download text-[9px] text-slate-400 ml-0.5"></i>
-                    </a>
-                  </div>
+                  <!-- Files -->
+                  <a v-for="(file, fIdx) in parseCommentFiles(act.content)" :key="'file-' + fIdx" :href="file.url"
+                    :download="file.name" target="_blank" @click.stop
+                    class="w-7 h-9 rounded-sm border border-[#d4a574] bg-[#f5e6d0] hover:bg-[#edd9bc] flex flex-col items-center justify-end overflow-hidden cursor-pointer transition-colors flex-shrink-0"
+                    :title="'Tải xuống: ' + file.name">
+                    <i class="fa-solid fa-file text-[#c87828] text-[11px] mb-0.5"></i>
+                    <span
+                      class="text-[7px] font-bold text-[#8b5a2b] bg-[#e8c99a] w-full text-center py-0.5 leading-none">FILE</span>
+                  </a>
                 </div>
               </div>
             </div>
@@ -228,6 +214,21 @@ const formatTime = (dateStr) => {
   const date = new Date(dateStr)
   const pad = (n) => String(n).padStart(2, '0')
   return `${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+const formatCommentRelativeTime = (dateStr) => {
+  if (!dateStr) return '1h'
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffSec = Math.floor((now - date) / 1000)
+
+  if (diffSec < 60) return 'Vừa xong'
+  const diffMin = Math.floor(diffSec / 60)
+  if (diffMin < 60) return `${diffMin}m`
+  const diffHours = Math.floor(diffMin / 60)
+  if (diffHours < 24) return `${diffHours}h`
+  const diffDays = Math.floor(diffHours / 24)
+  return `${diffDays}d`
 }
 
 const statusDotClass = (health) => {

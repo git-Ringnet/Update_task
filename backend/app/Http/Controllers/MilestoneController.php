@@ -11,6 +11,9 @@ class MilestoneController extends Controller
 {
     public function index($projectId)
     {
+        $project = Project::findOrFail($projectId);
+        abort_unless($project->isVisibleTo(auth()->user()), 403, 'Bạn không có quyền xem dự án này.');
+
         $milestones = Milestone::where('project_id', $projectId)
             ->with('creator')
             ->orderBy('created_at', 'asc')
@@ -29,6 +32,7 @@ class MilestoneController extends Controller
         ]);
 
         $project = Project::findOrFail($projectId);
+        abort_unless($project->isVisibleTo(auth()->user()), 403, 'Bạn không có quyền cập nhật dự án này.');
 
         $validated['project_id'] = $project->id;
         $validated['is_completed'] = $request->has('is_completed') ? (bool)$request->is_completed : false;
@@ -50,6 +54,7 @@ class MilestoneController extends Controller
         ]);
 
         $milestone = Milestone::findOrFail($id);
+        abort_unless($milestone->project->isVisibleTo(auth()->user()), 403, 'Bạn không có quyền cập nhật cột mốc này.');
         $milestone->update($validated);
         $milestone->load('creator');
 
@@ -59,6 +64,7 @@ class MilestoneController extends Controller
     public function destroy($id)
     {
         $milestone = Milestone::findOrFail($id);
+        abort_unless($milestone->project->isVisibleTo(auth()->user()), 403, 'Bạn không có quyền xóa cột mốc này.');
         $milestone->delete();
 
         return response()->json(['message' => 'Đã xóa cột mốc']);
