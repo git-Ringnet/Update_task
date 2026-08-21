@@ -136,11 +136,22 @@ class ProjectController extends Controller
         $memberIds = $request->member_ids ?? [];
         $project->members()->sync($memberIds);
 
+        // Fetch member names
+        $memberNames = \App\Models\User::whereIn('id', $memberIds)
+            ->where('is_admin', false)
+            ->pluck('name')
+            ->all();
+
+        $suffix = '';
+        if (!empty($memberNames)) {
+            $suffix = ' ' . implode(' ', array_map(fn($name) => "@{$name}", $memberNames));
+        }
+
         // Log comment
         Comment::create([
             'project_id' => $project->id,
             'user_id' => auth()->id() ?? $request->user_id ?? $project->lead_id ?? \App\Models\User::first()->id ?? null,
-            'content' => "Đã tạo dự án mới: {$project->title}",
+            'content' => "Dự án mới{$suffix}",
             'type' => 'status_change',
         ]);
 
@@ -295,6 +306,7 @@ class ProjectController extends Controller
 
         $hasRealComments = $project->comments()
             ->where('content', 'not like', 'Đã tạo dự án mới%')
+            ->where('content', 'not like', 'Dự án mới%')
             ->exists();
 
         if ($project->tasks()->exists() || $hasRealComments) {

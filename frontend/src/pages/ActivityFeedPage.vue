@@ -43,23 +43,28 @@
           <!-- Date Header -->
           <h2 class="text-lg font-bold text-gray-900 font-heading mb-1.5">{{ dateStr }}</h2>
           
-          <!-- Cards List -->
-          <div class="space-y-3">
+          <!-- Timeline list, matching the recent-activity panel -->
+          <div class="space-y-0">
             <div
-              v-for="act in group"
+              v-for="(act, idx) in group"
               :key="act.id"
               @click="goToProject(act.project_id)"
-              class="rounded-2xl p-5 shadow-2xs hover:shadow-xs hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col gap-3.5 select-none w-full group"
-              :class="getActivityStyle(act)"
+              class="relative flex gap-3 select-none pb-6 cursor-pointer group"
             >
+              <div v-if="idx < group.length - 1" class="absolute top-11 bottom-2 left-[18px] w-[1.5px] bg-gray-300 z-0"></div>
+
+              <div class="flex-shrink-0 w-9 z-10">
+                <img
+                  :src="act.user?.avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=120'"
+                  :alt="act.user?.name"
+                  class="w-9 h-9 rounded-full object-cover border border-gray-250"
+                />
+              </div>
+
+              <div class="flex-1 min-w-0 pt-0.5 z-10">
               <!-- Top Row: Avatar + User Name & supports & relative time -->
               <div class="flex items-center justify-between gap-2">
-                <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                  <img
-                    :src="act.user?.avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=120'"
-                    :alt="act.user?.name"
-                    class="w-10 h-10 rounded-full object-cover border border-emerald-200 flex-shrink-0"
-                  />
+                <div class="min-w-0 flex-1">
                   <span class="font-extrabold text-sm text-gray-900 truncate">
                     <span>{{ act.user ? act.user.name : 'Thành viên' }}</span>
                     <template v-if="act.project?.customer">
@@ -75,17 +80,14 @@
                 </span>
               </div>
 
-              <!-- Second Row: Project Name Pill -->
-              <div v-if="act.project" class="flex-shrink-0 flex items-center">
-                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#e6f4ea] border border-emerald-250/70 rounded-lg text-xs font-extrabold text-[#1A7A56] cursor-pointer max-w-full">
-                  <i class="fa-solid fa-folder-closed text-[11px] flex-shrink-0"></i>
-                  <span>{{ act.project.title }}</span>
-                </div>
+              <!-- Project title -->
+              <div v-if="act.project" class="text-[#1A7A56] hover:underline font-extrabold text-sm cursor-pointer mt-1 mb-1 max-w-full truncate block">
+                {{ act.project.title }}
               </div>
 
-              <!-- Third Row: Comment Content Box (rounded container with light gray background and border) -->
-              <div class="text-xs font-semibold text-gray-700 leading-relaxed break-words bg-gray-50 border border-gray-350/50 rounded-xl p-3.5 space-y-2">
-                <div v-if="parseCommentText(act.content)" class="whitespace-pre-line font-medium text-gray-700">
+              <!-- Comment content -->
+              <div class="text-xs font-semibold text-gray-700 leading-relaxed break-words mt-1 space-y-1.5">
+                <div v-if="parseCommentText(act.content)" class="whitespace-pre-line">
                   {{ parseCommentText(act.content) }}
                 </div>
 
@@ -110,6 +112,7 @@
                       class="text-[7px] font-bold text-[#8b5a2b] bg-[#e8c99a] w-full text-center py-0.5 leading-none">FILE</span>
                   </a>
                 </div>
+              </div>
               </div>
             </div>
           </div>

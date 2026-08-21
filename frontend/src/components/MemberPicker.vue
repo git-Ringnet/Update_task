@@ -130,7 +130,13 @@ const filteredUsers = computed(() => {
 const isCreator = (userId) => props.creatorId && String(props.creatorId) === String(userId)
 const updateIds = (ids) => emit('update:modelValue', [...new Set(ids.map(Number))])
 
+let skipNextOpen = false
+
 const openSuggestions = () => {
+  if (skipNextOpen) {
+    skipNextOpen = false
+    return
+  }
   isOpen.value = true
   highlightedIndex.value = 0
   nextTick(() => {
@@ -143,7 +149,14 @@ const selectUser = (user) => {
   updateIds([...selectedIds.value, user.id])
   query.value = ''
   highlightedIndex.value = 0
-  nextTick(() => inputRef.value?.focus())
+  isOpen.value = false
+  skipNextOpen = true
+  nextTick(() => {
+    inputRef.value?.focus()
+    setTimeout(() => {
+      skipNextOpen = false
+    }, 100)
+  })
 }
 
 const removeUser = (userId) => {
@@ -154,16 +167,29 @@ const removeUser = (userId) => {
 const handleKeydown = (event) => {
   if (event.key === 'ArrowDown') {
     event.preventDefault()
-    if (filteredUsers.value.length) highlightedIndex.value = (highlightedIndex.value + 1) % filteredUsers.value.length
+    if (!isOpen.value) {
+      openSuggestions()
+    } else if (filteredUsers.value.length) {
+      highlightedIndex.value = (highlightedIndex.value + 1) % filteredUsers.value.length
+    }
   } else if (event.key === 'ArrowUp') {
     event.preventDefault()
-    if (filteredUsers.value.length) highlightedIndex.value = (highlightedIndex.value - 1 + filteredUsers.value.length) % filteredUsers.value.length
+    if (!isOpen.value) {
+      openSuggestions()
+    } else if (filteredUsers.value.length) {
+      highlightedIndex.value = (highlightedIndex.value - 1 + filteredUsers.value.length) % filteredUsers.value.length
+    }
   } else if (event.key === 'Enter') {
-    event.preventDefault()
-    const user = filteredUsers.value[highlightedIndex.value]
-    if (user) selectUser(user)
+    if (isOpen.value) {
+      event.preventDefault()
+      const user = filteredUsers.value[highlightedIndex.value]
+      if (user) selectUser(user)
+    }
   } else if (event.key === 'Escape') {
-    isOpen.value = false
+    if (isOpen.value) {
+      event.preventDefault()
+      isOpen.value = false
+    }
   } else if (event.key === 'Backspace' && !query.value && selectedUsers.value.length) {
     const removable = [...selectedUsers.value].reverse().find(user => !isCreator(user.id))
     if (removable) removeUser(removable.id)
@@ -176,4 +202,10 @@ const handleOutsideClick = (event) => {
 
 onMounted(() => document.addEventListener('click', handleOutsideClick, true))
 onUnmounted(() => document.removeEventListener('click', handleOutsideClick, true))
+
+defineExpose({
+  focus: () => {
+    inputRef.value?.focus()
+  }
+})
 </script>

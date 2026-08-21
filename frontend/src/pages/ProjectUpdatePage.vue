@@ -202,9 +202,9 @@
                   <div class="flex-1 min-w-0 relative">
                     <textarea :ref="(el) => setTextareaRef(el, project.id)" v-model="updateTexts[project.id]"
                       @input="onInputText(project.id, $event)" @keydown="onTextareaKeydown(project.id, $event)"
-                      @paste="handlePaste(project.id, $event)" rows="1" maxlength="600"
+                      @paste="handlePaste(project.id, $event)" rows="1" maxlength="1000"
                       placeholder="Chia sẻ cập nhật với team... (Gõ @ để nhắc tên, 'ngày mai', 'hôm nay' để đặt ngày)"
-                      class="w-full bg-transparent text-sm sm:text-base font-bold text-gray-900 leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none m-0 border-0"></textarea>
+                      class="w-full h-32 overflow-y-auto bg-transparent text-sm sm:text-base font-bold text-gray-900 leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none m-0 border-0"></textarea>
 
                     <!-- MENTION DROPDOWN POPUP -->
                     <div
@@ -720,8 +720,7 @@ const onInputText = (projectId, event) => {
   const text = updateTexts[projectId] || ''
   const el = event.target
   if (el) {
-    el.style.height = 'auto'
-    el.style.height = `${Math.max(el.scrollHeight, 32)}px`
+    el.style.height = '128px'
   }
 
   // 1. Parse Vietnamese natural language date & time
@@ -813,8 +812,7 @@ const selectMentionUser = (projectId, user) => {
 
   nextTick(() => {
     if (el) {
-      el.style.height = 'auto'
-      el.style.height = `${Math.max(el.scrollHeight, 32)}px`
+      el.style.height = '128px'
       el.focus()
       if (typeof el.setSelectionRange === 'function') {
         el.setSelectionRange(newPos, newPos)
@@ -852,8 +850,7 @@ const toggleTaggedUser = (projectId, user) => {
   // Resize textarea if element exists
   const el = textareaRefs[projectId]
   if (el) {
-    el.style.height = 'auto'
-    el.style.height = `${Math.max(el.scrollHeight, 32)}px`
+    el.style.height = '128px'
   }
 }
 

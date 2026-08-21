@@ -100,7 +100,7 @@ class ProjectTestSeeder extends Seeder
             Comment::create([
                 'project_id' => $project->id,
                 'user_id' => $lead->id,
-                'content' => "Đã tạo dự án mới: {$project->title}",
+                'content' => "Dự án mới",
                 'type' => 'status_change',
                 'created_at' => $project->created_at,
                 'updated_at' => $project->created_at,

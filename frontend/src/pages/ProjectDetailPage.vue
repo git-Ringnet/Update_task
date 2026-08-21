@@ -7,9 +7,9 @@
           enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-150 ease-in"
           leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 translate-y-4">
           <button v-if="showDetailStickyBar" @click="goBack" type="button"
-            class="inline-flex items-center gap-2 text-sm sm:text-base font-black text-gray-800 hover:text-emerald-700 bg-transparent border border-gray-300 hover:bg-gray-100/50 rounded-2xl px-4 py-2.5 shadow-2xs transition-all cursor-pointer focus:outline-none">
+            class="sticky-home-button inline-flex items-center gap-2 text-sm sm:text-base font-black text-gray-800 hover:text-emerald-700 bg-transparent border border-gray-300 hover:bg-gray-100/50 rounded-2xl px-4 py-2.5 shadow-2xs transition-all cursor-pointer focus:outline-none">
             <i class="fa-solid fa-arrow-left text-sm"></i>
-            <span>Trở về</span>
+            <span>Home</span>
           </button>
         </transition>
       </template>
@@ -18,7 +18,7 @@
         <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 translate-y-4"
           enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-150 ease-in"
           leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 translate-y-4">
-          <div v-if="showDetailStickyBar" class="relative" ref="stickyActionMenuRef">
+          <div v-if="showDetailStickyBar && canManageProjectOptions" class="relative" ref="stickyActionMenuRef">
             <button @click="toggleActionMenu" type="button"
               class="w-11 h-11 bg-transparent border border-gray-300 hover:bg-gray-100/50 rounded-2xl flex items-center justify-center text-gray-800 shadow-2xs transition-colors cursor-pointer text-lg"
               title="Menu tùy chọn">
@@ -34,11 +34,7 @@
                 <span>Chỉnh sửa dự án</span>
               </button>
 
-              <button v-if="project?.can_manage_members" @click.stop="openMemberManager" type="button"
-                class="w-full text-left px-4.5 py-2.5 hover:bg-[#F9F4EE] text-gray-800 text-xs sm:text-sm font-bold transition-colors flex items-center gap-3 cursor-pointer">
-                <i class="fa-solid fa-user-plus text-emerald-600 text-sm"></i>
-                <span>Thành viên dự án</span>
-              </button>
+
 
               <div class="border-t border-gray-100 my-1"></div>
               <button @click="handleDeleteProject" type="button" :disabled="!canDeleteProject"
@@ -113,18 +109,18 @@
         <!-- TOP NAVIGATION BAR, PROJECT TITLE & ACTION CONTROLS -->
         <div ref="headerButtonsRowRef" class="space-y-1 pt-1">
           <!-- Row 1: Back link + Project Title + Action Controls -->
-          <div class="flex items-center justify-between gap-4">
+          <div class="project-header-row flex items-center justify-between gap-4">
             <!-- Back link -->
-            <div class="w-auto md:w-[185px] flex-shrink-0 flex justify-start">
+            <div class="project-header-back w-auto md:w-[185px] flex-shrink-0 flex justify-start">
               <button @click="goBack" type="button"
                 class="inline-flex items-center gap-2 text-sm sm:text-base font-black text-gray-800 hover:text-emerald-700 bg-transparent border border-gray-300 hover:bg-gray-100/50 rounded-2xl px-4 py-2.5 shadow-2xs transition-all cursor-pointer focus:outline-none">
                 <i class="fa-solid fa-arrow-left text-sm"></i>
-                <span>Trở về</span>
+                <span>Home</span>
               </button>
             </div>
 
             <!-- MAIN PROJECT TITLE (CĂN GIỮA) -->
-            <div class="text-center flex-1 min-w-0">
+            <div class="project-header-title text-center flex-1 min-w-0">
               <h1
                 class="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight font-heading uppercase break-words max-w-full leading-tight mx-auto">
                 {{ project.title }}
@@ -132,9 +128,9 @@
             </div>
 
             <!-- Right Header Action Tools (Main Menu Dropdown) -->
-            <div class="w-auto md:w-[185px] flex-shrink-0 flex items-center justify-end gap-2.5">
+            <div class="project-header-menu w-auto md:w-[185px] flex-shrink-0 flex items-center justify-end gap-2.5">
               <!-- Menu Button / Dropdown -->
-              <div class="relative" ref="actionMenuDropdownRef">
+              <div v-if="canManageProjectOptions" class="relative" ref="actionMenuDropdownRef">
                 <button @click="toggleActionMenu" type="button"
                   class="w-11 h-11 bg-transparent border border-gray-300 hover:bg-gray-100/50 rounded-2xl flex items-center justify-center text-gray-800 shadow-2xs transition-colors cursor-pointer text-lg"
                   title="Menu tùy chọn">
@@ -150,11 +146,7 @@
                     <span>Chỉnh sửa dự án</span>
                   </button>
 
-                  <button v-if="project?.can_manage_members" @click.stop="openMemberManager" type="button"
-                    class="w-full text-left px-4.5 py-2.5 hover:bg-[#F9F4EE] text-gray-800 text-xs sm:text-sm font-bold transition-colors flex items-center gap-3 cursor-pointer">
-                    <i class="fa-solid fa-user-plus text-emerald-600 text-sm"></i>
-                    <span>Thành viên dự án</span>
-                  </button>
+
 
                   <div class="border-t border-gray-100 my-1"></div>
                   <button @click="handleDeleteProject" type="button" :disabled="!canDeleteProject"
@@ -217,7 +209,7 @@
 
         <!-- SOFT ELEGANT MOUNTAIN ROADMAP CONTAINER -->
         <div
-          class="relative bg-[#F9F4EE] rounded-3xl pt-1.5 pb-2 px-4 sm:pt-2 sm:pb-3 sm:px-6 select-none overflow-hidden min-h-[250px]">
+          class="roadmap-desktop relative bg-[#F9F4EE] rounded-3xl pt-1.5 pb-2 px-4 sm:pt-2 sm:pb-3 sm:px-6 select-none overflow-hidden min-h-[250px]">
 
           <!-- Mountain graphic container -->
           <div class="relative min-w-[980px] h-[240px] mx-auto px-4 sm:px-6">
@@ -447,8 +439,49 @@
       </div>
 
       <!-- CENTER PROMINENT "HÚ HÚ" BUTTON (Luôn hiện trừ khi đang chọn chặng đã hoàn thành) -->
+      <section class="mobile-roadmap select-none">
+        <div class="mobile-roadmap-summary">
+          <span class="text-xs font-extrabold text-gray-500">Hành trình dự án</span>
+          <span class="text-xs font-black text-[#45A246]">
+            {{ effectiveMilestones.filter(ms => ms.is_completed).length + (startStageTasks.length === 0 ? 1 : 0) }}/{{ effectiveMilestones.length + 1 }} chặng xong
+          </span>
+        </div>
+
+        <div class="mobile-roadmap-list">
+          <button type="button" @click="selectStartStage" class="mobile-roadmap-stage"
+            :class="isStartStageSelected ? 'is-selected' : ''">
+            <span class="mobile-stage-icon is-complete"><i class="fa-solid fa-play"></i></span>
+            <span class="mobile-stage-copy">
+              <span class="mobile-stage-title">Bắt đầu</span>
+              <span class="mobile-stage-meta">{{ startStageTasks.length ? `${startStageTasks.length} hoạt động` : 'Đã hoàn thành' }}</span>
+            </span>
+          </button>
+
+          <button v-for="ms in effectiveMilestones" :key="ms.id" type="button" @click="selectStageByMilestone(ms)"
+            class="mobile-roadmap-stage"
+            :class="{ 'is-selected': selectedMilestone?.id === ms.id, 'is-complete': ms.is_completed }">
+            <span class="mobile-stage-icon" :class="ms.is_completed ? 'is-complete' : 'is-active'">
+              <i :class="ms.is_completed ? 'fa-solid fa-check' : 'fa-solid fa-flag'"></i>
+            </span>
+            <span class="mobile-stage-copy">
+              <span class="mobile-stage-title">{{ ms.title }}</span>
+              <span class="mobile-stage-meta">
+                {{ ms.is_completed ? 'Đã hoàn thành' : `${getStageTaskCount(ms)} hoạt động` }}
+              </span>
+            </span>
+            <i class="fa-solid fa-chevron-right mobile-stage-chevron"></i>
+          </button>
+
+          <button v-if="effectiveMilestones.length < 5" type="button" @click="openAddMilestoneModal"
+            class="mobile-add-stage">
+            <i class="fa-solid fa-plus"></i>
+            <span>Thêm chặng</span>
+          </button>
+        </div>
+      </section>
+
       <div v-if="!selectedMilestone || !selectedMilestone.is_completed"
-        class="flex flex-col items-center justify-center mt-[-16px] mb-4 gap-1.5">
+        class="journey-action flex flex-col items-center justify-center mt-[-16px] mb-4 gap-1.5">
         <button @click="toggleInlineForm" type="button"
           class="px-8 py-3 bg-[#45A246] hover:bg-[#3a903b] text-white font-extrabold text-base sm:text-xl rounded-full shadow-md hover:shadow-lg hover:scale-103 active:scale-97 transition-all flex items-center gap-3 cursor-pointer group">
           <div
@@ -543,7 +576,7 @@
           <div v-else class="space-y-3">
             <!-- CARDS LIST -->
             <div v-for="t in displayedCards" :key="t.id"
-              class="bg-white border border-gray-200/80 hover:border-gray-300 rounded-2xl shadow-2xs hover:shadow-xs transition-all group flex items-stretch overflow-hidden"
+              class="relative bg-white border border-gray-200/80 hover:border-gray-300 rounded-2xl shadow-2xs hover:shadow-xs transition-all group flex items-stretch overflow-hidden"
               :title="isTaskInDoneStage(t) ? 'Chặng đã hoàn thành (Không thể chỉnh sửa)' : undefined">
 
               <!-- LEFT: Icon block; reveal card actions on hover -->
@@ -558,7 +591,7 @@
                   ]"></i>
 
                 <div v-if="!isTaskInDoneStage(t)"
-                  class="absolute inset-0 flex flex-col opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200">
+                  class="task-card-actions absolute inset-0 flex flex-col opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200">
                   <button type="button"
                     class="w-full flex-1 bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center transition-colors cursor-pointer"
                     title="Chỉnh sửa hoạt động" aria-label="Chỉnh sửa hoạt động"
@@ -584,12 +617,12 @@
                       <template v-if="getAssigneeDisplayName(t)"> hú</template>
                     </span>
 
-                    <span v-if="getAssigneeDisplayName(t)"
+                    <span v-for="user in getTaggedUsers(t)" :key="user.id"
                       class="inline-flex items-center px-2 py-0.5 bg-[#E69138] rounded-sm text-[12px] font-bold text-white leading-none">
-                      {{ getAssigneeDisplayName(t) }}
+                      {{ user.name }}
                     </span>
 
-                    <span v-if="t.due_date && getAssigneeDisplayName(t)"
+                    <span v-if="t.due_date && getTaggedUsers(t).length"
                       class="inline-flex items-center px-2 py-0.5 bg-[#E69138] rounded-sm text-[12px] font-bold text-white leading-none">
                       {{ formatDueDateTagForCard(t.due_date) }}
                     </span>
@@ -598,6 +631,21 @@
                   <span class="text-xs font-bold text-gray-400 flex-shrink-0 pt-0.5">
                     {{ formatDateShort(t.created_at || t.due_date) }}
                   </span>
+
+                  <div v-if="!isTaskInDoneStage(t)" class="task-mobile-menu-wrap">
+                    <button type="button" @click.stop="activeTaskActionMenuId = activeTaskActionMenuId === t.id ? null : t.id"
+                      class="task-mobile-menu-trigger" title="Thao tác hoạt động">
+                      <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </button>
+                    <div v-if="activeTaskActionMenuId === t.id" class="task-mobile-menu-popover">
+                      <button type="button" @click.stop="openEditStageTaskForm(t); activeTaskActionMenuId = null">
+                        <i class="fa-solid fa-pen-to-square"></i><span>Cập nhật</span>
+                      </button>
+                      <button type="button" @click.stop="handleDeleteTask(t.id); activeTaskActionMenuId = null" class="is-danger">
+                        <i class="fa-solid fa-trash-can"></i><span>Xóa</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Body: message content -->
@@ -714,9 +762,9 @@
       leave-active-class="transition duration-200 ease-in transform" leave-from-class="opacity-100 translate-y-0"
       leave-to-class="opacity-0 translate-y-full">
       <div v-if="isInlineFormOpen" ref="inlineFormRef"
-        class="fixed bottom-0 left-0 right-0 z-50 pointer-events-none pb-3 sm:pb-5 px-4 sm:px-6 lg:px-8 transition-all">
+        class="inline-update-shell fixed bottom-0 left-0 right-0 z-50 pointer-events-none pb-3 sm:pb-5 px-4 sm:px-6 lg:px-8 transition-all">
         <div
-          class="max-w-[720px] mx-auto pointer-events-auto bg-white border border-gray-200 shadow-2xl rounded-2xl p-4 sm:p-5 relative ring-1 ring-black/5">
+          class="inline-update-card max-w-[720px] mx-auto pointer-events-auto bg-white border border-gray-200 shadow-2xl rounded-2xl p-4 sm:p-5 relative ring-1 ring-black/5">
 
           <!-- X CLOSE BUTTON (TOP RIGHT) -->
           <button type="button" @click="cancelEditTask"
@@ -726,7 +774,7 @@
           </button>
 
           <form @submit.prevent="handleAddStageTaskSubmit"
-            class="flex flex-col lg:flex-row items-stretch lg:items-start gap-4 lg:gap-5">
+            class="inline-update-form flex flex-col lg:flex-row items-stretch lg:items-start gap-4 lg:gap-5">
 
             <!-- LEFT SECTION: MỤC TIÊU HƯỚNG ĐẾN (CHẶNG / MILESTONE SELECTOR) -->
             <div class="flex flex-col gap-2 lg:pr-5 lg:border-r lg:border-gray-200 flex-shrink-0">
@@ -800,7 +848,7 @@
             </div>
 
             <!-- RIGHT SECTION: AVATAR + TEXTAREA + BOTTOM ACTION ROW -->
-            <div class="flex-1 flex flex-col justify-between gap-2 min-w-0 relative pr-5">
+            <div class="inline-update-content flex-1 flex flex-col justify-between gap-2 min-w-0 relative pr-5">
 
               <!-- TOP ROW: USER AVATAR + TEXTAREA INPUT -->
               <div class="flex items-start gap-3 min-w-0">
@@ -811,10 +859,10 @@
 
                 <!-- Input Area Container with Mention Dropdown & Paste Support -->
                 <div class="flex-1 min-w-0 relative">
-                  <textarea ref="stageTaskTitleInputRef" v-model="newStageTaskTitle" rows="1" required maxlength="600"
+                  <textarea ref="stageTaskTitleInputRef" v-model="newStageTaskTitle" rows="1" required maxlength="1000"
                     @input="onTitleInput" @keydown="onTitleKeydown" @paste="onTextareaPaste"
                     placeholder="Chia sẻ cập nhật với team..."
-                    class="w-full bg-transparent text-sm sm:text-base font-bold text-gray-900 leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none m-0 border-0"></textarea>
+                    class="w-full h-32 overflow-y-auto bg-transparent text-sm sm:text-base font-bold text-gray-900 leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none m-0 border-0"></textarea>
 
                   <!-- AUTOCOMPLETE @MENTION DROPDOWN POPOVER (POPS UP ABOVE INPUT & SHIFTED LEFT) -->
                   <div v-if="showMentionDropdown && filteredUsersForMention.length > 0"
@@ -969,8 +1017,8 @@
                   </div>
 
                   <!-- Submit button -->
-                  <button type="submit"
-                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#45A246] hover:bg-[#3a903b] text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer">
+                  <button type="submit" :disabled="isSubmittingStageTask"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#45A246] hover:bg-[#3a903b] text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer disabled:cursor-wait disabled:opacity-60">
                     <i class="fa-solid fa-dove text-sm"></i>
                     <span>{{ editingTaskId ? 'Lưu' : 'Hú hú!' }}</span>
                     <i class="fa-solid fa-chevron-down text-[10px] opacity-80"></i>
@@ -993,7 +1041,8 @@
       enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in"
       leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
       <div v-if="isAddMilestoneOpen"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
+        class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
+        :class="{ 'pointer-events-none': !isAddMilestoneOpen }"
         @click.self="isAddMilestoneOpen = false">
         <div class="bg-white rounded-3xl p-6 w-full max-w-md border border-gray-200 shadow-2xl space-y-4">
           <div class="flex items-center justify-between border-b border-gray-100 pb-3">
@@ -1086,11 +1135,7 @@ const verifyProjectAccess = async () => {
 }
 
 const goBack = () => {
-  if (window.history.state && window.history.state.back) {
-    router.back()
-  } else {
-    router.push('/projects')
-  }
+  router.push('/')
 }
 
 // Sticky floating bar state
@@ -1221,6 +1266,10 @@ const project = ref(null)
 const users = ref([])
 const customers = ref([])
 const activityLogs = ref([])
+
+// The API determines this permission from the project creator/lead (or an
+// administrator), so regular members never receive management controls.
+const canManageProjectOptions = computed(() => Boolean(project.value?.can_manage_members))
 
 const searchQuery = ref('')
 const isActionMenuOpen = ref(false)
@@ -1415,6 +1464,7 @@ const newStageTaskMilestoneId = ref(null)
 const showPersonPicker = ref(false)
 const showDateTimePicker = ref(false)
 const personPickerRef = ref(null)
+const isSubmittingStageTask = ref(false)
 
 // ATTACHMENTS & CLIPBOARD PASTED IMAGES STATE
 const attachedFiles = ref([])
@@ -1927,8 +1977,7 @@ const adjustTextareaHeight = () => {
   nextTick(() => {
     const el = stageTaskTitleInputRef.value
     if (el) {
-      el.style.height = 'auto'
-      el.style.height = `${el.scrollHeight}px`
+      el.style.height = '128px'
     }
   })
 }
@@ -1938,8 +1987,7 @@ const onTitleInput = (e) => {
 
   const el = e.target
   if (el) {
-    el.style.height = 'auto'
-    el.style.height = `${el.scrollHeight}px`
+    el.style.height = '128px'
   }
 
   // 1. Parse Vietnamese date & time
@@ -2259,6 +2307,31 @@ const getAssigneeDisplayName = (task) => {
     }
   }
   return ''
+}
+
+const getTaggedUsers = (task) => {
+  if (!task) return []
+
+  const taggedUsers = new Map()
+  const addUser = (user) => {
+    if (user?.id) taggedUsers.set(String(user.id), user)
+  }
+
+  // Preserve the assigned person even when their name was not typed with @.
+  if (task.assignee?.id) {
+    addUser(task.assignee)
+  } else if (task.assignee_id && users.value) {
+    addUser(users.value.find(user => String(user.id) === String(task.assignee_id)))
+  }
+
+  // A task may tag more than one person in its title.
+  const mentions = task.title?.match(/@([^\s@,.:;!?()\n<]+)/g) || []
+  mentions.forEach((mention) => {
+    const mentionName = mention.slice(1).toLowerCase()
+    addUser(users.value.find(user => user.name?.toLowerCase() === mentionName))
+  })
+
+  return [...taggedUsers.values()]
 }
 
 const getCreatorAvatar = (task) => {
@@ -2976,6 +3049,7 @@ const closeSelectedStage = () => {
 }
 
 const activeAssigneeDropdownTaskId = ref(null)
+const activeTaskActionMenuId = ref(null)
 
 const toggleAssigneeDropdown = (taskId) => {
   if (activeAssigneeDropdownTaskId.value === taskId) {
@@ -3017,6 +3091,11 @@ const handleQuickAssignTask = async (task, newUserId) => {
 
 const handleDocumentClick = (e) => {
   activeAssigneeDropdownTaskId.value = null
+  activeTaskActionMenuId.value = null
+
+  if (showPersonPicker.value && (!personPickerRef.value || !personPickerRef.value.contains(e.target))) {
+    showPersonPicker.value = false
+  }
   
   const clickedOutsideMenu = !actionMenuDropdownRef.value || !e.target || !actionMenuDropdownRef.value.contains(e.target)
   const clickedOutsideStickyMenu = !stickyActionMenuRef.value || !e.target || !stickyActionMenuRef.value.contains(e.target)
@@ -3028,7 +3107,10 @@ const handleDocumentClick = (e) => {
 
 // SUBMIT COMPREHENSIVE "CẬP NHẬT HOẠT ĐỘNG"
 const handleAddStageTaskSubmit = async () => {
+  if (isSubmittingStageTask.value) return
   if (!newStageTaskTitle.value.trim() && attachedFiles.value.length === 0) return
+
+  isSubmittingStageTask.value = true
   const pId = projectId.value
 
   // Update project health if it changed before submitting task
@@ -3115,6 +3197,7 @@ const handleAddStageTaskSubmit = async () => {
       newStageTaskDueDate.value = ''
       newStageTaskDueTime.value = ''
       isInlineFormOpen.value = false
+      isSubmittingStageTask.value = false
       adjustTextareaHeight()
     }
     return
@@ -3182,6 +3265,7 @@ const handleAddStageTaskSubmit = async () => {
     newStageTaskDueDate.value = ''
     newStageTaskDueTime.value = ''
     isInlineFormOpen.value = false
+    isSubmittingStageTask.value = false
     adjustTextareaHeight()
   }
 }
@@ -3291,6 +3375,12 @@ const handleAddMilestone = async () => {
       selectedMilestone.value = createdMs
       selectedTargetMilestoneId.value = createdMs.id
     }
+
+    if (isInlineFormOpen.value) {
+      await nextTick()
+      adjustTextareaHeight()
+      stageTaskTitleInputRef.value?.focus()
+    }
   } catch (err) {
     if (project.value) {
       if (!project.value.milestones) project.value.milestones = []
@@ -3308,6 +3398,12 @@ const handleAddMilestone = async () => {
       toast.success('Đã thêm chặng mới!')
     }
     isAddMilestoneOpen.value = false
+
+    if (isInlineFormOpen.value) {
+      await nextTick()
+      adjustTextareaHeight()
+      stageTaskTitleInputRef.value?.focus()
+    }
   }
 }
 
@@ -3500,5 +3596,267 @@ watch(showDetailStickyBar, () => {
 .scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+.mobile-roadmap {
+  display: none;
+}
+
+.task-mobile-menu-wrap {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  /* Keep the project name centered in the viewport; the side controls no longer
+     take part in the header's width calculation on small screens. */
+  .project-header-row {
+    position: relative;
+    justify-content: center;
+    min-height: 56px;
+  }
+
+  .project-header-back,
+  .project-header-menu {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: auto;
+    z-index: 1;
+  }
+
+  .project-header-back {
+    left: 0;
+  }
+
+  .project-header-menu {
+    right: 0;
+  }
+
+  .project-header-title {
+    flex: 0 1 100%;
+    padding: 0 64px;
+  }
+
+  .project-header-title h1 {
+    max-width: min(100%, calc(100vw - 180px));
+  }
+
+  .project-header-back button {
+    width: 52px;
+    height: 52px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .project-header-back button span {
+    display: none;
+  }
+
+  .sticky-home-button {
+    width: 52px;
+    height: 52px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .sticky-home-button span {
+    display: none;
+  }
+
+  .roadmap-desktop {
+    display: none;
+  }
+
+  .mobile-roadmap {
+    display: block;
+    margin: 8px 20px 18px;
+    padding: 14px;
+    border: 1px solid #d9e4d8;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.76);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+
+  .journey-action {
+    margin-top: 16px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .task-card-actions {
+    display: none !important;
+  }
+
+  .task-mobile-menu-wrap {
+    display: block;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .task-mobile-menu-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 9px;
+    background: #f3f4f6;
+    color: #667085;
+    cursor: pointer;
+  }
+
+  .task-mobile-menu-popover {
+    position: absolute;
+    top: calc(100% + 5px);
+    right: 0;
+    z-index: 30;
+    width: 132px;
+    padding: 5px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
+  }
+
+  .task-mobile-menu-popover button {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 8px;
+    padding: 9px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: #344054;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .task-mobile-menu-popover .is-danger { color: #e5484d; }
+
+  .inline-update-card {
+    max-height: calc(100vh - 16px);
+    overflow-y: auto;
+  }
+
+  .inline-update-content { min-height: 0; }
+
+  .inline-update-content textarea {
+    height: 88px !important;
+  }
+
+  .mobile-roadmap-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .mobile-roadmap-list {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 12px;
+  }
+
+  .mobile-roadmap-list::before {
+    content: '';
+    position: absolute;
+    top: 32px;
+    bottom: 48px;
+    left: 20px;
+    width: 2px;
+    background: #cfe2cf;
+  }
+
+  .mobile-roadmap-stage {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 56px;
+    padding: 8px 10px 8px 0;
+    gap: 12px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .mobile-roadmap-stage.is-selected {
+    background: #edf8ee;
+  }
+
+  .mobile-stage-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border: 2px solid #94a3b8;
+    border-radius: 50%;
+    background: #fff;
+    color: #64748b;
+    font-size: 13px;
+  }
+
+  .mobile-stage-icon.is-complete {
+    border-color: #45a246;
+    color: #45a246;
+  }
+
+  .mobile-stage-copy {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .mobile-stage-title {
+    overflow: hidden;
+    color: #172033;
+    font-size: 14px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-stage-meta {
+    color: #8a94a6;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .mobile-stage-chevron {
+    color: #9ca3af;
+    font-size: 11px;
+  }
+
+  .mobile-add-stage {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    gap: 7px;
+    margin-top: 2px;
+    border: 1px dashed #95a3a1;
+    border-radius: 12px;
+    background: #fff;
+    color: #4b5b59;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+  }
 }
 </style>

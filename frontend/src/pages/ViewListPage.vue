@@ -8,7 +8,7 @@
     <main class="max-w-[1260px] mx-auto px-4 sm:px-6 lg:px-8 py-4 w-full">
 
       <!-- Header (Top Center) -->
-      <div class="flex flex-col items-center text-center mt-1 mb-6 select-none">
+      <div class="view-page-intro flex flex-col items-center text-center mt-1 mb-6 select-none">
         <h1 class="text-2xl font-black text-gray-900 tracking-tight font-heading mb-1">Help IT Managers become badass.
         </h1>
         <p class="text-[11px] text-gray-400 font-bold uppercase tracking-wider">You must think about how IT managers
@@ -16,23 +16,23 @@
       </div>
 
       <!-- Main Layout Container -->
-      <div
+      <div class="view-page-layout"
         :class="viewMode === 'notes' ? 'grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 w-full items-start' : 'w-full flex justify-center items-start gap-10'">
 
         <!-- LEFT PANEL: Actions, Switcher & Search (Block 1) -->
-        <aside
+        <aside class="view-actions"
           :class="viewMode === 'notes' ? 'space-y-3.5 select-none flex flex-col items-end w-full' : 'space-y-3.5 select-none flex flex-col items-end w-[390px] flex-shrink-0'">
           <!-- Button Tạo dự án -->
           <button @click="isModalOpen = true" type="button"
-            class="w-fit bg-transparent hover:bg-gray-200/40 border-2 border-[#4d4d4d] text-gray-900 font-extrabold text-sm rounded-md px-4.5 py-2.5 flex items-center justify-center gap-1 transition-colors cursor-pointer focus:outline-none select-none"
+            class="mobile-icon-button create-project-action w-fit bg-transparent hover:bg-gray-200/40 border-2 border-[#4d4d4d] text-gray-900 font-extrabold text-sm rounded-md px-4.5 py-2.5 flex items-center justify-center gap-1 transition-colors cursor-pointer focus:outline-none select-none"
             title="Tạo dự án mới (Ctrl + K)">
             <span class="text-base font-normal mr-0.5">+</span>
             <span>Tạo dự án mới</span>
           </button>
 
           <!-- Project / Customer Switcher (Simple Button) -->
-          <button @click="toggleCustomerGroup" type="button"
-            class="w-fit bg-transparent hover:bg-gray-200/40 border-2 border-[#4d4d4d] text-gray-900 font-extrabold text-sm rounded-md px-4.5 py-2.5 flex items-center justify-center transition-colors cursor-pointer focus:outline-none select-none"
+          <button @click="toggleCustomerGroup" type="button" :disabled="isViewModeChanging"
+            class="mobile-icon-button view-switch-action w-fit bg-transparent hover:bg-gray-200/40 border-2 border-[#4d4d4d] text-gray-900 font-extrabold text-sm rounded-md px-4.5 py-2.5 flex items-center justify-center transition-colors cursor-pointer focus:outline-none select-none"
             :class="isGroupedByCustomer ? 'bg-emerald-50/10' : ''" title="Chuyển đổi chế độ xem (Ctrl + B)">
             <div class="flex items-center gap-2">
               <i class="fa-solid fa-list-ol text-sm text-[#4d4d4d]"></i>
@@ -41,15 +41,18 @@
           </button>
 
           <!-- Tìm kiếm gì đó -->
-          <div class="relative w-full max-w-[270px]">
+          <div class="search-input-wrapper relative w-full max-w-[270px]" :class="{ 'mobile-search-open': isMobileSearchOpen }">
             <i
               class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4d4d4d] text-sm"></i>
             <input ref="searchInputRef" v-model="projectStore.searchQuery" type="text" placeholder="Tìm kiếm"
               class="w-full bg-transparent border-2 border-[#4d4d4d] rounded-md pl-10 pr-4 py-2.5 text-sm font-extrabold text-gray-900 focus:outline-none placeholder-gray-400" />
           </div>
+          <button type="button" class="mobile-search-toggle mobile-icon-button" @click="isMobileSearchOpen = !isMobileSearchOpen" title="Tìm kiếm">
+            <i class="fa-solid fa-magnifying-glass text-sm"></i>
+          </button>
 
           <!-- Keyboard Shortcuts Hint -->
-          <div class="bg-transparent border border-gray-300 rounded-xl p-3 shadow-3xs w-full max-w-[270px]">
+          <div class="keyboard-hints bg-transparent border border-gray-300 rounded-xl p-3 shadow-3xs w-full max-w-[270px]">
             <div class="flex items-center gap-2 mb-2">
               <i class="fa-solid fa-keyboard text-emerald-600 text-sm"></i>
               <span class="text-xs font-black text-gray-900 uppercase tracking-wider">Phím tắt</span>
@@ -95,7 +98,7 @@
         </aside>
 
         <!-- CENTER PANEL: Projects List (Block 2 - Wider Column, expands when notes view) -->
-        <section
+        <section class="project-list-panel"
           :class="viewMode === 'notes' ? 'space-y-3.5 select-none w-full' : 'space-y-3.5 select-none w-[420px] flex-shrink-0'">
 
           <!-- Skeleton Loading State -->
@@ -116,7 +119,7 @@
 
           <!-- Grouped by Customer Mode (Matches Mockup) -->
           <div v-else-if="isGroupedByCustomer" ref="scrollContainerGrouped" @scroll="handleScroll"
-            class="space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-none">
+            class="project-scroll-container space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-none">
             <div v-for="group in projectsByCustomer" :key="group.name" class="space-y-2.5">
               <!-- Customer Header -->
               <div class="flex items-center gap-2 pt-1 select-none">
@@ -148,7 +151,7 @@
 
                   <!-- Colored Project Rectangular Card (Identical to default mode) -->
                   <div @click="goToProjectDetail(project.id, $event)"
-                    class="w-[388px] ml-auto rounded-lg p-4 flex items-start justify-between gap-4 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
+                    class="project-card w-[388px] ml-auto rounded-lg p-4 flex items-center justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
                     :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]">
                     <div class="min-w-0 flex-1">
                       <div class="font-extrabold text-gray-900 text-sm sm:text-base leading-snug break-words min-w-0">
@@ -159,7 +162,8 @@
                     <div class="flex-shrink-0">
                       <!-- Pin/Star Button -->
                       <button @click.stop="togglePinProject(project)" type="button"
-                        class="p-1 cursor-pointer transition-colors"
+                        class="p-1 cursor-pointer transition-opacity"
+                        :class="Boolean(project.is_pinned) ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100 focus-visible:opacity-100'"
                         :title="Boolean(project.is_pinned) ? 'Bỏ ghim dự án' : 'Ghim dự án'">
                         <i class="text-lg transition-colors"
                           :class="Boolean(project.is_pinned) ? 'fa-solid fa-star text-gray-600' : 'fa-regular fa-star text-gray-500 hover:text-gray-700'"></i>
@@ -179,7 +183,7 @@
 
           <!-- Sticky Notes View (Grid Layout) -->
           <div v-else-if="viewMode === 'notes'" ref="scrollContainerNotes" @scroll="handleScroll"
-            class="overflow-y-auto pr-1 pt-4 pb-8 max-h-[calc(100vh-200px)] scrollbar-none">
+            class="project-scroll-container overflow-y-auto pr-1 pb-8 max-h-[calc(100vh-200px)] scrollbar-none">
             <div class="sticky-grid">
               <div v-for="project in displayedProjects" :key="project.id" :data-project-id="project.id"
                 @click="goToProjectDetail(project.id, $event)" class="note-card" :class="getStickyNoteStyle(project)">
@@ -187,7 +191,9 @@
                 <span class="note-pin" :class="getStickyNotePinStyle(project)"></span>
 
                 <!-- Checkmark (top left) when selected -->
-                <div v-if="isSelected(project.id)" class="absolute top-[6px] left-[6px] z-20 flex items-center justify-center" style="position: absolute !important; z-index: 20 !important;">
+                <div v-if="isSelected(project.id)"
+                  class="absolute top-[6px] left-[6px] z-20 flex items-center justify-center"
+                  style="position: absolute !important; z-index: 20 !important;">
                   <i class="fa-solid fa-circle-check text-[#1A7A56] text-xl bg-white rounded-full shadow-3xs"></i>
                 </div>
 
@@ -225,7 +231,7 @@
 
           <!-- Default Cards list -->
           <div v-else ref="scrollContainerDefault" @scroll="handleScroll"
-            class="space-y-3.5 max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-none ml-[-16px] mr-[16px]">
+            class="project-scroll-container space-y-3.5 max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-none ml-[-16px] mr-[16px]">
             <transition-group enter-active-class="transition duration-300 ease-out"
               enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0"
               leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
@@ -246,7 +252,7 @@
 
                 <!-- Card Container -->
                 <div @click="goToProjectDetail(project.id, $event)"
-                  class="w-[388px] ml-auto rounded-lg p-4 flex items-start justify-between gap-4 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
+                  class="project-card w-[388px] ml-auto rounded-lg p-4 flex items-start justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
                   :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]">
                   <div class="min-w-0 flex-1">
                     <div class="font-extrabold text-gray-900 text-sm sm:text-base leading-snug break-words min-w-0">
@@ -258,10 +264,11 @@
                   </div>
 
                   <div class="flex-shrink-0">
-                    <!-- Pin/Star Button -->
-                    <button @click.stop="togglePinProject(project)" type="button"
-                      class="p-1 cursor-pointer transition-colors"
-                      :title="Boolean(project.is_pinned) ? 'Bỏ ghim dự án' : 'Ghim dự án'">
+                  <!-- Pin/Star Button -->
+                  <button @click.stop="togglePinProject(project)" type="button"
+                    class="p-1 cursor-pointer transition-opacity"
+                    :class="Boolean(project.is_pinned) ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100 focus-visible:opacity-100'"
+                    :title="Boolean(project.is_pinned) ? 'Bỏ ghim dự án' : 'Ghim dự án'">
                       <i class="text-lg transition-colors"
                         :class="Boolean(project.is_pinned) ? 'fa-solid fa-star text-gray-600' : 'fa-regular fa-star text-gray-500 hover:text-gray-700'"></i>
                     </button>
@@ -292,7 +299,7 @@
 
         <!-- RIGHT PANEL: Hoạt động gần đây (Block 3 - Hidden in notes view) -->
         <section v-if="viewMode !== 'notes'"
-          class="bg-transparent flex flex-col h-[calc(100vh-200px)] select-none w-[390px] flex-shrink-0">
+          class="recent-activity-panel bg-transparent flex flex-col h-[calc(100vh-200px)] select-none w-[390px] flex-shrink-0">
 
           <!-- Skeleton Loading State -->
           <div v-if="isActivitiesLoading && displayedActivities.length === 0"
@@ -318,7 +325,7 @@
 
                   <!-- Absolute Timeline Line connecting avatars across padding boundaries -->
                   <div v-if="idx < Math.min(displayedActivities.length, 15) - 1"
-                    class="absolute top-9 bottom-0 left-[18px] w-[1.5px] bg-gray-300 z-0"></div>
+                    class="absolute top-11 bottom-2 left-[18px] w-[1.5px] bg-gray-300 z-0"></div>
 
                   <!-- Left Timeline column: Avatar -->
                   <div class="flex-shrink-0 w-9 z-10">
@@ -415,14 +422,14 @@
       leave-from-class="transform translate-y-0 opacity-100 scale-100"
       leave-to-class="transform -translate-y-10 opacity-0 scale-95">
       <div v-if="selectedProjectIds.length > 0"
-        class="fixed top-20 sm:top-[88px] left-1/2 -translate-x-1/2 z-50 bg-[#fafaf7] sm:bg-white/95 backdrop-blur-md px-3.5 py-2.5 sm:px-6 sm:py-3 rounded-2xl shadow-2xl border border-gray-200/90 flex items-center gap-2.5 sm:gap-4 max-w-4xl select-none transition-all">
+        class="bulk-action-bar fixed top-20 sm:top-[88px] left-1/2 -translate-x-1/2 z-50 bg-[#fafaf7] sm:bg-white/95 backdrop-blur-md px-3.5 py-2.5 sm:px-6 sm:py-3 rounded-2xl shadow-2xl border border-gray-200/90 flex items-center gap-2.5 sm:gap-4 max-w-4xl select-none transition-all">
         <!-- LEFT: COUNT BADGE & TEXT -->
         <div class="flex items-center gap-2 sm:gap-2.5">
           <div
             class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#fbd37d] text-gray-900 font-extrabold flex items-center justify-center text-xs sm:text-sm flex-shrink-0 shadow-2xs">
             {{ selectedProjectIds.length }}
           </div>
-          <div class="flex flex-col items-start leading-none">
+          <div class="bulk-selection-summary flex flex-col items-start leading-none">
             <span class="text-xs sm:text-sm font-extrabold text-gray-900 leading-tight whitespace-nowrap">Đã chọn {{
               selectedProjectIds.length }} dự án</span>
             <button @click="selectedProjectIds = []; showAllCheckboxes = false" type="button"
@@ -432,7 +439,7 @@
         </div>
 
         <!-- DIVIDER -->
-        <div class="h-6 w-px bg-gray-200 flex-shrink-0 mx-0.5 sm:mx-1"></div>
+        <div class="bulk-divider h-6 w-px bg-gray-200 flex-shrink-0 mx-0.5 sm:mx-1"></div>
 
         <!-- DESKTOP STATUS PILL BUTTONS (hidden on mobile) -->
         <div class="hidden sm:flex items-center gap-2">
@@ -459,7 +466,7 @@
         </div>
 
         <!-- MOBILE STATUS DROPDOWN MENU (shown on sm:hidden) -->
-        <div class="sm:hidden block relative">
+        <div class="bulk-status-control sm:hidden block relative">
           <button @click="isMobileStatusDropdownOpen = !isMobileStatusDropdownOpen" type="button"
             class="px-2.5 py-1.5 bg-white border border-gray-200 text-gray-800 font-extrabold text-xs rounded-xl flex items-center gap-1 shadow-2xs cursor-pointer">
             <span>{{ getBulkStatusLabel(selectedBulkStatus) }}</span>
@@ -487,11 +494,11 @@
         </div>
 
         <!-- DIVIDER -->
-        <div class="h-6 w-px bg-gray-200 flex-shrink-0 mx-0.5 sm:mx-1"></div>
+        <div class="bulk-divider h-6 w-px bg-gray-200 flex-shrink-0 mx-0.5 sm:mx-1"></div>
 
         <!-- RIGHT: SUBMIT "HÚ HÚ" BUTTON -->
         <button @click="goToBulkUpdate" type="button"
-          class="px-3.5 py-1.5 sm:px-5 sm:py-2.5 bg-[#45A246] hover:bg-[#3a903b] text-white font-extrabold text-xs sm:text-sm rounded-xl flex items-center gap-1.5 sm:gap-2 shadow-xs transition-colors cursor-pointer flex-shrink-0">
+          class="bulk-submit px-3.5 py-1.5 sm:px-5 sm:py-2.5 bg-[#45A246] hover:bg-[#3a903b] text-white font-extrabold text-xs sm:text-sm rounded-xl flex items-center gap-1.5 sm:gap-2 shadow-xs transition-colors cursor-pointer flex-shrink-0">
           <i class="fa-solid fa-dove text-sm"></i>
           <span>Hú Hú</span>
         </button>
@@ -736,6 +743,7 @@ const isModalOpen = ref(false)
 
 // Search input ref for keyboard shortcuts
 const searchInputRef = ref(null)
+const isMobileSearchOpen = ref(false)
 const scrollContainerDefault = ref(null)
 const scrollContainerGrouped = ref(null)
 const scrollContainerNotes = ref(null)
@@ -796,6 +804,12 @@ const goToProjectDetail = (projectId, event) => {
   // Double-click navigates to detail
   if (event.detail === 2) {
     router.push(`/projects/${projectId}`)
+    return
+  }
+
+  // Touch devices have no Ctrl/Cmd modifier, so every tap toggles selection.
+  if (window.matchMedia?.('(max-width: 767px)').matches) {
+    toggleProjectSelect(projectId)
     return
   }
 
@@ -894,8 +908,13 @@ const removeVietnameseAccents = (str) => {
 // Switcher view mode (Grouped by Customer)
 const isGroupedByCustomer = ref(false)
 const viewMode = ref('list') // 'list', 'grouped', 'notes'
+const isViewModeChanging = ref(false)
 
 watch(() => authStore.user?.view_mode, (newVal) => {
+  // Keep the optimistic selection on screen until its save request settles.
+  // This prevents an older profile response from briefly switching the layout back.
+  if (isViewModeChanging.value) return
+
   if (newVal && ['list', 'grouped', 'notes'].includes(newVal)) {
     viewMode.value = newVal
     isGroupedByCustomer.value = (newVal === 'grouped')
@@ -903,6 +922,8 @@ watch(() => authStore.user?.view_mode, (newVal) => {
 }, { immediate: true })
 
 const toggleCustomerGroup = async () => {
+  if (isViewModeChanging.value) return
+
   // Cycle through view modes: list -> grouped -> notes -> list
   let nextMode = 'list'
   if (viewMode.value === 'list') {
@@ -911,9 +932,20 @@ const toggleCustomerGroup = async () => {
     nextMode = 'notes'
   }
 
+  const previousMode = viewMode.value
+  isViewModeChanging.value = true
   viewMode.value = nextMode
   isGroupedByCustomer.value = (nextMode === 'grouped')
-  await authStore.updateViewMode(nextMode)
+
+  try {
+    await authStore.updateViewMode(nextMode)
+  } catch (error) {
+    // Keep the screen and saved preference consistent if the update fails.
+    viewMode.value = previousMode
+    isGroupedByCustomer.value = (previousMode === 'grouped')
+  } finally {
+    isViewModeChanging.value = false
+  }
 }
 
 // Pinned Customers logic
@@ -1767,6 +1799,9 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (pollTimer) clearInterval(pollTimer)
+  // Search is local to this screen; do not carry a hidden filter to the next visit.
+  projectStore.searchQuery = ''
+  isMobileSearchOpen.value = false
   window.removeEventListener('keydown', handleGlobalKeydown)
   window.removeEventListener('click', closeAllDropdowns)
 
@@ -1778,6 +1813,156 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.view-page-intro {
+  display: flex;
+}
+
+@media (max-width: 767px) {
+  .view-page-intro {
+    display: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .view-page-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+  }
+
+  .view-actions {
+    width: 100% !important;
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    margin-bottom: 12px;
+  }
+
+  .view-actions > * { margin-top: 0 !important; }
+
+  .mobile-icon-button {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    gap: 0 !important;
+  }
+
+  .create-project-action > span:last-child,
+  .view-switch-action span { display: none; }
+
+  .search-input-wrapper {
+    display: none;
+    order: 10;
+    flex-basis: 100%;
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  .search-input-wrapper.mobile-search-open { display: block; }
+  .mobile-search-toggle {
+    display: inline-flex !important;
+    border: 2px solid #4d4d4d;
+    background: transparent;
+    color: #4d4d4d;
+    align-items: center;
+    justify-content: center;
+  }
+  .keyboard-hints { display: none; }
+
+  .project-list-panel,
+  .recent-activity-panel {
+    width: 100% !important;
+    flex-shrink: 1 !important;
+  }
+
+  .project-scroll-container {
+    max-height: none !important;
+    overflow-y: visible !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .project-card {
+    width: calc(100% - 40px) !important;
+    margin-left: 40px !important;
+    padding: 12px !important;
+    min-height: 64px;
+  }
+
+  .project-list-panel input[type="checkbox"] {
+    opacity: 1 !important;
+    width: 24px !important;
+    height: 24px !important;
+    left: 8px !important;
+    cursor: pointer;
+  }
+
+  .sticky-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .note-card {
+    padding: 28px 12px 12px;
+  }
+
+  .note-pin {
+    top: 6px;
+    width: 14px;
+    height: 14px;
+  }
+
+  .note-star {
+    top: 6px;
+    right: 5px;
+    padding: 3px;
+  }
+
+  .note-header-tag {
+    font-size: 9px;
+    margin-bottom: 4px;
+  }
+
+  .note-title-text {
+    font-size: 14px;
+    line-height: 1.2;
+  }
+
+  .note-divider-line { margin-bottom: 5px; }
+  .note-sub-text { font-size: 11px; }
+
+  .bulk-action-bar {
+    top: 84px !important;
+    bottom: auto;
+    width: calc(100% - 24px);
+    max-width: 420px;
+    padding: 8px 10px !important;
+    justify-content: space-between;
+    gap: 8px !important;
+  }
+
+  .bulk-selection-summary > span { display: none; }
+  .bulk-selection-summary button { margin-top: 0 !important; }
+  .bulk-divider { display: none; }
+  .bulk-status-control { flex-shrink: 0; }
+  .bulk-submit { flex-shrink: 0; }
+
+  .recent-activity-panel {
+    height: auto !important;
+    margin-top: 20px;
+  }
+}
+
+@media (min-width: 768px) {
+  .mobile-search-toggle { display: none !important; }
+}
+
 .main-grid-standard {
   display: grid;
   grid-template-columns: 1fr;
@@ -1811,7 +1996,6 @@ onUnmounted(() => {
   grid-template-columns: repeat(auto-fill, minmax(220px, 260px));
   gap: 28px 32px;
   justify-content: start;
-  padding-top: 16px;
 }
 
 @media (max-width: 780px) {
@@ -1868,7 +2052,6 @@ onUnmounted(() => {
   z-index: 2;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 28px 10px at 50% 0, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0) 75%),
     linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 15%),
     linear-gradient(225deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0) 20%);
 }
@@ -1926,7 +2109,7 @@ onUnmounted(() => {
 /* Metallic dome pushpin at top center */
 .note-pin {
   position: absolute;
-  top: -9px;
+  top: 8px;
   left: 50%;
   transform: translateX(-50%);
   width: 16px;
@@ -2061,5 +2244,17 @@ onUnmounted(() => {
 
 .note-green .note-sub-text {
   color: rgba(15, 35, 20, 0.65);
+}
+
+/* Mobile/tablet layout: keep sticky notes in two columns and pin actions touch-visible. */
+@media (max-width: 1023px) {
+  .sticky-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .project-card button {
+    opacity: 1 !important;
+  }
 }
 </style>

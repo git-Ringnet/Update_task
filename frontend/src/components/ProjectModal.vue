@@ -161,6 +161,7 @@
               <span class="text-[10px] font-bold text-gray-400">Có thể thêm/xóa sau</span>
             </div>
             <MemberPicker
+              ref="memberPickerRef"
               v-model="form.member_ids"
               :users="users"
               :creator-id="effectiveCreatorId"
@@ -307,6 +308,7 @@ const emit = defineEmits(['close', 'submit', 'customer-created'])
 // Refs for keyboard navigation
 const titleInputRef = ref(null)
 const customerInputRef = ref(null)
+const memberPickerRef = ref(null)
 const highlightedIndex = ref(-1)
 
 // Project Form States
@@ -409,8 +411,9 @@ const selectCustomer = (c) => {
   isOpenDropdown.value = false
   highlightedIndex.value = -1
   
-  // Blur customer input after selection so next Enter will submit form
-  customerInputRef.value?.blur()
+  nextTick(() => {
+    memberPickerRef.value?.focus()
+  })
 }
 
 // Keyboard navigation for customer dropdown
