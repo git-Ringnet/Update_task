@@ -108,15 +108,22 @@
             <div class="tv-broadcast-frame" :class="currentBroadcast?.type === 'bad' ? 'is-bad' : 'is-good'">
               <div class="tv-broadcast-screen">
                 <template v-if="currentBroadcast && currentBroadcast.type !== 'bad'">
-                  <div v-if="currentBroadcast.recipient" class="flex items-center gap-2.5">
-                    <img :src="broadcastPerson?.avatar || defaultAvatar" :alt="broadcastPerson?.name || 'Thành viên'" class="tv-broadcast-avatar" />
-                    <div class="min-w-0">
-                      <p class="tv-broadcast-label">TỐT</p>
-                      <p class="tv-broadcast-name"><i class="fa-solid fa-star tv-broadcast-star"></i>{{ broadcastPerson?.name || 'Xương Rồng' }}</p>
+                  <div v-if="currentBroadcast.recipient">
+                    <div class="flex items-center gap-2.5">
+                      <img :src="broadcastPerson?.avatar || defaultAvatar" :alt="broadcastPerson?.name || 'Thành viên'" class="tv-broadcast-avatar" />
+                      <div class="min-w-0">
+                        <p class="tv-broadcast-name">{{ broadcastPerson?.name || 'Xương Rồng' }}</p>
+                        <p class="tv-broadcast-label tv-broadcast-label-green">
+                          <i class="fa-solid fa-star tv-broadcast-star"></i> ĐỈNH CỦA CHÓP
+                        </p>
+                      </div>
                     </div>
+                    <p class="tv-broadcast-content">{{ currentBroadcast.content }}</p>
                   </div>
-                  <p v-else class="tv-broadcast-label tv-broadcast-label-standalone">TỐT</p>
-                  <p class="tv-broadcast-content">{{ currentBroadcast.content }}</p>
+                  <div v-else class="tv-broadcast-good">
+                    <p class="tv-broadcast-good-label"><i class="fa-solid fa-circle-check"></i> ĐỈNH CỦA CHÓP</p>
+                    <p class="tv-broadcast-good-content">{{ currentBroadcast.content }}</p>
+                  </div>
                 </template>
                 <template v-else-if="currentBroadcast">
                   <div class="tv-broadcast-bad">
@@ -1683,7 +1690,13 @@ const parseCommentFiles = (content) => {
     matches.push({ name: m[1], url: m[2] })
   }
 
-  // 2. HTML file spans <span...>📎 Tệp đính kèm: name</span>
+  // 2. New server-backed attachment links.
+  const htmlLinkRegex = /<a\b[^>]*\bhref=["']([^"']+)["'][^>]*>[\s\S]*?📎\s*Tệp đính kèm:\s*([^<]+)<\/a>/gi
+  while ((m = htmlLinkRegex.exec(content)) !== null) {
+    matches.push({ name: m[2].trim().replace(/&quot;/g, '"'), url: m[1] })
+  }
+
+  // 3. Legacy HTML file spans <span...>📎 Tệp đính kèm: name</span>
   const htmlRegex = /<span[^>]*>📎\s*Tệp đính kèm:\s*([^<]+)<\/span>/gi
   while ((m = htmlRegex.exec(content)) !== null) {
     const rawName = m[1].trim()
@@ -1737,7 +1750,8 @@ const displayedActivities = computed(() => {
 
 const fetchActivities = async () => {
   try {
-    const res = await axios.get('/api/comments')
+    // This panel renders at most 15 entries; do not fetch the full activity history.
+    const res = await axios.get('/api/comments', { params: { limit: 15 } })
     const filtered = (res.data || []).filter(c => {
       return Boolean(c.project_id)
     })
@@ -1920,7 +1934,7 @@ onMounted(async () => {
     if (broadcasts.value.length > 1) {
       currentBroadcastIndex.value = (currentBroadcastIndex.value + 1) % broadcasts.value.length
     }
-  }, 8000)
+  }, 300000) // 5 minutes
 })
 
 onUnmounted(() => {
@@ -2420,12 +2434,16 @@ onUnmounted(() => {
 .tv-broadcast-avatar { width: 48px; height: 48px; object-fit: cover; border: 3px solid #71df8b; border-radius: 999px; box-shadow: 0 0 10px rgba(87, 235, 120, .65); }
 .tv-broadcast-frame.is-bad .tv-broadcast-avatar { border-color: #f58a86; box-shadow: 0 0 8px rgba(245, 110, 104, .65); }
 .tv-broadcast-label { margin: 0; color: #b4c9b7; font-size: 10px; font-weight: 900; letter-spacing: .14em; }
+.tv-broadcast-label-green { color: #57eb78 !important; font-size: 11px; font-weight: 900; letter-spacing: .1em; margin-top: 2px; }
 .tv-broadcast-label-standalone { padding-top: 2px; }
 .tv-broadcast-name { margin: 2px 0 0; overflow: hidden; color: white; font-size: 14px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }.tv-broadcast-star { margin-right: 4px; color: #f5dc55; font-size: 11px; filter: drop-shadow(0 0 3px rgba(245, 220, 85, .7)); }
 .tv-broadcast-content { display: -webkit-box; margin: 18px 0 0; overflow: hidden; font-size: 14px; font-weight: 700; line-height: 1.36; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
 .tv-broadcast-bad { height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 13px; }
 .tv-broadcast-bad-label { margin: 0; color: #ff8d88; font-size: 11px; font-weight: 900; letter-spacing: .1em; }.tv-broadcast-bad-label i { margin-right: 5px; color: #f1554e; font-size: 13px; }
 .tv-broadcast-bad-content { display: -webkit-box; margin: 0; overflow: hidden; color: #fff4f2; font-size: 16px; font-weight: 800; line-height: 1.4; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
+.tv-broadcast-good { height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 13px; }
+.tv-broadcast-good-label { margin: 0; color: #8df29c; font-size: 11px; font-weight: 900; letter-spacing: .1em; }.tv-broadcast-good-label i { margin-right: 5px; color: #57eb78; font-size: 13px; }
+.tv-broadcast-good-content { display: -webkit-box; margin: 0; overflow: hidden; color: #eef8ef; font-size: 16px; font-weight: 800; line-height: 1.4; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
 .tv-broadcast-empty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; color: #b3c7b7; font-size: 11px; font-weight: 800; text-align: center; }.tv-broadcast-empty i { color: #7be293; font-size: 23px; }
 .tv-broadcast-console { position: absolute; right: 13px; bottom: 8px; left: 13px; display: flex; align-items: center; gap: 3px; height: 12px; }.tv-broadcast-console span { width: 45px; height: 2px; border-radius: 999px; background: #080a09; box-shadow: 0 1px rgba(255, 255, 255, .1); }.tv-broadcast-console button { width: 20px; height: 20px; padding: 0; border: 1px solid #737773; border-radius: 50%; color: #e8eee8; background: #1b1e1c; font-size: 8px; cursor: pointer; }.tv-broadcast-console button:first-of-type { margin-left: auto; }.tv-broadcast-console button:hover:not(:disabled) { color: #8df29c; border-color: #8df29c; }.tv-broadcast-console button:disabled { opacity: .35; cursor: not-allowed; }.tv-broadcast-console .tv-broadcast-power { width: 7px; height: 7px; margin-left: 6px; border-radius: 50%; background: #7aea89; box-shadow: 0 0 5px #7aea89; }
 .tv-broadcast-leg { position: absolute; z-index: -1; bottom: -19px; width: 16px; height: 28px; border: 1px solid #0b0c0b; border-radius: 3px 3px 5px 5px; background: linear-gradient(90deg, #101211, #292b29 55%, #0d0f0e); box-shadow: inset 0 2px 2px rgba(255, 255, 255, .12), 0 5px 6px rgba(0, 0, 0, .24); }.tv-broadcast-leg-left { left: 37px; transform: skew(-14deg) rotate(5deg); }.tv-broadcast-leg-right { right: 37px; transform: skew(14deg) rotate(-5deg); }

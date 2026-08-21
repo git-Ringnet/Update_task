@@ -14,6 +14,12 @@ export default defineConfig({
       '/api': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
+      },
+      // Legacy and newly-uploaded attachments use /storage URLs. Proxy them
+      // in development instead of letting Vite return its HTML fallback.
+      '/storage': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
       }
     }
   },

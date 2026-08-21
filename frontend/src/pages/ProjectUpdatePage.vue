@@ -302,10 +302,14 @@
                         title="Chọn người phụ trách / Tag tên">
                         <i class="fa-regular fa-user text-sm"></i>
                         <span v-if="taggedUsersMap[project.id] && taggedUsersMap[project.id].length > 0">
-                          {{ taggedUsersMap[project.id].map(id => {
-                            const u = usersList.find(user => String(user.id) === String(id));
-                            return u ? '@' + u.name : '';
-                          }).filter(Boolean).join(' ') }}
+                          {{ (() => {
+                            const names = taggedUsersMap[project.id].map(id => {
+                              const u = usersList.find(user => String(user.id) === String(id));
+                              return u ? '@' + u.name : '';
+                            }).filter(Boolean);
+                            if (names.length === 0) return '';
+                            return names[0] + (names.length > 1 ? ' ...' : '');
+                          })() }}
                         </span>
                         <span v-else>Tag tên</span>
                       </button>
@@ -365,12 +369,19 @@
                     </div>
 
                     <!-- Submit "Hú hú!" Button (Vô hiệu hóa khi có chặng nhưng chưa chọn chặng) -->
+                    <div v-if="isSaving[project.id] && uploadProgress[project.id] !== null" class="w-20 self-center">
+                      <div class="h-1.5 overflow-hidden rounded-full bg-emerald-100">
+                        <div class="h-full rounded-full bg-emerald-600 transition-all duration-200" :style="{ width: `${uploadProgress[project.id]}%` }"></div>
+                      </div>
+                      <p class="mt-1 text-center text-[9px] font-bold text-emerald-700">{{ uploadProgress[project.id] }}%</p>
+                    </div>
                     <button type="submit"
                       :disabled="(getActiveMilestonesForProject(project).length > 0 && !selectedMilestoneMap[project.id]) || isSaving[project.id]"
                       class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#45A246] hover:bg-[#3a903b] text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                      <i class="fa-solid fa-dove text-sm"></i>
-                      <span>{{ isSaving[project.id] ? 'Đang lưu...' : 'Hú hú!' }}</span>
-                      <i class="fa-solid fa-chevron-down text-[10px] opacity-80"></i>
+                      <i v-if="!isSaving[project.id]" class="fa-solid fa-dove text-sm"></i>
+                      <svg v-else class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                      <span>{{ isSaving[project.id] ? 'Đang tải lên...' : 'Hú hú!' }}</span>
+                      <i v-if="!isSaving[project.id]" class="fa-solid fa-chevron-down text-[10px] opacity-80"></i>
                     </button>
                   </div>
 
@@ -465,6 +476,7 @@ const attachedFiles = reactive({})
 const savedTimes = reactive({})
 const isSaved = reactive({})
 const isSaving = reactive({})
+const uploadProgress = reactive({})
 
 // Per-project milestone, assignee, date and time maps
 const selectedMilestoneMap = reactive({})
@@ -563,16 +575,41 @@ const removeVietnameseAccents = (str) => {
 }
 
 const filteredUsersForMention = computed(() => {
-  if (!mentionQuery.value) return usersList.value
+  const projectId = activeMentionProjectId.value
+  const currentText = updateTexts[projectId] || ''
+  
+  // Find which users are already tagged in the text
+  const taggedUserIds = new Set()
+  let tempText = currentText
+  
+  // Sort users by name length descending to avoid partial matches
+  const sortedUsers = usersList.value.slice().sort((a, b) => b.name.length - a.name.length)
+  
+  sortedUsers.forEach(u => {
+    if (u && u.name) {
+      const escapedName = u.name.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
+      const regex = new RegExp('@' + escapedName + '(?=\\s|$|[,.;:!?()])', 'i')
+      if (regex.test(tempText)) {
+        taggedUserIds.add(String(u.id))
+        tempText = tempText.replace(regex, '[TAGGED]')
+      }
+    }
+  })
+  
+  // Filter out users that are already tagged
+  const availableUsers = usersList.value.filter(u => !taggedUserIds.has(String(u.id)))
+
+  if (!mentionQuery.value) return availableUsers
+  
   const q = removeVietnameseAccents(mentionQuery.value).toLowerCase()
-  const firstWordMatches = usersList.value.filter(u => {
+  const firstWordMatches = availableUsers.filter(u => {
     const nameAcc = removeVietnameseAccents(u.name).toLowerCase()
     return nameAcc.split(/\s+/)[0]?.startsWith(q)
   })
 
   if (firstWordMatches.length > 0) return firstWordMatches
 
-  return usersList.value.filter(u => {
+  return availableUsers.filter(u => {
     const words = removeVietnameseAccents(u.name).toLowerCase().split(/\s+/)
     return words.slice(1).some(word => word.startsWith(q))
   })
@@ -908,24 +945,26 @@ const handleFileSelect = async (projectId, event) => {
 
   for (const file of Array.from(files)) {
     const isImg = file.type.startsWith('image/')
-    let fileUrl = ''
     if (isImg) {
-      fileUrl = await compressImage(file)
+      const fileUrl = await compressImage(file)
+      attachedFiles[projectId].push({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url: fileUrl,
+        isImage: true
+      })
     } else {
-      fileUrl = await new Promise((resolve) => {
-        const reader = new FileReader()
-        reader.onload = (e) => resolve(e.target.result)
-        reader.readAsDataURL(file)
+      // Keep original File object for server upload later (avoid base64 bloat)
+      attachedFiles[projectId].push({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url: null,
+        isImage: false,
+        file: file
       })
     }
-
-    attachedFiles[projectId].push({
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      url: fileUrl,
-      isImage: isImg
-    })
     isSaved[projectId] = false
   }
 
@@ -1120,6 +1159,7 @@ const loadProjects = async () => {
 const saveUpdate = async (projectId) => {
   if (isSaving[projectId] || isSaved[projectId]) return
   isSaving[projectId] = true
+  uploadProgress[projectId] = null
 
   let text = updateTexts[projectId]?.trim() || ''
   const files = attachedFiles[projectId] || []
@@ -1127,17 +1167,6 @@ const saveUpdate = async (projectId) => {
   if (!text && files.length === 0) {
     isSaving[projectId] = false
     return
-  }
-
-  let titleText = text
-  if (files.length > 0) {
-    for (const f of files) {
-      if (f.isImage) {
-        titleText += `<br/><img src="${f.url}" class="max-h-56 rounded-xl my-2 border border-gray-200 shadow-2xs block" />`
-      } else {
-        titleText += `<br/><span class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 my-1">📎 Tệp đính kèm: ${f.name}</span>`
-      }
-    }
   }
 
   const project = projects.value.find(p => p.id === projectId)
@@ -1148,6 +1177,44 @@ const saveUpdate = async (projectId) => {
     isSaving[projectId] = false
     return
   }
+
+  let titleText = text
+  const uploadedAttachmentIds = []
+  if (files.length > 0) {
+    // Upload non-image files to server; images stay inline (small after compression)
+    for (const f of files) {
+      if (f.isImage) {
+        titleText += `<br/><img src="${f.url}" class="max-h-56 rounded-xl my-2 border border-gray-200 shadow-2xs block" />`
+      } else if (f.file) {
+        // Upload to server
+        try {
+          const formData = new FormData()
+          formData.append('files[]', f.file)
+          const uploadRes = await axios.post('/api/attachments', formData, {
+            onUploadProgress: (event) => {
+              if (event.total) uploadProgress[projectId] = Math.round((event.loaded * 100) / event.total)
+            }
+          })
+          const uploaded = uploadRes.data?.[0]
+          if (!uploaded) throw new Error('Máy chủ không trả về thông tin tệp đã tải lên.')
+          uploadedAttachmentIds.push(uploaded.id)
+          const serverUrl = uploaded.url
+          const safeName = (uploaded.original_name || f.name).replace(/</g, '&lt;').replace(/"/g, '&quot;')
+          titleText += `<br/><a href="${serverUrl}" download="${safeName}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 my-1">📎 Tệp đính kèm: ${safeName}</a>`
+        } catch (uploadErr) {
+          console.error('Failed to upload file:', f.name, uploadErr)
+          toast.error(`Không thể tải lên tệp ${f.name}. Vui lòng thử lại.`)
+          isSaving[projectId] = false
+          uploadProgress[projectId] = null
+          return
+        }
+      } else {
+        // Fallback for files without File object (e.g. already embedded)
+        titleText += `<br/><span class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 my-1">📎 Tệp đính kèm: ${f.name}</span>`
+      }
+    }
+  }
+
   const selectedAssigneeId = assigneeMap[projectId] ? Number(assigneeMap[projectId]) : null
 
   let selectedDueDate = null
@@ -1230,7 +1297,8 @@ const saveUpdate = async (projectId) => {
       priority: 'medium',
       due_date: selectedDueDate,
       created_by: currentUserId,
-      tagged_user_ids: taggedIds.map(Number)
+      tagged_user_ids: taggedIds.map(Number),
+      attachment_ids: uploadedAttachmentIds
     })
 
 
@@ -1255,6 +1323,7 @@ const saveUpdate = async (projectId) => {
     toast.error('Lưu cập nhật thất bại!')
   } finally {
     isSaving[projectId] = false
+    uploadProgress[projectId] = null
   }
 }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Task;
 use App\Models\Project;
 use App\Models\Comment;
+use App\Models\Attachment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -14,7 +15,7 @@ class TaskController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Task::with(['project.customer', 'assignee', 'creator'])
+        $query = Task::with(['project.customer', 'assignee', 'creator', 'attachments'])
             ->orderBy('created_at', 'desc');
 
         $query->whereHas('project', fn ($q) => $q->visibleTo(auth()->user()));
@@ -45,6 +46,8 @@ class TaskController extends Controller
             'health' => 'nullable|string',
             'tagged_user_ids' => 'nullable|array',
             'tagged_user_ids.*' => Rule::exists('users', 'id')->where('is_admin', 0),
+            'attachment_ids' => 'nullable|array',
+            'attachment_ids.*' => 'integer|exists:attachments,id',
         ]);
 
         $project = Project::findOrFail($validated['project_id']);
@@ -53,10 +56,20 @@ class TaskController extends Controller
             abort_unless($project->milestones()->whereKey($validated['milestone_id'])->exists(), 422, 'Cột mốc không thuộc dự án.');
         }
         $taggedUserIds = $validated['tagged_user_ids'] ?? [];
-        unset($validated['tagged_user_ids']);
+        $attachmentIds = $validated['attachment_ids'] ?? [];
+        unset($validated['tagged_user_ids'], $validated['attachment_ids']);
         $validated['created_by'] = auth()->id();
         $task = Task::create($validated);
-        $task->load(['project', 'assignee', 'creator']);
+
+        // Link uploaded attachments to this task
+        if (!empty($attachmentIds)) {
+            Attachment::whereIn('id', $attachmentIds)
+                ->where('uploaded_by', auth()->id())
+                ->whereNull('task_id')
+                ->update(['task_id' => $task->id]);
+        }
+
+        $task->load(['project', 'assignee', 'creator', 'attachments']);
 
         // Update project last activity
         Project::where('id', $task->project_id)->update(['last_activity_at' => Carbon::now()]);
@@ -119,6 +132,8 @@ class TaskController extends Controller
             'health' => 'nullable|string',
             'tagged_user_ids' => 'nullable|array',
             'tagged_user_ids.*' => Rule::exists('users', 'id')->where('is_admin', 0),
+            'attachment_ids' => 'nullable|array',
+            'attachment_ids.*' => 'integer|exists:attachments,id',
         ]);
 
         $task = Task::findOrFail($id);
@@ -128,9 +143,19 @@ class TaskController extends Controller
             abort_unless($project->milestones()->whereKey($validated['milestone_id'])->exists(), 422, 'Cột mốc không thuộc dự án.');
         }
         $taggedUserIds = $validated['tagged_user_ids'] ?? [];
-        unset($validated['tagged_user_ids']);
+        $attachmentIds = $validated['attachment_ids'] ?? [];
+        unset($validated['tagged_user_ids'], $validated['attachment_ids']);
         $task->update($validated);
-        $task->load(['project', 'assignee']);
+
+        // Link newly uploaded attachments to this task
+        if (!empty($attachmentIds)) {
+            Attachment::whereIn('id', $attachmentIds)
+                ->where('uploaded_by', auth()->id())
+                ->whereNull('task_id')
+                ->update(['task_id' => $task->id]);
+        }
+
+        $task->load(['project', 'assignee', 'attachments']);
 
         // Update project last activity
         Project::where('id', $task->project_id)->update(['last_activity_at' => Carbon::now()]);

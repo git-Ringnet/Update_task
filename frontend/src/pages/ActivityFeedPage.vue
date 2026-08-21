@@ -307,7 +307,13 @@ const parseCommentFiles = (content) => {
     matches.push({ name: m[1] || 'Tài liệu', url: m[2] })
   }
 
-  // 2. HTML file spans <span...>📎 Tệp đính kèm: name</span>
+  // 2. New server-backed attachment links.
+  const htmlLinkRegex = /<a\b[^>]*\bhref=["']([^"']+)["'][^>]*>[\s\S]*?📎\s*Tệp đính kèm:\s*([^<]+)<\/a>/gi
+  while ((m = htmlLinkRegex.exec(content)) !== null) {
+    matches.push({ name: m[2].trim().replace(/&quot;/g, '"') || 'Tài liệu', url: m[1] })
+  }
+
+  // 3. Legacy HTML file spans <span...>📎 Tệp đính kèm: name</span>
   const htmlRegex = /<span[^>]*>📎\s*Tệp đính kèm:\s*([^<]+)<\/span>/gi
   while ((m = htmlRegex.exec(content)) !== null) {
     const rawName = m[1].trim()

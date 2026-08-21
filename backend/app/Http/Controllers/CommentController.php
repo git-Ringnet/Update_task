@@ -25,6 +25,13 @@ class CommentController extends Controller
             $query->where('task_id', $request->task_id);
         }
 
+        // The dashboard only renders a short recent-activity list. Let callers
+        // request that small window instead of serializing the full history.
+        $limit = $request->integer('limit');
+        if ($limit > 0) {
+            $query->limit(min($limit, 100));
+        }
+
         $comments = $query->get();
         return response()->json($comments);
     }

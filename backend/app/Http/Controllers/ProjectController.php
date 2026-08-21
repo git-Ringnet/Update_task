@@ -69,7 +69,7 @@ class ProjectController extends Controller
     public function show($id)
     {
         $project = Project::visibleTo(auth()->user())
-            ->with(['customer', 'lead', 'creator', 'tasks.assignee', 'comments.user', 'milestones.creator', 'milestones.tasks.assignee', 'members'])
+            ->with(['customer', 'lead', 'creator', 'tasks.assignee', 'tasks.attachments', 'comments.user', 'milestones.creator', 'milestones.tasks.assignee', 'milestones.tasks.attachments', 'members'])
             ->findOrFail($id);
         $project->applyPinnedStateForUser(auth()->id());
 

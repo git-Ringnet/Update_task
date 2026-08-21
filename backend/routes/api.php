@@ -6,6 +6,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\BroadcastController;
+use App\Http\Controllers\AttachmentController;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -238,6 +239,9 @@ Route::middleware('auth.token')->group(function () {
     Route::put('/tasks/{id}', [TaskController::class, 'update']);
     Route::patch('/tasks/{id}/status', [TaskController::class, 'updateStatus']);
     Route::delete('/tasks/{id}', [TaskController::class, 'destroy']);
+
+    // Attachments (file uploads)
+    Route::post('/attachments', [AttachmentController::class, 'store']);
 
     // Comments
     Route::get('/comments', [CommentController::class, 'index']);

@@ -950,10 +950,14 @@
                       title="Chọn người phụ trách / Tag tên">
                       <i class="fa-regular fa-user text-sm"></i>
                       <span v-if="newStageTaskTaggedUsers.length > 0">
-                        {{ newStageTaskTaggedUsers.map(id => {
-                          const u = users.find(user => String(user.id) === String(id));
-                          return u ? '@' + u.name : '';
-                        }).filter(Boolean).join(' ') }}
+                        {{ (() => {
+                          const names = newStageTaskTaggedUsers.map(id => {
+                            const u = users.find(user => String(user.id) === String(id));
+                            return u ? '@' + u.name : '';
+                          }).filter(Boolean);
+                          if (names.length === 0) return '';
+                          return names[0] + (names.length > 1 ? ' ...' : '');
+                        })() }}
                       </span>
                       <span v-else>Tag tên</span>
                     </button>
@@ -1017,11 +1021,18 @@
                   </div>
 
                   <!-- Submit button -->
+                  <div v-if="isSubmittingStageTask && uploadProgress !== null" class="w-20 self-center">
+                    <div class="h-1.5 overflow-hidden rounded-full bg-emerald-100">
+                      <div class="h-full rounded-full bg-emerald-600 transition-all duration-200" :style="{ width: `${uploadProgress}%` }"></div>
+                    </div>
+                    <p class="mt-1 text-center text-[9px] font-bold text-emerald-700">{{ uploadProgress }}%</p>
+                  </div>
                   <button type="submit" :disabled="isSubmittingStageTask"
                     class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#45A246] hover:bg-[#3a903b] text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer disabled:cursor-wait disabled:opacity-60">
-                    <i class="fa-solid fa-dove text-sm"></i>
-                    <span>{{ editingTaskId ? 'Lưu' : 'Hú hú!' }}</span>
-                    <i class="fa-solid fa-chevron-down text-[10px] opacity-80"></i>
+                    <i v-if="!isSubmittingStageTask" class="fa-solid fa-dove text-sm"></i>
+                    <svg v-else class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                    <span>{{ isSubmittingStageTask ? 'Đang tải lên...' : (editingTaskId ? 'Lưu' : 'Hú hú!') }}</span>
+                    <i v-if="!isSubmittingStageTask" class="fa-solid fa-chevron-down text-[10px] opacity-80"></i>
                   </button>
                 </div>
 
@@ -1465,6 +1476,7 @@ const showPersonPicker = ref(false)
 const showDateTimePicker = ref(false)
 const personPickerRef = ref(null)
 const isSubmittingStageTask = ref(false)
+const uploadProgress = ref(null)
 
 // ATTACHMENTS & CLIPBOARD PASTED IMAGES STATE
 const attachedFiles = ref([])
@@ -1621,17 +1633,42 @@ const parseAttachmentsFromTitle = (titleText) => {
 
 const buildAttachmentHtml = async (attachments) => {
   let html = ''
+  const uploadedAttachmentIds = []
   for (const att of attachments) {
-    const dataUrl = await readAttachmentDataUrl(att)
-    if (!dataUrl) continue
     const safeName = escapeHtmlAttr(att.name || 'file')
     if (att.isImage) {
+      // Images: compress and embed inline (small after compression)
+      const dataUrl = await readAttachmentDataUrl(att)
+      if (!dataUrl) continue
       html += `<br/><img src="${dataUrl}" class="max-h-56 rounded-xl my-2 border border-gray-200 shadow-2xs block" />`
+    } else if (att.file && !att.isExisting) {
+      // New non-image file: upload to server
+      try {
+        const formData = new FormData()
+        formData.append('files[]', att.file)
+        const uploadRes = await axios.post('/api/attachments', formData, {
+          onUploadProgress: (event) => {
+            if (event.total) uploadProgress.value = Math.round((event.loaded * 100) / event.total)
+          }
+        })
+        const uploaded = uploadRes.data?.[0]
+        if (!uploaded) throw new Error('Máy chủ không trả về thông tin tệp đã tải lên.')
+        uploadedAttachmentIds.push(uploaded.id)
+        const serverUrl = uploaded.url
+        const uploadedName = escapeHtmlAttr(uploaded.original_name || att.name)
+        html += `<br/><a href="${serverUrl}" download="${uploadedName}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 my-1">📎 Tệp đính kèm: ${uploadedName}</a>`
+      } catch (uploadErr) {
+        console.error('Failed to upload file:', att.name, uploadErr)
+        throw new Error(`Không thể tải lên tệp ${att.name}.`)
+      }
+    } else if (att.isExisting && att.dataUrl) {
+      // Existing attachment: preserve as-is (backward compatible)
+      html += `<br/><a href="${att.dataUrl}" download="${safeName}" class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 my-1">📎 Tệp đính kèm: ${safeName}</a>`
     } else {
-      html += `<br/><a href="${dataUrl}" download="${safeName}" class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 my-1">📎 Tệp đính kèm: ${safeName}</a>`
+      html += `<br/><span class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 my-1">📎 Tệp đính kèm: ${safeName}</span>`
     }
   }
-  return html
+  return { html, uploadedAttachmentIds }
 }
 
 const stripAttachmentsFromTitle = (titleText) => {
@@ -1945,9 +1982,33 @@ const hasMentionsInTitle = computed(() => {
 })
 
 const filteredUsersForMention = computed(() => {
-  if (!mentionQuery.value) return users.value
+  const currentText = newStageTaskTitle.value || ''
+  
+  // Find which users are already tagged in the text
+  const taggedUserIds = new Set()
+  let tempText = currentText
+  
+  // Sort users by name length descending to avoid partial matches
+  const sortedUsers = [...users.value].sort((a, b) => (b.name || '').length - (a.name || '').length)
+  
+  sortedUsers.forEach(u => {
+    if (u && u.name) {
+      const escapedName = u.name.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
+      const regex = new RegExp('@' + escapedName + '(?=\\s|$|[,.;:!?()])', 'i')
+      if (regex.test(tempText)) {
+        taggedUserIds.add(String(u.id))
+        tempText = tempText.replace(regex, '[TAGGED]')
+      }
+    }
+  })
+  
+  // Filter out users that are already tagged
+  const availableUsers = users.value.filter(u => !taggedUserIds.has(String(u.id)))
+
+  if (!mentionQuery.value) return availableUsers
+  
   const q = removeVietnameseAccents(mentionQuery.value).toLowerCase()
-  const firstWordMatches = users.value.filter(u => {
+  const firstWordMatches = availableUsers.filter(u => {
     const nameAcc = removeVietnameseAccents(u.name).toLowerCase()
     return nameAcc.split(/\s+/)[0]?.startsWith(q)
   })
@@ -1956,7 +2017,7 @@ const filteredUsersForMention = computed(() => {
   // name matches, e.g. @K => Khanh, but @Ka can reveal Cảnh Kaynblue.
   if (firstWordMatches.length > 0) return firstWordMatches
 
-  return users.value.filter(u => {
+  return availableUsers.filter(u => {
     const words = removeVietnameseAccents(u.name).toLowerCase().split(/\s+/)
     return words.slice(1).some(word => word.startsWith(q))
   })
@@ -3119,6 +3180,7 @@ const handleAddStageTaskSubmit = async () => {
   if (!newStageTaskTitle.value.trim() && attachedFiles.value.length === 0) return
 
   isSubmittingStageTask.value = true
+  uploadProgress.value = null
   const pId = projectId.value
 
   // Update project health if it changed before submitting task
@@ -3134,11 +3196,21 @@ const handleAddStageTaskSubmit = async () => {
   const msId = newStageTaskMilestoneId.value || (selectedTargetMilestoneId.value && !selectedMilestone.value?.is_completed ? selectedTargetMilestoneId.value : null) || (activeTargetMilestones.value[0]?.id || null)
 
   let titleText = newStageTaskTitle.value.trim()
+  let uploadedAttachmentIds = []
 
-  if (attachedFiles.value.length > 0) {
-    titleText += await buildAttachmentHtml(attachedFiles.value)
+  try {
+    if (attachedFiles.value.length > 0) {
+      const result = await buildAttachmentHtml(attachedFiles.value)
+      titleText += result.html
+      uploadedAttachmentIds = result.uploadedAttachmentIds
+    }
+  } catch (err) {
+    console.error('Failed to upload attachments:', err)
+    toast.error(err.message || 'Tải tệp lên thất bại. Vui lòng thử lại.')
+    isSubmittingStageTask.value = false
+    uploadProgress.value = null
+    return
   }
-  clearAttachedFiles()
 
   const finalDueTime = newStageTaskDueTime.value || null
   const finalDueDate = newStageTaskDueDate.value || (finalDueTime ? getTodayDateString() : null)
@@ -3190,10 +3262,12 @@ const handleAddStageTaskSubmit = async () => {
         priority: 'medium',
         due_date: selectedDueDate,
         health: newStageTaskHealth.value,
-        tagged_user_ids: newStageTaskTaggedUsers.value.map(Number)
+        tagged_user_ids: newStageTaskTaggedUsers.value.map(Number),
+        attachment_ids: uploadedAttachmentIds
       })
       toast.success('Đã cập nhật thông tin hoạt động!')
       await fetchProjectDetail()
+      clearAttachedFiles()
     } catch (err) {
       console.error('Failed to update task:', err)
       toast.error('Cập nhật hoạt động thất bại!')
@@ -3237,7 +3311,8 @@ const handleAddStageTaskSubmit = async () => {
       due_date: selectedDueDate,
       created_by: currentUserId,
       health: newStageTaskHealth.value,
-      tagged_user_ids: newStageTaskTaggedUsers.value.map(Number)
+      tagged_user_ids: newStageTaskTaggedUsers.value.map(Number),
+      attachment_ids: uploadedAttachmentIds
     })
 
     const created = res.data || newTaskObj
@@ -3253,6 +3328,7 @@ const handleAddStageTaskSubmit = async () => {
 
     toast.success('Đã cập nhật hoạt động mới!')
     await fetchProjectDetail()
+    clearAttachedFiles()
   } catch (err) {
     if (!project.value.tasks) project.value.tasks = []
     project.value.tasks.unshift(newTaskObj)
@@ -3274,6 +3350,7 @@ const handleAddStageTaskSubmit = async () => {
     newStageTaskDueTime.value = ''
     isInlineFormOpen.value = false
     isSubmittingStageTask.value = false
+    uploadProgress.value = null
     adjustTextareaHeight()
   }
 }
