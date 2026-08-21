@@ -1947,10 +1947,18 @@ const hasMentionsInTitle = computed(() => {
 const filteredUsersForMention = computed(() => {
   if (!mentionQuery.value) return users.value
   const q = removeVietnameseAccents(mentionQuery.value).toLowerCase()
-  return users.value.filter(u => {
+  const firstWordMatches = users.value.filter(u => {
     const nameAcc = removeVietnameseAccents(u.name).toLowerCase()
-    const words = nameAcc.split(/\s+/)
-    return nameAcc.startsWith(q) || words.some(w => w.startsWith(q))
+    return nameAcc.split(/\s+/)[0]?.startsWith(q)
+  })
+
+  // Prefer the name's first word. Only fall back to later words when no first
+  // name matches, e.g. @K => Khanh, but @Ka can reveal Cảnh Kaynblue.
+  if (firstWordMatches.length > 0) return firstWordMatches
+
+  return users.value.filter(u => {
+    const words = removeVietnameseAccents(u.name).toLowerCase().split(/\s+/)
+    return words.slice(1).some(word => word.startsWith(q))
   })
 })
 

@@ -20,7 +20,7 @@
         :class="viewMode === 'notes' ? 'grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 w-full items-start' : 'w-full flex justify-center items-start gap-10'">
 
         <!-- LEFT PANEL: Actions, Switcher & Search (Block 1) -->
-        <aside class="view-actions"
+        <aside ref="viewActionsRef" class="view-actions"
           :class="viewMode === 'notes' ? 'space-y-3.5 select-none flex flex-col items-end w-full' : 'space-y-3.5 select-none flex flex-col items-end w-[390px] flex-shrink-0'">
           <!-- Button Tạo dự án -->
           <button @click="isModalOpen = true" type="button"
@@ -51,13 +51,17 @@
             <i class="fa-solid fa-magnifying-glass text-sm"></i>
           </button>
 
-          <!-- Keyboard Shortcuts Hint -->
-          <div class="keyboard-hints bg-transparent border border-gray-300 rounded-xl p-3 shadow-3xs w-full max-w-[270px]">
-            <div class="flex items-center gap-2 mb-2">
-              <i class="fa-solid fa-keyboard text-emerald-600 text-sm"></i>
-              <span class="text-xs font-black text-gray-900 uppercase tracking-wider">Phím tắt</span>
-            </div>
-            <div class="space-y-1.5 text-xs">
+          <!-- Keyboard shortcuts are collapsed by default to leave room for TV. -->
+          <div class="keyboard-hints relative w-full max-w-[270px] flex justify-end">
+            <button type="button" @click="toggleShortcutHints" class="shortcut-hints-toggle" title="Phím tắt">
+              <i class="fa-solid fa-keyboard"></i>
+            </button>
+            <div v-if="isShortcutHintsOpen" class="shortcut-hints-popover bg-transparent border border-gray-300 rounded-xl p-3 shadow-3xs w-full">
+              <div class="flex items-center gap-2 mb-2">
+                <i class="fa-solid fa-keyboard text-emerald-600 text-sm"></i>
+                <span class="text-xs font-black text-gray-900 uppercase tracking-wider">Phím tắt</span>
+              </div>
+              <div class="space-y-1.5 text-xs">
               <div class="flex items-center justify-between">
                 <span class="text-gray-600 font-semibold">Tạo dự án mới</span>
                 <kbd
@@ -93,8 +97,51 @@
                 <kbd
                   class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">ESC</kbd>
               </div>
+              </div>
             </div>
           </div>
+
+          <!-- Xương Rồng TV: only broadcasts from the last 24 hours are returned by the API. -->
+          <section v-show="tvPositionReady" class="tv-broadcast-panel select-none"
+            :style="{ left: `${tvPanelLeft}px`, top: tvPanelTop === null ? 'auto' : `${tvPanelTop}px`, bottom: tvPanelTop === null ? '18px' : 'auto', transform: `scale(${tvPanelScale})`, transformOrigin: tvPanelTop === null ? 'right bottom' : 'right top' }"
+            aria-label="Xương Rồng TV">
+            <div class="tv-broadcast-frame" :class="currentBroadcast?.type === 'bad' ? 'is-bad' : 'is-good'">
+              <div class="tv-broadcast-screen">
+                <template v-if="currentBroadcast && currentBroadcast.type !== 'bad'">
+                  <div v-if="currentBroadcast.recipient" class="flex items-center gap-2.5">
+                    <img :src="broadcastPerson?.avatar || defaultAvatar" :alt="broadcastPerson?.name || 'Thành viên'" class="tv-broadcast-avatar" />
+                    <div class="min-w-0">
+                      <p class="tv-broadcast-label">TỐT</p>
+                      <p class="tv-broadcast-name"><i class="fa-solid fa-star tv-broadcast-star"></i>{{ broadcastPerson?.name || 'Xương Rồng' }}</p>
+                    </div>
+                  </div>
+                  <p v-else class="tv-broadcast-label tv-broadcast-label-standalone">TỐT</p>
+                  <p class="tv-broadcast-content">{{ currentBroadcast.content }}</p>
+                </template>
+                <template v-else-if="currentBroadcast">
+                  <div class="tv-broadcast-bad">
+                    <p class="tv-broadcast-bad-label"><i class="fa-solid fa-circle-exclamation"></i> KHÔNG TỐT</p>
+                    <p class="tv-broadcast-bad-content">{{ currentBroadcast.content }}</p>
+                  </div>
+                </template>
+                <div v-else class="tv-broadcast-empty">
+                  <i class="fa-solid fa-tv"></i>
+                  <span>Chưa có phát sóng mới</span>
+                </div>
+              </div>
+              <div class="tv-broadcast-console">
+                <span></span><span></span><span></span>
+                <button type="button" @click="previousBroadcast" :disabled="broadcasts.length < 2" title="Bản tin trước"><i class="fa-solid fa-chevron-left"></i></button>
+                <button type="button" @click="nextBroadcast" :disabled="broadcasts.length < 2" title="Bản tin tiếp theo"><i class="fa-solid fa-chevron-right"></i></button>
+                <i class="tv-broadcast-power"></i>
+              </div>
+              <div class="tv-broadcast-leg tv-broadcast-leg-left"></div>
+              <div class="tv-broadcast-leg tv-broadcast-leg-right"></div>
+            </div>
+            <div class="tv-broadcast-controls">
+              <p class="tv-broadcast-status">{{ broadcasts.length ? `Bản tin ${currentBroadcastIndex + 1}/${broadcasts.length}` : 'Đang chờ bản tin' }}</p>
+            </div>
+          </section>
         </aside>
 
         <!-- CENTER PANEL: Projects List (Block 2 - Wider Column, expands when notes view) -->
@@ -657,7 +704,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
@@ -673,6 +720,43 @@ const authStore = useAuthStore()
 const router = useRouter()
 const toast = useToastStore()
 const confirmStore = useConfirmStore()
+const defaultAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'
+const viewActionsRef = ref(null)
+const tvPanelLeft = ref(32)
+const tvPositionReady = ref(false)
+const tvPanelTop = ref(null)
+const tvPanelScale = ref(1)
+const isShortcutHintsOpen = ref(false)
+
+const updateTvPosition = () => {
+  const panel = viewActionsRef.value
+  if (!panel || window.innerWidth < 768) return
+  // The shortcut card is right-aligned inside this panel; align the TV's right
+  // edge with it rather than with the browser edge.
+  const rect = panel.getBoundingClientRect()
+  // Visual TV height (including its controls/legs) is about 245px; using a
+  // larger reserve made the low-height layout unnecessarily tiny.
+  const tvHeight = 245
+  const safeGap = 16
+  const bottomPositionTop = window.innerHeight - 18 - tvHeight
+  const firstAvailableTop = rect.bottom + safeGap
+
+  tvPanelLeft.value = Math.max(16, Math.round(rect.right - 300))
+  if (bottomPositionTop >= firstAvailableTop) {
+    tvPanelTop.value = null
+    tvPanelScale.value = 1
+  } else {
+    tvPanelTop.value = Math.round(firstAvailableTop)
+    tvPanelScale.value = Math.max(0.55, Math.min(1, (window.innerHeight - firstAvailableTop - 8) / tvHeight))
+  }
+  tvPositionReady.value = true
+}
+
+const toggleShortcutHints = async () => {
+  isShortcutHintsOpen.value = !isShortcutHintsOpen.value
+  await nextTick()
+  updateTvPosition()
+}
 
 // Views & filter states
 const activeViewId = ref('all')
@@ -1395,6 +1479,9 @@ const closeAllDropdowns = (e) => {
   if (profileDropdownRef.value && !profileDropdownRef.value.contains(e.target)) {
     isProfileDropdownOpen.value = false
   }
+  if (viewActionsRef.value && !viewActionsRef.value.querySelector('.keyboard-hints')?.contains(e.target)) {
+    isShortcutHintsOpen.value = false
+  }
 }
 
 // Checkboxes and multi-select
@@ -1439,7 +1526,7 @@ const startSelection = (event) => {
 
   const target = event.target
   // Don't start selection if clicking on interactive elements
-  if (target.closest('input, button, a, .cursor-pointer, [draggable="true"]')) {
+  if (target.closest('input, textarea, select, button, a, [contenteditable="true"], .cursor-pointer, [draggable="true"]')) {
     return
   }
 
@@ -1610,6 +1697,34 @@ const parseCommentFiles = (content) => {
 const activities = ref([])
 const isActivitiesLoading = ref(true)
 
+// The TV API already filters out broadcasts older than 24 hours. Records remain
+// in the database; they simply stop being returned to this screen.
+const broadcasts = ref([])
+const currentBroadcastIndex = ref(0)
+const currentBroadcast = computed(() => broadcasts.value[currentBroadcastIndex.value] || null)
+const broadcastPerson = computed(() => currentBroadcast.value?.recipient || null)
+
+const fetchBroadcasts = async () => {
+  try {
+    const res = await axios.get('/api/tv/broadcasts')
+    const nextBroadcasts = res.data || []
+    broadcasts.value = nextBroadcasts
+    if (currentBroadcastIndex.value >= nextBroadcasts.length) currentBroadcastIndex.value = 0
+  } catch (err) {
+    console.error('Failed to load TV broadcasts:', err)
+  }
+}
+
+const previousBroadcast = () => {
+  if (broadcasts.value.length < 2) return
+  currentBroadcastIndex.value = (currentBroadcastIndex.value - 1 + broadcasts.value.length) % broadcasts.value.length
+}
+
+const nextBroadcast = () => {
+  if (broadcasts.value.length < 2) return
+  currentBroadcastIndex.value = (currentBroadcastIndex.value + 1) % broadcasts.value.length
+}
+
 const displayedActivities = computed(() => {
   if (selectedProjectIds.value.length === 0) {
     return activities.value
@@ -1760,6 +1875,7 @@ const goToBulkUpdate = () => {
 }
 
 let pollTimer = null
+let broadcastRotationTimer = null
 
 // Infinite scroll handler
 const handleScroll = (event) => {
@@ -1782,6 +1898,8 @@ onMounted(async () => {
   await projectStore.fetchProjects()
   await projectStore.fetchAuxData()
   await fetchActivities()
+  await fetchBroadcasts()
+  requestAnimationFrame(updateTvPosition)
 
   window.addEventListener('keydown', handleGlobalKeydown)
   window.addEventListener('click', closeAllDropdowns)
@@ -1790,20 +1908,30 @@ onMounted(async () => {
   window.addEventListener('mousedown', startSelection)
   window.addEventListener('mousemove', updateSelection)
   window.addEventListener('mouseup', endSelection)
+  window.addEventListener('resize', updateTvPosition)
 
   pollTimer = setInterval(() => {
     projectStore.fetchProjects(true)
     fetchActivities()
+    fetchBroadcasts()
   }, 4000)
+
+  broadcastRotationTimer = setInterval(() => {
+    if (broadcasts.value.length > 1) {
+      currentBroadcastIndex.value = (currentBroadcastIndex.value + 1) % broadcasts.value.length
+    }
+  }, 8000)
 })
 
 onUnmounted(() => {
   if (pollTimer) clearInterval(pollTimer)
+  if (broadcastRotationTimer) clearInterval(broadcastRotationTimer)
   // Search is local to this screen; do not carry a hidden filter to the next visit.
   projectStore.searchQuery = ''
   isMobileSearchOpen.value = false
   window.removeEventListener('keydown', handleGlobalKeydown)
   window.removeEventListener('click', closeAllDropdowns)
+  window.removeEventListener('resize', updateTvPosition)
 
   // Clean up drag selection events
   window.removeEventListener('mousedown', startSelection)
@@ -1816,6 +1944,21 @@ onUnmounted(() => {
 .view-page-intro {
   display: flex;
 }
+
+.shortcut-hints-toggle {
+  width: 42px;
+  height: 42px;
+  border: 1px solid #cfd4d1;
+  border-radius: 10px;
+  color: #168343;
+  background: #f9f4ee;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+
+.shortcut-hints-toggle:hover { border-color: #45a246; background: #edf8ee; }
+.shortcut-hints-popover { position: absolute; top: 50px; right: 0; z-index: 40; background: #f9f4ee; }
 
 @media (max-width: 767px) {
   .view-page-intro {
@@ -2246,6 +2389,49 @@ onUnmounted(() => {
   color: rgba(15, 35, 20, 0.65);
 }
 
+.tv-broadcast-frame {
+  position: relative;
+  width: 300px;
+  aspect-ratio: 1.35;
+  padding: 12px 12px 38px;
+  border: 2px solid #424542;
+  border-radius: 28px;
+  background: linear-gradient(145deg, #4a4d4a, #171918 65%);
+  box-shadow: inset 0 3px 4px rgba(255, 255, 255, .22), inset 0 -3px 7px #050606, 0 16px 20px rgba(0, 0, 0, .2);
+}
+
+.tv-broadcast-panel { position: fixed; z-index: 30; bottom: 18px; width: 300px; }
+
+.tv-broadcast-screen {
+  height: 100%;
+  min-height: 0;
+  padding: 18px;
+  overflow: hidden;
+  border-radius: 21px;
+  color: #eef8ef;
+  background: radial-gradient(circle at 15% 12%, rgba(81, 255, 126, .16), transparent 30%), #0c1d14;
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, .55);
+}
+
+.tv-broadcast-frame.is-bad .tv-broadcast-screen {
+  background: radial-gradient(circle at 15% 12%, rgba(255, 105, 105, .18), transparent 30%), #251111;
+}
+
+.tv-broadcast-avatar { width: 48px; height: 48px; object-fit: cover; border: 3px solid #71df8b; border-radius: 999px; box-shadow: 0 0 10px rgba(87, 235, 120, .65); }
+.tv-broadcast-frame.is-bad .tv-broadcast-avatar { border-color: #f58a86; box-shadow: 0 0 8px rgba(245, 110, 104, .65); }
+.tv-broadcast-label { margin: 0; color: #b4c9b7; font-size: 10px; font-weight: 900; letter-spacing: .14em; }
+.tv-broadcast-label-standalone { padding-top: 2px; }
+.tv-broadcast-name { margin: 2px 0 0; overflow: hidden; color: white; font-size: 14px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }.tv-broadcast-star { margin-right: 4px; color: #f5dc55; font-size: 11px; filter: drop-shadow(0 0 3px rgba(245, 220, 85, .7)); }
+.tv-broadcast-content { display: -webkit-box; margin: 18px 0 0; overflow: hidden; font-size: 14px; font-weight: 700; line-height: 1.36; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.tv-broadcast-bad { height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 13px; }
+.tv-broadcast-bad-label { margin: 0; color: #ff8d88; font-size: 11px; font-weight: 900; letter-spacing: .1em; }.tv-broadcast-bad-label i { margin-right: 5px; color: #f1554e; font-size: 13px; }
+.tv-broadcast-bad-content { display: -webkit-box; margin: 0; overflow: hidden; color: #fff4f2; font-size: 16px; font-weight: 800; line-height: 1.4; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
+.tv-broadcast-empty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; color: #b3c7b7; font-size: 11px; font-weight: 800; text-align: center; }.tv-broadcast-empty i { color: #7be293; font-size: 23px; }
+.tv-broadcast-console { position: absolute; right: 13px; bottom: 8px; left: 13px; display: flex; align-items: center; gap: 3px; height: 12px; }.tv-broadcast-console span { width: 45px; height: 2px; border-radius: 999px; background: #080a09; box-shadow: 0 1px rgba(255, 255, 255, .1); }.tv-broadcast-console button { width: 20px; height: 20px; padding: 0; border: 1px solid #737773; border-radius: 50%; color: #e8eee8; background: #1b1e1c; font-size: 8px; cursor: pointer; }.tv-broadcast-console button:first-of-type { margin-left: auto; }.tv-broadcast-console button:hover:not(:disabled) { color: #8df29c; border-color: #8df29c; }.tv-broadcast-console button:disabled { opacity: .35; cursor: not-allowed; }.tv-broadcast-console .tv-broadcast-power { width: 7px; height: 7px; margin-left: 6px; border-radius: 50%; background: #7aea89; box-shadow: 0 0 5px #7aea89; }
+.tv-broadcast-leg { position: absolute; z-index: -1; bottom: -19px; width: 16px; height: 28px; border: 1px solid #0b0c0b; border-radius: 3px 3px 5px 5px; background: linear-gradient(90deg, #101211, #292b29 55%, #0d0f0e); box-shadow: inset 0 2px 2px rgba(255, 255, 255, .12), 0 5px 6px rgba(0, 0, 0, .24); }.tv-broadcast-leg-left { left: 37px; transform: skew(-14deg) rotate(5deg); }.tv-broadcast-leg-right { right: 37px; transform: skew(14deg) rotate(-5deg); }
+.tv-broadcast-controls { display: flex; align-items: center; justify-content: center; margin-top: 6px; }
+.tv-broadcast-status { min-width: 68px; margin: 0; color: #9aa49b; font-size: 9px; font-weight: 800; text-align: center; }
+
 /* Mobile/tablet layout: keep sticky notes in two columns and pin actions touch-visible. */
 @media (max-width: 1023px) {
   .sticky-grid {
@@ -2257,4 +2443,9 @@ onUnmounted(() => {
     opacity: 1 !important;
   }
 }
+
+@media (max-width: 767px) {
+  .tv-broadcast-panel { display: none; }
+}
+
 </style>

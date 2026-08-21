@@ -123,6 +123,16 @@
               CÔNG CỤ
             </div>
 
+            <!-- Broadcast -->
+            <button
+              @click="openBroadcastModal"
+              type="button"
+              class="broadcast-menu-item hidden md:flex w-full text-left px-2.5 py-2 hover:bg-emerald-50/60 rounded-lg transition-colors items-center gap-2.5 cursor-pointer text-xs font-bold text-gray-700 hover:text-emerald-800"
+            >
+              <i class="fa-solid fa-tv text-sm text-emerald-600"></i>
+              <span>Phát sóng</span>
+            </button>
+
             <!-- Settings -->
             <button
               @click="openEditProfile"
@@ -151,6 +161,75 @@
         <slot name="right"></slot>
       </div>
     </div>
+
+    <!-- Broadcast modal: teleport out of the sticky navbar stacking context. -->
+    <Teleport to="body">
+    <div v-if="isBroadcastModalOpen" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <button type="button" class="absolute inset-0 bg-slate-950/35 backdrop-blur-xs cursor-default"
+        aria-label="Đóng phát sóng" @click="closeBroadcastModal"></button>
+
+      <form @submit.prevent="submitBroadcast"
+        class="relative z-10 w-full max-w-2xl rounded-3xl border border-stone-200 bg-[#fffdf9] p-5 sm:p-7 shadow-2xl space-y-5">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <span class="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl">
+              <i class="fa-solid fa-tv"></i>
+            </span>
+            <div>
+              <h2 class="text-lg font-black text-gray-900 font-heading">PHÁT SÓNG</h2>
+              <p class="text-xs font-medium text-gray-500 mt-0.5">Chia sẻ một điều đáng tán dương hoặc cần cả team lưu ý.</p>
+            </div>
+          </div>
+          <button type="button" @click="closeBroadcastModal" class="w-9 h-9 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer" aria-label="Đóng">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <div>
+          <p class="text-xs font-black text-gray-700 mb-2">1. LOẠI</p>
+          <div class="grid grid-cols-2 gap-2 rounded-xl bg-stone-100 p-1">
+            <button type="button" @click="setBroadcastType('good')"
+              class="rounded-lg py-2.5 text-xs font-black transition-colors cursor-pointer"
+              :class="broadcastForm.type === 'good' ? 'bg-white text-emerald-700 border border-emerald-600 shadow-2xs' : 'text-gray-500 hover:text-emerald-700'">
+              TỐT
+            </button>
+            <button type="button" @click="setBroadcastType('bad')"
+              class="rounded-lg py-2.5 text-xs font-black transition-colors cursor-pointer"
+              :class="broadcastForm.type === 'bad' ? 'bg-white text-rose-600 border border-rose-400 shadow-2xs' : 'text-gray-500 hover:text-rose-600'">
+              KHÔNG TỐT
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between gap-3 mb-2">
+            <label for="broadcast-content" class="text-xs font-black text-gray-700">2. NỘI DUNG</label>
+            <span class="text-[11px] font-bold text-gray-400">{{ broadcastForm.content.length }}/200</span>
+          </div>
+          <textarea id="broadcast-content" v-model="broadcastForm.content" maxlength="200" required rows="4"
+            :placeholder="broadcastForm.type === 'good' ? 'Nhập nội dung tán dương hoặc lưu ý...' : 'Nhập nội dung cần cả team lưu ý...'"
+            class="w-full resize-none rounded-xl border border-stone-200 bg-white px-3.5 py-3 text-sm font-medium text-gray-800 placeholder:text-gray-400 focus:border-emerald-600 focus:outline-none"></textarea>
+        </div>
+
+        <div v-if="broadcastForm.type === 'good'">
+          <label for="broadcast-recipient" class="block text-xs font-black text-gray-700 mb-2">3. NGƯỜI ĐƯỢC TÁN DƯƠNG <span class="font-semibold text-gray-400">(tùy chọn)</span></label>
+          <select id="broadcast-recipient" v-model="broadcastForm.recipientId"
+            class="w-full rounded-xl border border-stone-200 bg-white px-3.5 py-3 text-sm font-semibold text-gray-700 focus:border-emerald-600 focus:outline-none cursor-pointer">
+            <option value="">Chọn thành viên</option>
+            <option v-for="user in broadcastUsers" :key="user.id" :value="String(user.id)">{{ user.name }}</option>
+          </select>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-1">
+          <button type="button" @click="closeBroadcastModal" class="px-5 py-2.5 rounded-xl border border-gray-200 text-xs font-black text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer">HỦY</button>
+          <button type="submit" :disabled="isBroadcastSubmitting || !broadcastForm.content.trim()"
+            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-700 text-xs font-black text-white shadow-sm hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50 transition-colors cursor-pointer">
+            <i class="fa-solid fa-tv"></i><span>LÊN SÓNG</span>
+          </button>
+        </div>
+      </form>
+    </div>
+    </Teleport>
 
     <!-- Edit Profile Modal -->
     <div v-if="isProfileModalOpen" class="fixed inset-0 z-50 overflow-y-auto">
@@ -289,7 +368,61 @@ const toastStore = useToastStore()
 
 const isDropdownOpen = ref(false)
 const isProfileModalOpen = ref(false)
+const isBroadcastModalOpen = ref(false)
+const isBroadcastSubmitting = ref(false)
+const broadcastUsers = ref([])
 const dropdownRef = ref(null)
+
+const broadcastForm = reactive({
+  type: 'good',
+  content: '',
+  recipientId: ''
+})
+
+const setBroadcastType = (type) => {
+  broadcastForm.type = type
+  if (type === 'bad') broadcastForm.recipientId = ''
+}
+
+const openBroadcastModal = async () => {
+  isDropdownOpen.value = false
+  broadcastForm.type = 'good'
+  broadcastForm.content = ''
+  broadcastForm.recipientId = ''
+  isBroadcastModalOpen.value = true
+
+  try {
+    const response = await axios.get('/api/users')
+    broadcastUsers.value = response.data || []
+  } catch (error) {
+    broadcastUsers.value = []
+    toastStore.error('Không thể tải danh sách thành viên.')
+  }
+}
+
+const closeBroadcastModal = () => {
+  if (isBroadcastSubmitting.value) return
+  isBroadcastModalOpen.value = false
+}
+
+const submitBroadcast = async () => {
+  if (!broadcastForm.content.trim() || isBroadcastSubmitting.value) return
+
+  isBroadcastSubmitting.value = true
+  try {
+    await axios.post('/api/broadcasts', {
+      type: broadcastForm.type,
+      content: broadcastForm.content.trim(),
+      recipient_id: broadcastForm.type === 'good' ? broadcastForm.recipientId || null : null
+    })
+    isBroadcastModalOpen.value = false
+    toastStore.success('Đã lên sóng bảng tin!')
+  } catch (error) {
+    toastStore.error(error.response?.data?.message || 'Không thể lên sóng bản tin.')
+  } finally {
+    isBroadcastSubmitting.value = false
+  }
+}
 
 const navigate = (path) => {
   isDropdownOpen.value = false

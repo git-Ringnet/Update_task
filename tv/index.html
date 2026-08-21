@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TV Review Card</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="stage">
+    <section class="demo" aria-label="Thẻ nhận xét khách hàng">
+      <div class="tv" aria-label="TV review card">
+        <div class="screen">
+          <header class="profile">
+            <div class="avatar-ring"><img src="assets/avatar.png" alt="Ảnh đại diện của Thiên" id="avatar"></div>
+            <div>
+              <h1 id="display-name">Thiên</h1>
+              <div class="rating"><span class="star">★</span><span>TỐT</span></div>
+            </div>
+          </header>
+          <p class="message" id="display-message">Khách hàng khen hỗ trợ rất nhiệt tình, good job em 🤭👌</p>
+        </div>
+        <footer class="console">
+          <div class="speaker" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+          <div class="power" aria-label="Đang hoạt động"><span class="power-dot small"></span><span class="power-dot"></span></div>
+        </footer>
+        <div class="leg leg-left"></div><div class="leg leg-right"></div>
+      </div>
+
+      <button class="edit-button" id="edit-button" type="button">Chỉnh nội dung</button>
+      <form class="editor" id="editor" hidden>
+        <label>Tên người nhận<input id="name-input" maxlength="24" value="Thiên"></label>
+        <label>Nội dung<textarea id="message-input" maxlength="150">Khách hàng khen hỗ trợ rất nhiệt tình, good job em 🤭👌</textarea></label>
+      </form>
+    </section>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>

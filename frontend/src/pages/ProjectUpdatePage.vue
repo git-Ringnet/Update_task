@@ -565,10 +565,16 @@ const removeVietnameseAccents = (str) => {
 const filteredUsersForMention = computed(() => {
   if (!mentionQuery.value) return usersList.value
   const q = removeVietnameseAccents(mentionQuery.value).toLowerCase()
-  return usersList.value.filter(u => {
+  const firstWordMatches = usersList.value.filter(u => {
     const nameAcc = removeVietnameseAccents(u.name).toLowerCase()
-    const words = nameAcc.split(/\s+/)
-    return nameAcc.startsWith(q) || words.some(w => w.startsWith(q))
+    return nameAcc.split(/\s+/)[0]?.startsWith(q)
+  })
+
+  if (firstWordMatches.length > 0) return firstWordMatches
+
+  return usersList.value.filter(u => {
+    const words = removeVietnameseAccents(u.name).toLowerCase().split(/\s+/)
+    return words.slice(1).some(word => word.startsWith(q))
   })
 })
 

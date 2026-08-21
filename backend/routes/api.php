@@ -5,6 +5,7 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\BroadcastController;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -128,6 +129,9 @@ Route::get('/active-users', function () {
     }));
 });
 
+// TV only receives recent broadcasts. Older records stay in the database.
+Route::get('/tv/broadcasts', [BroadcastController::class, 'index']);
+
 // Protected Group
 Route::middleware('auth.token')->group(function () {
     Route::get('/me', function (Request $request) {
@@ -159,6 +163,8 @@ Route::middleware('auth.token')->group(function () {
         }
         return response()->json(['message' => 'Đăng xuất thành công']);
     });
+
+    Route::post('/broadcasts', [BroadcastController::class, 'store']);
 
     Route::get('/users', function () {
         return response()->json(User::where('is_admin', false)

@@ -388,20 +388,27 @@ const isOpenDropdown = ref(false)
 const searchQuery = ref('')
 const dropdownRef = ref(null)
 
+const normalizeCustomerSearch = (value) => String(value || '')
+  .toLocaleLowerCase('vi-VN')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/đ/g, 'd')
+  .trim()
+
 // Filter customers by query string
 const filteredCustomers = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase()
+  const q = normalizeCustomerSearch(searchQuery.value)
   if (!q) return props.customers
 
   const c = props.customers.find(item => item.id === form.customer_id)
-  const currentSelectedName = c ? `${c.name} ${c.code ? `(${c.code})` : ''}`.toLowerCase() : ''
+  const currentSelectedName = c ? normalizeCustomerSearch(`${c.name} ${c.code ? `(${c.code})` : ''}`) : ''
   
   if (q === currentSelectedName) {
     return props.customers
   }
 
   return props.customers.filter(c => {
-    return c.name.toLowerCase().includes(q) || (c.code && c.code.toLowerCase().includes(q))
+    return normalizeCustomerSearch(c.name).includes(q) || normalizeCustomerSearch(c.code).includes(q)
   })
 })
 
