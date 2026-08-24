@@ -65,4 +65,9 @@ class User extends Authenticatable
         return $this->belongsToMany(Project::class, 'project_members', 'user_id', 'project_id')
             ->withTimestamps();
     }
+
+    public function pushSubscriptions()
+    {
+        return $this->hasMany(PushSubscription::class);
+    }
 }

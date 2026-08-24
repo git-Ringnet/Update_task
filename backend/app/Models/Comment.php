@@ -29,6 +29,10 @@ class Comment extends Model
                 }
             }
         });
+
+        static::created(function (Comment $comment) {
+            app(\App\Services\ProjectPushService::class)->sendForComment($comment);
+        });
     }
 
     public function project(): BelongsTo

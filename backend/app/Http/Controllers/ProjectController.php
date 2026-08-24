@@ -174,6 +174,7 @@ class ProjectController extends Controller
         $project = Project::findOrFail($id);
         abort_unless($project->canManageMembers(auth()->user()), 403, 'Bạn không có quyền chỉnh sửa dự án này.');
         $oldHealth = $project->health;
+        $oldTrackingStatus = $project->tracking_status;
 
         // Only update last_activity_at if it's a meaningful change (not just status/health/pin toggle)
         $shouldUpdateActivity = isset($validated['title']) 
@@ -226,6 +227,15 @@ class ProjectController extends Controller
                 'user_id' => auth()->id() ?? $request->user_id ?? $project->lead_id ?? \App\Models\User::first()->id ?? null,
                 'content' => "Đã chuyển trạng thái dự án sang [{$statusNames[$project->health]}]",
                 'type' => 'health_update',
+            ]);
+        }
+
+        if (isset($validated['tracking_status']) && $validated['tracking_status'] !== $oldTrackingStatus) {
+            Comment::create([
+                'project_id' => $project->id,
+                'user_id' => auth()->id(),
+                'content' => $this->trackingStatusLabel($project->tracking_status),
+                'type' => 'tracking_status_change',
             ]);
         }
 
@@ -379,9 +389,35 @@ class ProjectController extends Controller
 
         if (!empty($updateData)) {
             $updateData['last_activity_at'] = \Illuminate\Support\Carbon::now();
-            $manageable->update($updateData);
+            $projectsToUpdate = $manageable->get();
+
+            foreach ($projectsToUpdate as $project) {
+                $trackingStatusChanged = isset($validated['tracking_status'])
+                    && $project->tracking_status !== $validated['tracking_status'];
+
+                $project->update($updateData);
+
+                if ($trackingStatusChanged) {
+                    Comment::create([
+                        'project_id' => $project->id,
+                        'user_id' => auth()->id(),
+                        'content' => $this->trackingStatusLabel($project->tracking_status),
+                        'type' => 'tracking_status_change',
+                    ]);
+                }
+            }
         }
 
         return response()->json(['message' => 'Cập nhật hàng loạt thành công']);
+    }
+
+    private function trackingStatusLabel(string $status): string
+    {
+        return match ($status) {
+            'following' => 'Đang theo',
+            'completed' => 'Hoàn thành',
+            'not_following' => 'Không theo nữa',
+            default => $status,
+        };
     }
 }

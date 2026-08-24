@@ -108,14 +108,26 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToastStore } from './stores/toast'
 import { useConfirmStore } from './stores/confirm'
+import { useAuthStore } from './stores/auth'
+import { useBrowserNotificationStore } from './stores/browserNotifications'
 
 const toastStore = useToastStore()
 const confirmStore = useConfirmStore()
 const router = useRouter()
+const authStore = useAuthStore()
+const browserNotifications = useBrowserNotificationStore()
+
+const requestBrowserNotificationPermission = () => {
+  // Existing users may already have granted the old foreground-notification
+  // permission. Re-run setup so their browser is registered for Web Push too.
+  if (authStore.user?.id && browserNotifications.appEnabled && browserNotifications.permission !== 'denied') {
+    browserNotifications.requestPermission()
+  }
+}
 
 const handleGlobalKeydown = (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'h') {
@@ -126,6 +138,13 @@ const handleGlobalKeydown = (e) => {
 
 onMounted(() => {
   window.addEventListener('keydown', handleGlobalKeydown)
+  browserNotifications.refreshPermission()
+  requestBrowserNotificationPermission()
+})
+
+// Also request immediately after a successful login, not only after a page refresh.
+watch(() => authStore.user?.id, (userId) => {
+  if (userId) requestBrowserNotificationPermission()
 })
 
 onUnmounted(() => {

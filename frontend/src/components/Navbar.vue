@@ -133,6 +133,16 @@
               <span>Phát sóng</span>
             </button>
 
+            <button
+              v-if="browserNotifications.isSupported"
+              @click="toggleBrowserNotifications"
+              type="button"
+              class="w-full text-left px-2.5 py-2 hover:bg-emerald-50/60 rounded-lg transition-colors flex items-center gap-2.5 cursor-pointer text-xs font-bold text-gray-700 hover:text-emerald-800"
+            >
+              <i class="fa-solid fa-bell text-sm" :class="browserNotifications.isEnabled ? 'text-emerald-600' : 'text-gray-400'"></i>
+              <span>{{ browserNotifications.isEnabled ? 'Tắt thông báo trình duyệt' : 'Bật thông báo trình duyệt' }}</span>
+            </button>
+
             <!-- Settings -->
             <button
               @click="openEditProfile"
@@ -364,7 +374,9 @@ const defaultAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69d
 const authStore = useAuthStore()
 const router = useRouter()
 import { useToastStore } from '../stores/toast'
+import { useBrowserNotificationStore } from '../stores/browserNotifications'
 const toastStore = useToastStore()
+const browserNotifications = useBrowserNotificationStore()
 
 const isDropdownOpen = ref(false)
 const isProfileModalOpen = ref(false)
@@ -432,6 +444,27 @@ const navigate = (path) => {
 const triggerImport = () => {
   isDropdownOpen.value = false
   toastStore.success('Hệ thống nhập dữ liệu Excel đã sẵn sàng!')
+}
+
+const toggleBrowserNotifications = async () => {
+  if (browserNotifications.isEnabled) {
+    await browserNotifications.setEnabled(false)
+    toastStore.success('Đã tắt thông báo cập nhật dự án.')
+    isDropdownOpen.value = false
+    return
+  }
+
+  const result = await browserNotifications.setEnabled(true)
+  if (result === 'granted') {
+    toastStore.success('Đã bật thông báo cập nhật dự án trên trình duyệt.')
+  } else if (result === 'denied') {
+    toastStore.warning('Trình duyệt đang chặn thông báo. Hãy cấp quyền trong phần cài đặt trình duyệt.')
+  } else if (result === 'error') {
+    toastStore.error('Không thể kết nối thông báo trình duyệt với máy chủ.')
+  } else {
+    toastStore.error('Trình duyệt này không hỗ trợ thông báo.')
+  }
+  isDropdownOpen.value = false
 }
 
 const currentUser = computed(() => authStore.user || {

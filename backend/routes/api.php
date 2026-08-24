@@ -7,6 +7,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\AttachmentController;
+use App\Http\Controllers\PushSubscriptionController;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -166,6 +167,10 @@ Route::middleware('auth.token')->group(function () {
     });
 
     Route::post('/broadcasts', [BroadcastController::class, 'store']);
+
+    Route::get('/push/public-key', [PushSubscriptionController::class, 'publicKey']);
+    Route::post('/push/subscriptions', [PushSubscriptionController::class, 'store']);
+    Route::delete('/push/subscriptions', [PushSubscriptionController::class, 'destroy']);
 
     Route::get('/users', function () {
         return response()->json(User::where('is_admin', false)

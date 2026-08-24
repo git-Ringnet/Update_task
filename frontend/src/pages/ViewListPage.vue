@@ -108,8 +108,8 @@
           <section v-if="tvPositionReady && currentBroadcast" :key="`tv-${viewMode}`" class="tv-broadcast-panel select-none"
             :class="{ 'is-notes-view': viewMode === 'notes' }"
             :style="viewMode === 'notes'
-              ? { left: `${tvPanelLeft}px`, top: 'auto', bottom: '110px', transform: 'scale(1)', transformOrigin: 'right bottom' }
-              : { left: `${tvPanelLeft}px`, top: tvPanelTop === null ? 'auto' : `${tvPanelTop}px`, bottom: tvPanelTop === null ? '110px' : 'auto', transform: `scale(${tvPanelScale})`, transformOrigin: tvPanelTop === null ? 'right bottom' : 'right top' }"
+              ? { left: `${tvPanelLeft}px`, top: 'auto', bottom: '64px', transform: 'scale(1)', transformOrigin: 'right bottom' }
+              : { left: `${tvPanelLeft}px`, top: tvPanelTop === null ? 'auto' : `${tvPanelTop}px`, bottom: tvPanelTop === null ? '64px' : 'auto', transform: `scale(${tvPanelScale})`, transformOrigin: tvPanelTop === null ? 'right bottom' : 'right top' }"
             aria-label="Xương Rồng TV">
             <div class="tv-broadcast-frame" :class="currentBroadcast?.type === 'bad' ? 'is-bad' : 'is-good'">
               <div class="tv-broadcast-screen">
@@ -180,7 +180,7 @@
 
           <!-- Grouped by Customer Mode (Matches Mockup) -->
           <div v-else-if="isGroupedByCustomer" ref="scrollContainerGrouped" @scroll="handleScroll"
-            class="project-scroll-container space-y-6 max-h-[calc(100vh-264px)] overflow-y-auto scrollbar-none">
+            class="project-scroll-container space-y-6 max-h-[calc(100vh-226px)] overflow-y-auto scrollbar-none">
             <div v-for="group in projectsByCustomer" :key="group.name" class="space-y-2.5">
               <!-- Customer Header -->
               <div class="flex items-center gap-2 pt-1 select-none">
@@ -206,7 +206,7 @@
                   }">
 
                   <!-- Same multi-select behavior as the default project view -->
-                  <input type="checkbox" :checked="isSelected(project.id)" @click.stop="toggleProjectSelect(project.id)"
+                  <input type="checkbox" :checked="isSelected(project.id)" @click.stop="toggleProjectSelect(project.id, $event)"
                     class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer transition-opacity duration-200 absolute left-2 top-1/2 -translate-y-1/2"
                     :class="showAllCheckboxes ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100'" />
 
@@ -244,7 +244,7 @@
 
           <!-- Sticky Notes View (Grid Layout) -->
           <div v-else-if="viewMode === 'notes'" ref="scrollContainerNotes" @scroll="handleScroll"
-            class="project-scroll-container overflow-y-auto pr-1 pb-8 max-h-[calc(100vh-264px)] scrollbar-none">
+            class="project-scroll-container overflow-y-auto pr-1 pb-8 max-h-[calc(100vh-226px)] scrollbar-none">
             <div class="sticky-grid">
               <div v-for="project in displayedProjects" :key="project.id" :data-project-id="project.id"
                 @click="goToProjectDetail(project.id, $event)" class="note-card" :class="getStickyNoteStyle(project)">
@@ -292,7 +292,7 @@
 
           <!-- Default Cards list -->
           <div v-else ref="scrollContainerDefault" @scroll="handleScroll"
-            class="project-scroll-container space-y-3.5 max-h-[calc(100vh-264px)] overflow-y-auto scrollbar-none ml-[-16px] mr-[16px]">
+            class="project-scroll-container space-y-3.5 max-h-[calc(100vh-226px)] overflow-y-auto scrollbar-none ml-[-16px] mr-[16px]">
             <transition-group enter-active-class="transition duration-300 ease-out"
               enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0"
               leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
@@ -307,7 +307,7 @@
                   'ring-2 ring-emerald-500 bg-emerald-50/50 p-1': dragOverIndex === index && draggedProjectIndex !== index
                 }">
                 <!-- Checkbox for multi-select (outside the card, but inside the scroll container) -->
-                <input type="checkbox" :checked="isSelected(project.id)" @click.stop="toggleProjectSelect(project.id)"
+                <input type="checkbox" :checked="isSelected(project.id)" @click.stop="toggleProjectSelect(project.id, $event)"
                   class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer transition-opacity duration-200 absolute left-2 top-1/2 -translate-y-1/2"
                   :class="showAllCheckboxes ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100'" />
 
@@ -360,7 +360,7 @@
 
         <!-- RIGHT PANEL: Hoạt động gần đây (Block 3 - Hidden in notes view) -->
         <section v-if="viewMode !== 'notes'"
-          class="recent-activity-panel bg-transparent flex flex-col h-[calc(100vh-264px)] select-none w-[390px] flex-shrink-0">
+          class="recent-activity-panel bg-transparent flex flex-col h-[calc(100vh-226px)] select-none w-[390px] flex-shrink-0">
 
           <!-- Skeleton Loading State -->
           <div v-if="isActivitiesLoading && displayedActivities.length === 0"
@@ -762,9 +762,9 @@ const updateTvPosition = () => {
   // larger reserve made the low-height layout unnecessarily tiny.
   const tvHeight = 245
   const safeGap = 16
-  // Keep a compact bottom band free for additional action buttons.
+  // Keep a bottom band equal to the app header height.
   const reservedBottomSpace = 64
-  const tvBottomOffset = reservedBottomSpace + 46
+  const tvBottomOffset = reservedBottomSpace
   const bottomPositionTop = window.innerHeight - tvBottomOffset - tvHeight
   const firstAvailableTop = rect.bottom + safeGap
 
@@ -912,6 +912,10 @@ const handleCloseModal = () => {
 }
 
 const goToProjectDetail = (projectId, event) => {
+  // Browsers emit a click after mouseup. When that mouseup completed a drag
+  // selection, do not let the card click overwrite the selected range.
+  if (suppressNextProjectClick) return
+
   // Double-click navigates to detail
   if (event.detail === 2) {
     router.push(`/projects/${projectId}`)
@@ -921,6 +925,10 @@ const goToProjectDetail = (projectId, event) => {
   // Touch devices have no Ctrl/Cmd modifier, so every tap toggles selection.
   if (window.matchMedia?.('(max-width: 767px)').matches) {
     toggleProjectSelect(projectId)
+    return
+  }
+
+  if (event?.shiftKey && selectProjectRange(projectId, event)) {
     return
   }
 
@@ -939,10 +947,14 @@ const goToProjectDetail = (projectId, event) => {
       selectedProjectIds.value.push(projectId)
       showAllCheckboxes.value = true
     }
+    lastSelectionAnchorId.value = projectId
+    selectionFocusId.value = projectId
   } else {
     // Normal Click: Select only this project
     selectedProjectIds.value = [projectId]
     showAllCheckboxes.value = true
+    lastSelectionAnchorId.value = projectId
+    selectionFocusId.value = projectId
   }
 }
 
@@ -1519,6 +1531,12 @@ const handleGlobalKeydown = (event) => {
     return
   }
 
+  // File Explorer-style range adjustment: while Shift remains pressed,
+  // move only the range focus one project at a time and retain its anchor.
+  if (moveProjectRangeFocus(event)) {
+    return
+  }
+
   // Single key shortcuts (only when not typing)
   const key = event.key.toLowerCase()
   if (key === '1') {
@@ -1543,6 +1561,7 @@ const closeAllDropdowns = (e) => {
   // its command bar. Clicking elsewhere cancels the selection and closes it.
   if (
     selectedProjectIds.value.length > 0 &&
+    !suppressNextOutsideSelectionClear &&
     !projectListPanelRef.value?.contains(e.target) &&
     !bulkActionBarRef.value?.contains(e.target) &&
     !e.target.closest?.('.activity-project-link')
@@ -1555,9 +1574,23 @@ const closeAllDropdowns = (e) => {
 // Checkboxes and multi-select
 const selectedProjectIds = ref([])
 const showAllCheckboxes = ref(false)
+const lastSelectionAnchorId = ref(null)
+// The fixed end of a Shift range and its moving end are tracked separately,
+// just like File Explorer's anchor and focus item.
+const selectionFocusId = ref(null)
+let suppressNextOutsideSelectionClear = false
+let suppressNextProjectClick = false
+
+watch(selectedProjectIds, (ids) => {
+  if (ids.length === 0) {
+    lastSelectionAnchorId.value = null
+    selectionFocusId.value = null
+  }
+}, { deep: true })
 
 // Drag selection box functionality (Windows-style)
 const isSelecting = ref(false)
+let selectionHasMoved = false
 const selectionBox = ref({
   startX: 0,
   startY: 0,
@@ -1599,6 +1632,7 @@ const startSelection = (event) => {
   }
 
   isSelecting.value = true
+  selectionHasMoved = false
   selectionBox.value = {
     startX: event.clientX,
     startY: event.clientY,
@@ -1616,6 +1650,12 @@ const updateSelection = (event) => {
 
   selectionBox.value.currentX = event.clientX
   selectionBox.value.currentY = event.clientY
+  if (
+    Math.abs(event.clientX - selectionBox.value.startX) > 3 ||
+    Math.abs(event.clientY - selectionBox.value.startY) > 3
+  ) {
+    selectionHasMoved = true
+  }
 
   // Check which project cards intersect with selection box
   checkProjectIntersections()
@@ -1626,6 +1666,18 @@ const endSelection = () => {
 
   isSelecting.value = false
   selectionBox.value.visible = false
+
+  // The following click event can land outside the list when the pointer is
+  // released. Keep the completed drag selection instead of treating it as an
+  // outside click that cancels the command bar.
+  if (selectionHasMoved && selectedProjectIds.value.length > 0) {
+    suppressNextOutsideSelectionClear = true
+    suppressNextProjectClick = true
+    window.setTimeout(() => {
+      suppressNextOutsideSelectionClear = false
+      suppressNextProjectClick = false
+    }, 0)
+  }
 }
 
 const checkProjectIntersections = () => {
@@ -1663,10 +1715,44 @@ const checkProjectIntersections = () => {
   // Show all checkboxes when drag selecting
   if (newSelectedIds.length > 0) {
     showAllCheckboxes.value = true
+    lastSelectionAnchorId.value = newSelectedIds[0]
+    selectionFocusId.value = newSelectedIds[newSelectedIds.length - 1]
   }
 }
 
-const toggleProjectSelect = (id) => {
+const getProjectSelectionOrder = () => {
+  const cardIds = Array.from(projectListPanelRef.value?.querySelectorAll('[data-project-id]') || [])
+    .map(card => Number(card.getAttribute('data-project-id')))
+    .filter(Number.isFinite)
+
+  return [...new Set(cardIds)]
+}
+
+const selectProjectRange = (id, event = null) => {
+  const anchorId = lastSelectionAnchorId.value
+  if (anchorId === null || anchorId === undefined) return false
+
+  const orderedIds = getProjectSelectionOrder()
+  const from = orderedIds.indexOf(Number(anchorId))
+  const to = orderedIds.indexOf(Number(id))
+  if (from === -1 || to === -1) return false
+
+  const range = orderedIds.slice(Math.min(from, to), Math.max(from, to) + 1)
+  // Shift replaces the current selection with the range from the fixed anchor.
+  // Ctrl/Cmd + Shift extends the existing selection. Shift only moves focus,
+  // never the anchor, so another Shift operation can extend or contract the
+  // same range in either direction.
+  selectedProjectIds.value = event?.ctrlKey || event?.metaKey
+    ? [...new Set([...selectedProjectIds.value, ...range])]
+    : range
+  showAllCheckboxes.value = true
+  selectionFocusId.value = id
+  return true
+}
+
+const toggleProjectSelect = (id, event) => {
+  if (event?.shiftKey && selectProjectRange(id, event)) return
+
   const idx = selectedProjectIds.value.indexOf(id)
   if (idx > -1) {
     selectedProjectIds.value.splice(idx, 1)
@@ -1677,6 +1763,33 @@ const toggleProjectSelect = (id) => {
     selectedProjectIds.value.push(id)
     showAllCheckboxes.value = true
   }
+  lastSelectionAnchorId.value = id
+  selectionFocusId.value = id
+}
+
+const moveProjectRangeFocus = (event) => {
+  if (!event.shiftKey || !['ArrowUp', 'ArrowDown'].includes(event.key)) return false
+  if (lastSelectionAnchorId.value === null || selectedProjectIds.value.length === 0) return false
+
+  const orderedIds = getProjectSelectionOrder()
+  const focusId = selectionFocusId.value ?? lastSelectionAnchorId.value
+  const currentIndex = orderedIds.indexOf(Number(focusId))
+  if (currentIndex === -1) return false
+
+  const nextIndex = currentIndex + (event.key === 'ArrowDown' ? 1 : -1)
+  if (nextIndex < 0 || nextIndex >= orderedIds.length) {
+    event.preventDefault()
+    return true
+  }
+
+  event.preventDefault()
+  selectProjectRange(orderedIds[nextIndex], event)
+  nextTick(() => {
+    projectListPanelRef.value
+      ?.querySelector(`[data-project-id="${orderedIds[nextIndex]}"]`)
+      ?.scrollIntoView({ block: 'nearest' })
+  })
+  return true
 }
 
 const isAllSelected = computed(() => {
@@ -1826,6 +1939,7 @@ const fetchActivities = async () => {
     const filtered = (res.data || []).filter(c => {
       return Boolean(c.project_id)
     })
+
     if (JSON.stringify(filtered) !== JSON.stringify(activities.value)) {
       activities.value = filtered
     }
@@ -2239,7 +2353,7 @@ onUnmounted(() => {
     width: 300px;
     left: max(16px, calc(50vw - 592px)) !important;
     top: auto !important;
-    bottom: 110px !important;
+    bottom: 64px !important;
     transform: none !important;
     transform-origin: right bottom !important;
   }
@@ -2289,11 +2403,15 @@ onUnmounted(() => {
   flex-direction: column;
   justify-content: space-between;
   cursor: pointer;
-  transform: rotate(var(--tilt, 0deg)) translateZ(0);
+  /* Use the same composited state as hover from the first paint. This avoids
+     the browser switching text rasterization only after the pointer enters. */
+  transform: translateY(-4px) scale(1.015);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
   user-select: none;
   contain: layout style;
-  will-change: transform;
+  will-change: auto;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
 }
 
 /* Optimized Paper Grain Texture (no heavy SVG turbulence or mix-blend-mode for 60fps scrolling) */
@@ -2331,7 +2449,7 @@ onUnmounted(() => {
 }
 
 .note-card:hover {
-  transform: rotate(0deg) translateY(-4px) scale(1.015) !important;
+  transform: translateY(-4px) scale(1.015) !important;
   box-shadow:
     0 0.5px 0 rgba(255, 255, 255, 0.6) inset,
     0 1px 1px rgba(0, 0, 0, 0.08),
@@ -2343,31 +2461,6 @@ onUnmounted(() => {
 .note-card>* {
   position: relative;
   z-index: 3;
-}
-
-/* Subtle tilts for natural sticky note look */
-.note-card:nth-child(6n+1) {
-  --tilt: -0.6deg;
-}
-
-.note-card:nth-child(6n+2) {
-  --tilt: 0.5deg;
-}
-
-.note-card:nth-child(6n+3) {
-  --tilt: -0.4deg;
-}
-
-.note-card:nth-child(6n+4) {
-  --tilt: 0.7deg;
-}
-
-.note-card:nth-child(6n+5) {
-  --tilt: -0.5deg;
-}
-
-.note-card:nth-child(6n+6) {
-  --tilt: 0.4deg;
 }
 
 /* Metallic dome pushpin at top center */
@@ -2521,7 +2614,7 @@ onUnmounted(() => {
   box-shadow: inset 0 3px 4px rgba(255, 255, 255, .22), inset 0 -3px 7px #050606, 0 16px 20px rgba(0, 0, 0, .2);
 }
 
-.tv-broadcast-panel { position: fixed; z-index: 30; bottom: 110px; width: 300px; }
+.tv-broadcast-panel { position: fixed; z-index: 30; bottom: 64px; width: 300px; }
 
 .tv-broadcast-screen {
   height: 100%;

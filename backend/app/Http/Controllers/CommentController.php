@@ -33,6 +33,12 @@ class CommentController extends Controller
         }
 
         $comments = $query->get();
+        // Keep a direct project title on every activity payload. Besides making
+        // the feed simpler to render, this lets browser notifications reliably
+        // name the project even if a client does not hydrate nested relations.
+        $comments->each(function (Comment $comment) {
+            $comment->setAttribute('project_title', $comment->project?->title);
+        });
         return response()->json($comments);
     }
 

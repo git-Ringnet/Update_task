@@ -1,34 +1,23 @@
 <template>
   <div class="min-h-screen bg-[#F9F4EE] flex flex-col justify-between pb-24 font-sans">
     <div>
-      <!-- STICKY FLOATING TOP BAR (appears on scroll) -->
-      <transition enter-active-class="transition duration-200 ease-out" enter-from-class="-translate-y-full opacity-0"
-        enter-to-class="translate-y-0 opacity-100" leave-active-class="transition duration-150 ease-in"
-        leave-from-class="translate-y-0 opacity-100" leave-to-class="-translate-y-full opacity-0">
-        <div v-if="showStickyBar"
-          class="fixed top-[57px] left-0 right-0 z-[40] bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-sm">
-          <div class="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-            <button @click="goBack" type="button"
-              class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-[#45A246] font-bold transition-colors cursor-pointer focus:outline-none">
+      <!-- Navbar Component matching standard app header -->
+      <Navbar>
+        <template #left>
+          <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 -translate-y-2"
+            enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-150 ease-in"
+            leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 -translate-y-2">
+            <button v-if="showStickyBar" @click="goBack" type="button"
+              class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-emerald-700 font-medium transition-colors cursor-pointer focus:outline-none">
               <i class="fa-solid fa-arrow-left text-xs"></i>
               <span>Quay lại</span>
             </button>
-            <div class="flex items-center gap-3">
-              <span class="text-xs font-bold text-gray-500">{{ updatedCount }}/{{ totalCount }}</span>
-              <button @click="handleFinishAll" type="button"
-                class="inline-flex items-center gap-2 px-4 py-2 bg-[#45A246] hover:bg-[#3a903b] text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
-                <i class="fa-solid fa-check text-[10px]"></i>
-                <span>Cập nhật tất cả</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </transition>
-      <!-- Navbar Component matching standard app header -->
-      <Navbar />
+          </transition>
+        </template>
+      </Navbar>
 
       <!-- Main Container -->
-      <main class="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Back Button -->
         <button @click="goBack" type="button"
           class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-emerald-700 font-medium mb-4 transition-colors cursor-pointer focus:outline-none">
