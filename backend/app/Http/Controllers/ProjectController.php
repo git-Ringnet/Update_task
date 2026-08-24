@@ -314,9 +314,11 @@ class ProjectController extends Controller
         $project = Project::findOrFail($id);
         abort_unless($project->canManageMembers(auth()->user()), 403, 'Bạn không có quyền xóa dự án này.');
 
+        // System timeline entries (creation, health, and tracking-status
+        // changes) should not prevent deleting a newly created project.
+        // Only a real user update/comment or an associated task locks it.
         $hasRealComments = $project->comments()
-            ->where('content', 'not like', 'Đã tạo dự án mới%')
-            ->where('content', 'not like', 'Dự án mới%')
+            ->whereNotIn('type', ['status_change', 'health_update', 'tracking_status_change'])
             ->exists();
 
         if ($project->tasks()->exists() || $hasRealComments) {
