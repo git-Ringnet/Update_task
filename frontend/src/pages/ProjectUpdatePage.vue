@@ -199,7 +199,7 @@
                     :title="currentUser.name" />
 
                   <!-- Textarea input -->
-                  <div class="flex-1 min-w-0 relative">
+                  <div class="project-mention-picker flex-1 min-w-0 relative">
                     <textarea :ref="(el) => setTextareaRef(el, project.id)" v-model="updateTexts[project.id]"
                       @input="onInputText(project.id, $event)" @keydown="onTextareaKeydown(project.id, $event)"
                       @paste="handlePaste(project.id, $event)" rows="1" maxlength="1000"
@@ -295,7 +295,7 @@
                     </template>
 
                     <!-- Person picker button -->
-                    <div class="relative">
+                    <div class="project-person-picker relative">
                       <button type="button" @click="toggleProjectPersonPicker(project.id)"
                         class="inline-flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none shadow-3xs px-3 py-1.5"
                         :class="(taggedUsersMap[project.id] && taggedUsersMap[project.id].length > 0) ? 'bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-700' : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600'"
@@ -325,7 +325,7 @@
                           class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-rose-50 text-rose-500 transition-colors text-left border-b border-gray-100">
                           <i class="fa-solid fa-xmark text-xs"></i><span>Bỏ chọn tất cả</span>
                         </button>
-                        <button v-for="u in usersList" :key="u.id" type="button"
+                        <button v-for="u in taggableUsers" :key="u.id" type="button"
                           @click="toggleTaggedUser(project.id, u)"
                           class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left"
                           :class="{ 'bg-emerald-50 text-emerald-800 font-bold': taggedUsersMap[project.id] && taggedUsersMap[project.id].includes(String(u.id)) }">
@@ -488,6 +488,10 @@ const healthMap = reactive({})
 
 const activePersonPickerProjectId = ref(null)
 const activeDatePickerProjectId = ref(null)
+const taggableUsers = computed(() => {
+  const currentUserId = String(authStore.user?.id || '')
+  return usersList.value.filter(user => String(user.id) !== currentUserId)
+})
 
 // Quick Add Stage State & Methods
 const activeAddStageProjectId = ref(null)
@@ -583,7 +587,7 @@ const filteredUsersForMention = computed(() => {
   let tempText = currentText
   
   // Sort users by name length descending to avoid partial matches
-  const sortedUsers = usersList.value.slice().sort((a, b) => b.name.length - a.name.length)
+  const sortedUsers = taggableUsers.value.slice().sort((a, b) => b.name.length - a.name.length)
   
   sortedUsers.forEach(u => {
     if (u && u.name) {
@@ -597,7 +601,7 @@ const filteredUsersForMention = computed(() => {
   })
   
   // Filter out users that are already tagged
-  const availableUsers = usersList.value.filter(u => !taggedUserIds.has(String(u.id)))
+  const availableUsers = taggableUsers.value.filter(u => !taggedUserIds.has(String(u.id)))
 
   if (!mentionQuery.value) return availableUsers
   
@@ -1374,14 +1378,27 @@ const handleGlobalKeyDown = (e) => {
   }
 }
 
+const closeTagPickersOnOutsideClick = (event) => {
+  const target = event.target
+  if (!target?.closest?.('.project-person-picker')) {
+    activePersonPickerProjectId.value = null
+  }
+  if (!target?.closest?.('.project-mention-picker')) {
+    showMentionDropdown.value = false
+    activeMentionProjectId.value = null
+  }
+}
+
 onMounted(() => {
   loadProjects()
   window.addEventListener('keydown', handleGlobalKeyDown)
   window.addEventListener('scroll', handleScroll)
+  window.addEventListener('click', closeTagPickersOnOutsideClick)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleGlobalKeyDown)
   window.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('click', closeTagPickersOnOutsideClick)
 })
 </script>

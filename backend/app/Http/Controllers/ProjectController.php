@@ -350,12 +350,20 @@ class ProjectController extends Controller
         ]);
 
         $projectIds = $validated['project_ids'];
-        $manageable = Project::whereIn('id', $projectIds)
-            ->when(!auth()->user()->is_admin, function ($query) {
-                $query->where(function ($q) {
-                    $q->where('created_by', auth()->id())->orWhere('lead_id', auth()->id());
-                });
-            });
+        $user = auth()->user();
+
+        // Members may update tracking status and health from the home command
+        // bar. Changing the project lead remains limited to an admin, creator,
+        // or current project lead.
+        $changesRestrictedFields = array_key_exists('lead_id', $validated);
+        $manageable = $changesRestrictedFields
+            ? Project::whereIn('id', $projectIds)
+                ->when(!$user->is_admin, function ($query) {
+                    $query->where(function ($q) {
+                        $q->where('created_by', auth()->id())->orWhere('lead_id', auth()->id());
+                    });
+                })
+            : Project::visibleTo($user)->whereIn('id', $projectIds);
         abort_if($manageable->count() !== count(array_unique($projectIds)), 403, 'Bạn không có quyền cập nhật một hoặc nhiều dự án.');
         $updateData = [];
 

@@ -17,11 +17,13 @@
 
       <!-- Main Layout Container -->
       <div class="view-page-layout"
-        :class="viewMode === 'notes' ? 'grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 w-full items-start' : 'w-full flex justify-center items-start gap-10'">
+        :class="viewMode === 'notes'
+          ? 'grid grid-cols-1 lg:grid-cols-[390px_minmax(0,1fr)] gap-10 w-full lg:w-[1280px] mx-auto items-start'
+          : 'w-full flex justify-center items-start gap-10'">
 
         <!-- LEFT PANEL: Actions, Switcher & Search (Block 1) -->
         <aside ref="viewActionsRef" class="view-actions"
-          :class="viewMode === 'notes' ? 'space-y-3.5 select-none flex flex-col items-end w-full' : 'space-y-3.5 select-none flex flex-col items-end w-[390px] flex-shrink-0'">
+          :class="viewMode === 'notes' ? 'space-y-3.5 select-none flex flex-col items-end w-full lg:-translate-x-[42px]' : 'space-y-3.5 select-none flex flex-col items-end w-[390px] flex-shrink-0'">
           <!-- Button Tạo dự án -->
           <button @click="isModalOpen = true" type="button"
             class="mobile-icon-button create-project-action w-fit bg-transparent hover:bg-gray-200/40 border-2 border-[#4d4d4d] text-gray-900 font-extrabold text-sm rounded-md px-4.5 py-2.5 flex items-center justify-center gap-1 transition-colors cursor-pointer focus:outline-none select-none"
@@ -102,8 +104,12 @@
           </div>
 
           <!-- Xương Rồng TV: only broadcasts from the last 24 hours are returned by the API. -->
-          <section v-if="tvPositionReady && currentBroadcast" class="tv-broadcast-panel select-none"
-            :style="{ left: `${tvPanelLeft}px`, top: tvPanelTop === null ? 'auto' : `${tvPanelTop}px`, bottom: tvPanelTop === null ? '18px' : 'auto', transform: `scale(${tvPanelScale})`, transformOrigin: tvPanelTop === null ? 'right bottom' : 'right top' }"
+          <Teleport to="body">
+          <section v-if="tvPositionReady && currentBroadcast" :key="`tv-${viewMode}`" class="tv-broadcast-panel select-none"
+            :class="{ 'is-notes-view': viewMode === 'notes' }"
+            :style="viewMode === 'notes'
+              ? { left: `${tvPanelLeft}px`, top: 'auto', bottom: '110px', transform: 'scale(1)', transformOrigin: 'right bottom' }
+              : { left: `${tvPanelLeft}px`, top: tvPanelTop === null ? 'auto' : `${tvPanelTop}px`, bottom: tvPanelTop === null ? '110px' : 'auto', transform: `scale(${tvPanelScale})`, transformOrigin: tvPanelTop === null ? 'right bottom' : 'right top' }"
             aria-label="Xương Rồng TV">
             <div class="tv-broadcast-frame" :class="currentBroadcast?.type === 'bad' ? 'is-bad' : 'is-good'">
               <div class="tv-broadcast-screen">
@@ -149,6 +155,7 @@
               <p class="tv-broadcast-status">{{ broadcasts.length ? `Bản tin ${currentBroadcastIndex + 1}/${broadcasts.length}` : 'Đang chờ bản tin' }}</p>
             </div>
           </section>
+          </Teleport>
         </aside>
 
         <!-- CENTER PANEL: Projects List (Block 2 - Wider Column, expands when notes view) -->
@@ -173,7 +180,7 @@
 
           <!-- Grouped by Customer Mode (Matches Mockup) -->
           <div v-else-if="isGroupedByCustomer" ref="scrollContainerGrouped" @scroll="handleScroll"
-            class="project-scroll-container space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-none">
+            class="project-scroll-container space-y-6 max-h-[calc(100vh-264px)] overflow-y-auto scrollbar-none">
             <div v-for="group in projectsByCustomer" :key="group.name" class="space-y-2.5">
               <!-- Customer Header -->
               <div class="flex items-center gap-2 pt-1 select-none">
@@ -237,7 +244,7 @@
 
           <!-- Sticky Notes View (Grid Layout) -->
           <div v-else-if="viewMode === 'notes'" ref="scrollContainerNotes" @scroll="handleScroll"
-            class="project-scroll-container overflow-y-auto pr-1 pb-8 max-h-[calc(100vh-200px)] scrollbar-none">
+            class="project-scroll-container overflow-y-auto pr-1 pb-8 max-h-[calc(100vh-264px)] scrollbar-none">
             <div class="sticky-grid">
               <div v-for="project in displayedProjects" :key="project.id" :data-project-id="project.id"
                 @click="goToProjectDetail(project.id, $event)" class="note-card" :class="getStickyNoteStyle(project)">
@@ -285,7 +292,7 @@
 
           <!-- Default Cards list -->
           <div v-else ref="scrollContainerDefault" @scroll="handleScroll"
-            class="project-scroll-container space-y-3.5 max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-none ml-[-16px] mr-[16px]">
+            class="project-scroll-container space-y-3.5 max-h-[calc(100vh-264px)] overflow-y-auto scrollbar-none ml-[-16px] mr-[16px]">
             <transition-group enter-active-class="transition duration-300 ease-out"
               enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0"
               leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
@@ -353,7 +360,7 @@
 
         <!-- RIGHT PANEL: Hoạt động gần đây (Block 3 - Hidden in notes view) -->
         <section v-if="viewMode !== 'notes'"
-          class="recent-activity-panel bg-transparent flex flex-col h-[calc(100vh-200px)] select-none w-[390px] flex-shrink-0">
+          class="recent-activity-panel bg-transparent flex flex-col h-[calc(100vh-264px)] select-none w-[390px] flex-shrink-0">
 
           <!-- Skeleton Loading State -->
           <div v-if="isActivitiesLoading && displayedActivities.length === 0"
@@ -407,7 +414,7 @@
                     </div>
 
                     <!-- Project Link/Title (Green Bold text matching Image 2) -->
-                    <div v-if="log.project" @click="goToProjectDetail(log.project.id, $event)"
+                    <div v-if="log.project" @click="handleActivityProjectClick(log.project.id, $event)"
                       class="activity-project-link text-[#1A7A56] hover:underline font-extrabold text-sm cursor-pointer mt-1 mb-1 max-w-full truncate block"
                       :title="log.project.title">
                       {{ log.project.title }}
@@ -755,7 +762,10 @@ const updateTvPosition = () => {
   // larger reserve made the low-height layout unnecessarily tiny.
   const tvHeight = 245
   const safeGap = 16
-  const bottomPositionTop = window.innerHeight - 18 - tvHeight
+  // Keep a compact bottom band free for additional action buttons.
+  const reservedBottomSpace = 64
+  const tvBottomOffset = reservedBottomSpace + 46
+  const bottomPositionTop = window.innerHeight - tvBottomOffset - tvHeight
   const firstAvailableTop = rect.bottom + safeGap
 
   tvPanelLeft.value = Math.max(16, Math.round(rect.right - 300))
@@ -936,6 +946,20 @@ const goToProjectDetail = (projectId, event) => {
   }
 }
 
+const handleActivityProjectClick = (projectId, event) => {
+  const isShownOnHome = displayedProjects.value.some(project => Number(project.id) === Number(projectId))
+
+  // Activities can reference completed or unfollowed projects, which are not
+  // selectable from the home list. Open their detail instead of creating a
+  // hidden selection and showing the command bar.
+  if (!isShownOnHome) {
+    router.push(`/projects/${projectId}`)
+    return
+  }
+
+  goToProjectDetail(projectId, event)
+}
+
 // Pagination for ViewListPage (Infinite Scroll)
 const displayLimit = ref(20)
 
@@ -1011,6 +1035,16 @@ const isGroupedByCustomer = ref(false)
 const viewMode = ref('list') // 'list', 'grouped', 'notes'
 const isViewModeChanging = ref(false)
 
+watch(viewMode, async () => {
+  // Each view has a different actions-column position. Recalculate the TV
+  // after Vue has applied the new layout so it never keeps the old view's
+  // coordinates and overlaps project notes.
+  tvPanelTop.value = null
+  tvPanelScale.value = 1
+  await nextTick()
+  requestAnimationFrame(updateTvPosition)
+})
+
 watch(() => authStore.user?.view_mode, (newVal) => {
   // Keep the optimistic selection on screen until its save request settles.
   // This prevents an older profile response from briefly switching the layout back.
@@ -1037,6 +1071,11 @@ const toggleCustomerGroup = async () => {
   isViewModeChanging.value = true
   viewMode.value = nextMode
   isGroupedByCustomer.value = (nextMode === 'grouped')
+  // Clear the previous view's fixed TV coordinates before the new view paints.
+  tvPanelTop.value = null
+  tvPanelScale.value = 1
+  await nextTick()
+  requestAnimationFrame(updateTvPosition)
 
   try {
     await authStore.updateViewMode(nextMode)
@@ -1871,6 +1910,9 @@ const bulkUpdateLead = async (userId) => {
 const bulkUpdateStatus = async (status) => {
   // Save selected IDs before clearing
   const idsToUpdate = [...selectedProjectIds.value]
+  const previousStatuses = new Map(
+    idsToUpdate.map(id => [id, projectStore.projects.find(project => project.id === id)?.tracking_status])
+  )
 
   // ONLY update tracking_status, do NOT change health!
   // Optimistically update local project state
@@ -1892,10 +1934,20 @@ const bulkUpdateStatus = async (status) => {
       project_ids: idsToUpdate,
       tracking_status: status
     })
+    // The home screen only renders following projects. Fetch immediately after
+    // saving so an in-flight polling response cannot put completed projects
+    // back into the list temporarily.
+    await projectStore.fetchProjects(true)
+    toast.success('Đã cập nhật trạng thái dự án.')
   } catch (err) {
     console.error(err)
-    // On error, refresh to get correct state from server
+    // Restore the optimistic state before refreshing when the update fails.
+    previousStatuses.forEach((previousStatus, id) => {
+      const project = projectStore.projects.find(p => p.id === id)
+      if (project && previousStatus) project.tracking_status = previousStatus
+    })
     await projectStore.fetchProjects(true)
+    toast.error('Không thể cập nhật trạng thái dự án. Vui lòng thử lại.')
   }
 }
 
@@ -2179,12 +2231,35 @@ onUnmounted(() => {
   background-size: 22px 22px !important;
 }
 
+/* Notes have no activity column, so use the same fixed bottom anchor as the
+   other views while keeping the TV aligned with the actions column. */
+@media (min-width: 768px) {
+  .sticky-board-bg .tv-broadcast-panel {
+    position: fixed !important;
+    width: 300px;
+    left: max(16px, calc(50vw - 592px)) !important;
+    top: auto !important;
+    bottom: 110px !important;
+    transform: none !important;
+    transform-origin: right bottom !important;
+  }
+}
+
 /* Grid layout matching sticky-notes.html */
 .sticky-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 260px));
   gap: 28px 32px;
   justify-content: start;
+}
+
+/* The desktop board always uses three notes per row. The note column takes
+   the remaining width beside the fixed actions column, so cards can shrink
+   evenly instead of wrapping after two. */
+@media (min-width: 1280px) {
+  .sticky-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 780px) {
@@ -2446,7 +2521,7 @@ onUnmounted(() => {
   box-shadow: inset 0 3px 4px rgba(255, 255, 255, .22), inset 0 -3px 7px #050606, 0 16px 20px rgba(0, 0, 0, .2);
 }
 
-.tv-broadcast-panel { position: fixed; z-index: 30; bottom: 18px; width: 300px; }
+.tv-broadcast-panel { position: fixed; z-index: 30; bottom: 110px; width: 300px; }
 
 .tv-broadcast-screen {
   height: 100%;

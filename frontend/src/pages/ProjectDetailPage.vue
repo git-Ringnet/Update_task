@@ -858,7 +858,7 @@
                   :title="authStore.user?.name || 'Tôi'" />
 
                 <!-- Input Area Container with Mention Dropdown & Paste Support -->
-                <div class="flex-1 min-w-0 relative">
+                <div class="project-mention-picker flex-1 min-w-0 relative">
                   <textarea ref="stageTaskTitleInputRef" v-model="newStageTaskTitle" rows="1" required maxlength="1000"
                     @input="onTitleInput" @keydown="onTitleKeydown" @paste="onTextareaPaste"
                     placeholder="Chia sẻ cập nhật với team..."
@@ -943,7 +943,7 @@
                 <!-- RIGHT: Person + Date + Submit -->
                 <div class="flex items-center gap-2">
                   <!-- Person picker toggle button -->
-                  <div class="relative" ref="personPickerRef">
+                  <div class="project-person-picker relative" ref="personPickerRef">
                     <button type="button" @click="showPersonPicker = !showPersonPicker"
                       class="inline-flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none shadow-3xs px-3 py-1.5"
                       :class="newStageTaskTaggedUsers.length > 0 ? 'bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-700' : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600'"
@@ -973,7 +973,7 @@
                         <i class="fa-solid fa-xmark text-xs"></i>
                         <span>Bỏ chọn tất cả</span>
                       </button>
-                      <button v-for="u in users" :key="u.id" type="button"
+                      <button v-for="u in taggableUsers" :key="u.id" type="button"
                         @click="toggleTaggedUser(u)"
                         class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left"
                         :class="{ 'bg-emerald-50 text-emerald-800 font-bold': newStageTaskTaggedUsers.includes(String(u.id)) }">
@@ -1948,6 +1948,10 @@ const tagFormattedDateTime = computed(() => {
 const showMentionDropdown = ref(false)
 const mentionQuery = ref('')
 const mentionIndex = ref(0)
+const taggableUsers = computed(() => {
+  const currentUserId = String(authStore.user?.id || '')
+  return users.value.filter(user => String(user.id) !== currentUserId)
+})
 
 const formattedInputTitle = computed(() => {
   if (!newStageTaskTitle.value) return ''
@@ -1960,7 +1964,7 @@ const formattedInputTitle = computed(() => {
     .replace(/>/g, '&gt;')
 
   // Sort users by name length descending so multi-word names take priority
-  const sortedUsers = [...users.value].sort((a, b) => (b.name || '').length - (a.name || '').length)
+  const sortedUsers = [...taggableUsers.value].sort((a, b) => (b.name || '').length - (a.name || '').length)
 
   // Replace matching @User Full Name with green text span
   sortedUsers.forEach(u => {
@@ -2003,7 +2007,7 @@ const filteredUsersForMention = computed(() => {
   })
   
   // Filter out users that are already tagged
-  const availableUsers = users.value.filter(u => !taggedUserIds.has(String(u.id)))
+  const availableUsers = taggableUsers.value.filter(u => !taggedUserIds.has(String(u.id)))
 
   if (!mentionQuery.value) return availableUsers
   
@@ -3164,6 +3168,10 @@ const handleDocumentClick = (e) => {
 
   if (showPersonPicker.value && (!personPickerRef.value || !personPickerRef.value.contains(e.target))) {
     showPersonPicker.value = false
+  }
+
+  if (showMentionDropdown.value && !e.target?.closest?.('.project-mention-picker')) {
+    showMentionDropdown.value = false
   }
   
   const clickedOutsideMenu = !actionMenuDropdownRef.value || !e.target || !actionMenuDropdownRef.value.contains(e.target)
