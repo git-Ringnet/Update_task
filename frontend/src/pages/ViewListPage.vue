@@ -102,7 +102,7 @@
           </div>
 
           <!-- Xương Rồng TV: only broadcasts from the last 24 hours are returned by the API. -->
-          <section v-show="tvPositionReady" class="tv-broadcast-panel select-none"
+          <section v-if="tvPositionReady && currentBroadcast" class="tv-broadcast-panel select-none"
             :style="{ left: `${tvPanelLeft}px`, top: tvPanelTop === null ? 'auto' : `${tvPanelTop}px`, bottom: tvPanelTop === null ? '18px' : 'auto', transform: `scale(${tvPanelScale})`, transformOrigin: tvPanelTop === null ? 'right bottom' : 'right top' }"
             aria-label="Xương Rồng TV">
             <div class="tv-broadcast-frame" :class="currentBroadcast?.type === 'bad' ? 'is-bad' : 'is-good'">
@@ -152,7 +152,7 @@
         </aside>
 
         <!-- CENTER PANEL: Projects List (Block 2 - Wider Column, expands when notes view) -->
-        <section class="project-list-panel"
+        <section ref="projectListPanelRef" class="project-list-panel"
           :class="viewMode === 'notes' ? 'space-y-3.5 select-none w-full' : 'space-y-3.5 select-none w-[420px] flex-shrink-0'">
 
           <!-- Skeleton Loading State -->
@@ -408,7 +408,7 @@
 
                     <!-- Project Link/Title (Green Bold text matching Image 2) -->
                     <div v-if="log.project" @click="goToProjectDetail(log.project.id, $event)"
-                      class="text-[#1A7A56] hover:underline font-extrabold text-sm cursor-pointer mt-1 mb-1 max-w-full truncate block"
+                      class="activity-project-link text-[#1A7A56] hover:underline font-extrabold text-sm cursor-pointer mt-1 mb-1 max-w-full truncate block"
                       :title="log.project.title">
                       {{ log.project.title }}
                     </div>
@@ -454,9 +454,17 @@
             </div>
 
             <!-- Fixed Bottom Button: Tất cả hoạt động gần đây (Image 2) -->
-            <div v-if="displayedActivities.length > 0" class="pt-3 flex-shrink-0">
+            <div v-if="activities.length > 0" class="pt-3 flex-shrink-0 flex gap-2">
+              <button @click="showMentionedActivities = !showMentionedActivities" type="button"
+                :title="showMentionedActivities ? 'Hiện tất cả hoạt động' : 'Chỉ hiện hoạt động có nhắc đến bạn'"
+                class="w-11 shrink-0 py-2.5 border rounded-xl font-extrabold text-sm transition-all cursor-pointer shadow-3xs focus:outline-none"
+                :class="showMentionedActivities
+                  ? 'bg-emerald-600 border-emerald-600 text-white'
+                  : 'bg-[#f6f4ef] hover:bg-emerald-50 border-gray-300 text-[#1A7A56]'">
+                <i class="fa-solid fa-at"></i>
+              </button>
               <button @click="router.push('/feed')" type="button"
-                class="w-full py-2.5 bg-[#f6f4ef] hover:bg-gray-150 border border-gray-300 text-gray-900 font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-3xs focus:outline-none text-center">
+                class="flex-1 py-2.5 bg-[#f6f4ef] hover:bg-gray-150 border border-gray-300 text-gray-900 font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-3xs focus:outline-none text-center">
                 Tất cả hoạt động gần đây
               </button>
             </div>
@@ -475,7 +483,7 @@
       leave-active-class="transition duration-200 ease-in"
       leave-from-class="transform translate-y-0 opacity-100 scale-100"
       leave-to-class="transform -translate-y-10 opacity-0 scale-95">
-      <div v-if="selectedProjectIds.length > 0"
+      <div v-if="selectedProjectIds.length > 0" ref="bulkActionBarRef"
         class="bulk-action-bar fixed top-20 sm:top-[88px] left-1/2 -translate-x-1/2 z-50 bg-[#fafaf7] sm:bg-white/95 backdrop-blur-md px-3.5 py-2.5 sm:px-6 sm:py-3 rounded-2xl shadow-2xl border border-gray-200/90 flex items-center gap-2.5 sm:gap-4 max-w-4xl select-none transition-all">
         <!-- LEFT: COUNT BADGE & TEXT -->
         <div class="flex items-center gap-2 sm:gap-2.5">
@@ -729,6 +737,8 @@ const toast = useToastStore()
 const confirmStore = useConfirmStore()
 const defaultAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'
 const viewActionsRef = ref(null)
+const projectListPanelRef = ref(null)
+const bulkActionBarRef = ref(null)
 const tvPanelLeft = ref(32)
 const tvPositionReady = ref(false)
 const tvPanelTop = ref(null)
@@ -1489,6 +1499,18 @@ const closeAllDropdowns = (e) => {
   if (viewActionsRef.value && !viewActionsRef.value.querySelector('.keyboard-hints')?.contains(e.target)) {
     isShortcutHintsOpen.value = false
   }
+
+  // A selection is only kept while the user is working in the project list or
+  // its command bar. Clicking elsewhere cancels the selection and closes it.
+  if (
+    selectedProjectIds.value.length > 0 &&
+    !projectListPanelRef.value?.contains(e.target) &&
+    !bulkActionBarRef.value?.contains(e.target) &&
+    !e.target.closest?.('.activity-project-link')
+  ) {
+    selectedProjectIds.value = []
+    showAllCheckboxes.value = false
+  }
 }
 
 // Checkboxes and multi-select
@@ -1709,6 +1731,7 @@ const parseCommentFiles = (content) => {
 // Activities feed fetching and styling
 const activities = ref([])
 const isActivitiesLoading = ref(true)
+const showMentionedActivities = ref(false)
 
 // The TV API already filters out broadcasts older than 24 hours. Records remain
 // in the database; they simply stop being returned to this screen.
@@ -1739,13 +1762,22 @@ const nextBroadcast = () => {
 }
 
 const displayedActivities = computed(() => {
-  if (selectedProjectIds.value.length === 0) {
-    return activities.value
+  let list = activities.value
+
+  if (selectedProjectIds.value.length > 0) {
+    list = list.filter(log => {
+      const pId = log.project_id || log.project?.id
+      return pId && selectedProjectIds.value.includes(Number(pId))
+    })
   }
-  return activities.value.filter(log => {
-    const pId = log.project_id || log.project?.id
-    return pId && selectedProjectIds.value.includes(Number(pId))
-  })
+
+  if (showMentionedActivities.value) {
+    const mention = `@${(currentUser.value?.name || '').trim()}`.toLocaleLowerCase('vi-VN')
+    if (!mention || mention === '@') return []
+    list = list.filter(log => String(log.content || '').toLocaleLowerCase('vi-VN').includes(mention))
+  }
+
+  return list
 })
 
 const fetchActivities = async () => {
