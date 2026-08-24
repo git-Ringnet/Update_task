@@ -1,7 +1,7 @@
 self.addEventListener('push', (event) => {
   const payload = event.data ? event.data.json() : {}
   const options = {
-    body: payload.body || 'Có cập nhật mới trong dự án.',
+    body: payload.body || 'C\u00f3 c\u1eadp nh\u1eadt m\u1edbi trong d\u1ef1 \u00e1n.',
     icon: payload.icon || '/cactus-logo.png',
     badge: '/cactus-logo.png',
     tag: payload.tag || 'project-update',
@@ -9,7 +9,7 @@ self.addEventListener('push', (event) => {
     data: { url: payload.url || '/views' },
   }
 
-  event.waitUntil(self.registration.showNotification(payload.title || 'Xưởng Rồng', options))
+  event.waitUntil(self.registration.showNotification(payload.title || 'X\u01b0\u1edfng R\u1ed3ng', options))
 })
 
 self.addEventListener('notificationclick', (event) => {
