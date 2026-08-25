@@ -143,6 +143,17 @@
               <span>Cài đặt tài khoản</span>
             </button>
 
+            <!-- Export SQL (System Admin only) -->
+            <button
+              v-if="authStore.user?.is_system_admin"
+              @click="exportSql"
+              type="button"
+              class="w-full text-left px-2.5 py-2 hover:bg-emerald-50/60 rounded-lg transition-colors flex items-center gap-2.5 cursor-pointer text-xs font-bold text-gray-700 hover:text-emerald-800"
+            >
+              <i class="fa-solid fa-database text-sm text-emerald-600"></i>
+              <span>Xuất File SQL</span>
+            </button>
+
             <!-- Logout -->
             <button
               @click="handleLogout"
@@ -557,6 +568,39 @@ const openEditProfile = () => {
   avatarOffsetY.value = 0
   isDropdownOpen.value = false
   isProfileModalOpen.value = true
+}
+
+const exportSql = async () => {
+  isDropdownOpen.value = false
+  try {
+    const response = await axios.get('/api/database/export', {
+      responseType: 'blob'
+    })
+    
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    
+    const contentDisposition = response.headers['content-disposition']
+    let fileName = 'backup_database.sql'
+    if (contentDisposition) {
+      const fileNameMatch = contentDisposition.match(/filename="(.+)"/)
+      if (fileNameMatch && fileNameMatch[1]) {
+        fileName = fileNameMatch[1]
+      }
+    }
+    
+    link.setAttribute('download', fileName)
+    document.body.appendChild(link)
+    link.click()
+    
+    link.remove()
+    window.URL.revokeObjectURL(url)
+    
+    toastStore.success('Đã xuất file SQL thành công!')
+  } catch (error) {
+    toastStore.error('Không thể xuất file SQL. Vui lòng thử lại sau.')
+  }
 }
 
 const handleSaveProfile = async () => {

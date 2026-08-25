@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'auth.token' => \App\Http\Middleware\AuthenticateToken::class,
             'admin' => \App\Http\Middleware\RequireAdmin::class,
+            'system_admin' => \App\Http\Middleware\RequireSystemAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
