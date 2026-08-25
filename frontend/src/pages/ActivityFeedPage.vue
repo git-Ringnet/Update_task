@@ -19,6 +19,34 @@
         <p class="text-gray-500 text-sm mt-1 font-medium">Cập nhật mới từ team và dự án</p>
       </div>
 
+      <!-- Tabs for System Admin -->
+      <div v-if="authStore.user?.is_system_admin" class="flex gap-2 mb-6 bg-stone-150 p-1.5 rounded-2xl max-w-md select-none border border-stone-200/50">
+        <button
+          @click="activeTab = 'all'"
+          type="button"
+          class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer text-center"
+          :class="activeTab === 'all' ? 'bg-white text-emerald-800 shadow-3xs border border-stone-200' : 'text-gray-500 hover:text-emerald-700'"
+        >
+          Tất cả
+        </button>
+        <button
+          @click="activeTab = 'comments'"
+          type="button"
+          class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer text-center"
+          :class="activeTab === 'comments' ? 'bg-white text-emerald-800 shadow-3xs border border-stone-200' : 'text-gray-500 hover:text-emerald-700'"
+        >
+          Bình luận
+        </button>
+        <button
+          @click="activeTab = 'operations'"
+          type="button"
+          class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer text-center"
+          :class="activeTab === 'operations' ? 'bg-white text-emerald-800 shadow-3xs border border-stone-200' : 'text-gray-500 hover:text-emerald-700'"
+        >
+          Lịch sử thao tác
+        </button>
+      </div>
+
       <!-- Loading State -->
       <div v-if="isLoading" class="space-y-4">
         <div v-for="i in 3" :key="'skel-' + i" class="bg-white rounded-2xl p-5 border border-gray-100 flex items-start gap-4 animate-pulse">
@@ -33,7 +61,7 @@
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="activities.length === 0" class="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-2xs">
+      <div v-else-if="filteredActivities.length === 0" class="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-2xs">
         <p class="text-gray-400 font-medium">Chưa có cập nhật hay hoạt động nào mới.</p>
       </div>
 
@@ -120,14 +148,14 @@
         </div>
 
         <!-- Load more container -->
-        <div v-if="activities.length > displayLimit" class="pt-4 flex justify-center bg-[#F9F4EE] mb-4">
+        <div v-if="filteredActivities.length > displayLimit" class="pt-4 flex justify-center bg-[#F9F4EE] mb-4">
           <button
             @click="displayLimit += 15"
             type="button"
             class="px-5 py-2.5 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 font-extrabold text-xs rounded-xl shadow-3xs transition-all cursor-pointer flex items-center gap-1.5 focus:outline-none"
           >
             <i class="fa-solid fa-angles-down text-[10px]"></i>
-            <span>Xem thêm hoạt động (Còn {{ activities.length - displayLimit }} hoạt động)</span>
+            <span>Xem thêm hoạt động (Còn {{ filteredActivities.length - displayLimit }} hoạt động)</span>
           </button>
         </div>
       </div>
@@ -150,13 +178,17 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
+import { useAuthStore } from '../stores/auth'
 
 
 const router = useRouter()
+const route = useRoute()
+const authStore = useAuthStore()
+
 const goBack = () => {
   if (window.history.state && window.history.state.back) {
     router.back()
@@ -167,6 +199,11 @@ const goBack = () => {
 const activities = ref([])
 const isLoading = ref(true)
 const displayLimit = ref(15)
+const activeTab = ref(route.query.tab || 'all')
+
+watch(() => route.query.tab, (newTab) => {
+  activeTab.value = newTab || 'all'
+})
 
 const fetchActivities = async () => {
   isLoading.value = true
@@ -181,10 +218,24 @@ const fetchActivities = async () => {
   }
 }
 
+const filteredActivities = computed(() => {
+  let list = activities.value
+  
+  if (authStore.user?.is_system_admin) {
+    if (activeTab.value === 'comments') {
+      list = list.filter(c => !c.type || c.type === 'comment')
+    } else if (activeTab.value === 'operations') {
+      list = list.filter(c => c.type && c.type !== 'comment')
+    }
+  }
+  
+  return list
+})
+
 // Group comments by date headers (Hôm nay, Hôm qua, or specific date string)
 const groupedActivities = computed(() => {
   const groups = {}
-  const sliced = activities.value.slice(0, displayLimit.value)
+  const sliced = filteredActivities.value.slice(0, displayLimit.value)
   
   sliced.forEach(item => {
     if (!item.created_at) return

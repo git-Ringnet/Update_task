@@ -154,6 +154,28 @@
               <span>Xuất File SQL</span>
             </button>
 
+            <!-- Operation History (System Admin only) -->
+            <button
+              v-if="authStore.user?.is_system_admin"
+              @click="navigate('/feed?tab=operations')"
+              type="button"
+              class="w-full text-left px-2.5 py-2 hover:bg-emerald-50/60 rounded-lg transition-colors flex items-center gap-2.5 cursor-pointer text-xs font-bold text-gray-700 hover:text-emerald-800"
+            >
+              <i class="fa-solid fa-clock-rotate-left text-sm text-emerald-600"></i>
+              <span>Lịch sử thao tác</span>
+            </button>
+
+            <!-- Install App (PWA) -->
+            <button
+              v-if="isInstallable"
+              @click="handleInstallClick"
+              type="button"
+              class="w-full text-left px-2.5 py-2 hover:bg-emerald-50/60 rounded-lg transition-colors flex items-center gap-2.5 cursor-pointer text-xs font-bold text-gray-700 hover:text-emerald-800"
+            >
+              <i class="fa-solid fa-mobile-screen-button text-sm text-emerald-600"></i>
+              <span>Cài đặt ứng dụng</span>
+            </button>
+
             <!-- Logout -->
             <button
               @click="handleLogout"
@@ -380,6 +402,60 @@
       </div>
     </div>
 
+    <!-- Install Instructions Modal -->
+    <Teleport to="body">
+      <div v-if="isInstructionsModalOpen" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
+        <button type="button" class="absolute inset-0 bg-slate-950/35 backdrop-blur-xs cursor-default"
+          aria-label="Đóng hướng dẫn" @click="isInstructionsModalOpen = false"></button>
+
+        <div class="relative z-10 w-full max-w-sm rounded-3xl border border-stone-200 bg-[#fffdf9] p-6 shadow-2xl space-y-4">
+          <div class="flex items-start gap-3">
+            <span class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg flex-shrink-0 mt-0.5">
+              <i class="fa-solid fa-mobile-screen-button"></i>
+            </span>
+            <div>
+              <h3 class="text-sm font-black text-gray-900 uppercase">
+                {{ isIOS ? 'Cài đặt trên iOS' : 'Hướng dẫn cài đặt app' }}
+              </h3>
+              <p class="text-[10px] text-gray-500 font-medium">Để thêm ứng dụng Xương Rồng vào màn hình chính:</p>
+            </div>
+          </div>
+          
+          <!-- iOS Steps -->
+          <div v-if="isIOS" class="space-y-2.5 text-xs font-semibold text-gray-700 bg-stone-50 p-3.5 rounded-2xl border border-stone-200/50">
+            <div class="flex items-start gap-2">
+              <span class="w-5 h-5 rounded-full bg-emerald-700 text-white flex items-center justify-center text-[10px] flex-shrink-0 font-bold">1</span>
+              <span>Mở trang web bằng trình duyệt <strong>Safari</strong>.</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="w-5 h-5 rounded-full bg-emerald-700 text-white flex items-center justify-center text-[10px] flex-shrink-0 font-bold">2</span>
+              <span>Bấm vào biểu tượng <strong>Chia sẻ (Share)</strong> <i class="fa-solid fa-share-from-square text-emerald-600"></i> ở thanh công cụ Safari.</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="w-5 h-5 rounded-full bg-emerald-700 text-white flex items-center justify-center text-[10px] flex-shrink-0 font-bold">3</span>
+              <span>Cuộn xuống và chọn <strong>Thêm vào MH chính (Add to Home Screen)</strong> <i class="fa-solid fa-square-plus text-emerald-600"></i>.</span>
+            </div>
+          </div>
+
+          <!-- Chrome/Android/Desktop Steps -->
+          <div v-else class="space-y-2.5 text-xs font-semibold text-gray-700 bg-stone-50 p-3.5 rounded-2xl border border-stone-200/50">
+            <div class="flex items-start gap-2">
+              <span class="w-5 h-5 rounded-full bg-emerald-700 text-white flex items-center justify-center text-[10px] flex-shrink-0 font-bold">1</span>
+              <span>Bấm vào nút <strong>Menu của trình duyệt</strong> (icon <i class="fa-solid fa-ellipsis-vertical text-emerald-600"></i> 3 chấm) hoặc biểu tượng <strong>Cài đặt ứng dụng</strong> <i class="fa-solid fa-download text-emerald-600"></i> trên thanh địa chỉ.</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="w-5 h-5 rounded-full bg-emerald-700 text-white flex items-center justify-center text-[10px] flex-shrink-0 font-bold">2</span>
+              <span>Chọn <strong>Cài đặt ứng dụng (Install App)</strong> hoặc <strong>Thêm vào Màn hình chính (Add to Home Screen)</strong>.</span>
+            </div>
+          </div>
+
+          <div class="flex justify-end pt-1">
+            <button @click="isInstructionsModalOpen = false" class="px-5 py-2 rounded-xl bg-emerald-700 text-xs font-black text-white hover:bg-emerald-800 shadow-sm transition-colors cursor-pointer">ĐÃ HIỂU</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
   </header>
 </template>
 
@@ -404,6 +480,50 @@ const isBroadcastModalOpen = ref(false)
 const isBroadcastSubmitting = ref(false)
 const broadcastUsers = ref([])
 const dropdownRef = ref(null)
+
+// PWA Install state
+const deferredPrompt = ref(null)
+const showInstallBtn = ref(false)
+const isInstructionsModalOpen = ref(false)
+
+const isIOS = computed(() => {
+  if (typeof window === 'undefined' || !navigator) return false
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
+})
+
+const isStandalone = computed(() => {
+  if (typeof window === 'undefined') return false
+  return window.matchMedia('(display-mode: standalone)').matches
+})
+
+const isInstallable = computed(() => {
+  return !isStandalone.value
+})
+
+const handleInstallClick = async () => {
+  isDropdownOpen.value = false
+  if (deferredPrompt.value) {
+    deferredPrompt.value.prompt()
+    const { outcome } = await deferredPrompt.value.userChoice
+    if (outcome === 'accepted') {
+      deferredPrompt.value = null
+      showInstallBtn.value = false
+    }
+  } else {
+    isInstructionsModalOpen.value = true
+  }
+}
+
+const handleBeforeInstallPrompt = (e) => {
+  e.preventDefault()
+  deferredPrompt.value = e
+  showInstallBtn.value = true
+}
+
+const handleAppInstalled = () => {
+  deferredPrompt.value = null
+  showInstallBtn.value = false
+}
 
 const broadcastForm = reactive({
   type: 'good',
@@ -680,9 +800,13 @@ const handleClickOutside = (e) => {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+  window.addEventListener('appinstalled', handleAppInstalled)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+  window.removeEventListener('appinstalled', handleAppInstalled)
 })
 </script>
