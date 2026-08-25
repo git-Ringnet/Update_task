@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Customer;
+use App\Models\Comment;
 use App\Models\Project;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -110,6 +112,47 @@ class ProjectAuthorizationTest extends TestCase
             'user_id' => $tagged->id,
         ]);
         $this->getJson("/api/projects/{$project->id}", $this->headers($tagged))->assertOk();
+    }
+
+    public function test_new_member_only_sees_new_project_updates_in_recent_activity(): void
+    {
+        $creator = $this->user();
+        $member = $this->user();
+        $project = $this->project($creator);
+
+        Carbon::setTestNow('2026-08-25 08:00:00');
+        $oldComment = Comment::create([
+            'project_id' => $project->id,
+            'user_id' => $creator->id,
+            'content' => 'Cập nhật trước khi thành viên tham gia',
+        ]);
+
+        Carbon::setTestNow('2026-08-25 09:00:00');
+        $project->members()->attach($member->id, [
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Carbon::setTestNow('2026-08-25 10:00:00');
+        $newComment = Comment::create([
+            'project_id' => $project->id,
+            'user_id' => $creator->id,
+            'content' => 'Cập nhật sau khi thành viên tham gia',
+        ]);
+
+        $this->getJson('/api/comments', $this->headers($member))
+            ->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.id', $newComment->id);
+
+        // Project detail requests its own history and must retain earlier updates.
+        $this->getJson("/api/comments?project_id={$project->id}", $this->headers($member))
+            ->assertOk()
+            ->assertJsonCount(2)
+            ->assertJsonFragment(['id' => $oldComment->id])
+            ->assertJsonFragment(['id' => $newComment->id]);
+
+        Carbon::setTestNow();
     }
 
     public function test_only_admin_can_create_or_delete_accounts_and_admin_is_hidden(): void

@@ -15,10 +15,27 @@ class CommentController extends Controller
     {
         $query = Comment::with(['user', 'project.customer'])->orderBy('created_at', 'desc');
 
-        $query->whereHas('project', fn ($q) => $q->visibleTo(auth()->user()));
+        $user = auth()->user();
+        $query->whereHas('project', fn ($q) => $q->visibleTo($user));
 
         if ($request->has('project_id')) {
             $query->where('project_id', $request->project_id);
+        } elseif (!$user->is_admin && !$user->isSystemAdmin()) {
+            // The activity feed is an inbox, not the project's history. A member
+            // only starts seeing project updates from the moment they join. The
+            // project-specific endpoint deliberately remains unfiltered so its
+            // detail page can still provide the full project context.
+            $query->where(function ($visibleComments) use ($user) {
+                $visibleComments
+                    ->whereHas('project', function ($projects) use ($user) {
+                        $projects->where('created_by', $user->id)
+                            ->orWhere('lead_id', $user->id);
+                    })
+                    ->orWhereHas('project.members', function ($members) use ($user) {
+                        $members->where('users.id', $user->id)
+                            ->whereColumn('project_members.created_at', '<=', 'comments.created_at');
+                    });
+            });
         }
 
         if ($request->has('task_id')) {
