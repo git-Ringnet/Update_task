@@ -156,7 +156,7 @@
 
           <!-- Thành viên dự án -->
           <div>
-            <div class="flex items-center justify-between gap-3 mb-2">
+          <div class="flex items-center justify-between gap-3 mb-2">
               <label class="block text-sm font-semibold text-gray-700">Thành viên dự án</label>
               <span class="text-[10px] font-bold text-gray-400">Có thể thêm/xóa sau</span>
             </div>
@@ -171,6 +171,17 @@
               Thành viên được thêm sẽ xem được dự án và toàn bộ hoạt động liên quan.
             </p>
           </div>
+
+          <label
+            v-if="authStore.user?.is_system_admin"
+            class="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 cursor-pointer"
+          >
+            <input v-model="form.hidden_from_admin" type="checkbox" class="mt-0.5 h-4 w-4 accent-amber-600" />
+            <span>
+              <span class="block text-sm font-semibold text-amber-950">Ẩn dự án với Admin</span>
+              <span class="block mt-0.5 text-xs text-amber-800">Admin thường sẽ không thấy dự án này và không nhận thông báo liên quan.</span>
+            </span>
+          </label>
 
           <!-- Modal Footer -->
           <div class="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
@@ -320,6 +331,7 @@ const form = reactive({
   health: 'yellow',
   tracking_status: 'following',
   is_pinned: false,
+  hidden_from_admin: false,
   member_ids: [],
 })
 
@@ -349,6 +361,7 @@ watch(() => props.isOpen, async (newVal) => {
       form.lead_id = props.editProject.lead_id
       form.health = props.editProject.health
       form.tracking_status = props.editProject.tracking_status || 'following'
+      form.hidden_from_admin = Boolean(props.editProject.hidden_from_admin)
       const c = props.customers.find(item => item.id === form.customer_id)
       searchQuery.value = c ? `${c.name} ${c.code ? `(${c.code})` : ''}` : ''
 
@@ -366,6 +379,7 @@ watch(() => props.isOpen, async (newVal) => {
       console.log('Setting default lead_id to:', form.lead_id)
       form.health = 'yellow'
       form.tracking_status = 'following'
+      form.hidden_from_admin = false
       searchQuery.value = ''
       form.member_ids = authStore.user?.id && !authStore.user?.is_admin ? [authStore.user.id] : []
     }
@@ -597,7 +611,11 @@ const handleSubmit = async () => {
   
   isSubmitting.value = true
   try {
-    emit('submit', { ...form })
+    const payload = { ...form }
+    if (!authStore.user?.is_system_admin) {
+      delete payload.hidden_from_admin
+    }
+    emit('submit', payload)
     form.title = ''
     form.customer_id = ''
     close()

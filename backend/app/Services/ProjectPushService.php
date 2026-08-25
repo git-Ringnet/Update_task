@@ -18,7 +18,12 @@ class ProjectPushService
             return;
         }
 
-        $adminIds = \App\Models\User::where('is_admin', true)->pluck('id');
+        $adminIds = \App\Models\User::query()
+            ->where('is_system_admin', true)
+            ->when(!$project->hidden_from_admin, function ($users) {
+                $users->orWhere('is_admin', true);
+            })
+            ->pluck('id');
 
         $recipientIds = $project->members->pluck('id')
             ->push($project->created_by)

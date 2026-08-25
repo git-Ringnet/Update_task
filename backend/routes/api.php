@@ -197,13 +197,14 @@ Route::middleware('auth.token')->group(function () {
     Route::post('/push/subscriptions', [PushSubscriptionController::class, 'store']);
     Route::delete('/push/subscriptions', [PushSubscriptionController::class, 'destroy']);
 
-    Route::get('/users', function () {
+    Route::get('/users', function (Request $request) {
+        $viewer = $request->user();
         $users = User::where('is_admin', false)
             ->select('id', 'name', 'email', 'avatar')
             ->get();
 
-        $users->each(function (User $user) {
-            $user->setAttribute('participating_projects_count', Project::query()
+        $users->each(function (User $user) use ($viewer) {
+            $user->setAttribute('participating_projects_count', Project::visibleTo($viewer)
                 ->whereHas('members', fn ($members) => $members->where('users.id', $user->id))
                 ->count());
         });

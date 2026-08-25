@@ -17,6 +17,7 @@ class Project extends Model
         'title',
         'lead_id',
         'created_by',
+        'hidden_from_admin',
         'health',
         'tracking_status',
         'is_pinned',
@@ -26,6 +27,7 @@ class Project extends Model
 
     protected $casts = [
         'is_pinned' => 'boolean',
+        'hidden_from_admin' => 'boolean',
         'last_activity_at' => 'datetime',
     ];
 
@@ -50,8 +52,12 @@ class Project extends Model
             return $query->whereRaw('1 = 0');
         }
 
-        if ($user->is_admin) {
+        if ($user->isSystemAdmin()) {
             return $query;
+        }
+
+        if ($user->is_admin) {
+            return $query->where('hidden_from_admin', false);
         }
 
         return $query->where(function (Builder $q) use ($user) {
@@ -69,7 +75,8 @@ class Project extends Model
             return false;
         }
 
-        return $user->is_admin
+        return $user->isSystemAdmin()
+            || ($user->is_admin && !$this->hidden_from_admin)
             || (int) $this->created_by === (int) $user->id
             || (int) $this->lead_id === (int) $user->id
             || $this->members()->where('users.id', $user->id)->exists();
@@ -77,7 +84,8 @@ class Project extends Model
 
     public function canManageMembers(?User $user): bool
     {
-        return $user && ($user->is_admin
+        return $user && ($user->isSystemAdmin()
+            || ($user->is_admin && !$this->hidden_from_admin)
             || (int) $this->created_by === (int) $user->id
             || (int) $this->lead_id === (int) $user->id);
     }

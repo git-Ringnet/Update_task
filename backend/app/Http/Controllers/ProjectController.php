@@ -112,7 +112,14 @@ class ProjectController extends Controller
             'tracking_status' => 'sometimes|in:following,not_following,completed',
             'member_ids' => 'nullable|array',
             'member_ids.*' => Rule::exists('users', 'id')->where('is_admin', 0),
+            'hidden_from_admin' => 'sometimes|boolean',
         ]);
+
+        abort_if(
+            $request->has('hidden_from_admin') && !auth()->user()->isSystemAdmin(),
+            403,
+            'Chá»‰ System Admin má»›i cÃ³ thá»ƒ áº©n dá»± Ã¡n khá»i Admin.'
+        );
 
         // Map health to tracking_status only if not provided
         if (!isset($validated['tracking_status'])) {
@@ -179,7 +186,14 @@ class ProjectController extends Controller
             'tracking_status' => 'sometimes|in:following,not_following,completed',
             'member_ids' => 'nullable|array',
             'member_ids.*' => Rule::exists('users', 'id')->where('is_admin', 0),
+            'hidden_from_admin' => 'sometimes|boolean',
         ]);
+
+        abort_if(
+            $request->has('hidden_from_admin') && !auth()->user()->isSystemAdmin(),
+            403,
+            'Chá»‰ System Admin má»›i cÃ³ thá»ƒ áº©n dá»± Ã¡n khá»i Admin.'
+        );
 
         $project = Project::findOrFail($id);
         abort_unless($project->canManageMembers(auth()->user()), 403, 'Bạn không có quyền chỉnh sửa dự án này.');
@@ -379,7 +393,7 @@ class ProjectController extends Controller
         // or current project lead.
         $changesRestrictedFields = array_key_exists('lead_id', $validated);
         $manageable = $changesRestrictedFields
-            ? Project::whereIn('id', $projectIds)
+            ? Project::visibleTo($user)->whereIn('id', $projectIds)
                 ->when(!$user->is_admin, function ($query) {
                     $query->where(function ($q) {
                         $q->where('created_by', auth()->id())->orWhere('lead_id', auth()->id());

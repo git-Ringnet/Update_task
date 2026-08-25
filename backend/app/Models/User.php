@@ -23,6 +23,7 @@ class User extends Authenticatable
         'password',
         'avatar',
         'is_admin',
+        'is_system_admin',
         'view_mode',
         'pinned_customers',
     ];
@@ -52,6 +53,7 @@ class User extends Authenticatable
             'pinned_customers' => 'array',
             'api_token_expires_at' => 'datetime',
             'is_admin' => 'boolean',
+            'is_system_admin' => 'boolean',
         ];
     }
 
@@ -74,5 +76,10 @@ class User extends Authenticatable
     public function apiTokens()
     {
         return $this->hasMany(ApiToken::class);
+    }
+
+    public function isSystemAdmin(): bool
+    {
+        return $this->is_admin && $this->is_system_admin;
     }
 }
