@@ -164,6 +164,7 @@
               ref="memberPickerRef"
               v-model="form.member_ids"
               :users="users"
+              :groups="mentionGroups"
               :creator-id="effectiveCreatorId"
               placeholder="@+tên thành viên muốn thêm"
             />
@@ -334,6 +335,7 @@ const form = reactive({
   hidden_from_admin: false,
   member_ids: [],
 })
+const mentionGroups = ref([])
 
 // Global keydown handler for the modal
 const handleModalKeydown = (event) => {
@@ -595,6 +597,7 @@ const handleClickOutside = (event) => {
 
 onMounted(() => {
   window.addEventListener('click', handleClickOutside)
+  axios.get('/api/mention-groups').then(res => { mentionGroups.value = res.data || [] }).catch(() => {})
 })
 
 onUnmounted(() => {

@@ -5,6 +5,7 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\MentionGroupController;
 use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\PushSubscriptionController;
@@ -261,6 +262,11 @@ Route::middleware('auth.token')->group(function () {
 
         return response()->json(['message' => 'Xóa thành viên thành công.']);
     })->middleware('admin');
+
+    Route::get('/mention-groups', [MentionGroupController::class, 'index']);
+    Route::post('/mention-groups', [MentionGroupController::class, 'store']);
+    Route::put('/mention-groups/{mentionGroup}', [MentionGroupController::class, 'update']);
+    Route::delete('/mention-groups/{mentionGroup}', [MentionGroupController::class, 'destroy']);
 
     // Projects
     Route::put('/projects/bulk', [ProjectController::class, 'bulkUpdate']);

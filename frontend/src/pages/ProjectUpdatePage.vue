@@ -212,7 +212,7 @@
                         @click="selectMentionUser(project.id, u)"
                         class="w-full px-3 py-2 flex items-center gap-2.5 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left cursor-pointer"
                         :class="{ 'bg-emerald-50 text-emerald-800 font-bold': idx === mentionIndex }">
-                        <img :src="u.avatar || defaultAvatar"
+                        <img v-if="!u.isMentionGroup" :src="u.avatar || defaultAvatar"
                           class="w-6 h-6 rounded-full object-cover border border-gray-200" />
                         <div class="flex flex-col min-w-0 flex-1">
                           <span class="truncate font-bold">{{ u.name }}</span>
@@ -322,7 +322,7 @@
                             :checked="taggedUsersMap[project.id] && taggedUsersMap[project.id].includes(String(u.id))"
                             class="rounded text-emerald-600 accent-emerald-600 cursor-pointer w-3.5 h-3.5"
                             @click.stop="toggleTaggedUser(project.id, u)" />
-                          <img :src="u.avatar || defaultAvatar"
+                          <img v-if="!u.isMentionGroup" :src="u.avatar || defaultAvatar"
                             class="w-5 h-5 rounded-full object-cover border border-gray-200" />
                           <span class="truncate flex-1">{{ u.name }}</span>
                         </button>
@@ -456,6 +456,7 @@ const selectedIds = route.query.ids ? route.query.ids.split(',') : []
 
 const projects = ref([])
 const usersList = ref([])
+const mentionGroups = ref([])
 const isLoading = ref(true)
 const loadError = ref(null)
 
@@ -603,7 +604,16 @@ const filteredUsersForMention = computed(() => {
   // Filter out users that are already tagged
   const availableUsers = taggableUsers.value.filter(u => !taggedUserIds.has(String(u.id)))
 
-  if (!mentionQuery.value) return availableUsers
+  const groupOptions = mentionGroups.value.map(group => ({
+    id: `group-${group.id}`,
+    name: `@${group.name}`,
+    mentionName: group.name,
+    isMentionGroup: true,
+    avatar: null,
+  }))
+  const allOption = { id: 'all', name: '@all', mentionName: 'all', isMentionGroup: true, avatar: null }
+
+  if (!mentionQuery.value) return [allOption, ...groupOptions, ...availableUsers]
 
   const q = removeVietnameseAccents(mentionQuery.value).toLowerCase()
   const firstWordMatches = availableUsers.filter(u => {
@@ -611,12 +621,13 @@ const filteredUsersForMention = computed(() => {
     return nameAcc.split(/\s+/)[0]?.startsWith(q)
   })
 
-  if (firstWordMatches.length > 0) return firstWordMatches
+  const specialMatches = [allOption, ...groupOptions].filter(item => removeVietnameseAccents(item.mentionName).includes(q))
+  if (firstWordMatches.length > 0) return [...specialMatches, ...firstWordMatches]
 
-  return availableUsers.filter(u => {
+  return [...specialMatches, ...availableUsers.filter(u => {
     const words = removeVietnameseAccents(u.name).toLowerCase().split(/\s+/)
     return words.slice(1).some(word => word.startsWith(q))
-  })
+  })]
 })
 
 // SMART VIETNAMESE NATURAL LANGUAGE DATE PARSER
@@ -829,6 +840,19 @@ const onTextareaKeydown = (projectId, event) => {
 
 const selectMentionUser = (projectId, user) => {
   if (!user) return
+  if (user.isMentionGroup) {
+    const text = updateTexts[projectId] || ''
+    const el = textareaRefs[projectId]
+    const cursorPos = el?.selectionStart || text.length
+    const textBeforeCursor = text.substring(0, cursorPos)
+    const textAfterCursor = text.substring(cursorPos)
+    const match = textBeforeCursor.match(/@([^\s@]*)$/)
+    const newBefore = match ? textBeforeCursor.substring(0, match.index) + `@${user.mentionName} ` : `${textBeforeCursor}@${user.mentionName} `
+    updateTexts[projectId] = newBefore + textAfterCursor
+    showMentionDropdown.value = false
+    nextTick(() => { el?.focus(); el?.setSelectionRange(newBefore.length, newBefore.length) })
+    return
+  }
   const idStr = String(user.id)
   if (!taggedUsersMap[projectId]) {
     taggedUsersMap[projectId] = []
@@ -1105,11 +1129,17 @@ const fetchUsers = async () => {
   } catch (err) { }
 }
 
+const fetchMentionGroups = async () => {
+  try {
+    mentionGroups.value = (await axios.get('/api/mention-groups')).data || []
+  } catch (err) { }
+}
+
 const loadProjects = async () => {
   isLoading.value = true
   loadError.value = null
   try {
-    await fetchUsers()
+    await Promise.all([fetchUsers(), fetchMentionGroups()])
     const res = await axios.get('/api/projects')
     const allProjects = res.data?.projects || res.data || []
 

@@ -79,11 +79,12 @@ class CommentController extends Controller
         unset($validated['tagged_user_ids']);
         $validated['user_id'] = auth()->id();
 
+        app(ProjectMemberService::class)->addMentionedMembers($project, $validated['content'], $taggedUserIds);
+
         $comment = Comment::create($validated);
         $comment->load('user');
 
         Project::where('id', $comment->project_id)->update(['last_activity_at' => Carbon::now()]);
-        app(ProjectMemberService::class)->addMentionedMembers($project, $comment->content, $taggedUserIds);
 
         return response()->json($comment, 201);
     }

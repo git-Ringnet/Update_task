@@ -15,6 +15,8 @@
           appear in the eyes of their audiences</p>
       </div>
 
+
+
       <!-- Main Layout Container -->
       <div class="view-page-layout"
         :class="viewMode === 'notes'
@@ -158,9 +160,11 @@
           </Teleport>
         </aside>
 
-        <!-- CENTER PANEL: Projects List (Block 2 - Wider Column, expands when notes view) -->
-        <section ref="projectListPanelRef" class="project-list-panel"
-          :class="viewMode === 'notes' ? 'space-y-3.5 select-none w-full' : 'space-y-3.5 select-none w-[420px] flex-shrink-0'">
+        <!-- Dynamic/Faded Wrapper for panels on mobile -->
+        <div class="mobile-panels-container">
+          <!-- CENTER PANEL: Projects List (Block 2 - Wider Column, expands when notes view) -->
+          <section ref="projectListPanelRef" class="project-list-panel"
+          :class="[viewMode === 'notes' ? 'space-y-3.5 select-none w-full' : 'space-y-3.5 select-none w-[420px] flex-shrink-0', mobileHomeTab === 'projects' ? '' : 'mobile-home-panel-hidden']">
 
           <!-- Skeleton Loading State -->
           <div v-if="projectStore.isLoading && displayedProjects.length === 0"
@@ -360,7 +364,8 @@
 
         <!-- RIGHT PANEL: Hoạt động gần đây (Block 3 - Hidden in notes view) -->
         <section v-if="viewMode !== 'notes'"
-          class="recent-activity-panel bg-transparent flex flex-col h-[calc(100vh-226px)] select-none w-[390px] flex-shrink-0">
+          class="recent-activity-panel bg-transparent flex flex-col h-[calc(100vh-226px)] select-none w-[390px] flex-shrink-0"
+          :class="mobileHomeTab === 'activities' ? '' : 'mobile-home-panel-hidden'">
 
           <!-- Skeleton Loading State -->
           <div v-if="isActivitiesLoading && displayedActivities.length === 0"
@@ -477,6 +482,7 @@
             </div>
           </div>
         </section>
+        </div>
       </div>
     </main>
 
@@ -722,6 +728,12 @@
         </button>
       </div>
     </div>
+
+    <!-- Mobile Bottom Navigation Tabs -->
+    <div v-if="viewMode !== 'notes'" class="mobile-home-tabs">
+      <button type="button" @click="mobileHomeTab = 'projects'" class="flex-1 rounded-lg py-2.5 text-sm font-extrabold transition-colors" :class="mobileHomeTab === 'projects' ? 'bg-emerald-600 text-white' : 'text-gray-500'">Dự án</button>
+      <button type="button" @click="mobileHomeTab = 'activities'" class="flex-1 rounded-lg py-2.5 text-sm font-extrabold transition-colors" :class="mobileHomeTab === 'activities' ? 'bg-emerald-600 text-white' : 'text-gray-500'">Hoạt động</button>
+    </div>
   </div>
 </template>
 
@@ -751,6 +763,7 @@ const tvPositionReady = ref(false)
 const tvPanelTop = ref(null)
 const tvPanelScale = ref(1)
 const isShortcutHintsOpen = ref(false)
+const mobileHomeTab = ref('projects')
 
 const updateTvPosition = () => {
   const panel = viewActionsRef.value
@@ -2157,6 +2170,14 @@ onUnmounted(() => {
   display: flex;
 }
 
+.mobile-panels-container {
+  display: contents;
+}
+
+.mobile-home-tabs {
+  display: none;
+}
+
 .shortcut-hints-toggle {
   width: 42px;
   height: 42px;
@@ -2184,6 +2205,7 @@ onUnmounted(() => {
     flex-direction: column !important;
     align-items: stretch !important;
     gap: 0 !important;
+    padding-bottom: 80px;
   }
 
   .view-actions {
@@ -2229,10 +2251,53 @@ onUnmounted(() => {
   }
   .keyboard-hints { display: none; }
 
+  .mobile-panels-container {
+    display: grid !important;
+    grid-template-columns: 1fr;
+    position: relative;
+    width: 100%;
+  }
+
   .project-list-panel,
   .recent-activity-panel {
+    grid-column: 1;
+    grid-row: 1;
     width: 100% !important;
+    max-width: none !important;
+    justify-self: stretch !important;
     flex-shrink: 1 !important;
+    transition: opacity 0.25s ease-out, transform 0.25s ease-out, visibility 0.25s;
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+  }
+
+  .mobile-home-panel-hidden {
+    display: block !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 0 !important;
+    visibility: hidden !important;
+    transform: translateY(12px) !important;
+  }
+
+  .mobile-home-tabs {
+    position: fixed !important;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 45;
+    display: flex !important;
+    background: #ffffff;
+    border-top: 2px solid #4d4d4d;
+    padding: 8px 16px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+    overflow: hidden !important;
   }
 
   .project-scroll-container {

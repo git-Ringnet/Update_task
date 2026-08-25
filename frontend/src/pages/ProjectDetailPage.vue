@@ -876,7 +876,7 @@
                       @click="selectMentionUser(u)"
                       class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left"
                       :class="{ 'bg-emerald-50 text-emerald-800 font-bold': idx === mentionIndex }">
-                      <img :src="u.avatar || defaultAvatar"
+                      <img v-if="!u.isMentionGroup" :src="u.avatar || defaultAvatar"
                         class="w-5 h-5 rounded-full object-cover border border-gray-200" />
                       <span class="truncate flex-1">{{ u.name }}</span>
                     </button>
@@ -978,7 +978,7 @@
                         <input type="checkbox" :checked="newStageTaskTaggedUsers.includes(String(u.id))"
                           class="rounded text-emerald-600 accent-emerald-600 cursor-pointer w-3.5 h-3.5"
                           @click.stop="toggleTaggedUser(u)" />
-                        <img :src="u.avatar || defaultAvatar"
+                        <img v-if="!u.isMentionGroup" :src="u.avatar || defaultAvatar"
                           class="w-5 h-5 rounded-full object-cover border border-gray-200" />
                         <span class="truncate flex-1">{{ u.name }}</span>
                       </button>
@@ -1280,6 +1280,7 @@ const isDetailLoading = ref(true)
 const hasError = ref(false)
 const project = ref(null)
 const users = ref([])
+const mentionGroups = ref([])
 const customers = ref([])
 const activityLogs = ref([])
 
@@ -2014,7 +2015,9 @@ const filteredUsersForMention = computed(() => {
   // Filter out users that are already tagged
   const availableUsers = taggableUsers.value.filter(u => !taggedUserIds.has(String(u.id)))
 
-  if (!mentionQuery.value) return availableUsers
+  const groupOptions = mentionGroups.value.map(group => ({ id: `group-${group.id}`, name: `@${group.name}`, mentionName: group.name, isMentionGroup: true, avatar: null }))
+  const allOption = { id: 'all', name: '@all', mentionName: 'all', isMentionGroup: true, avatar: null }
+  if (!mentionQuery.value) return [allOption, ...groupOptions, ...availableUsers]
 
   const q = removeVietnameseAccents(mentionQuery.value).toLowerCase()
   const firstWordMatches = availableUsers.filter(u => {
@@ -2024,12 +2027,13 @@ const filteredUsersForMention = computed(() => {
 
   // Prefer the name's first word. Only fall back to later words when no first
   // name matches, e.g. @K => Khanh, but @Ka can reveal Cảnh Kaynblue.
-  if (firstWordMatches.length > 0) return firstWordMatches
+  const specialMatches = [allOption, ...groupOptions].filter(item => removeVietnameseAccents(item.mentionName).includes(q))
+  if (firstWordMatches.length > 0) return [...specialMatches, ...firstWordMatches]
 
-  return availableUsers.filter(u => {
+  return [...specialMatches, ...availableUsers.filter(u => {
     const words = removeVietnameseAccents(u.name).toLowerCase().split(/\s+/)
     return words.slice(1).some(word => word.startsWith(q))
-  })
+  })]
 })
 
 const autoDetectAssigneeFromText = (text) => {
@@ -2126,6 +2130,18 @@ const onTitleKeydown = (e) => {
 
 const selectMentionUser = (user) => {
   if (!user) return
+  if (user.isMentionGroup) {
+    const text = newStageTaskTitle.value || ''
+    const cursorPos = stageTaskTitleInputRef.value?.selectionStart || text.length
+    const textBeforeCursor = text.substring(0, cursorPos)
+    const textAfterCursor = text.substring(cursorPos)
+    const match = textBeforeCursor.match(/@([^\s@]*)$/)
+    const newBefore = match ? textBeforeCursor.substring(0, match.index) + `@${user.mentionName} ` : `${textBeforeCursor}@${user.mentionName} `
+    newStageTaskTitle.value = newBefore + textAfterCursor
+    showMentionDropdown.value = false
+    nextTick(() => { stageTaskTitleInputRef.value?.focus(); stageTaskTitleInputRef.value?.setSelectionRange(newBefore.length, newBefore.length) })
+    return
+  }
   const idStr = String(user.id)
   if (!newStageTaskTaggedUsers.value.includes(idStr)) {
     newStageTaskTaggedUsers.value.push(idStr)
@@ -3391,6 +3407,10 @@ const fetchUsers = async () => {
   } catch (err) { }
 }
 
+const fetchMentionGroups = async () => {
+  try { mentionGroups.value = (await axios.get('/api/mention-groups')).data || [] } catch (err) { }
+}
+
 const fetchComments = async () => {
   const pId = projectId.value
   if (!pId) return
@@ -3418,6 +3438,7 @@ const loadAllData = async () => {
     await Promise.all([
       fetchProjectDetail(),
       fetchUsers(),
+      fetchMentionGroups(),
       fetchComments(),
       fetchCustomers()
     ])

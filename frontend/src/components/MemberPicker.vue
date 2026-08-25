@@ -34,20 +34,21 @@
           <span class="text-[10px] font-black uppercase tracking-wide text-gray-500">Gợi ý thành viên</span>
           <span class="text-[10px] font-bold text-emerald-600">↑ ↓ Enter</span>
         </div>
-        <div v-if="filteredUsers.length" class="max-h-52 overflow-y-auto p-1.5">
+        <div v-if="suggestions.length" class="max-h-52 overflow-y-auto p-1.5">
           <button
-            v-for="(user, index) in filteredUsers"
-            :key="user.id"
+            v-for="(item, index) in suggestions"
+            :key="item.key"
             type="button"
             class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors"
             :class="index === highlightedIndex ? 'bg-emerald-50 text-emerald-900' : 'hover:bg-gray-50 text-gray-800'"
-            @mousedown.prevent="selectUser(user)"
+            @mousedown.prevent="selectSuggestion(item)"
             @mouseenter="highlightedIndex = index"
           >
-            <img :src="user.avatar || '/default-avatar.png'" class="w-8 h-8 rounded-full object-cover border border-gray-200" />
+            <span v-if="item.type !== 'user'" class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center"><i :class="item.type === 'all' ? 'fa-solid fa-users' : 'fa-solid fa-user-group'"></i></span>
+            <img v-else :src="item.user.avatar || '/default-avatar.png'" class="w-8 h-8 rounded-full object-cover border border-gray-200" />
             <span class="min-w-0 flex-1">
-              <span class="block text-xs font-extrabold truncate">{{ user.name }}</span>
-              <span class="block text-[10px] text-gray-400 truncate">@{{ username(user) }}</span>
+              <span class="block text-xs font-extrabold truncate">{{ item.label }}</span>
+              <span class="block text-[10px] text-gray-400 truncate">{{ item.subtitle }}</span>
             </span>
             <i class="fa-solid fa-plus text-xs text-emerald-600"></i>
           </button>
@@ -94,6 +95,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },
   users: { type: Array, default: () => [] },
+  groups: { type: Array, default: () => [] },
   creatorId: { type: [Number, String], default: null },
   placeholder: { type: String, default: 'Nhập tên, email hoặc tên đăng nhập...' },
 })
@@ -125,6 +127,17 @@ const filteredUsers = computed(() => {
     const usernameMatch = normalize(username(user)).startsWith(term)
     return nameMatch || emailMatch || usernameMatch
   })
+})
+const suggestions = computed(() => {
+  const term = normalize(query.value.replace(/^@/, '').trim())
+  const options = filteredUsers.value.map(user => ({ key: `user-${user.id}`, type: 'user', user, label: user.name, subtitle: `@${username(user)}` }))
+  const groupOptions = props.groups
+    .filter(group => !term || normalize(group.name).includes(term))
+    .map(group => ({ key: `group-${group.id}`, type: 'group', group, label: `@${group.name}`, subtitle: `${group.members?.length || 0} thành viên` }))
+  const allOption = !term || 'all'.startsWith(term)
+    ? [{ key: 'all', type: 'all', label: '@all', subtitle: `Tất cả ${props.users.length} thành viên` }]
+    : []
+  return [...allOption, ...groupOptions, ...options]
 })
 
 const isCreator = (userId) => props.creatorId && String(props.creatorId) === String(userId)
@@ -159,6 +172,18 @@ const selectUser = (user) => {
   })
 }
 
+const selectSuggestion = (item) => {
+  if (item.type === 'user') return selectUser(item.user)
+  const ids = item.type === 'all'
+    ? props.users.map(user => user.id)
+    : (item.group.members || []).map(user => user.id)
+  updateIds([...selectedIds.value, ...ids])
+  query.value = ''
+  highlightedIndex.value = 0
+  isOpen.value = false
+  inputRef.value?.focus()
+}
+
 const removeUser = (userId) => {
   if (isCreator(userId)) return
   updateIds(selectedIds.value.filter(id => Number(id) !== Number(userId)))
@@ -169,21 +194,21 @@ const handleKeydown = (event) => {
     event.preventDefault()
     if (!isOpen.value) {
       openSuggestions()
-    } else if (filteredUsers.value.length) {
-      highlightedIndex.value = (highlightedIndex.value + 1) % filteredUsers.value.length
+    } else if (suggestions.value.length) {
+      highlightedIndex.value = (highlightedIndex.value + 1) % suggestions.value.length
     }
   } else if (event.key === 'ArrowUp') {
     event.preventDefault()
     if (!isOpen.value) {
       openSuggestions()
-    } else if (filteredUsers.value.length) {
-      highlightedIndex.value = (highlightedIndex.value - 1 + filteredUsers.value.length) % filteredUsers.value.length
+    } else if (suggestions.value.length) {
+      highlightedIndex.value = (highlightedIndex.value - 1 + suggestions.value.length) % suggestions.value.length
     }
   } else if (event.key === 'Enter') {
     if (isOpen.value) {
       event.preventDefault()
-      const user = filteredUsers.value[highlightedIndex.value]
-      if (user) selectUser(user)
+      const item = suggestions.value[highlightedIndex.value]
+      if (item) selectSuggestion(item)
     }
   } else if (event.key === 'Escape') {
     if (isOpen.value) {

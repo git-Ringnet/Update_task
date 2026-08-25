@@ -135,13 +135,6 @@
               <span>Lịch sử thao tác</span>
             </button>
 
-            <!-- Install App (PWA) -->
-            <button v-if="isInstallable" @click="handleInstallClick" type="button"
-              class="w-full text-left px-2.5 py-2 hover:bg-emerald-50/60 rounded-lg transition-colors flex items-center gap-2.5 cursor-pointer text-xs font-bold text-gray-700 hover:text-emerald-800">
-              <i class="fa-solid fa-mobile-screen-button text-sm text-emerald-600"></i>
-              <span>Cài đặt ứng dụng</span>
-            </button>
-
             <!-- Logout -->
             <button @click="handleLogout" type="button"
               class="w-full text-left px-2.5 py-2 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-2.5 cursor-pointer text-xs font-bold text-rose-600 hover:text-rose-700">

@@ -46,6 +46,15 @@
           </div>
         </div>
 
+        <section class="bg-white border border-gray-200/80 rounded-2xl p-5 shadow-3xs">
+          <div class="flex items-center justify-between gap-3 mb-4">
+            <div><h2 class="text-lg font-extrabold text-gray-900"><i class="fa-solid fa-users-rectangle text-emerald-600 mr-2"></i>Nhóm gắn thẻ</h2><p class="text-xs text-gray-400 font-semibold mt-1">Dùng <b>@tên nhóm</b> để gắn cả nhóm vào dự án; <b>@all</b> để gắn tất cả thành viên.</p></div>
+            <button @click="openGroupModal()" type="button" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl"><i class="fa-solid fa-plus mr-1"></i>Tạo nhóm</button>
+          </div>
+          <div v-if="groups.length" class="flex flex-wrap gap-2"><button v-for="group in groups" :key="group.id" type="button" @click="openGroupModal(group)" class="px-3 py-2 rounded-xl border border-emerald-100 bg-emerald-50 text-left hover:border-emerald-300 transition-colors"><span class="block text-xs font-extrabold text-emerald-800">@{{ group.name }}</span><span class="block text-[10px] font-semibold text-gray-500 mt-0.5">{{ group.members?.length || 0 }} thành viên</span></button></div>
+          <p v-else class="text-xs font-semibold text-gray-400 py-2">Chưa có nhóm nào.</p>
+        </section>
+
         <!-- Skeleton Loading State -->
         <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div v-for="i in 6" :key="'sk-user-' + i" class="bg-white border border-gray-200/80 rounded-2xl p-5 animate-pulse space-y-4 shadow-3xs">
@@ -240,13 +249,23 @@
     </div>
   </div>
   </div>
+    <div v-if="isGroupModalOpen" class="fixed inset-0 z-50 overflow-y-auto">
+      <div class="fixed inset-0 bg-gray-950/60 backdrop-blur-xs" @click="isGroupModalOpen = false"></div>
+      <div class="flex min-h-full items-center justify-center p-4"><form @submit.prevent="saveGroup" class="relative w-full max-w-lg bg-white rounded-2xl p-6 shadow-xl border border-gray-100 space-y-4">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-3"><h3 class="text-lg font-extrabold text-gray-900">{{ editingGroup ? 'Chỉnh sửa nhóm' : 'Tạo nhóm gắn thẻ' }}</h3><button type="button" @click="isGroupModalOpen = false" class="text-gray-400"><i class="fa-solid fa-xmark"></i></button></div>
+        <div><label class="block text-xs font-bold text-gray-700 mb-1">Tên nhóm</label><input ref="groupNameInputRef" v-model.trim="groupForm.name" required maxlength="80" placeholder="Ví dụ: Kinh doanh" class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-emerald-500" /><p class="text-[10px] text-gray-400 mt-1">Gắn thẻ bằng @{{ groupForm.name || 'Tên nhóm' }}</p></div>
+        <div><label class="block text-xs font-bold text-gray-700 mb-2">Thành viên trong nhóm</label><MemberPicker v-model="groupForm.member_ids" :users="users" /></div><p v-if="groupError" class="text-xs font-semibold text-rose-600">{{ groupError }}</p>
+        <div class="flex items-center justify-between pt-2"><button v-if="editingGroup" type="button" @click="deleteGroup" class="text-xs font-bold text-rose-600">Xóa nhóm</button><span v-else></span><div class="flex gap-2"><button type="button" @click="isGroupModalOpen = false" class="px-4 py-2 text-sm font-bold text-gray-600">Hủy</button><button :disabled="isSavingGroup" class="px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded-xl">Lưu nhóm</button></div></div>
+      </form></div>
+    </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
+import MemberPicker from '../components/MemberPicker.vue'
 import { useAuthStore } from '../stores/auth'
 import { useConfirmStore } from '../stores/confirm'
 import { useToastStore } from '../stores/toast'
@@ -257,6 +276,7 @@ const confirmStore = useConfirmStore()
 const toast = useToastStore()
 
 const users = ref([])
+const groups = ref([])
 const isLoading = ref(true)
 const searchQuery = ref('')
 
@@ -270,6 +290,12 @@ const passwordUser = ref(null)
 const newPassword = ref('')
 const passwordError = ref('')
 const isUpdatingPassword = ref(false)
+const isGroupModalOpen = ref(false)
+const editingGroup = ref(null)
+const isSavingGroup = ref(false)
+const groupError = ref('')
+const groupForm = reactive({ name: '', member_ids: [] })
+const groupNameInputRef = ref(null)
 
 const addForm = reactive({
   name: '',
@@ -343,6 +369,48 @@ const fetchUsers = async () => {
   }
 }
 
+const fetchGroups = async () => {
+  try {
+    groups.value = (await axios.get('/api/mention-groups')).data || []
+  } catch (err) {
+    console.error('Failed to load mention groups:', err)
+  }
+}
+
+const openGroupModal = (group = null) => {
+  editingGroup.value = group
+  groupForm.name = group?.name || ''
+  groupForm.member_ids = group?.members?.map(member => Number(member.id)) || []
+  groupError.value = ''
+  isGroupModalOpen.value = true
+  nextTick(() => groupNameInputRef.value?.focus())
+}
+
+const saveGroup = async () => {
+  try {
+    isSavingGroup.value = true
+    groupError.value = ''
+    const payload = { name: groupForm.name, member_ids: groupForm.member_ids }
+    if (editingGroup.value) await axios.put(`/api/mention-groups/${editingGroup.value.id}`, payload)
+    else await axios.post('/api/mention-groups', payload)
+    isGroupModalOpen.value = false
+    await fetchGroups()
+  } catch (err) {
+    groupError.value = err.response?.data?.message || 'Không thể lưu nhóm.'
+  } finally {
+    isSavingGroup.value = false
+  }
+}
+
+const deleteGroup = async () => {
+  if (!editingGroup.value) return
+  const confirmed = await confirmStore.show({ title: 'Xóa nhóm', message: `Xóa nhóm “${editingGroup.value.name}”?` })
+  if (!confirmed) return
+  await axios.delete(`/api/mention-groups/${editingGroup.value.id}`)
+  isGroupModalOpen.value = false
+  await fetchGroups()
+}
+
 const confirmDeleteUser = async (user) => {
   const confirmed = await confirmStore.show({
     title: 'Xóa thành viên',
@@ -375,5 +443,6 @@ const filterProjectsByUser = (userId) => {
 
 onMounted(() => {
   fetchUsers()
+  fetchGroups()
 })
 </script>
