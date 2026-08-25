@@ -441,11 +441,13 @@ const searchInputRef = ref(null)
 
 const handleSearchLocal = () => {
   currentPage.value = 1
+  sessionStorage.setItem('customers-page', 1)
   fetchCustomers()
 }
 
 watch(isSearchOpen, (newVal) => {
   currentPage.value = 1
+  sessionStorage.setItem('customers-page', 1)
   if (newVal) {
     nextTick(() => {
       searchInputRef.value?.focus()
@@ -464,10 +466,16 @@ watch(isModalOpen, async (newVal) => {
 })
 const editingCustomerId = ref(null)
 
-const currentPage = ref(1)
+const currentPage = ref(Number(sessionStorage.getItem('customers-page') || 1))
 const itemsPerPage = 15
 
 const displayedCustomers = computed(() => {
+  // Adjust current page if it is out of bounds
+  const total = Math.ceil(customers.value.length / itemsPerPage)
+  if (currentPage.value > total && total > 0) {
+    currentPage.value = total
+    sessionStorage.setItem('customers-page', total)
+  }
   const start = (currentPage.value - 1) * itemsPerPage
   const end = start + itemsPerPage
   return customers.value.slice(start, end)
@@ -480,6 +488,7 @@ const totalPages = computed(() => {
 const goToPage = (page) => {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page
+    sessionStorage.setItem('customers-page', page)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 }
@@ -564,6 +573,7 @@ const fetchCustomers = async (isSilent = false) => {
 
 const setTab = (type) => {
   currentPage.value = 1
+  sessionStorage.setItem('customers-page', 1)
   activeType.value = type
   fetchCustomers()
 }

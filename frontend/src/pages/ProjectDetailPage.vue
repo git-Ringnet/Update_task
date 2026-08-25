@@ -415,13 +415,7 @@
 
             </template>
 
-            <!-- Empty state when project has 0 milestones -->
-            <div v-if="effectiveMilestones.length === 0"
-              class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center z-10">
-              <div class="text-xs sm:text-sm font-bold text-gray-400">Chưa có chặng nào trong dự án. Bấm "+ THÊM CHẶNG"
-                để tạo
-                chặng đầu tiên.</div>
-            </div>
+
 
             <!-- NÚT (+) THÊM CHẶNG ĐẶT TẠI ĐIỂM KẾT THÚC CỦA ĐƯỜNG NẾT NÚI -->
             <div v-if="effectiveMilestones.length < 5" @click="openAddMilestoneModal"
@@ -2587,7 +2581,8 @@ const milestoneLayout = computed(() => {
   const remainingStages = allStages.slice(completedPrefix.length)
 
   const maxContainerW = 920 // Total width for stages
-  const startX = 90 // Perfect center alignment (1100 - 920) / 2 = 90
+  const isEmpty = allMilestones.length === 0
+  const startX = isEmpty ? 400 : 90 // Perfect center alignment when empty, otherwise standard alignment
 
   let layoutItems = []
 
@@ -2626,6 +2621,8 @@ const milestoneLayout = computed(() => {
   const items = layoutItems.map((item) => {
     let spanW = 95
     if (item.isGroup) {
+      spanW = 150
+    } else if (item.isStart && isEmpty) {
       spanW = 150
     } else if (!item.isStart && !isStageCompleted(item)) {
       spanW = activeItemW
@@ -2670,7 +2667,7 @@ const milestoneLayout = computed(() => {
     }
   })
 
-  const btnX = Math.min(1065, curX + 47.5)
+  const btnX = isEmpty ? (curX + 75) : Math.min(1065, curX + 47.5)
   const btnPosPct = `${((btnX / 1100) * 100).toFixed(2)}%`
 
   // Extend ridgeline to the Add Stage button

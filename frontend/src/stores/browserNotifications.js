@@ -32,10 +32,37 @@ export const useBrowserNotificationStore = defineStore('browserNotifications', (
     const readyRegistration = await navigator.serviceWorker.ready
     let subscription = await readyRegistration.pushManager.getSubscription()
 
+    const serverKey = base64UrlToUint8Array(data.public_key)
+
+    if (subscription) {
+      const rawKey = subscription.options.applicationServerKey
+      if (rawKey) {
+        const currentKeyBytes = new Uint8Array(rawKey)
+        let mismatch = currentKeyBytes.length !== serverKey.length
+        if (!mismatch) {
+          for (let i = 0; i < serverKey.length; i++) {
+            if (currentKeyBytes[i] !== serverKey[i]) {
+              mismatch = true
+              break
+            }
+          }
+        }
+        if (mismatch) {
+          console.warn('VAPID public key changed, recreating subscription...')
+          try {
+            await subscription.unsubscribe()
+          } catch (e) {
+            console.error('Failed to unsubscribe:', e)
+          }
+          subscription = null
+        }
+      }
+    }
+
     if (!subscription) {
       subscription = await readyRegistration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: base64UrlToUint8Array(data.public_key),
+        applicationServerKey: serverKey,
       })
     }
 

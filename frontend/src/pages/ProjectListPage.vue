@@ -824,11 +824,18 @@ const dragStartVal = ref(true)
 
 // Pagination state
 const displayLimit = ref(20)
-const currentPage = ref(1)
+const currentPage = ref(Number(sessionStorage.getItem('projects-page') || 1))
 const itemsPerPage = 20
 
 const displayedProjects = computed(() => {
   const list = projectStore.projects
+  
+  // Adjust current page if it is out of bounds
+  const total = Math.ceil(list.length / itemsPerPage)
+  if (currentPage.value > total && total > 0) {
+    currentPage.value = total
+    sessionStorage.setItem('projects-page', total)
+  }
   
   // Calculate pagination
   const start = (currentPage.value - 1) * itemsPerPage
@@ -844,6 +851,7 @@ const totalPages = computed(() => {
 const goToPage = (page) => {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page
+    sessionStorage.setItem('projects-page', page)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 }
@@ -918,6 +926,7 @@ const projectCounts = computed(() => {
 
 const setTab = (status) => {
   currentPage.value = 1
+  sessionStorage.setItem('projects-page', 1)
   if (status === 'all') {
     projectStore.activeStatus = null
   } else {
@@ -928,6 +937,7 @@ const setTab = (status) => {
 
 const handleSearch = (query) => {
   currentPage.value = 1
+  sessionStorage.setItem('projects-page', 1)
   projectStore.listSearchQuery = query
   projectStore.fetchProjects()
 }
