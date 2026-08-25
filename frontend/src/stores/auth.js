@@ -22,6 +22,11 @@ export const useAuthStore = defineStore('auth', {
       
       // Set axios header
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+
+      // Sync push subscription
+      import('./browserNotifications').then(({ useBrowserNotificationStore }) => {
+        useBrowserNotificationStore().syncSubscription()
+      }).catch(err => console.error(err))
     },
 
     clearAuth() {
@@ -62,6 +67,12 @@ export const useAuthStore = defineStore('auth', {
 
     async logout() {
       try {
+        try {
+          const { useBrowserNotificationStore } = await import('./browserNotifications')
+          await useBrowserNotificationStore().clearSubscriptionFromServer()
+        } catch (err) {
+          console.error('Error clearing push subscription on server:', err)
+        }
         await axios.post('/api/logout')
       } catch (err) {
         console.error('Logout error on server:', err)
@@ -84,6 +95,12 @@ export const useAuthStore = defineStore('auth', {
         const res = await axios.get('/api/me')
         this.user = res.data
         localStorage.setItem('user', JSON.stringify(this.user))
+
+        // Sync push subscription
+        import('./browserNotifications').then(({ useBrowserNotificationStore }) => {
+          useBrowserNotificationStore().syncSubscription()
+        }).catch(err => console.error(err))
+
         return this.user
       } catch (err) {
         console.error('Session verification failed, logging out:', err)

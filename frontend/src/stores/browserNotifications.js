@@ -86,5 +86,39 @@ export const useBrowserNotificationStore = defineStore('browserNotifications', (
     return 'disabled'
   }
 
-  return { permission, appEnabled, isSupported, isEnabled, refreshPermission, requestPermission, setEnabled }
+  const syncSubscription = async () => {
+    if (!isSupported.value || permission.value !== 'granted') return
+    try {
+      await registerPushSubscription()
+      appEnabled.value = true
+      localStorage.setItem('browser-notifications-enabled', 'true')
+    } catch (error) {
+      console.error('Failed to sync Web Push subscription:', error)
+    }
+  }
+
+  const clearSubscriptionFromServer = async () => {
+    if (!isSupported.value) return
+    try {
+      const registration = await navigator.serviceWorker.getRegistration('/push-sw.js')
+      const subscription = await registration?.pushManager.getSubscription()
+      if (subscription) {
+        await axios.delete('/api/push/subscriptions', { data: { endpoint: subscription.endpoint } })
+      }
+    } catch (error) {
+      console.error('Failed to clear Web Push subscription on logout:', error)
+    }
+  }
+
+  return { 
+    permission, 
+    appEnabled, 
+    isSupported, 
+    isEnabled, 
+    refreshPermission, 
+    requestPermission, 
+    setEnabled,
+    syncSubscription,
+    clearSubscriptionFromServer
+  }
 })

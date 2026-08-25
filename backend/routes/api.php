@@ -9,9 +9,10 @@ use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Models\User;
+use App\Services\ApiTokenService;
+use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
 
 /*
@@ -20,7 +21,7 @@ use Illuminate\Support\Facades\Http;
 |--------------------------------------------------------------------------
 */
 
-Route::post('/login', function (Request $request) {
+Route::post('/login', function (Request $request, ApiTokenService $apiTokens) {
     $request->validate([
         'username' => 'required|string',
         'password' => 'required|string',
@@ -53,17 +54,15 @@ Route::post('/login', function (Request $request) {
         $user->password = Hash::make('Ringnet@123');
     }
 
-    $user->api_token = Str::random(60);
-    $user->api_token_expires_at = now()->addHours(24);
     $user->save();
 
     return response()->json([
         'user' => $user,
-        'token' => $user->api_token
+        'token' => $apiTokens->issue($user)
     ]);
 });
 
-Route::post('/google-login-real', function (Request $request) {
+Route::post('/google-login-real', function (Request $request, ApiTokenService $apiTokens) {
     $request->validate([
         'id_token' => 'required|string',
     ]);
@@ -106,14 +105,11 @@ Route::post('/google-login-real', function (Request $request) {
         $user->avatar = $avatar;
     }
 
-    // Refresh local token session
-    $user->api_token = Str::random(60);
-    $user->api_token_expires_at = now()->addHours(24);
     $user->save();
 
     return response()->json([
         'user' => $user,
-        'token' => $user->api_token
+        'token' => $apiTokens->issue($user)
     ]);
 });
 
@@ -152,16 +148,45 @@ Route::middleware('auth.token')->group(function () {
             'view_mode' => 'sometimes|nullable|string|in:list,grouped,notes',
             'pinned_customers' => 'sometimes|nullable|array',
         ]);
+
+        if (!empty($validated['avatar']) && str_starts_with($validated['avatar'], 'data:image/')) {
+            try {
+                $data = $validated['avatar'];
+                list($type, $data) = explode(';', $data);
+                list(, $data)      = explode(',', $data);
+                $decodedData = base64_decode($data);
+
+                $extension = 'jpg';
+                if (str_contains($type, 'png')) {
+                    $extension = 'png';
+                } elseif (str_contains($type, 'gif')) {
+                    $extension = 'gif';
+                }
+
+                $fileName = 'avatars/user_' . $user->id . '_' . time() . '.' . $extension;
+                \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $decodedData);
+                $validated['avatar'] = \Illuminate\Support\Facades\Storage::url($fileName);
+            } catch (\Throwable $e) {
+                // Keep original if base64 parsing fails
+            }
+        }
+
         $user->update($validated);
         return response()->json($user);
     });
 
     Route::post('/logout', function (Request $request) {
-        $user = auth()->user();
-        if ($user) {
+        $apiToken = $request->attributes->get('api_token_session');
+        if ($apiToken) {
+            $apiToken->delete();
+        } else {
+            // Legacy token: it represents one old session, so revoke only that token.
+            $user = auth()->user();
+            if ($user) {
             $user->api_token = null;
             $user->api_token_expires_at = null;
             $user->save();
+            }
         }
         return response()->json(['message' => 'Đăng xuất thành công']);
     });
@@ -173,10 +198,17 @@ Route::middleware('auth.token')->group(function () {
     Route::delete('/push/subscriptions', [PushSubscriptionController::class, 'destroy']);
 
     Route::get('/users', function () {
-        return response()->json(User::where('is_admin', false)
+        $users = User::where('is_admin', false)
             ->select('id', 'name', 'email', 'avatar')
-            ->withCount('ledProjects')
-            ->get());
+            ->get();
+
+        $users->each(function (User $user) {
+            $user->setAttribute('participating_projects_count', Project::query()
+                ->whereHas('members', fn ($members) => $members->where('users.id', $user->id))
+                ->count());
+        });
+
+        return response()->json($users);
     });
 
     Route::post('/users', function (Request $request) {
@@ -195,6 +227,22 @@ Route::middleware('auth.token')->group(function () {
         ]);
 
         return response()->json($user, 201);
+    })->middleware('admin');
+
+    Route::put('/users/{id}/password', function (Request $request, $id) {
+        $validated = $request->validate([
+            'password' => 'required|string|min:6',
+        ]);
+
+        $user = User::where('is_admin', false)->find($id);
+        if (!$user) {
+            return response()->json(['message' => 'Thành viên không tồn tại.'], 404);
+        }
+
+        $user->password = Hash::make($validated['password']);
+        $user->save();
+
+        return response()->json(['message' => 'Đã cập nhật mật khẩu thành viên.']);
     })->middleware('admin');
 
     Route::delete('/users/{id}', function ($id) {

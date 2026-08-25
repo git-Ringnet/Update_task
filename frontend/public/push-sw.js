@@ -2,8 +2,8 @@ self.addEventListener('push', (event) => {
   const payload = event.data ? event.data.json() : {}
   const options = {
     body: payload.body || 'C\u00f3 c\u1eadp nh\u1eadt m\u1edbi trong d\u1ef1 \u00e1n.',
-    icon: payload.icon || '/cactus-logo.png',
-    badge: '/cactus-logo.png',
+    icon: payload.icon || '/cactus-logo-square.png',
+    badge: '/cactus-logo-square.png',
     tag: payload.tag || 'project-update',
     renotify: true,
     data: { url: payload.url || '/views' },

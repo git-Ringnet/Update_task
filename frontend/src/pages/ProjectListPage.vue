@@ -828,11 +828,7 @@ const currentPage = ref(1)
 const itemsPerPage = 20
 
 const displayedProjects = computed(() => {
-  let list = projectStore.projects
-  if (route.query.lead) {
-    const leadId = Number(route.query.lead)
-    list = list.filter(p => p.lead_id === leadId)
-  }
+  const list = projectStore.projects
   
   // Calculate pagination
   const start = (currentPage.value - 1) * itemsPerPage
@@ -841,11 +837,7 @@ const displayedProjects = computed(() => {
 })
 
 const totalPages = computed(() => {
-  let list = projectStore.projects
-  if (route.query.lead) {
-    const leadId = Number(route.query.lead)
-    list = list.filter(p => p.lead_id === leadId)
-  }
+  const list = projectStore.projects
   return Math.ceil(list.length / itemsPerPage)
 })
 
@@ -1011,6 +1003,7 @@ const formatRelativeTime = (dateStr) => {
 
 onMounted(() => {
   projectStore.activePage = 'list'
+  projectStore.participantUserId = route.query.participant ? Number(route.query.participant) : null
   searchQueryLocal.value = projectStore.listSearchQuery || ''
   isSearchOpen.value = !!projectStore.listSearchQuery
   projectStore.activeStatus = null
@@ -1027,6 +1020,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   projectStore.activePage = 'home'
+  projectStore.participantUserId = null
   if (pollTimer) clearInterval(pollTimer)
   window.removeEventListener('mouseup', handleMouseUp)
   window.removeEventListener('click', closeAllActionMenus)

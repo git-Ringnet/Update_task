@@ -18,6 +18,7 @@ export const useProjectStore = defineStore('project', {
     lastRequestId: 0,
     listSearchQuery: '',
     activePage: 'home',
+    participantUserId: null,
   }),
 
   actions: {
@@ -48,6 +49,9 @@ export const useProjectStore = defineStore('project', {
         }
         if (this.activeStatus) {
           params.tracking_status = this.activeStatus
+        }
+        if (this.activePage === 'list' && this.participantUserId) {
+          params.participant_id = this.participantUserId
         }
         const res = await axios.get('/api/projects', { params })
         if (currentId !== this.lastRequestId) {

@@ -31,10 +31,6 @@ class ProjectController extends Controller
         $query->orderBy('sort_order', 'asc')
               ->orderBy('last_activity_at', 'desc');
 
-        // Filter by tracking_status (NOT health)
-        if ($request->has('tracking_status')) {
-            $query->where('tracking_status', $request->tracking_status);
-        }
 
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
@@ -46,6 +42,20 @@ class ProjectController extends Controller
             });
         }
 
+        // People page: only projects where this user is an actual member.
+        if ($request->filled('participant_id')) {
+            $participantId = (int) $request->participant_id;
+            $query->whereHas('members', fn ($members) => $members->where('users.id', $participantId));
+        }
+
+        // Clone base query to calculate counts dynamically before applying tracking_status
+        $countQuery = clone $query;
+
+        // Filter by tracking_status (NOT health)
+        if ($request->has('tracking_status')) {
+            $query->where('projects.tracking_status', $request->tracking_status);
+        }
+
         $projects = $query->get()->map(function ($p) use ($user, $userId) {
             $p->applyPinnedStateForUser($userId);
             $p->setAttribute('creator_id', $p->created_by);
@@ -53,11 +63,11 @@ class ProjectController extends Controller
             return $p;
         });
 
-        // Calculate counts based on tracking_status (NOT health)
+        // Calculate counts based on the base query constraints (without tracking_status filter)
         $counts = [
-            'following' => Project::visibleTo($user)->where('tracking_status', 'following')->count(),
-            'not_following' => Project::visibleTo($user)->where('tracking_status', 'not_following')->count(),
-            'completed' => Project::visibleTo($user)->where('tracking_status', 'completed')->count(),
+            'following' => (clone $countQuery)->where('projects.tracking_status', 'following')->count(),
+            'not_following' => (clone $countQuery)->where('projects.tracking_status', 'not_following')->count(),
+            'completed' => (clone $countQuery)->where('projects.tracking_status', 'completed')->count(),
         ];
 
         return response()->json([

@@ -104,7 +104,7 @@
                 </span>
 
                 <span class="px-2.5 py-1 bg-gray-50 text-gray-600 font-bold text-xs rounded-lg border border-gray-200/60">
-                  <i class="fa-solid fa-folder text-[10px] mr-1 text-amber-500"></i> {{ user.led_projects_count || 0 }} dự án lead
+                  <i class="fa-solid fa-folder text-[10px] mr-1 text-amber-500"></i> {{ user.participating_projects_count || 0 }} dự án tham gia
                 </span>
               </div>
             </div>
@@ -115,6 +115,15 @@
               <div class="flex items-center gap-1.5">
                 <button
                   v-if="authStore.user?.is_admin && user.id !== currentUserId"
+                  @click="openPasswordModal(user)"
+                  type="button"
+                  class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 hover:text-amber-800 rounded-xl transition-colors cursor-pointer flex items-center justify-center"
+                  title="Đặt lại mật khẩu"
+                >
+                  <i class="fa-solid fa-key text-sm"></i>
+                </button>
+                <button
+                  v-if="authStore.user?.is_admin && user.id !== currentUserId"
                   @click="confirmDeleteUser(user)"
                   type="button"
                   class="p-1.5 bg-red-50 hover:bg-red-100 text-red-650 hover:text-red-700 rounded-xl transition-colors cursor-pointer flex items-center justify-center"
@@ -123,6 +132,7 @@
                   <i class="fa-solid fa-trash-can text-sm"></i>
                 </button>
                 <button
+                  v-if="authStore.user?.is_admin"
                   @click="filterProjectsByUser(user.id)"
                   type="button"
                   class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
@@ -193,6 +203,41 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal đặt lại mật khẩu thành viên -->
+    <div v-if="passwordUser" class="fixed inset-0 z-50 overflow-y-auto">
+      <div class="fixed inset-0 bg-gray-950/60 backdrop-blur-xs" @click="closePasswordModal"></div>
+      <div class="flex min-h-full items-center justify-center p-4">
+        <div class="relative w-full max-w-md bg-white rounded-2xl p-6 shadow-xl border border-gray-100">
+          <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+            <div>
+              <h3 class="text-lg font-bold text-gray-900">Đặt lại mật khẩu</h3>
+              <p class="text-xs text-gray-400 font-semibold mt-0.5">{{ passwordUser.name }}</p>
+            </div>
+            <button @click="closePasswordModal" type="button" class="text-gray-400 hover:text-gray-600">
+              <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+          </div>
+          <form @submit.prevent="updateMemberPassword" class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 mb-1">Mật khẩu mới *</label>
+              <input v-model="newPassword" required minlength="6" type="password" autocomplete="new-password"
+                class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-3xs text-gray-805"
+                placeholder="Tối thiểu 6 ký tự" />
+            </div>
+            <p v-if="passwordError" class="text-xs text-red-650 font-semibold bg-red-50 p-2.5 rounded-xl border border-red-100">{{ passwordError }}</p>
+            <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
+              <button type="button" @click="closePasswordModal" class="px-4 py-2 text-sm text-gray-600 font-semibold cursor-pointer">Hủy</button>
+              <button type="submit" :disabled="isUpdatingPassword"
+                class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-3xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5">
+                <i v-if="isUpdatingPassword" class="fa-solid fa-circle-notch animate-spin mr-1"></i>
+                <span>Cập nhật mật khẩu</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   </div>
   </div>
 </template>
@@ -204,10 +249,12 @@ import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
 import { useAuthStore } from '../stores/auth'
 import { useConfirmStore } from '../stores/confirm'
+import { useToastStore } from '../stores/toast'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const confirmStore = useConfirmStore()
+const toast = useToastStore()
 
 const users = ref([])
 const isLoading = ref(true)
@@ -219,6 +266,10 @@ const currentUserId = computed(() => authStore.user?.id)
 const isAddModalOpen = ref(false)
 const isSubmitting = ref(false)
 const addError = ref('')
+const passwordUser = ref(null)
+const newPassword = ref('')
+const passwordError = ref('')
+const isUpdatingPassword = ref(false)
 
 const addForm = reactive({
   name: '',
@@ -248,6 +299,35 @@ const handleAddUser = async () => {
     addError.value = err.response?.data?.message || 'Không thể tạo thành viên.'
   } finally {
     isSubmitting.value = false
+  }
+}
+
+const openPasswordModal = (user) => {
+  passwordUser.value = user
+  newPassword.value = ''
+  passwordError.value = ''
+}
+
+const closePasswordModal = () => {
+  passwordUser.value = null
+  newPassword.value = ''
+  passwordError.value = ''
+}
+
+const updateMemberPassword = async () => {
+  if (!passwordUser.value) return
+
+  try {
+    isUpdatingPassword.value = true
+    passwordError.value = ''
+    await axios.put(`/api/users/${passwordUser.value.id}/password`, { password: newPassword.value })
+    toast.success(`Đã cập nhật mật khẩu cho ${passwordUser.value.name}.`)
+    closePasswordModal()
+  } catch (err) {
+    console.error('Failed to update member password:', err)
+    passwordError.value = err.response?.data?.message || 'Không thể cập nhật mật khẩu.'
+  } finally {
+    isUpdatingPassword.value = false
   }
 }
 
@@ -290,7 +370,7 @@ const filteredUsers = computed(() => {
 })
 
 const filterProjectsByUser = (userId) => {
-  router.push(`/projects?lead=${userId}`)
+  router.push(`/projects?participant=${userId}`)
 }
 
 onMounted(() => {

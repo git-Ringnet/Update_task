@@ -128,9 +128,12 @@
                       :class="selectedMilestoneMap[project.id] === ms.id
                         ? 'border-2 border-[#45A246] bg-white text-[#45A246]'
                         : 'border border-gray-300 bg-white text-gray-400'">
-                      <svg class="w-3.5 h-3.5" :class="selectedMilestoneMap[project.id] === ms.id ? 'fill-[#45A246]' : 'fill-gray-400'" viewBox="0 0 512 512">
+                      <svg class="w-3.5 h-3.5"
+                        :class="selectedMilestoneMap[project.id] === ms.id ? 'fill-[#45A246]' : 'fill-gray-400'"
+                        viewBox="0 0 512 512">
                         <g transform="translate(0,512) scale(0.1,-0.1)">
-                          <path d="M560 4828 c-18 -13 -43 -36 -54 -51 l-21 -28 0 -2189 0 -2189 21 -28 c73 -98 195 -98 268 0 21 28 21 34 24 850 l3 822 1874 562 c1031 309 1886 570 1900 580 31 22 65 90 65 128 0 39 -36 110 -66 130 -19 12 -2490 923 -3748 1381 -168 61 -215 66 -266 32z m1834 -948 c861 -316 1566 -577 1566 -580 0 -3 -706 -216 -1568 -474 -862 -258 -1573 -471 -1579 -474 -10 -3 -13 212 -13 1053 0 885 2 1056 14 1053 7 -2 718 -262 1580 -578z"/>
+                          <path
+                            d="M560 4828 c-18 -13 -43 -36 -54 -51 l-21 -28 0 -2189 0 -2189 21 -28 c73 -98 195 -98 268 0 21 28 21 34 24 850 l3 822 1874 562 c1031 309 1886 570 1900 580 31 22 65 90 65 128 0 39 -36 110 -66 130 -19 12 -2490 923 -3748 1381 -168 61 -215 66 -266 32z m1834 -948 c861 -316 1566 -577 1566 -580 0 -3 -706 -216 -1568 -474 -862 -258 -1573 -471 -1579 -474 -10 -3 -13 212 -13 1053 0 885 2 1056 14 1053 7 -2 718 -262 1580 -578z" />
                         </g>
                       </svg>
                     </div>
@@ -165,7 +168,8 @@
                         class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 border-[#45A246] bg-white text-[#45A246]">
                         <svg class="w-3.5 h-3.5 fill-[#45A246]" viewBox="0 0 512 512">
                           <g transform="translate(0,512) scale(0.1,-0.1)">
-                            <path d="M560 4828 c-18 -13 -43 -36 -54 -51 l-21 -28 0 -2189 0 -2189 21 -28 c73 -98 195 -98 268 0 21 28 21 34 24 850 l3 822 1874 562 c1031 309 1886 570 1900 580 31 22 65 90 65 128 0 39 -36 110 -66 130 -19 12 -2490 923 -3748 1381 -168 61 -215 66 -266 32z m1834 -948 c861 -316 1566 -577 1566 -580 0 -3 -706 -216 -1568 -474 -862 -258 -1573 -471 -1579 -474 -10 -3 -13 212 -13 1053 0 885 2 1056 14 1053 7 -2 718 -262 1580 -578z"/>
+                            <path
+                              d="M560 4828 c-18 -13 -43 -36 -54 -51 l-21 -28 0 -2189 0 -2189 21 -28 c73 -98 195 -98 268 0 21 28 21 34 24 850 l3 822 1874 562 c1031 309 1886 570 1900 580 31 22 65 90 65 128 0 39 -36 110 -66 130 -19 12 -2490 923 -3748 1381 -168 61 -215 66 -266 32z m1834 -948 c861 -316 1566 -577 1566 -580 0 -3 -706 -216 -1568 -474 -862 -258 -1573 -471 -1579 -474 -10 -3 -13 212 -13 1053 0 885 2 1056 14 1053 7 -2 718 -262 1580 -578z" />
                           </g>
                         </svg>
                       </div>
@@ -266,12 +270,8 @@
                       title="Đính kèm tệp / ảnh (hoặc Ctrl+V dán ảnh từ bộ nhớ tạm)">
                       <i class="fa-solid fa-paperclip text-sm"></i>
                     </label>
-                    
-                    <HealthStatusSelector
-                      v-model="healthMap[project.id]"
-                      :show-label="false"
-                      is-toggle
-                    />
+
+                    <HealthStatusSelector v-model="healthMap[project.id]" :show-label="false" is-toggle />
                   </div>
 
                   <!-- RIGHT: Status + Person Picker + Date Picker + Submit Button -->
@@ -279,7 +279,7 @@
                     <!-- Status indicator -->
                     <template v-if="isSaved[project.id]">
                       <span class="text-xs text-gray-400 font-semibold whitespace-nowrap">{{ savedTimes[project.id]
-                      }}</span>
+                        }}</span>
                       <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
                     </template>
 
@@ -291,16 +291,16 @@
                         title="Chọn người phụ trách / Tag tên">
                         <i class="fa-regular fa-user text-sm"></i>
                         <span v-if="taggedUsersMap[project.id] && taggedUsersMap[project.id].length > 0">
-                          {{ (() => {
+                          {{(() => {
                             const names = taggedUsersMap[project.id].map(id => {
                               const u = usersList.find(user => String(user.id) === String(id));
                               return u ? '@' + u.name : '';
                             }).filter(Boolean);
                             if (names.length === 0) return '';
                             return names[0] + (names.length > 1 ? ' ...' : '');
-                          })() }}
+                          })()}}
                         </span>
-                        <span v-else>Tag tên</span>
+                        <span v-else></span>
                       </button>
 
                       <div v-if="activePersonPickerProjectId === project.id"
@@ -318,7 +318,10 @@
                           @click="toggleTaggedUser(project.id, u)"
                           class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left"
                           :class="{ 'bg-emerald-50 text-emerald-800 font-bold': taggedUsersMap[project.id] && taggedUsersMap[project.id].includes(String(u.id)) }">
-                          <input type="checkbox" :checked="taggedUsersMap[project.id] && taggedUsersMap[project.id].includes(String(u.id))" class="rounded text-emerald-600 accent-emerald-600 cursor-pointer w-3.5 h-3.5" @click.stop="toggleTaggedUser(project.id, u)" />
+                          <input type="checkbox"
+                            :checked="taggedUsersMap[project.id] && taggedUsersMap[project.id].includes(String(u.id))"
+                            class="rounded text-emerald-600 accent-emerald-600 cursor-pointer w-3.5 h-3.5"
+                            @click.stop="toggleTaggedUser(project.id, u)" />
                           <img :src="u.avatar || defaultAvatar"
                             class="w-5 h-5 rounded-full object-cover border border-gray-200" />
                           <span class="truncate flex-1">{{ u.name }}</span>
@@ -360,15 +363,23 @@
                     <!-- Submit "Hú hú!" Button (Vô hiệu hóa khi có chặng nhưng chưa chọn chặng) -->
                     <div v-if="isSaving[project.id] && uploadProgress[project.id] !== null" class="w-20 self-center">
                       <div class="h-1.5 overflow-hidden rounded-full bg-emerald-100">
-                        <div class="h-full rounded-full bg-emerald-600 transition-all duration-200" :style="{ width: `${uploadProgress[project.id]}%` }"></div>
+                        <div class="h-full rounded-full bg-emerald-600 transition-all duration-200"
+                          :style="{ width: `${uploadProgress[project.id]}%` }"></div>
                       </div>
-                      <p class="mt-1 text-center text-[9px] font-bold text-emerald-700">{{ uploadProgress[project.id] }}%</p>
+                      <p class="mt-1 text-center text-[9px] font-bold text-emerald-700">{{ uploadProgress[project.id]
+                        }}%</p>
                     </div>
                     <button type="submit"
                       :disabled="(getActiveMilestonesForProject(project).length > 0 && !selectedMilestoneMap[project.id]) || isSaving[project.id]"
                       class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#45A246] hover:bg-[#3a903b] text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                       <i v-if="!isSaving[project.id]" class="fa-solid fa-dove text-sm"></i>
-                      <svg v-else class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                      <svg v-else class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
+                        viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z">
+                        </path>
+                      </svg>
                       <span>{{ isSaving[project.id] ? 'Đang tải lên...' : 'Hú hú!' }}</span>
                       <i v-if="!isSaving[project.id]" class="fa-solid fa-chevron-down text-[10px] opacity-80"></i>
                     </button>
@@ -570,14 +581,14 @@ const removeVietnameseAccents = (str) => {
 const filteredUsersForMention = computed(() => {
   const projectId = activeMentionProjectId.value
   const currentText = updateTexts[projectId] || ''
-  
+
   // Find which users are already tagged in the text
   const taggedUserIds = new Set()
   let tempText = currentText
-  
+
   // Sort users by name length descending to avoid partial matches
   const sortedUsers = taggableUsers.value.slice().sort((a, b) => b.name.length - a.name.length)
-  
+
   sortedUsers.forEach(u => {
     if (u && u.name) {
       const escapedName = u.name.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
@@ -588,12 +599,12 @@ const filteredUsersForMention = computed(() => {
       }
     }
   })
-  
+
   // Filter out users that are already tagged
   const availableUsers = taggableUsers.value.filter(u => !taggedUserIds.has(String(u.id)))
 
   if (!mentionQuery.value) return availableUsers
-  
+
   const q = removeVietnameseAccents(mentionQuery.value).toLowerCase()
   const firstWordMatches = availableUsers.filter(u => {
     const nameAcc = removeVietnameseAccents(u.name).toLowerCase()

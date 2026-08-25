@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use App\Models\ApiToken;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -32,6 +33,30 @@ class AuthenticateToken
             return response()->json(['message' => 'Unauthorized. Please login.'], 401);
         }
 
+        $apiToken = ApiToken::with('user')
+            ->where('token_hash', hash('sha256', $token))
+            ->first();
+
+        if ($apiToken) {
+            if ($apiToken->expires_at->isPast()) {
+                $apiToken->delete();
+                return response()->json(['message' => 'Unauthorized. Session expired.'], 401);
+            }
+
+            // Sliding expiration: keep this device signed in while it remains active.
+            if ($apiToken->expires_at->lt(now()->addHours(23))) {
+                $apiToken->expires_at = now()->addHours(24);
+            }
+            $apiToken->last_used_at = now();
+            $apiToken->save();
+
+            auth()->login($apiToken->user);
+            $request->attributes->set('api_token_session', $apiToken);
+
+            return $next($request);
+        }
+
+        // Allow sessions issued before the multi-device token rollout to expire naturally.
         $user = User::where('api_token', $token)->first();
 
         if (!$user) {

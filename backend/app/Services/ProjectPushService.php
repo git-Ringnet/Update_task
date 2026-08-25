@@ -18,9 +18,12 @@ class ProjectPushService
             return;
         }
 
+        $adminIds = \App\Models\User::where('is_admin', true)->pluck('id');
+
         $recipientIds = $project->members->pluck('id')
             ->push($project->created_by)
             ->push($project->lead_id)
+            ->concat($adminIds)
             ->filter()
             ->unique()
             ->reject(fn ($id) => (int) $id === (int) $comment->user_id)
@@ -35,12 +38,23 @@ class ProjectPushService
             return;
         }
 
+        $project->loadMissing('customer');
         $comment->loadMissing('user');
+
+        $customerName = $project->customer?->name;
+        $title = $customerName ?: 'Xương Rồng';
+
+        $userName = $comment->user?->name ?? 'Một thành viên';
+        $projectTitle = $project->title;
         $content = trim(preg_replace('/<[^>]*>/', ' ', strip_tags($comment->content)) ?? '');
+        $body = "{$userName} - {$projectTitle}\n" . ($content ?: 'vừa cập nhật dự án.');
+
+        $icon = url('cactus-logo-square.png');
+
         $payload = json_encode([
-            'title' => 'Cập nhật mới · '.$project->title,
-            'body' => ($comment->user?->name ?? 'Một thành viên').': '.($content ?: 'vừa cập nhật dự án.'),
-            'icon' => '/cactus-logo.png',
+            'title' => $title,
+            'body' => $body,
+            'icon' => $icon,
             'url' => '/projects/'.$project->id,
             'tag' => 'project-'.$project->id,
         ], JSON_UNESCAPED_UNICODE);

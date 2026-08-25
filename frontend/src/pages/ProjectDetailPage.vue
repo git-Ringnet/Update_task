@@ -48,22 +48,25 @@
             <!-- Member Manager Popover for Sticky Bar -->
             <div v-if="false && showMemberManager && showDetailStickyBar"
               class="absolute right-0 top-full mt-2 w-60 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1.5 max-h-60 overflow-y-auto text-left ring-1 ring-black/5 animate-fade-in-up">
-              <div class="px-3 py-1 text-[9px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1 flex items-center justify-between">
+              <div
+                class="px-3 py-1 text-[9px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1 flex items-center justify-between">
                 <span>Quản lý thành viên</span>
                 <i class="fa-solid fa-users text-[10px]"></i>
               </div>
               <div class="px-2 py-0.5 space-y-0.5">
-                <button v-for="u in users" :key="u.id" type="button"
-                  @click="toggleProjectMember(u)"
+                <button v-for="u in users" :key="u.id" type="button" @click="toggleProjectMember(u)"
                   :disabled="isCreator(u.id)"
                   class="w-full px-2 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left rounded-lg disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                   :class="{ 'bg-emerald-50 text-emerald-800 font-bold': isMember(u.id) }">
                   <input type="checkbox" :checked="isMember(u.id)" :disabled="isCreator(u.id)"
-                    class="rounded text-emerald-600 accent-emerald-600 w-3.5 h-3.5 cursor-pointer disabled:cursor-not-allowed" @click.stop="toggleProjectMember(u)" />
+                    class="rounded text-emerald-600 accent-emerald-600 w-3.5 h-3.5 cursor-pointer disabled:cursor-not-allowed"
+                    @click.stop="toggleProjectMember(u)" />
                   <img :src="u.avatar || defaultAvatar"
                     class="w-4.5 h-4.5 rounded-full object-cover border border-gray-200" />
                   <span class="truncate flex-1">{{ u.name }}</span>
-                  <span v-if="isCreator(u.id)" class="text-[8px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-md flex-shrink-0">Người tạo</span>
+                  <span v-if="isCreator(u.id)"
+                    class="text-[8px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-md flex-shrink-0">Người
+                    tạo</span>
                 </button>
               </div>
             </div>
@@ -160,22 +163,25 @@
                 <!-- Member Manager Popover/Dropdown -->
                 <div v-if="false && showMemberManager && !showDetailStickyBar"
                   class="absolute right-0 top-full mt-2 w-60 bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1.5 max-h-60 overflow-y-auto text-left ring-1 ring-black/5 animate-fade-in-up">
-                  <div class="px-3 py-1 text-[9px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1 flex items-center justify-between">
+                  <div
+                    class="px-3 py-1 text-[9px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1 flex items-center justify-between">
                     <span>Quản lý thành viên</span>
                     <i class="fa-solid fa-users text-[10px]"></i>
                   </div>
                   <div class="px-2 py-0.5 space-y-0.5">
-                    <button v-for="u in users" :key="u.id" type="button"
-                      @click="toggleProjectMember(u)"
+                    <button v-for="u in users" :key="u.id" type="button" @click="toggleProjectMember(u)"
                       :disabled="isCreator(u.id)"
                       class="w-full px-2 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left rounded-lg disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                       :class="{ 'bg-emerald-50 text-emerald-800 font-bold': isMember(u.id) }">
                       <input type="checkbox" :checked="isMember(u.id)" :disabled="isCreator(u.id)"
-                        class="rounded text-emerald-600 accent-emerald-600 w-3.5 h-3.5 cursor-pointer disabled:cursor-not-allowed" @click.stop="toggleProjectMember(u)" />
+                        class="rounded text-emerald-600 accent-emerald-600 w-3.5 h-3.5 cursor-pointer disabled:cursor-not-allowed"
+                        @click.stop="toggleProjectMember(u)" />
                       <img :src="u.avatar || defaultAvatar"
                         class="w-4.5 h-4.5 rounded-full object-cover border border-gray-200" />
                       <span class="truncate flex-1">{{ u.name }}</span>
-                      <span v-if="isCreator(u.id)" class="text-[8px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-md flex-shrink-0">Người tạo</span>
+                      <span v-if="isCreator(u.id)"
+                        class="text-[8px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-md flex-shrink-0">Người
+                        tạo</span>
                     </button>
                   </div>
                 </div>
@@ -443,7 +449,8 @@
         <div class="mobile-roadmap-summary">
           <span class="text-xs font-extrabold text-gray-500">Hành trình dự án</span>
           <span class="text-xs font-black text-[#45A246]">
-            {{ effectiveMilestones.filter(ms => ms.is_completed).length + (startStageTasks.length === 0 ? 1 : 0) }}/{{ effectiveMilestones.length + 1 }} chặng xong
+            {{effectiveMilestones.filter(ms => ms.is_completed).length + (startStageTasks.length === 0 ? 1 : 0)}}/{{
+              effectiveMilestones.length + 1 }} chặng xong
           </span>
         </div>
 
@@ -576,32 +583,32 @@
           <div v-else class="space-y-3">
             <!-- CARDS LIST -->
             <div v-for="t in displayedCards" :key="t.id"
-              class="relative bg-white border border-gray-200/80 hover:border-gray-300 rounded-2xl shadow-2xs hover:shadow-xs transition-all group flex items-stretch overflow-hidden"
+              class="relative bg-white border border-gray-200/80 hover:border-gray-300 rounded-2xl shadow-2xs hover:shadow-xs transition-all group flex items-stretch overflow-visible"
               :title="isTaskInDoneStage(t) ? 'Chặng đã hoàn thành (Không thể chỉnh sửa)' : undefined">
 
               <!-- LEFT: Icon block; reveal card actions on hover -->
-              <div class="w-14 sm:w-16 relative flex items-center justify-center flex-shrink-0 transition-colors"
+              <div
+                class="w-14 sm:w-16 relative flex items-center justify-center flex-shrink-0 transition-colors rounded-l-2xl"
                 :class="t.health === 'red' ? 'bg-[#EF4444]' : (isAssignedHuhuTask(t) ? 'bg-[#EF8511]' : 'bg-[#45A246]')">
-                <i
-                  :class="[
-                    t.health === 'red' ? 'fa-solid fa-circle-exclamation' : getTaskCardIcon(t),
-                    'text-white text-2xl transition-all duration-200',
-                    !isTaskInDoneStage(t) ? 'group-hover:opacity-0 group-hover:scale-75' : '',
-                    getTaskCardIcon(t) === 'fa-solid fa-shoe-prints' && t.health !== 'red' ? '-rotate-90' : ''
-                  ]"></i>
+                <i :class="[
+                  t.health === 'red' ? 'fa-solid fa-circle-exclamation' : getTaskCardIcon(t),
+                  'text-white text-2xl transition-all duration-200',
+                  !isTaskInDoneStage(t) ? 'group-hover:opacity-0 group-hover:scale-75' : '',
+                  getTaskCardIcon(t) === 'fa-solid fa-shoe-prints' && t.health !== 'red' ? '-rotate-90' : ''
+                ]"></i>
 
                 <div v-if="!isTaskInDoneStage(t)"
                   class="task-card-actions absolute inset-0 flex flex-col opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200">
                   <button type="button"
-                    class="w-full flex-1 bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center transition-colors cursor-pointer"
-                    title="Chỉnh sửa hoạt động" aria-label="Chỉnh sửa hoạt động"
-                    @mousedown.stop @click.stop="openEditStageTaskForm(t)">
+                    class="w-full flex-1 bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center transition-colors cursor-pointer rounded-tl-2xl"
+                    title="Chỉnh sửa hoạt động" aria-label="Chỉnh sửa hoạt động" @mousedown.stop
+                    @click.stop="openEditStageTaskForm(t)">
                     <i class="fa-solid fa-pen-to-square text-base"></i>
                   </button>
                   <button type="button"
-                    class="w-full flex-1 border-t border-white/50 bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors cursor-pointer"
-                    title="Xóa hoạt động" aria-label="Xóa hoạt động"
-                    @mousedown.stop @click.stop="handleDeleteTask(t.id)">
+                    class="w-full flex-1 border-t border-white/50 bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors cursor-pointer rounded-bl-2xl"
+                    title="Xóa hoạt động" aria-label="Xóa hoạt động" @mousedown.stop
+                    @click.stop="handleDeleteTask(t.id)">
                     <i class="fa-solid fa-trash-can text-base"></i>
                   </button>
                 </div>
@@ -633,7 +640,8 @@
                   </span>
 
                   <div v-if="!isTaskInDoneStage(t)" class="task-mobile-menu-wrap">
-                    <button type="button" @click.stop="activeTaskActionMenuId = activeTaskActionMenuId === t.id ? null : t.id"
+                    <button type="button"
+                      @click.stop="activeTaskActionMenuId = activeTaskActionMenuId === t.id ? null : t.id"
                       class="task-mobile-menu-trigger" title="Thao tác hoạt động">
                       <i class="fa-solid fa-ellipsis-vertical"></i>
                     </button>
@@ -641,7 +649,8 @@
                       <button type="button" @click.stop="openEditStageTaskForm(t); activeTaskActionMenuId = null">
                         <i class="fa-solid fa-pen-to-square"></i><span>Cập nhật</span>
                       </button>
-                      <button type="button" @click.stop="handleDeleteTask(t.id); activeTaskActionMenuId = null" class="is-danger">
+                      <button type="button" @click.stop="handleDeleteTask(t.id); activeTaskActionMenuId = null"
+                        class="is-danger">
                         <i class="fa-solid fa-trash-can"></i><span>Xóa</span>
                       </button>
                     </div>
@@ -703,17 +712,17 @@
 
     <!-- Dedicated project member manager -->
     <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0"
-      enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in"
-      leave-from-class="opacity-100" leave-to-class="opacity-0">
+      enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100"
+      leave-to-class="opacity-0">
       <div v-if="showMemberManager"
         class="fixed inset-0 z-[90] bg-slate-950/45 backdrop-blur-sm flex items-center justify-center p-4"
         @click="showMemberManager = false">
         <div ref="memberManagerRef"
-          class="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-white/80 overflow-visible"
-          @click.stop>
+          class="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-white/80 overflow-visible" @click.stop>
           <div class="flex items-center justify-between px-6 py-5 border-b border-gray-100">
             <div class="flex items-center gap-3 min-w-0">
-              <div class="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+              <div
+                class="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
                 <i class="fa-solid fa-user-group"></i>
               </div>
               <div class="min-w-0">
@@ -731,15 +740,12 @@
             <p class="text-xs font-semibold text-gray-500 mb-3">
               Tìm theo tên, email hoặc tên đăng nhập. Nhấn dấu × trên avatar để gỡ thành viên.
             </p>
-            <MemberPicker
-              v-model="draftMemberIds"
-              :users="users"
-              :creator-id="project?.creator_id"
-              placeholder="@+tên thành viên muốn thêm"
-            />
+            <MemberPicker v-model="draftMemberIds" :users="users" :creator-id="project?.creator_id"
+              placeholder="@+tên thành viên muốn thêm" />
           </div>
 
-          <div class="px-6 py-4 bg-gray-50/80 border-t border-gray-100 rounded-b-3xl flex items-center justify-between gap-3">
+          <div
+            class="px-6 py-4 bg-gray-50/80 border-t border-gray-100 rounded-b-3xl flex items-center justify-between gap-3">
             <span class="text-xs font-bold text-gray-400">{{ draftMemberIds.length }} thành viên được chọn</span>
             <div class="flex items-center gap-2">
               <button type="button" @click="showMemberManager = false"
@@ -950,16 +956,16 @@
                       title="Chọn người phụ trách / Tag tên">
                       <i class="fa-regular fa-user text-sm"></i>
                       <span v-if="newStageTaskTaggedUsers.length > 0">
-                        {{ (() => {
+                        {{(() => {
                           const names = newStageTaskTaggedUsers.map(id => {
                             const u = users.find(user => String(user.id) === String(id));
                             return u ? '@' + u.name : '';
                           }).filter(Boolean);
                           if (names.length === 0) return '';
                           return names[0] + (names.length > 1 ? ' ...' : '');
-                        })() }}
+                        })()}}
                       </span>
-                      <span v-else>Tag tên</span>
+                      <span v-else></span>
                     </button>
                     <!-- Person picker dropdown -->
                     <div v-if="showPersonPicker"
@@ -967,17 +973,17 @@
                       <div
                         class="px-3 py-1 text-[10px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1">
                         Chọn người phụ trách / Tag tên</div>
-                      <button v-if="newStageTaskTaggedUsers.length > 0" type="button"
-                        @click="clearAssignees"
+                      <button v-if="newStageTaskTaggedUsers.length > 0" type="button" @click="clearAssignees"
                         class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-rose-50 text-rose-500 transition-colors text-left border-b border-gray-100">
                         <i class="fa-solid fa-xmark text-xs"></i>
                         <span>Bỏ chọn tất cả</span>
                       </button>
-                      <button v-for="u in taggableUsers" :key="u.id" type="button"
-                        @click="toggleTaggedUser(u)"
+                      <button v-for="u in taggableUsers" :key="u.id" type="button" @click="toggleTaggedUser(u)"
                         class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left"
                         :class="{ 'bg-emerald-50 text-emerald-800 font-bold': newStageTaskTaggedUsers.includes(String(u.id)) }">
-                        <input type="checkbox" :checked="newStageTaskTaggedUsers.includes(String(u.id))" class="rounded text-emerald-600 accent-emerald-600 cursor-pointer w-3.5 h-3.5" @click.stop="toggleTaggedUser(u)" />
+                        <input type="checkbox" :checked="newStageTaskTaggedUsers.includes(String(u.id))"
+                          class="rounded text-emerald-600 accent-emerald-600 cursor-pointer w-3.5 h-3.5"
+                          @click.stop="toggleTaggedUser(u)" />
                         <img :src="u.avatar || defaultAvatar"
                           class="w-5 h-5 rounded-full object-cover border border-gray-200" />
                         <span class="truncate flex-1">{{ u.name }}</span>
@@ -1023,14 +1029,20 @@
                   <!-- Submit button -->
                   <div v-if="isSubmittingStageTask && uploadProgress !== null" class="w-20 self-center">
                     <div class="h-1.5 overflow-hidden rounded-full bg-emerald-100">
-                      <div class="h-full rounded-full bg-emerald-600 transition-all duration-200" :style="{ width: `${uploadProgress}%` }"></div>
+                      <div class="h-full rounded-full bg-emerald-600 transition-all duration-200"
+                        :style="{ width: `${uploadProgress}%` }"></div>
                     </div>
                     <p class="mt-1 text-center text-[9px] font-bold text-emerald-700">{{ uploadProgress }}%</p>
                   </div>
                   <button type="submit" :disabled="isSubmittingStageTask"
                     class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#45A246] hover:bg-[#3a903b] text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer disabled:cursor-wait disabled:opacity-60">
                     <i v-if="!isSubmittingStageTask" class="fa-solid fa-dove text-sm"></i>
-                    <svg v-else class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                    <svg v-else class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
+                      viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z">
+                      </path>
+                    </svg>
                     <span>{{ isSubmittingStageTask ? 'Đang tải lên...' : (editingTaskId ? 'Lưu' : 'Hú hú!') }}</span>
                     <i v-if="!isSubmittingStageTask" class="fa-solid fa-chevron-down text-[10px] opacity-80"></i>
                   </button>
@@ -1053,8 +1065,7 @@
       leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
       <div v-if="isAddMilestoneOpen"
         class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
-        :class="{ 'pointer-events-none': !isAddMilestoneOpen }"
-        @click.self="isAddMilestoneOpen = false">
+        :class="{ 'pointer-events-none': !isAddMilestoneOpen }" @click.self="isAddMilestoneOpen = false">
         <div class="bg-white rounded-3xl p-6 w-full max-w-md border border-gray-200 shadow-2xl space-y-4">
           <div class="flex items-center justify-between border-b border-gray-100 pb-3">
             <h3 class="text-base font-extrabold text-gray-900 font-heading">Thêm chặng tiếp theo</h3>
@@ -1987,14 +1998,14 @@ const hasMentionsInTitle = computed(() => {
 
 const filteredUsersForMention = computed(() => {
   const currentText = newStageTaskTitle.value || ''
-  
+
   // Find which users are already tagged in the text
   const taggedUserIds = new Set()
   let tempText = currentText
-  
+
   // Sort users by name length descending to avoid partial matches
   const sortedUsers = [...users.value].sort((a, b) => (b.name || '').length - (a.name || '').length)
-  
+
   sortedUsers.forEach(u => {
     if (u && u.name) {
       const escapedName = u.name.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
@@ -2005,12 +2016,12 @@ const filteredUsersForMention = computed(() => {
       }
     }
   })
-  
+
   // Filter out users that are already tagged
   const availableUsers = taggableUsers.value.filter(u => !taggedUserIds.has(String(u.id)))
 
   if (!mentionQuery.value) return availableUsers
-  
+
   const q = removeVietnameseAccents(mentionQuery.value).toLowerCase()
   const firstWordMatches = availableUsers.filter(u => {
     const nameAcc = removeVietnameseAccents(u.name).toLowerCase()
@@ -3173,10 +3184,10 @@ const handleDocumentClick = (e) => {
   if (showMentionDropdown.value && !e.target?.closest?.('.project-mention-picker')) {
     showMentionDropdown.value = false
   }
-  
+
   const clickedOutsideMenu = !actionMenuDropdownRef.value || !e.target || !actionMenuDropdownRef.value.contains(e.target)
   const clickedOutsideStickyMenu = !stickyActionMenuRef.value || !e.target || !stickyActionMenuRef.value.contains(e.target)
-  
+
   if (clickedOutsideMenu && clickedOutsideStickyMenu) {
     isActionMenuOpen.value = false
   }
@@ -3700,6 +3711,7 @@ watch(showDetailStickyBar, () => {
 }
 
 @media (max-width: 1023px) {
+
   /* Keep the project name centered in the viewport; the side controls no longer
      take part in the header's width calculation on small screens. */
   .project-header-row {
@@ -3827,14 +3839,18 @@ watch(showDetailStickyBar, () => {
     cursor: pointer;
   }
 
-  .task-mobile-menu-popover .is-danger { color: #e5484d; }
+  .task-mobile-menu-popover .is-danger {
+    color: #e5484d;
+  }
 
   .inline-update-card {
     max-height: calc(100vh - 16px);
     overflow-y: auto;
   }
 
-  .inline-update-content { min-height: 0; }
+  .inline-update-content {
+    min-height: 0;
+  }
 
   .inline-update-content textarea {
     height: 88px !important;

@@ -70,4 +70,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(PushSubscription::class);
     }
+
+    public function apiTokens()
+    {
+        return $this->hasMany(ApiToken::class);
+    }
 }

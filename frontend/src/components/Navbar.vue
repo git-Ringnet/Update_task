@@ -133,16 +133,6 @@
               <span>Phát sóng</span>
             </button>
 
-            <button
-              v-if="browserNotifications.isSupported"
-              @click="toggleBrowserNotifications"
-              type="button"
-              class="w-full text-left px-2.5 py-2 hover:bg-emerald-50/60 rounded-lg transition-colors flex items-center gap-2.5 cursor-pointer text-xs font-bold text-gray-700 hover:text-emerald-800"
-            >
-              <i class="fa-solid fa-bell text-sm" :class="browserNotifications.isEnabled ? 'text-emerald-600' : 'text-gray-400'"></i>
-              <span>{{ browserNotifications.isEnabled ? 'Tắt thông báo trình duyệt' : 'Bật thông báo trình duyệt' }}</span>
-            </button>
-
             <!-- Settings -->
             <button
               @click="openEditProfile"
@@ -339,6 +329,25 @@
               />
             </div>
 
+            <!-- Browser Notifications Toggle -->
+            <div v-if="browserNotifications.isSupported" class="pt-3 border-t border-gray-100 flex items-center justify-between">
+              <div class="flex flex-col">
+                <span class="text-xs font-bold text-gray-700">Thông báo trình duyệt</span>
+                <span class="text-[10px] text-gray-400">Nhận thông báo khi có cập nhật mới</span>
+              </div>
+              <button 
+                type="button" 
+                @click="toggleBrowserNotifications"
+                class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                :style="{ backgroundColor: browserNotifications.isEnabled ? '#059669' : '#d1d5db' }"
+              >
+                <span 
+                  class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out"
+                  :class="browserNotifications.isEnabled ? 'translate-x-4' : 'translate-x-0'"
+                ></span>
+              </button>
+            </div>
+
             <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
               <button
                 type="button"
@@ -450,7 +459,6 @@ const toggleBrowserNotifications = async () => {
   if (browserNotifications.isEnabled) {
     await browserNotifications.setEnabled(false)
     toastStore.success('Đã tắt thông báo cập nhật dự án.')
-    isDropdownOpen.value = false
     return
   }
 
@@ -464,7 +472,6 @@ const toggleBrowserNotifications = async () => {
   } else {
     toastStore.error('Trình duyệt này không hỗ trợ thông báo.')
   }
-  isDropdownOpen.value = false
 }
 
 const currentUser = computed(() => authStore.user || {
