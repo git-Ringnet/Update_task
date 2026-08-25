@@ -13,7 +13,7 @@
         type="button"
         class="bg-transparent px-5 py-2 rounded-full border border-gray-300 hover:border-emerald-350 shadow-3xs hover:shadow-2xs flex items-center gap-2 transition-all duration-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:ring-offset-1 text-sm font-bold text-gray-900"
       >
-        <img src="/cactus-logo.png" alt="Logo Xương Rồng" class="w-6 h-6 object-contain" />
+        <img src="/cactus-logo-square.png" alt="Logo Xương Rồng" class="w-6 h-6 object-contain" />
         <span>Xương Rồng</span>
         <i 
           class="fa-solid fa-chevron-down text-xs text-gray-400 ml-0.5 transition-transform duration-200"

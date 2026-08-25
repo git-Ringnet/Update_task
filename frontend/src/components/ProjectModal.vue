@@ -9,7 +9,7 @@
         <!-- Modal Header -->
         <div class="rounded-t-2xl bg-gradient-to-r from-emerald-50 to-teal-50 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <img src="/cactus-logo.png" alt="Logo Xương Rồng" class="w-8 h-8 object-contain" />
+            <img src="/cactus-logo-square.png" alt="Logo Xương Rồng" class="w-8 h-8 object-contain" />
             <h3 class="text-lg font-bold text-gray-900" id="modal-title">{{ editProject ? 'Cập Nhật Dự Án' : 'Tạo Dự Án Mới' }}</h3>
           </div>
           <button @click="close" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg">

@@ -3,7 +3,7 @@
     <!-- Exact Cactus Mascot Image -->
     <div class="relative w-9 h-9 flex-shrink-0 flex items-center justify-center bg-gradient-to-b from-emerald-50 to-teal-50 rounded-xl p-0.5 border border-emerald-200/80 shadow-xs hover:scale-105 transition-transform duration-200">
       <img
-        src="/cactus-logo.png"
+        src="/cactus-logo-square.png"
         alt="Logo Xương Rồng"
         class="w-full h-full object-contain drop-shadow-xs"
       />
