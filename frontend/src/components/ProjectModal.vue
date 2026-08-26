@@ -41,9 +41,9 @@
             <div class="relative">
               <input
                 ref="customerInputRef"
-                v-model="searchQuery"
+                :value="searchQuery"
                 @focus="handleInputFocus"
-                @input="isOpenDropdown = true; highlightedIndex = 0"
+                @input="searchQuery = $event.target.value; isOpenDropdown = true; highlightedIndex = 0"
                 @keydown="handleCustomerKeydown"
                 type="text"
                 placeholder="-- Gõ để tìm kiếm khách hàng (Enter để tạo mới) --"

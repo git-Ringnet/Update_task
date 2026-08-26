@@ -2408,12 +2408,43 @@ const activePreviewImage = ref(null)
 
 // ALL PROJECT CARDS SORTED NEWEST FIRST
 const allProjectCards = computed(() => {
-  if (!project.value || !project.value.tasks) return []
-  return [...project.value.tasks].sort((a, b) => {
-    const timeA = a.created_at ? new Date(a.created_at).getTime() : (typeof a.id === 'number' ? a.id : 0)
-    const timeB = b.created_at ? new Date(b.created_at).getTime() : (typeof b.id === 'number' ? b.id : 0)
+  const cards = []
+  
+  if (project.value && project.value.tasks) {
+    project.value.tasks.forEach(t => {
+      cards.push({
+        ...t,
+        isTask: true
+      })
+    })
+  }
+
+  if (activityLogs.value) {
+    activityLogs.value.forEach(c => {
+      if (c.type !== 'status_change') {
+        cards.push({
+          id: 'comment-' + c.id,
+          realCommentId: c.id,
+          project_id: c.project_id,
+          title: c.content,
+          created_by: c.user_id,
+          creator: c.user,
+          created_at: c.created_at,
+          due_date: null,
+          health: null,
+          type: 'comment',
+          is_comment: true,
+          isComment: true
+        })
+      }
+    })
+  }
+
+  return cards.sort((a, b) => {
+    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0
+    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0
     if (timeA !== timeB) return timeB - timeA
-    return (b.id || 0) - (a.id || 0)
+    return 0
   })
 })
 
@@ -2966,7 +2997,7 @@ const toggleMilestoneCompleted = async (ms) => {
     } else {
       toast.success(`Đã mở lại chặng "${ms.title}"!`)
     }
-    await fetchProjectDetail()
+    await refreshAllData()
   } catch (err) {
     toast.success(`Đã cập nhật trạng thái chặng!`)
   }
@@ -2991,7 +3022,7 @@ const handleDeleteMilestone = async (msId) => {
       selectedMilestone.value = null
       selectedTargetMilestoneId.value = null
     }
-    await fetchProjectDetail()
+    await refreshAllData()
   } catch (err) {
     toast.error('Không thể xóa chặng!')
   }
@@ -3031,7 +3062,7 @@ const saveRenameMilestone = async () => {
     await axios.put(`/api/milestones/${msId}`, { title: newTitle })
     toast.success('Đã đổi tên chặng thành công!')
     isRenamingMilestone.value = false
-    await fetchProjectDetail()
+    await refreshAllData()
     // Re-select the renamed milestone from the refreshed data
     const updatedMs = effectiveMilestones.value.find(m => m.id === msId)
     if (updatedMs) {
@@ -3435,7 +3466,7 @@ const handleAddStageTaskSubmit = async () => {
         attachment_ids: uploadedAttachmentIds
       })
       toast.success('Đã cập nhật thông tin hoạt động!')
-      await fetchProjectDetail()
+      await refreshAllData()
       clearAttachedFiles()
     } catch (err) {
       console.error('Failed to update task:', err)
@@ -3497,7 +3528,7 @@ const handleAddStageTaskSubmit = async () => {
     }
 
     toast.success('Đã cập nhật hoạt động mới!')
-    await fetchProjectDetail()
+    await refreshAllData()
     clearAttachedFiles()
   } catch (err) {
     if (!project.value.tasks) project.value.tasks = []
@@ -3557,6 +3588,15 @@ const fetchComments = async () => {
     const res = await axios.get('/api/comments', { params: { project_id: pId } })
     activityLogs.value = res.data
   } catch (err) { }
+}
+
+const refreshAllData = async () => {
+  try {
+    await Promise.all([
+      fetchProjectDetail(),
+      fetchComments()
+    ])
+  } catch (err) {}
 }
 
 const fetchCustomers = async () => {
@@ -3637,7 +3677,7 @@ const handleAddMilestone = async () => {
     newMilestone.title = ''
     isAddMilestoneOpen.value = false
 
-    await fetchProjectDetail()
+    await refreshAllData()
 
     // Find newly created milestone and automatically SELECT it!
     const allMs = effectiveMilestones.value
@@ -3733,7 +3773,7 @@ const handleUpdateProjectSubmit = async (data) => {
   try {
     await axios.put(`/api/projects/${projectId.value}`, data)
     toast.success('Cập nhật dự án thành công!')
-    await fetchProjectDetail()
+    await refreshAllData()
     isModalOpen.value = false
   } catch (err) {
     toast.error('Cập nhật dự án thất bại!')

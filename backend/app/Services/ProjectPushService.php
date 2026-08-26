@@ -52,6 +52,7 @@ class ProjectPushService
         $userName = $comment->user?->name ?? 'Một thành viên';
         $projectTitle = $project->title;
         $content = trim(preg_replace('/<[^>]*>/', ' ', strip_tags($comment->content)) ?? '');
+        $content = preg_replace('/^\[reply:\{.*?\}\]\s*/i', '', $content);
         $body = "{$projectTitle}\n{$userName}: " . ($content ?: 'vừa cập nhật dự án.');
 
         $icon = url('cactus-logo-square.png');
