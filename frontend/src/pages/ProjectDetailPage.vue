@@ -3724,25 +3724,42 @@ const handleDeleteTask = async (id) => {
     message: 'Bạn có chắc chắn muốn xóa hoạt động này?'
   })
   if (!confirmed) return
+
+  const isCommentCard = String(id).startsWith('comment-')
+  const rawId = isCommentCard ? String(id).replace('comment-', '') : id
+
   try {
-    if (typeof id === 'number') {
-      await axios.delete(`/api/tasks/${id}`)
-    }
-    if (project.value && project.value.tasks) {
-      project.value.tasks = project.value.tasks.filter(t => t.id !== id)
-    }
-    if (selectedMilestone.value && selectedMilestone.value.tasks) {
-      selectedMilestone.value.tasks = selectedMilestone.value.tasks.filter(t => t.id !== id)
-      selectedMilestone.value.tasks_count = Math.max(0, (selectedMilestone.value.tasks_count || 1) - 1)
+    if (isCommentCard) {
+      await axios.delete(`/api/comments/${rawId}`)
+      if (activityLogs.value) {
+        activityLogs.value = activityLogs.value.filter(c => c.id != rawId)
+      }
+    } else {
+      if (typeof rawId === 'number' || !isNaN(Number(rawId))) {
+        await axios.delete(`/api/tasks/${rawId}`)
+      }
+      if (project.value && project.value.tasks) {
+        project.value.tasks = project.value.tasks.filter(t => t.id !== id)
+      }
+      if (selectedMilestone.value && selectedMilestone.value.tasks) {
+        selectedMilestone.value.tasks = selectedMilestone.value.tasks.filter(t => t.id !== id)
+        selectedMilestone.value.tasks_count = Math.max(0, (selectedMilestone.value.tasks_count || 1) - 1)
+      }
     }
     toast.success('Đã xóa hoạt động!')
   } catch (err) {
-    if (project.value && project.value.tasks) {
-      project.value.tasks = project.value.tasks.filter(t => t.id !== id)
-    }
-    if (selectedMilestone.value && selectedMilestone.value.tasks) {
-      selectedMilestone.value.tasks = selectedMilestone.value.tasks.filter(t => t.id !== id)
-      selectedMilestone.value.tasks_count = Math.max(0, (selectedMilestone.value.tasks_count || 1) - 1)
+    if (isCommentCard) {
+      if (activityLogs.value) {
+        activityLogs.value = activityLogs.value.filter(c => c.id != rawId)
+      }
+    } else {
+      if (project.value && project.value.tasks) {
+        project.value.tasks = project.value.tasks.filter(t => t.id !== id)
+      }
+      if (selectedMilestone.value && selectedMilestone.value.tasks) {
+        selectedMilestone.value.tasks = selectedMilestone.value.tasks.filter(t => t.id !== id)
+        selectedMilestone.value.tasks_count = Math.max(0, (selectedMilestone.value.tasks_count || 1) - 1)
+      }
     }
     toast.success('Đã xóa hoạt động!')
   }

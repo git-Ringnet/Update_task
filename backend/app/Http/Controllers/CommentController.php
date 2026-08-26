@@ -88,4 +88,13 @@ class CommentController extends Controller
 
         return response()->json($comment, 201);
     }
+
+    public function destroy($id)
+    {
+        $comment = Comment::findOrFail($id);
+        abort_unless($comment->project->isVisibleTo(auth()->user()), 403, 'Bạn không có quyền xóa bình luận này.');
+        $comment->delete();
+
+        return response()->json(['message' => 'Đã xóa bình luận']);
+    }
 }

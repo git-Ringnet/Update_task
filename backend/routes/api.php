@@ -306,6 +306,7 @@ Route::middleware('auth.token')->group(function () {
     // Comments
     Route::get('/comments', [CommentController::class, 'index']);
     Route::post('/comments', [CommentController::class, 'store']);
+    Route::delete('/comments/{id}', [CommentController::class, 'destroy']);
 
     // Database SQL Export
     Route::get('/database/export', [\App\Http\Controllers\DatabaseController::class, 'exportSql'])
