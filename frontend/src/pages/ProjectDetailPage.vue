@@ -577,8 +577,22 @@
           <div v-else class="space-y-3">
             <!-- CARDS LIST -->
             <div v-for="t in displayedCards" :key="t.id"
+              @touchstart="handleTouchStart(t, $event)"
+              @touchend="handleTouchEnd"
+              @touchmove="handleTouchMove"
               class="relative bg-white border border-gray-200/80 hover:border-gray-300 rounded-2xl shadow-2xs hover:shadow-xs transition-all group flex items-stretch overflow-visible"
               :title="isTaskInDoneStage(t) ? 'Chặng đã hoàn thành (Không thể chỉnh sửa)' : undefined">
+
+              <!-- Desktop/Mobile reply button (Outside Right Edge) -->
+              <button
+                @click.stop="handleReplyToTask(t)"
+                type="button"
+                title="Trả lời hoạt động này"
+                class="absolute right-[-14px] top-1/2 -translate-y-1/2 opacity-0 md:group-hover:opacity-100 transition-all duration-200 bg-white hover:bg-emerald-600 text-gray-500 hover:text-white border border-gray-200 hover:border-emerald-600 cursor-pointer rounded-full h-7 w-7 flex items-center justify-center shadow-2xs z-20 focus:outline-none"
+                :class="{ 'opacity-100 pointer-events-auto': activeTaskIdForMobileActions === t.id }"
+              >
+                <i class="fa-solid fa-reply text-xs"></i>
+              </button>
 
               <!-- LEFT: Icon block; reveal card actions on hover -->
               <div
@@ -640,6 +654,9 @@
                       <i class="fa-solid fa-ellipsis-vertical"></i>
                     </button>
                     <div v-if="activeTaskActionMenuId === t.id" class="task-mobile-menu-popover">
+                      <button type="button" @click.stop="handleReplyToTask(t); activeTaskActionMenuId = null" class="border-b border-gray-100">
+                        <i class="fa-solid fa-reply text-xs"></i><span>Trả lời</span>
+                      </button>
                       <button type="button" @click.stop="openEditStageTaskForm(t); activeTaskActionMenuId = null">
                         <i class="fa-solid fa-pen-to-square"></i><span>Cập nhật</span>
                       </button>
@@ -652,8 +669,21 @@
                 </div>
 
                 <!-- Body: message content -->
-                <div class="mt-1 text-[17px] font-bold text-gray-900 leading-snug whitespace-pre-wrap break-words"
-                  v-html="formatTitleText(t.title)"></div>
+                <div class="mt-1 text-[17px] font-bold text-gray-900 leading-snug break-words">
+                  <!-- Zalo Quote Reply Preview inside task feed -->
+                  <div v-if="parseReplyInfo(t.title)" 
+                    class="bg-gray-50 px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1.5 select-none max-w-full font-semibold">
+                    <div class="text-[10px] font-bold text-gray-500 flex items-center gap-1">
+                      <i class="fa-solid fa-reply text-[9px]"></i>
+                      <span>{{ parseReplyInfo(t.title).user }}</span>
+                    </div>
+                    <div class="text-[10px] text-gray-450 truncate mt-0.5 max-w-[280px]">
+                      {{ parseReplyInfo(t.title).text }}
+                    </div>
+                  </div>
+
+                  <div v-html="formatTitleText(t.title)" class="whitespace-pre-wrap"></div>
+                </div>
 
                 <!-- Attachments -->
                 <div v-if="getTaskAttachments(t).length > 0" class="flex flex-wrap items-end gap-1.5 mt-2">
@@ -859,6 +889,22 @@
 
                 <!-- Input Area Container with Mention Dropdown & Paste Support -->
                 <div class="project-mention-picker flex-1 min-w-0 relative">
+                  <!-- Reply banner (Zalo Style Quote) -->
+                  <div v-if="replyingToLog" class="flex items-start justify-between bg-gray-100/80 px-3.5 py-2.5 rounded-xl border-l-3 border-[#0068FF] text-xs transition-all duration-300 relative select-none mb-2">
+                    <div class="flex-1 min-w-0">
+                      <div class="text-[10px] font-extrabold text-[#0068FF] uppercase tracking-wider flex items-center gap-1">
+                        <i class="fa-solid fa-reply text-[9px]"></i>
+                        <span>Trả lời {{ getCreatorDisplayName(replyingToLog) }}</span>
+                      </div>
+                      <div class="text-[11px] text-gray-500 truncate mt-0.5 max-w-[280px]">
+                        {{ parseCommentText(replyingToLog.title) }}
+                      </div>
+                    </div>
+                    <button @click="cancelReply" type="button" class="text-gray-400 hover:text-gray-650 transition-colors p-1 rounded-full hover:bg-gray-200/50 cursor-pointer flex items-center justify-center shrink-0 ml-2" title="Hủy trả lời">
+                      <i class="fa-solid fa-xmark text-xs"></i>
+                    </button>
+                  </div>
+
                   <textarea ref="stageTaskTitleInputRef" v-model="newStageTaskTitle" rows="1" required maxlength="1000"
                     @input="onTitleInput" @keydown="onTitleKeydown" @paste="onTextareaPaste" @focus="handleTextareaFocus"
                     placeholder="Chia sẻ cập nhật với team..."
@@ -1487,6 +1533,45 @@ const personPickerRef = ref(null)
 const isSubmittingStageTask = ref(false)
 const uploadProgress = ref(null)
 
+const replyingToLog = ref(null)
+const cancelReply = () => {
+  replyingToLog.value = null
+}
+const handleReplyToTask = (task) => {
+  replyingToLog.value = task
+  isInlineFormOpen.value = true
+  nextTick(() => {
+    stageTaskTitleInputRef.value?.focus()
+  })
+}
+
+const activeTaskIdForMobileActions = ref(null)
+
+let touchTimer = null
+let touchStarted = false
+
+const handleTouchStart = (task, event) => {
+  touchStarted = true
+  touchTimer = setTimeout(() => {
+    if (touchStarted) {
+      if (navigator.vibrate) {
+        navigator.vibrate(50)
+      }
+      activeTaskIdForMobileActions.value = task.id
+    }
+  }, 500)
+}
+
+const handleTouchEnd = () => {
+  touchStarted = false
+  if (touchTimer) clearTimeout(touchTimer)
+}
+
+const handleTouchMove = () => {
+  touchStarted = false
+  if (touchTimer) clearTimeout(touchTimer)
+}
+
 // ATTACHMENTS & CLIPBOARD PASTED IMAGES STATE
 const attachedFiles = ref([])
 const fileInputRef = ref(null)
@@ -1881,11 +1966,41 @@ const formatTitleWithMentions = (titleText) => {
   return escaped
 }
 
+const parseReplyInfo = (content) => {
+  if (!content) return null
+  const m = content.match(/^\[reply:(\{.*?\})\]/)
+  if (m) {
+    try {
+      return JSON.parse(m[1])
+    } catch (e) {
+      console.error('Failed to parse reply info:', e)
+    }
+  }
+  return null
+}
+
+const parseCommentText = (content) => {
+  if (!content) return ''
+  return content
+    .replace(/^\[reply:\{.*?\}\]/, '')
+    .replace(/!\[.*?\]\((.*?)\)/g, '')
+    .replace(/📎\s*\[(.*?)\]\((.*?)\)/g, '')
+    .replace(/<img[^>]*>/gi, '')
+    .replace(/<a[^>]*>📎\s*Tệp đính kèm:[^<]*<\/a>/gi, '')
+    .replace(/<span[^>]*>📎\s*Tệp đính kèm:[^<]*<\/span>/gi, '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/<br\s*\/?>/gi, ' ')
+    .trim()
+}
+
 // Format title text for display: strip attachment HTML (images/files) from content
 // Attachments will be rendered separately below via getTaskAttachments()
 const formatTitleText = (titleText) => {
   if (!titleText) return ''
   let text = String(titleText)
+
+  // Remove reply quote prefixes
+  text = text.replace(/^\[reply:\{.*?\}\]/gi, '')
 
   // Remove <img> tags (they will be shown as attachment icons below)
   text = text.replace(/<img[^>]+>/gi, '')
@@ -3205,6 +3320,7 @@ const handleQuickAssignTask = async (task, newUserId) => {
 const handleDocumentClick = (e) => {
   activeAssigneeDropdownTaskId.value = null
   activeTaskActionMenuId.value = null
+  activeTaskIdForMobileActions.value = null
 
   if (showPersonPicker.value && (!personPickerRef.value || !personPickerRef.value.contains(e.target))) {
     showPersonPicker.value = false
@@ -3244,6 +3360,11 @@ const handleAddStageTaskSubmit = async () => {
   const msId = newStageTaskMilestoneId.value || (selectedTargetMilestoneId.value && !selectedMilestone.value?.is_completed ? selectedTargetMilestoneId.value : null) || (activeTargetMilestones.value[0]?.id || null)
 
   let titleText = newStageTaskTitle.value.trim()
+  if (replyingToLog.value) {
+    const quoteText = parseCommentText(replyingToLog.value.title || '').replace(/\n/g, ' ')
+    const quoteUser = getCreatorDisplayName(replyingToLog.value)
+    titleText = `[reply:{"user":"${quoteUser}","text":"${quoteText.substring(0, 100)}"}] ${titleText}`
+  }
   let uploadedAttachmentIds = []
 
   try {
@@ -3328,6 +3449,7 @@ const handleAddStageTaskSubmit = async () => {
       newStageTaskDueTime.value = ''
       isInlineFormOpen.value = false
       isSubmittingStageTask.value = false
+      replyingToLog.value = null
       adjustTextareaHeight()
     }
     return
@@ -3399,6 +3521,7 @@ const handleAddStageTaskSubmit = async () => {
     isInlineFormOpen.value = false
     isSubmittingStageTask.value = false
     uploadProgress.value = null
+    replyingToLog.value = null
     adjustTextareaHeight()
   }
 }
