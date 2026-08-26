@@ -18,17 +18,15 @@
 
 
       <!-- Main Layout Container -->
-      <div class="view-page-layout"
-        :class="viewMode === 'notes'
-          ? 'grid grid-cols-1 lg:grid-cols-[390px_minmax(0,1fr)] gap-10 w-full lg:w-[1280px] mx-auto items-start'
-          : 'w-full flex justify-center items-start gap-10'">
+      <div class="view-page-layout" :class="viewMode === 'notes'
+        ? 'grid grid-cols-1 lg:grid-cols-[390px_minmax(0,1fr)] gap-10 w-full lg:w-[1280px] mx-auto items-start'
+        : 'w-full flex justify-center items-start gap-10'">
 
         <!-- LEFT PANEL: Actions, Switcher & Search (Block 1) -->
-        <aside ref="viewActionsRef" class="view-actions"
-          :class="[
-            viewMode === 'notes' ? 'space-y-3.5 select-none flex flex-col items-end w-full lg:-translate-x-[42px]' : 'space-y-3.5 select-none flex flex-col items-end w-[390px] flex-shrink-0',
-            mobileHomeTab === 'projects' ? '' : 'mobile-home-panel-hidden'
-          ]">
+        <aside ref="viewActionsRef" class="view-actions" :class="[
+          viewMode === 'notes' ? 'space-y-3.5 select-none flex flex-col items-end w-full lg:-translate-x-[42px]' : 'space-y-3.5 select-none flex flex-col items-end w-[390px] flex-shrink-0',
+          mobileHomeTab === 'projects' ? '' : 'mobile-home-panel-hidden'
+        ]">
           <!-- Button Tạo dự án -->
           <button @click="isModalOpen = true" type="button"
             class="mobile-icon-button create-project-action w-fit bg-transparent hover:bg-gray-200/40 border-2 border-[#4d4d4d] text-gray-900 font-extrabold text-sm rounded-md px-4.5 py-2.5 flex items-center justify-center gap-1 transition-colors cursor-pointer focus:outline-none select-none"
@@ -48,13 +46,15 @@
           </button>
 
           <!-- Tìm kiếm gì đó -->
-          <div class="search-input-wrapper relative w-full max-w-[270px]" :class="{ 'mobile-search-open': isMobileSearchOpen }">
+          <div class="search-input-wrapper relative w-full max-w-[270px]"
+            :class="{ 'mobile-search-open': isMobileSearchOpen }">
             <i
               class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4d4d4d] text-sm"></i>
             <input ref="searchInputRef" v-model="projectStore.searchQuery" type="text" placeholder="Tìm kiếm"
               class="w-full bg-transparent border-2 border-[#4d4d4d] rounded-md pl-10 pr-4 py-2.5 text-sm font-extrabold text-gray-900 focus:outline-none placeholder-gray-400" />
           </div>
-          <button type="button" class="mobile-search-toggle mobile-icon-button" @click="isMobileSearchOpen = !isMobileSearchOpen" title="Tìm kiếm">
+          <button type="button" class="mobile-search-toggle mobile-icon-button"
+            @click="isMobileSearchOpen = !isMobileSearchOpen" title="Tìm kiếm">
             <i class="fa-solid fa-magnifying-glass text-sm"></i>
           </button>
 
@@ -63,103 +63,109 @@
             <button type="button" @click="toggleShortcutHints" class="shortcut-hints-toggle" title="Phím tắt">
               <i class="fa-solid fa-keyboard"></i>
             </button>
-            <div v-if="isShortcutHintsOpen" class="shortcut-hints-popover bg-transparent border border-gray-300 rounded-xl p-3 shadow-3xs w-full">
+            <div v-if="isShortcutHintsOpen"
+              class="shortcut-hints-popover bg-transparent border border-gray-300 rounded-xl p-3 shadow-3xs w-full">
               <div class="flex items-center gap-2 mb-2">
                 <i class="fa-solid fa-keyboard text-emerald-600 text-sm"></i>
                 <span class="text-xs font-black text-gray-900 uppercase tracking-wider">Phím tắt</span>
               </div>
               <div class="space-y-1.5 text-xs">
-              <div class="flex items-center justify-between">
-                <span class="text-gray-600 font-semibold">Tạo dự án mới</span>
-                <kbd
-                  class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl
-                  + K</kbd>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-gray-600 font-semibold">Tìm kiếm</span>
-                <kbd
-                  class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl
-                  + F</kbd>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-gray-600 font-semibold">Chọn tất cả</span>
-                <kbd
-                  class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl
-                  + A</kbd>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-gray-600 font-semibold">Bỏ chọn tất cả</span>
-                <kbd
-                  class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl
-                  + Shift + A</kbd>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-gray-600 font-semibold">Chuyển đổi view</span>
-                <kbd
-                  class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl
-                  + B</kbd>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-gray-600 font-semibold">Đóng/Thoát</span>
-                <kbd
-                  class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">ESC</kbd>
-              </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-gray-600 font-semibold">Tạo dự án mới</span>
+                  <kbd
+                    class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl
+                    + K</kbd>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-gray-600 font-semibold">Tìm kiếm</span>
+                  <kbd
+                    class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl
+                    + F</kbd>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-gray-600 font-semibold">Chọn tất cả</span>
+                  <kbd
+                    class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl
+                    + A</kbd>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-gray-600 font-semibold">Bỏ chọn tất cả</span>
+                  <kbd
+                    class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl
+                    + Shift + A</kbd>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-gray-600 font-semibold">Chuyển đổi view</span>
+                  <kbd
+                    class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl
+                    + B</kbd>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-gray-600 font-semibold">Đóng/Thoát</span>
+                  <kbd
+                    class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">ESC</kbd>
+                </div>
               </div>
             </div>
           </div>
 
           <!-- Xương Rồng TV: only broadcasts from the last 24 hours are returned by the API. -->
           <Teleport to="body">
-          <section v-if="tvPositionReady && currentBroadcast" :key="`tv-${viewMode}`" class="tv-broadcast-panel select-none"
-            :class="{ 'is-notes-view': viewMode === 'notes' }"
-            :style="viewMode === 'notes'
-              ? { left: `${tvPanelLeft}px`, top: 'auto', bottom: '64px', transform: 'scale(1)', transformOrigin: 'right bottom' }
-              : { left: `${tvPanelLeft}px`, top: tvPanelTop === null ? 'auto' : `${tvPanelTop}px`, bottom: tvPanelTop === null ? '64px' : 'auto', transform: `scale(${tvPanelScale})`, transformOrigin: tvPanelTop === null ? 'right bottom' : 'right top' }"
-            aria-label="Xương Rồng TV">
-            <div class="tv-broadcast-frame" :class="currentBroadcast?.type === 'bad' ? 'is-bad' : 'is-good'">
-              <div class="tv-broadcast-screen">
-                <template v-if="currentBroadcast && currentBroadcast.type !== 'bad'">
-                  <div v-if="currentBroadcast.recipient">
-                    <div class="flex items-center gap-2.5">
-                      <img :src="broadcastPerson?.avatar || defaultAvatar" :alt="broadcastPerson?.name || 'Thành viên'" class="tv-broadcast-avatar" />
-                      <div class="min-w-0">
-                        <p class="tv-broadcast-name">{{ broadcastPerson?.name || 'Xương Rồng' }}</p>
-                        <p class="tv-broadcast-label tv-broadcast-label-green">
-                          <i class="fa-solid fa-star tv-broadcast-star"></i> ĐỈNH CỦA CHÓP
-                        </p>
+            <section v-if="tvPositionReady && currentBroadcast" :key="`tv-${viewMode}`"
+              class="tv-broadcast-panel select-none" :class="{ 'is-notes-view': viewMode === 'notes' }"
+              :style="viewMode === 'notes'
+                ? { left: `${tvPanelLeft}px`, top: 'auto', bottom: '64px', transform: 'scale(1)', transformOrigin: 'right bottom' }
+                : { left: `${tvPanelLeft}px`, top: tvPanelTop === null ? 'auto' : `${tvPanelTop}px`, bottom: tvPanelTop === null ? '64px' : 'auto', transform: `scale(${tvPanelScale})`, transformOrigin: tvPanelTop === null ? 'right bottom' : 'right top' }"
+              aria-label="Xương Rồng TV">
+              <div class="tv-broadcast-frame" :class="currentBroadcast?.type === 'bad' ? 'is-bad' : 'is-good'">
+                <div class="tv-broadcast-screen">
+                  <template v-if="currentBroadcast && currentBroadcast.type !== 'bad'">
+                    <div v-if="currentBroadcast.recipient">
+                      <div class="flex items-center gap-2.5">
+                        <img :src="broadcastPerson?.avatar || defaultAvatar"
+                          :alt="broadcastPerson?.name || 'Thành viên'" class="tv-broadcast-avatar" />
+                        <div class="min-w-0">
+                          <p class="tv-broadcast-name">{{ broadcastPerson?.name || 'Xương Rồng' }}</p>
+                          <p class="tv-broadcast-label tv-broadcast-label-green">
+                            <i class="fa-solid fa-star tv-broadcast-star"></i> ĐỈNH CỦA CHÓP
+                          </p>
+                        </div>
                       </div>
+                      <p class="tv-broadcast-content">{{ currentBroadcast.content }}</p>
                     </div>
-                    <p class="tv-broadcast-content">{{ currentBroadcast.content }}</p>
+                    <div v-else class="tv-broadcast-good">
+                      <p class="tv-broadcast-good-label"><i class="fa-solid fa-circle-check"></i> ĐỈNH CỦA CHÓP</p>
+                      <p class="tv-broadcast-good-content">{{ currentBroadcast.content }}</p>
+                    </div>
+                  </template>
+                  <template v-else-if="currentBroadcast">
+                    <div class="tv-broadcast-bad">
+                      <p class="tv-broadcast-bad-label"><i class="fa-solid fa-circle-exclamation"></i> KHÔNG TỐT</p>
+                      <p class="tv-broadcast-bad-content">{{ currentBroadcast.content }}</p>
+                    </div>
+                  </template>
+                  <div v-else class="tv-broadcast-empty">
+                    <i class="fa-solid fa-tv"></i>
+                    <span>Chưa có phát sóng mới</span>
                   </div>
-                  <div v-else class="tv-broadcast-good">
-                    <p class="tv-broadcast-good-label"><i class="fa-solid fa-circle-check"></i> ĐỈNH CỦA CHÓP</p>
-                    <p class="tv-broadcast-good-content">{{ currentBroadcast.content }}</p>
-                  </div>
-                </template>
-                <template v-else-if="currentBroadcast">
-                  <div class="tv-broadcast-bad">
-                    <p class="tv-broadcast-bad-label"><i class="fa-solid fa-circle-exclamation"></i> KHÔNG TỐT</p>
-                    <p class="tv-broadcast-bad-content">{{ currentBroadcast.content }}</p>
-                  </div>
-                </template>
-                <div v-else class="tv-broadcast-empty">
-                  <i class="fa-solid fa-tv"></i>
-                  <span>Chưa có phát sóng mới</span>
                 </div>
+                <div class="tv-broadcast-console">
+                  <span></span><span></span><span></span>
+                  <button type="button" @click="previousBroadcast" :disabled="broadcasts.length < 2"
+                    title="Bản tin trước"><i class="fa-solid fa-chevron-left"></i></button>
+                  <button type="button" @click="nextBroadcast" :disabled="broadcasts.length < 2"
+                    title="Bản tin tiếp theo"><i class="fa-solid fa-chevron-right"></i></button>
+                  <i class="tv-broadcast-power"></i>
+                </div>
+                <div class="tv-broadcast-leg tv-broadcast-leg-left"></div>
+                <div class="tv-broadcast-leg tv-broadcast-leg-right"></div>
               </div>
-              <div class="tv-broadcast-console">
-                <span></span><span></span><span></span>
-                <button type="button" @click="previousBroadcast" :disabled="broadcasts.length < 2" title="Bản tin trước"><i class="fa-solid fa-chevron-left"></i></button>
-                <button type="button" @click="nextBroadcast" :disabled="broadcasts.length < 2" title="Bản tin tiếp theo"><i class="fa-solid fa-chevron-right"></i></button>
-                <i class="tv-broadcast-power"></i>
+              <div class="tv-broadcast-controls">
+                <p class="tv-broadcast-status">{{ broadcasts.length ? `Bản tin ${currentBroadcastIndex +
+                  1}/${broadcasts.length}` :
+                  'Đang chờ bản tin' }}</p>
               </div>
-              <div class="tv-broadcast-leg tv-broadcast-leg-left"></div>
-              <div class="tv-broadcast-leg tv-broadcast-leg-right"></div>
-            </div>
-            <div class="tv-broadcast-controls">
-              <p class="tv-broadcast-status">{{ broadcasts.length ? `Bản tin ${currentBroadcastIndex + 1}/${broadcasts.length}` : 'Đang chờ bản tin' }}</p>
-            </div>
-          </section>
+            </section>
           </Teleport>
         </aside>
 
@@ -167,63 +173,169 @@
         <div class="mobile-panels-container">
           <!-- CENTER PANEL: Projects List (Block 2 - Wider Column, expands when notes view) -->
           <section ref="projectListPanelRef" class="project-list-panel"
-          :class="[viewMode === 'notes' ? 'space-y-3.5 select-none w-full' : 'space-y-3.5 select-none w-[420px] flex-shrink-0', mobileHomeTab === 'projects' ? '' : 'mobile-home-panel-hidden']">
+            :class="[viewMode === 'notes' ? 'space-y-3.5 select-none w-full' : 'space-y-3.5 select-none w-[420px] flex-shrink-0', mobileHomeTab === 'projects' ? '' : 'mobile-home-panel-hidden']">
 
-          <!-- Skeleton Loading State -->
-          <div v-if="projectStore.isLoading && displayedProjects.length === 0"
-            class="space-y-3 max-h-[calc(100vh-200px)]">
-            <div v-for="i in 3" :key="'sk-proj-' + i"
-              class="rounded-2xl p-4 bg-white/80 border border-gray-200 animate-pulse flex items-center justify-between h-20 shadow-3xs">
-              <div class="flex items-center gap-3.5 flex-1">
-                <div class="w-4.5 h-4.5 bg-gray-200 rounded"></div>
-                <div class="space-y-2 flex-1">
-                  <div class="w-1/2 h-4 bg-gray-200 rounded-md"></div>
-                  <div class="w-1/4 h-3 bg-gray-150 rounded-md"></div>
+            <!-- Skeleton Loading State -->
+            <div v-if="projectStore.isLoading && displayedProjects.length === 0"
+              class="space-y-3 max-h-[calc(100vh-200px)]">
+              <div v-for="i in 3" :key="'sk-proj-' + i"
+                class="rounded-2xl p-4 bg-white/80 border border-gray-200 animate-pulse flex items-center justify-between h-20 shadow-3xs">
+                <div class="flex items-center gap-3.5 flex-1">
+                  <div class="w-4.5 h-4.5 bg-gray-200 rounded"></div>
+                  <div class="space-y-2 flex-1">
+                    <div class="w-1/2 h-4 bg-gray-200 rounded-md"></div>
+                    <div class="w-1/4 h-3 bg-gray-150 rounded-md"></div>
+                  </div>
+                </div>
+                <div class="w-16 h-5 bg-gray-200 rounded-md"></div>
+              </div>
+            </div>
+
+            <!-- Grouped by Customer Mode (Matches Mockup) -->
+            <div v-else-if="isGroupedByCustomer" ref="scrollContainerGrouped" @scroll="handleScroll"
+              class="project-scroll-container space-y-6 max-h-[calc(100vh-226px)] overflow-y-auto scrollbar-none">
+              <div v-for="group in projectsByCustomer" :key="group.name" class="space-y-2.5">
+                <!-- Customer Header -->
+                <div class="flex items-center gap-2 pt-1 select-none">
+                  <h3 class="text-xl font-black text-gray-900 tracking-tight font-heading">{{ group.name }}</h3>
+                  <button @click.stop="togglePinCustomer(group.name)" type="button"
+                    class="p-1 transition-colors hover:opacity-80"
+                    :title="group.is_pinned ? 'Bỏ ghim khách hàng' : 'Ghim khách hàng'">
+                    <i class="text-base transition-colors"
+                      :class="group.is_pinned ? 'fa-solid fa-star text-gray-600' : 'fa-regular fa-star text-gray-400 hover:text-gray-600'"></i>
+                  </button>
+                </div>
+
+                <!-- Customer Projects List -->
+                <div class="space-y-2">
+                  <div v-for="(project, pIdx) in group.projects" :key="project.id" :data-project-id="project.id"
+                    draggable="true" @dragstart="onGroupedDragStart($event, project, group, pIdx)"
+                    @dragover.prevent="onGroupedDragOver($event, pIdx)" @dragleave="onGroupedDragLeave"
+                    @drop="onGroupedDrop($event, group, pIdx)" @dragend="onGroupedDragEnd"
+                    class="flex items-center transition-all duration-150 rounded-2xl group/project-row relative w-full"
+                    :class="{
+                      'opacity-40 scale-[0.98]': draggedGroupedIndex === pIdx && draggedGroupId === group.name,
+                      'ring-2 ring-emerald-500 bg-emerald-50/50 p-1': dragOverGroupedIndex === pIdx && dragOverGroupId === group.name && (draggedGroupedIndex !== pIdx || draggedGroupId !== group.name)
+                    }">
+
+                    <!-- Same multi-select behavior as the default project view -->
+                    <input type="checkbox" :checked="isSelected(project.id)"
+                      @click.stop="toggleProjectSelect(project.id, $event)"
+                      class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer transition-opacity duration-200 absolute left-2 top-1/2 -translate-y-1/2"
+                      :class="showAllCheckboxes ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100'" />
+
+                    <!-- Colored Project Rectangular Card (Identical to default mode) -->
+                    <div @click="goToProjectDetail(project.id, $event)"
+                      class="project-card w-full md:w-[388px] ml-auto rounded-lg p-4 flex items-center justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
+                      :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]">
+                      <div class="min-w-0 flex-1">
+                        <div class="font-extrabold text-gray-900 text-sm sm:text-base leading-snug break-words min-w-0">
+                          {{ project.title }}
+                        </div>
+                      </div>
+
+                      <div class="flex-shrink-0">
+                        <!-- Pin/Star Button -->
+                        <button @click.stop="togglePinProject(project)" type="button"
+                          class="p-1 cursor-pointer transition-opacity"
+                          :class="Boolean(project.is_pinned) ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100 focus-visible:opacity-100'"
+                          :title="Boolean(project.is_pinned) ? 'Bỏ ghim dự án' : 'Ghim dự án'">
+                          <i class="text-lg transition-colors"
+                            :class="Boolean(project.is_pinned) ? 'fa-solid fa-star text-gray-600' : 'fa-regular fa-star text-gray-500 hover:text-gray-700'"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div class="w-16 h-5 bg-gray-200 rounded-md"></div>
-            </div>
-          </div>
 
-          <!-- Grouped by Customer Mode (Matches Mockup) -->
-          <div v-else-if="isGroupedByCustomer" ref="scrollContainerGrouped" @scroll="handleScroll"
-            class="project-scroll-container space-y-6 max-h-[calc(100vh-226px)] overflow-y-auto scrollbar-none">
-            <div v-for="group in projectsByCustomer" :key="group.name" class="space-y-2.5">
-              <!-- Customer Header -->
-              <div class="flex items-center gap-2 pt-1 select-none">
-                <h3 class="text-xl font-black text-gray-900 tracking-tight font-heading">{{ group.name }}</h3>
-                <button @click.stop="togglePinCustomer(group.name)" type="button"
-                  class="p-1 transition-colors hover:opacity-80"
-                  :title="group.is_pinned ? 'Bỏ ghim khách hàng' : 'Ghim khách hàng'">
-                  <i class="text-base transition-colors"
-                    :class="group.is_pinned ? 'fa-solid fa-star text-gray-600' : 'fa-regular fa-star text-gray-400 hover:text-gray-600'"></i>
-                </button>
+              <!-- Empty state for grouped mode -->
+              <div v-if="projectsByCustomer.length === 0"
+                class="bg-white border border-gray-200 rounded-2xl py-12 text-center text-gray-450 text-sm font-semibold shadow-3xs select-none">
+                Không tìm thấy dự án nào trong mục này.
+              </div>
+            </div>
+
+            <!-- Sticky Notes View (Grid Layout) -->
+            <div v-else-if="viewMode === 'notes'" ref="scrollContainerNotes" @scroll="handleScroll"
+              class="project-scroll-container overflow-y-auto pr-1 pb-8 max-h-[calc(100vh-226px)] scrollbar-none">
+              <div class="sticky-grid">
+                <div v-for="project in displayedProjects" :key="project.id" :data-project-id="project.id"
+                  @click="goToProjectDetail(project.id, $event)" class="note-card" :class="getStickyNoteStyle(project)">
+                  <!-- Pin top center -->
+                  <span class="note-pin" :class="getStickyNotePinStyle(project)"></span>
+
+                  <!-- Checkmark (top left) when selected -->
+                  <div v-if="isSelected(project.id)"
+                    class="absolute top-[6px] left-[6px] z-20 flex items-center justify-center"
+                    style="position: absolute !important; z-index: 20 !important;">
+                    <i class="fa-solid fa-circle-check text-[#1A7A56] text-xl bg-white rounded-full shadow-3xs"></i>
+                  </div>
+
+                  <!-- Star icon (top right) -->
+                  <button @click.stop="togglePinProject(project)" type="button" class="note-star"
+                    :title="Boolean(project.is_pinned) ? 'Bỏ ghim dự án' : 'Ghim dự án'">
+                    <i class="text-lg transition-colors"
+                      :class="Boolean(project.is_pinned) ? 'fa-solid fa-star text-gray-600' : 'fa-regular fa-star text-gray-500 hover:text-gray-700'"></i>
+                  </button>
+
+                  <!-- Content upper -->
+                  <div>
+                    <div class="note-header-tag">DỰ ÁN</div>
+                    <h3 class="note-title-text">
+                      {{ project.title }}
+                    </h3>
+                  </div>
+
+                  <!-- Content lower (Divider & Customer Name) -->
+                  <div>
+                    <div class="note-divider-line"></div>
+                    <div class="note-sub-text">
+                      {{ project.customer ? project.customer.name : 'Chưa phân khách hàng' }}
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <!-- Customer Projects List -->
-              <div class="space-y-2">
-                <div v-for="(project, pIdx) in group.projects" :key="project.id" :data-project-id="project.id"
-                  draggable="true" @dragstart="onGroupedDragStart($event, project, group, pIdx)"
-                  @dragover.prevent="onGroupedDragOver($event, pIdx)" @dragleave="onGroupedDragLeave"
-                  @drop="onGroupedDrop($event, group, pIdx)" @dragend="onGroupedDragEnd"
+              <!-- Empty state for notes mode -->
+              <div v-if="displayedProjects.length === 0"
+                class="bg-white/80 backdrop-blur-xs border border-gray-200 rounded-2xl py-12 text-center text-gray-500 text-sm font-bold shadow-3xs select-none">
+                Không có dự án đã ghim nào.
+              </div>
+            </div>
+
+            <!-- Default Cards list -->
+            <div v-else ref="scrollContainerDefault" @scroll="handleScroll"
+              class="project-scroll-container space-y-3.5 max-h-[calc(100vh-226px)] overflow-y-auto scrollbar-none ml-[-16px] mr-[-16px]">
+              <transition-group enter-active-class="transition duration-300 ease-out"
+                enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0"
+                leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
+                leave-to-class="opacity-0 -translate-y-2">
+                <div v-for="(project, index) in displayedProjects" :key="project.id" :data-project-id="project.id"
+                  draggable="true" @dragstart="onDragStart($event, project, index)"
+                  @dragover.prevent="onDragOver($event, index)" @dragleave="onDragLeave($event)"
+                  @drop="onDrop($event, index)" @dragend="onDragEnd($event)"
                   class="flex items-center transition-all duration-150 rounded-2xl group/project-row relative w-full"
                   :class="{
-                    'opacity-40 scale-[0.98]': draggedGroupedIndex === pIdx && draggedGroupId === group.name,
-                    'ring-2 ring-emerald-500 bg-emerald-50/50 p-1': dragOverGroupedIndex === pIdx && dragOverGroupId === group.name && (draggedGroupedIndex !== pIdx || draggedGroupId !== group.name)
+                    'opacity-40 scale-[0.98]': draggedProjectIndex === index,
+                    'ring-2 ring-emerald-500 bg-emerald-50/50 p-1': dragOverIndex === index && draggedProjectIndex !== index
                   }">
-
-                  <!-- Same multi-select behavior as the default project view -->
-                  <input type="checkbox" :checked="isSelected(project.id)" @click.stop="toggleProjectSelect(project.id, $event)"
+                  <!-- Checkbox for multi-select (outside the card, but inside the scroll container) -->
+                  <input type="checkbox" :checked="isSelected(project.id)"
+                    @click.stop="toggleProjectSelect(project.id, $event)"
                     class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer transition-opacity duration-200 absolute left-2 top-1/2 -translate-y-1/2"
                     :class="showAllCheckboxes ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100'" />
 
-                  <!-- Colored Project Rectangular Card (Identical to default mode) -->
+                  <!-- Card Container -->
                   <div @click="goToProjectDetail(project.id, $event)"
-                    class="project-card w-[388px] ml-auto rounded-lg p-4 flex items-center justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
+                    class="project-card w-full md:w-[388px] ml-auto rounded-lg p-4 flex items-start justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
                     :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]">
                     <div class="min-w-0 flex-1">
                       <div class="font-extrabold text-gray-900 text-sm sm:text-base leading-snug break-words min-w-0">
                         {{ project.title }}
+                      </div>
+                      <div class="text-xs text-gray-700 font-bold mt-1 uppercase tracking-wider">
+                        {{ project.customer ? project.customer.name : 'Chưa phân khách hàng' }}
                       </div>
                     </div>
 
@@ -239,385 +351,267 @@
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            <!-- Empty state for grouped mode -->
-            <div v-if="projectsByCustomer.length === 0"
-              class="bg-white border border-gray-200 rounded-2xl py-12 text-center text-gray-450 text-sm font-semibold shadow-3xs select-none">
-              Không tìm thấy dự án nào trong mục này.
-            </div>
-          </div>
-
-          <!-- Sticky Notes View (Grid Layout) -->
-          <div v-else-if="viewMode === 'notes'" ref="scrollContainerNotes" @scroll="handleScroll"
-            class="project-scroll-container overflow-y-auto pr-1 pb-8 max-h-[calc(100vh-226px)] scrollbar-none">
-            <div class="sticky-grid">
-              <div v-for="project in displayedProjects" :key="project.id" :data-project-id="project.id"
-                @click="goToProjectDetail(project.id, $event)" class="note-card" :class="getStickyNoteStyle(project)">
-                <!-- Pin top center -->
-                <span class="note-pin" :class="getStickyNotePinStyle(project)"></span>
-
-                <!-- Checkmark (top left) when selected -->
-                <div v-if="isSelected(project.id)"
-                  class="absolute top-[6px] left-[6px] z-20 flex items-center justify-center"
-                  style="position: absolute !important; z-index: 20 !important;">
-                  <i class="fa-solid fa-circle-check text-[#1A7A56] text-xl bg-white rounded-full shadow-3xs"></i>
-                </div>
-
-                <!-- Star icon (top right) -->
-                <button @click.stop="togglePinProject(project)" type="button" class="note-star"
-                  :title="Boolean(project.is_pinned) ? 'Bỏ ghim dự án' : 'Ghim dự án'">
-                  <i class="text-lg transition-colors"
-                    :class="Boolean(project.is_pinned) ? 'fa-solid fa-star text-gray-600' : 'fa-regular fa-star text-gray-500 hover:text-gray-700'"></i>
-                </button>
-
-                <!-- Content upper -->
-                <div>
-                  <div class="note-header-tag">DỰ ÁN</div>
-                  <h3 class="note-title-text">
-                    {{ project.title }}
-                  </h3>
-                </div>
-
-                <!-- Content lower (Divider & Customer Name) -->
-                <div>
-                  <div class="note-divider-line"></div>
-                  <div class="note-sub-text">
-                    {{ project.customer ? project.customer.name : 'Chưa phân khách hàng' }}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Empty state for notes mode -->
-            <div v-if="displayedProjects.length === 0"
-              class="bg-white/80 backdrop-blur-xs border border-gray-200 rounded-2xl py-12 text-center text-gray-500 text-sm font-bold shadow-3xs select-none">
-              Không có dự án đã ghim nào.
-            </div>
-          </div>
-
-          <!-- Default Cards list -->
-          <div v-else ref="scrollContainerDefault" @scroll="handleScroll"
-            class="project-scroll-container space-y-3.5 max-h-[calc(100vh-226px)] overflow-y-auto scrollbar-none ml-[-16px] mr-[16px]">
-            <transition-group enter-active-class="transition duration-300 ease-out"
-              enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0"
-              leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
-              leave-to-class="opacity-0 -translate-y-2">
-              <div v-for="(project, index) in displayedProjects" :key="project.id" :data-project-id="project.id"
-                draggable="true" @dragstart="onDragStart($event, project, index)"
-                @dragover.prevent="onDragOver($event, index)" @dragleave="onDragLeave($event)"
-                @drop="onDrop($event, index)" @dragend="onDragEnd($event)"
-                class="flex items-center transition-all duration-150 rounded-2xl group/project-row relative w-full"
-                :class="{
-                  'opacity-40 scale-[0.98]': draggedProjectIndex === index,
-                  'ring-2 ring-emerald-500 bg-emerald-50/50 p-1': dragOverIndex === index && draggedProjectIndex !== index
-                }">
-                <!-- Checkbox for multi-select (outside the card, but inside the scroll container) -->
-                <input type="checkbox" :checked="isSelected(project.id)" @click.stop="toggleProjectSelect(project.id, $event)"
-                  class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer transition-opacity duration-200 absolute left-2 top-1/2 -translate-y-1/2"
-                  :class="showAllCheckboxes ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100'" />
-
-                <!-- Card Container -->
-                <div @click="goToProjectDetail(project.id, $event)"
-                  class="project-card w-[388px] ml-auto rounded-lg p-4 flex items-start justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
-                  :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]">
-                  <div class="min-w-0 flex-1">
-                    <div class="font-extrabold text-gray-900 text-sm sm:text-base leading-snug break-words min-w-0">
-                      {{ project.title }}
-                    </div>
-                    <div class="text-xs text-gray-700 font-bold mt-1 uppercase tracking-wider">
-                      {{ project.customer ? project.customer.name : 'Chưa phân khách hàng' }}
-                    </div>
-                  </div>
-
-                  <div class="flex-shrink-0">
-                  <!-- Pin/Star Button -->
-                  <button @click.stop="togglePinProject(project)" type="button"
-                    class="p-1 cursor-pointer transition-opacity"
-                    :class="Boolean(project.is_pinned) ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100 focus-visible:opacity-100'"
-                    :title="Boolean(project.is_pinned) ? 'Bỏ ghim dự án' : 'Ghim dự án'">
-                      <i class="text-lg transition-colors"
-                        :class="Boolean(project.is_pinned) ? 'fa-solid fa-star text-gray-600' : 'fa-regular fa-star text-gray-500 hover:text-gray-700'"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </transition-group>
-
-            <!-- Empty projects state -->
-            <div v-if="displayedProjects.length === 0"
-              class="bg-white border border-gray-200 rounded-2xl py-12 text-center text-gray-450 text-sm font-semibold shadow-3xs select-none">
-              Không tìm thấy dự án nào trong mục này.
-            </div>
-
-            <!-- Load More Button -->
-            <div
-              v-if="displayedProjects.length < projectStore.projects.filter(p => p.tracking_status === 'following').length"
-              class="flex justify-center pt-2">
-              <button @click="loadMore" type="button"
-                class="px-5 py-2.5 bg-white hover:bg-emerald-50 border border-gray-200 hover:border-emerald-500 text-gray-700 hover:text-emerald-700 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-3xs focus:outline-none">
-                <i class="fa-solid fa-angles-down text-[10px]"></i>
-                <span>Xem thêm dự án (Còn {{projectStore.projects.filter(p => p.tracking_status === 'following').length
-                  - displayedProjects.length}} dự án)</span>
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <!-- RIGHT PANEL: Hoạt động gần đây (Block 3 - Hidden in notes view) -->
-        <section v-if="viewMode !== 'notes'"
-          class="recent-activity-panel bg-transparent flex flex-col h-[calc(100vh-226px)] select-none w-[390px] flex-shrink-0"
-          :class="mobileHomeTab === 'activities' ? '' : 'mobile-home-panel-hidden'">
-
-          <!-- Header Actions: Lọc người nhắc đến & Tất cả hoạt động gần đây -->
-          <div v-if="activities.length > 0" class="pb-3 flex-shrink-0 flex gap-2 border-b border-gray-250/60 mb-2">
-            <button @click="showMentionedActivities = !showMentionedActivities" type="button"
-              :title="showMentionedActivities ? 'Hiện tất cả hoạt động' : 'Chỉ hiện hoạt động có nhắc đến bạn'"
-              class="w-11 shrink-0 py-2 border rounded-xl font-extrabold text-sm transition-all cursor-pointer shadow-3xs focus:outline-none flex items-center justify-center"
-              :class="showMentionedActivities
-                ? 'bg-emerald-600 border-emerald-600 text-white'
-                : 'bg-[#f6f4ef] hover:bg-emerald-50 border-gray-300 text-[#1A7A56]'">
-              <i class="fa-solid fa-at"></i>
-            </button>
-
-            <button @click="router.push('/feed')" type="button"
-              class="flex-1 py-2 bg-[#f6f4ef] hover:bg-gray-150 border border-gray-300 text-gray-900 font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-3xs focus:outline-none text-center">
-              Tất cả hoạt động gần đây
-            </button>
-          </div>
-
-          <!-- Skeleton Loading State -->
-          <div v-if="isActivitiesLoading && displayedActivities.length === 0"
-            class="space-y-3.5 flex-1 overflow-hidden pt-2">
-            <div v-for="i in 4" :key="'sk-act-' + i" class="animate-pulse space-y-2 pb-3 border-b border-gray-100">
-              <div class="flex justify-between items-center">
-                <div class="w-1/3 h-4 bg-gray-200 rounded-md"></div>
-                <div class="w-12 h-3 bg-gray-150 rounded-md"></div>
-              </div>
-              <div class="w-3/4 h-3 bg-gray-150 rounded-md"></div>
-            </div>
-          </div>
-
-          <!-- Activity Feed List -->
-          <div v-else class="flex-1 flex flex-col justify-between min-h-0">
-            <div class="space-y-0 overflow-y-auto pr-1 scrollbar-none flex-1 pb-2">
-              <transition-group enter-active-class="transition duration-300 ease-out"
-                enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0"
-                leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
-                leave-to-class="opacity-0 -translate-y-2">
-                <div v-for="(log, idx) in displayedActivities.slice(0, 15)" :key="log.id"
-                  class="activity-log-item relative flex gap-3 select-none pb-6 group cursor-pointer"
-                  @touchstart="handleTouchStart(log, $event)"
-                  @touchend="handleTouchEnd"
-                  @touchmove="handleTouchMove"
-                >
-
-                  <!-- Absolute Timeline Line connecting avatars across padding boundaries -->
-                  <div v-if="idx < Math.min(displayedActivities.length, 15) - 1"
-                    class="absolute top-11 bottom-2 left-[18px] w-[1.5px] bg-gray-300 z-0"></div>
-
-                  <!-- Left Timeline column: Avatar -->
-                  <div class="flex-shrink-0 w-9 z-10">
-                    <img
-                      :src="log.user?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=60'"
-                      class="w-9 h-9 rounded-full object-cover border border-gray-250 relative z-10" />
-                  </div>
-
-                  <!-- Right content column -->
-                  <div class="flex-1 min-w-0 pt-0.5 z-10">
-                    <!-- Top Row: User Name + hỗ trợ Customer & Timestamp -->
-                    <div class="flex items-center justify-between gap-2">
-                      <div class="font-extrabold text-sm text-gray-900 truncate">
-                        <span>{{ log.user ? log.user.name : 'Hệ thống' }}</span>
-                        <template v-if="log.project?.customer">
-                          <span class="font-extrabold text-gray-900"> hỗ trợ </span>
-                          <span class="text-[#1A7A56] cursor-pointer hover:underline"
-                            @click.stop="$router.push(`/customers/${log.project.customer.id}`)">{{
-                              log.project.customer.name }}</span>
-                        </template>
-                      </div>
-                      <div class="flex items-center gap-2 flex-shrink-0">
-                        <span class="text-[11px] text-gray-400 font-bold">
-                          {{ formatCommentRelativeTime(log.created_at) }}
-                        </span>
-                        <button
-                          v-if="log.project_id || log.project?.id"
-                          @click="handleReplyToActivity(log)"
-                          type="button"
-                          title="Trả lời hoạt động này"
-                          class="opacity-0 group-hover:opacity-100 transition-all duration-200 bg-white hover:bg-emerald-600 text-gray-500 hover:text-white border border-gray-200 hover:border-emerald-600 cursor-pointer rounded-full h-6 w-6 flex items-center justify-center shadow-3xs focus:outline-none shrink-0"
-                          :class="{ 'opacity-100': activeLogIdForMobileActions === log.id }"
-                        >
-                          <i class="fa-solid fa-reply text-[10px]"></i>
-                        </button>
-                      </div>
-                    </div>
-
-                    <!-- Project Link/Title (Green Bold text matching Image 2) -->
-                    <div v-if="log.project" @click="handleActivityProjectClick(log.project.id, $event)"
-                      class="activity-project-link text-[#1A7A56] hover:underline font-extrabold text-sm cursor-pointer mt-1 mb-1 max-w-full truncate block"
-                      :title="log.project.title">
-                      {{ log.project.title }}
-                    </div>
-
-                    <!-- Comment Content (Plain text, no border card box) -->
-                    <div class="text-xs font-semibold text-gray-700 leading-relaxed break-words mt-1 space-y-1.5">
-                      <!-- Zalo Quote Reply Preview inside list feed -->
-                      <div v-if="parseReplyInfo(log.content)" 
-                        class="bg-gray-100/75 px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1.5 select-none max-w-full">
-                        <div class="text-[10px] font-bold text-gray-500 flex items-center gap-1">
-                          <i class="fa-solid fa-reply text-[9px]"></i>
-                          <span>{{ parseReplyInfo(log.content).user }}</span>
-                        </div>
-                        <div class="text-[10px] text-gray-450 truncate mt-0.5 max-w-[280px]">
-                          {{ parseReplyInfo(log.content).text }}
-                        </div>
-                      </div>
-
-                      <div v-if="parseCommentText(log.content)" class="whitespace-pre-line">
-                        {{ parseCommentText(log.content) }}
-                      </div>
-
-                      <!-- Render Attachments -->
-                      <div
-                        v-if="parseCommentImages(log.content).length > 0 || parseCommentFiles(log.content).length > 0"
-                        class="flex flex-wrap items-end gap-1.5 pt-0.5">
-                        <!-- Images -->
-                        <button v-for="(img, imgIdx) in parseCommentImages(log.content)" :key="'img-' + imgIdx"
-                          type="button" @click.stop="openImagePreview(img.url)"
-                          class="w-10 h-10 rounded border border-gray-200 overflow-hidden bg-gray-50 cursor-pointer hover:ring-2 hover:ring-emerald-300 transition-all flex-shrink-0"
-                          :title="'Xem ảnh: ' + img.name">
-                          <img :src="img.url" class="w-full h-full object-cover" alt="" loading="lazy" />
-                        </button>
-
-                        <!-- Files -->
-                        <a v-for="(file, fIdx) in parseCommentFiles(log.content)" :key="'file-' + fIdx" :href="file.url"
-                          :download="file.name" target="_blank" @click.stop
-                          class="w-7 h-9 rounded-sm border border-[#d4a574] bg-[#f5e6d0] hover:bg-[#edd9bc] flex flex-col items-center justify-end overflow-hidden cursor-pointer transition-colors flex-shrink-0"
-                          :title="'Tải xuống: ' + file.name">
-                          <i class="fa-solid fa-file text-[#c87828] text-[11px] mb-0.5"></i>
-                          <span
-                            class="text-[7px] font-bold text-[#8b5a2b] bg-[#e8c99a] w-full text-center py-0.5 leading-none">FILE</span>
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </transition-group>
 
-              <!-- Empty activities state -->
-              <div v-if="displayedActivities.length === 0"
-                class="py-12 text-center text-gray-450 text-xs font-semibold">
-                Chưa có cập nhật hoạt động nào mới.
+              <!-- Empty projects state -->
+              <div v-if="displayedProjects.length === 0"
+                class="bg-white border border-gray-200 rounded-2xl py-12 text-center text-gray-450 text-sm font-semibold shadow-3xs select-none">
+                Không tìm thấy dự án nào trong mục này.
+              </div>
+
+              <!-- Load More Button -->
+              <div
+                v-if="displayedProjects.length < projectStore.projects.filter(p => p.tracking_status === 'following').length"
+                class="flex justify-center pt-2">
+                <button @click="loadMore" type="button"
+                  class="px-5 py-2.5 bg-white hover:bg-emerald-50 border border-gray-200 hover:border-emerald-500 text-gray-700 hover:text-emerald-700 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-3xs focus:outline-none">
+                  <i class="fa-solid fa-angles-down text-[10px]"></i>
+                  <span>Xem thêm dự án (Còn {{projectStore.projects.filter(p => p.tracking_status ===
+                    'following').length
+                    - displayedProjects.length}} dự án)</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- RIGHT PANEL: Hoạt động gần đây (Block 3 - Hidden in notes view) -->
+          <section v-if="viewMode !== 'notes'"
+            class="recent-activity-panel bg-transparent flex flex-col h-[calc(100vh-226px)] select-none w-[390px] flex-shrink-0"
+            :class="mobileHomeTab === 'activities' ? '' : 'mobile-home-panel-hidden'">
+
+            <!-- Header Actions: Lọc người nhắc đến & Tất cả hoạt động gần đây -->
+            <div v-if="activities.length > 0" class="pb-3 flex-shrink-0 flex gap-2 border-b border-gray-250/60 mb-2">
+              <button @click="showMentionedActivities = !showMentionedActivities" type="button"
+                :title="showMentionedActivities ? 'Hiện tất cả hoạt động' : 'Chỉ hiện hoạt động có nhắc đến bạn'"
+                class="w-11 shrink-0 py-2 border rounded-xl font-extrabold text-sm transition-all cursor-pointer shadow-3xs focus:outline-none flex items-center justify-center"
+                :class="showMentionedActivities
+                  ? 'bg-emerald-600 border-emerald-600 text-white'
+                  : 'bg-[#f6f4ef] hover:bg-emerald-50 border-gray-300 text-[#1A7A56]'">
+                <i class="fa-solid fa-at"></i>
+              </button>
+
+              <button @click="router.push('/feed')" type="button"
+                class="flex-1 py-2 bg-[#f6f4ef] hover:bg-gray-150 border border-gray-300 text-gray-900 font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-3xs focus:outline-none text-center">
+                Tất cả hoạt động gần đây
+              </button>
+            </div>
+
+            <!-- Skeleton Loading State -->
+            <div v-if="isActivitiesLoading && displayedActivities.length === 0"
+              class="space-y-3.5 flex-1 overflow-hidden pt-2">
+              <div v-for="i in 4" :key="'sk-act-' + i" class="animate-pulse space-y-2 pb-3 border-b border-gray-100">
+                <div class="flex justify-between items-center">
+                  <div class="w-1/3 h-4 bg-gray-200 rounded-md"></div>
+                  <div class="w-12 h-3 bg-gray-150 rounded-md"></div>
+                </div>
+                <div class="w-3/4 h-3 bg-gray-150 rounded-md"></div>
               </div>
             </div>
 
-            <!-- Chat Input box: Gửi cập nhật hoạt động mới (Always Visible) -->
-            <div class="mt-4 pt-2 border-t border-gray-250 flex-shrink-0 flex flex-col gap-2.5">
-              
-              <!-- Reply banner (Zalo Style Quote) -->
-              <div v-if="replyingToLog" class="flex items-start justify-between bg-gray-100/80 px-3.5 py-2.5 rounded-xl border-l-3 border-[#0068FF] text-xs transition-all duration-300 relative select-none">
-                <div class="flex-1 min-w-0">
-                  <div class="text-[10px] font-extrabold text-[#0068FF] uppercase tracking-wider flex items-center gap-1">
-                    <i class="fa-solid fa-reply text-[9px]"></i>
-                    <span>Trả lời {{ replyingToLog.user?.name || 'Hệ thống' }}</span>
+            <!-- Activity Feed List -->
+            <div v-else class="flex-1 flex flex-col justify-between min-h-0">
+              <div class="space-y-0 overflow-y-auto pr-1 scrollbar-none flex-1 pb-2">
+                <transition-group enter-active-class="transition duration-300 ease-out"
+                  enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0"
+                  leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
+                  leave-to-class="opacity-0 -translate-y-2">
+                  <div v-for="(log, idx) in displayedActivities.slice(0, 15)" :key="log.id"
+                    class="activity-log-item relative flex gap-3 select-none pb-6 group cursor-pointer"
+                    @touchstart="handleTouchStart(log, $event)" @touchend="handleTouchEnd" @touchmove="handleTouchMove">
+
+                    <!-- Absolute Timeline Line connecting avatars across padding boundaries -->
+                    <div v-if="idx < Math.min(displayedActivities.length, 15) - 1"
+                      class="absolute top-11 bottom-2 left-[18px] w-[1.5px] bg-gray-300 z-0"></div>
+
+                    <!-- Left Timeline column: Avatar -->
+                    <div class="flex-shrink-0 w-9 z-10">
+                      <img
+                        :src="log.user?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=60'"
+                        class="w-9 h-9 rounded-full object-cover border border-gray-250 relative z-10" />
+                    </div>
+
+                    <!-- Right content column -->
+                    <div class="flex-1 min-w-0 pt-0.5 z-10">
+                      <!-- Top Row: User Name + hỗ trợ Customer & Timestamp -->
+                      <div class="flex items-center justify-between gap-2">
+                        <div class="font-extrabold text-sm text-gray-900 truncate">
+                          <span>{{ log.user ? log.user.name : 'Hệ thống' }}</span>
+                          <template v-if="log.project?.customer">
+                            <span class="font-extrabold text-gray-900"> hỗ trợ </span>
+                            <span class="text-[#1A7A56] cursor-pointer hover:underline"
+                              @click.stop="$router.push(`/customers/${log.project.customer.id}`)">{{
+                                log.project.customer.name }}</span>
+                          </template>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                          <span class="text-[11px] text-gray-400 font-bold">
+                            {{ formatCommentRelativeTime(log.created_at) }}
+                          </span>
+                          <button v-if="log.project_id || log.project?.id" @click="handleReplyToActivity(log)"
+                            type="button" title="Trả lời hoạt động này"
+                            class="opacity-0 group-hover:opacity-100 transition-all duration-200 bg-white hover:bg-emerald-600 text-gray-500 hover:text-white border border-gray-200 hover:border-emerald-600 cursor-pointer rounded-full h-6 w-6 flex items-center justify-center shadow-3xs focus:outline-none shrink-0"
+                            :class="{ 'opacity-100': activeLogIdForMobileActions === log.id }">
+                            <i class="fa-solid fa-reply text-[10px]"></i>
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Project Link/Title (Green Bold text matching Image 2) -->
+                      <div v-if="log.project" @click="handleActivityProjectClick(log.project.id, $event)"
+                        class="activity-project-link text-[#1A7A56] hover:underline font-extrabold text-sm cursor-pointer mt-1 mb-1 max-w-full truncate block"
+                        :title="log.project.title">
+                        {{ log.project.title }}
+                      </div>
+
+                      <!-- Comment Content (Plain text, no border card box) -->
+                      <div class="text-xs font-semibold text-gray-700 leading-relaxed break-words mt-1 space-y-1.5">
+                        <!-- Zalo Quote Reply Preview inside list feed -->
+                        <div v-if="parseReplyInfo(log.content)"
+                          class="bg-gray-100/75 px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1.5 select-none max-w-full">
+                          <div class="text-[10px] font-bold text-gray-500 flex items-center gap-1">
+                            <i class="fa-solid fa-reply text-[9px]"></i>
+                            <span>{{ parseReplyInfo(log.content).user }}</span>
+                          </div>
+                          <div class="text-[10px] text-gray-450 truncate mt-0.5 max-w-[280px]">
+                            {{ parseReplyInfo(log.content).text }}
+                          </div>
+                        </div>
+
+                        <div v-if="parseCommentText(log.content)" class="whitespace-pre-line">
+                          {{ parseCommentText(log.content) }}
+                        </div>
+
+                        <!-- Render Attachments -->
+                        <div
+                          v-if="parseCommentImages(log.content).length > 0 || parseCommentFiles(log.content).length > 0"
+                          class="flex flex-wrap items-end gap-1.5 pt-0.5">
+                          <!-- Images -->
+                          <button v-for="(img, imgIdx) in parseCommentImages(log.content)" :key="'img-' + imgIdx"
+                            type="button" @click.stop="openImagePreview(img.url)"
+                            class="w-10 h-10 rounded border border-gray-200 overflow-hidden bg-gray-50 cursor-pointer hover:ring-2 hover:ring-emerald-300 transition-all flex-shrink-0"
+                            :title="'Xem ảnh: ' + img.name">
+                            <img :src="img.url" class="w-full h-full object-cover" alt="" loading="lazy" />
+                          </button>
+
+                          <!-- Files -->
+                          <a v-for="(file, fIdx) in parseCommentFiles(log.content)" :key="'file-' + fIdx"
+                            :href="file.url" :download="file.name" target="_blank" @click.stop
+                            class="w-7 h-9 rounded-sm border border-[#d4a574] bg-[#f5e6d0] hover:bg-[#edd9bc] flex flex-col items-center justify-end overflow-hidden cursor-pointer transition-colors flex-shrink-0"
+                            :title="'Tải xuống: ' + file.name">
+                            <i class="fa-solid fa-file text-[#c87828] text-[11px] mb-0.5"></i>
+                            <span
+                              class="text-[7px] font-bold text-[#8b5a2b] bg-[#e8c99a] w-full text-center py-0.5 leading-none">FILE</span>
+                          </a>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div class="text-[11px] text-gray-500 truncate mt-0.5 max-w-[280px]">
-                    {{ parseCommentText(replyingToLog.content) }}
-                  </div>
+                </transition-group>
+
+                <!-- Empty activities state -->
+                <div v-if="displayedActivities.length === 0"
+                  class="py-12 text-center text-gray-450 text-xs font-semibold">
+                  Chưa có cập nhật hoạt động nào mới.
                 </div>
-                <button @click="cancelReply" type="button" class="text-gray-400 hover:text-gray-650 transition-colors p-1 rounded-full hover:bg-gray-200/50 cursor-pointer flex items-center justify-center shrink-0 ml-2" title="Hủy trả lời">
-                  <i class="fa-solid fa-xmark text-xs"></i>
-                </button>
               </div>
 
-              <!-- Main Chat Box Card (Zalo PC Style - Clean & Dynamic) -->
-              <div class="flex flex-col bg-white rounded-xl border border-gray-250 shadow-3xs relative">
-                <!-- Project Suggestions Dropdown Popup -->
-                <div v-if="showProjectSuggestions && filteredProjectsForSuggestion.length > 0" 
-                  class="absolute z-50 bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-[160px] overflow-y-auto divide-y divide-gray-100">
-                  <div class="px-3 py-1.5 bg-gray-50 text-[9px] font-extrabold text-gray-400 uppercase tracking-wider">
-                    Gợi ý nhanh (Dự án, Thành viên, Nhóm):
+              <!-- Chat Input box: Gửi cập nhật hoạt động mới (Always Visible) -->
+              <div class="mt-4 pt-2 border-t border-gray-250 flex-shrink-0 flex flex-col gap-2.5">
+
+                <!-- Reply banner (Zalo Style Quote) -->
+                <div v-if="replyingToLog"
+                  class="flex items-start justify-between bg-gray-100/80 px-3.5 py-2.5 rounded-xl border-l-3 border-[#0068FF] text-xs transition-all duration-300 relative select-none">
+                  <div class="flex-1 min-w-0">
+                    <div
+                      class="text-[10px] font-extrabold text-[#0068FF] uppercase tracking-wider flex items-center gap-1">
+                      <i class="fa-solid fa-reply text-[9px]"></i>
+                      <span>Trả lời {{ replyingToLog.user?.name || 'Hệ thống' }}</span>
+                    </div>
+                    <div class="text-[11px] text-gray-500 truncate mt-0.5 max-w-[280px]">
+                      {{ parseCommentText(replyingToLog.content) }}
+                    </div>
                   </div>
-                  <button 
-                    v-for="(p, idx) in filteredProjectsForSuggestion" 
-                    :key="'sugg-' + p.type + '-' + p.id" 
-                    type="button" 
-                    @mousedown.prevent
-                    @click="selectProjectSuggestion(p)"
-                    class="w-full text-left px-3.5 py-2 text-xs font-bold flex justify-between items-center transition-colors cursor-pointer hover:bg-emerald-50 hover:text-emerald-800 border-0"
-                    :class="idx === projectSuggestionIndex ? 'bg-emerald-50 text-emerald-800' : 'text-gray-700'"
-                  >
-                    <span class="truncate flex-1 flex items-center gap-1.5">
-                      <i v-if="p.type === 'project'" class="fa-solid fa-folder text-emerald-600 text-[10px]"></i>
-                      <i v-else-if="p.type === 'member'" class="fa-solid fa-user text-blue-500 text-[10px]"></i>
-                      <i v-else-if="p.type === 'group'" class="fa-solid fa-users text-amber-500 text-[10px]"></i>
-                      <span>{{ p.title }}</span>
-                    </span>
-                     <span class="text-[10px] text-gray-400 font-semibold truncate max-w-[100px] shrink-0 ml-2">
-                      {{ p.subtitle }}
-                    </span>
+                  <button @click="cancelReply" type="button"
+                    class="text-gray-400 hover:text-gray-650 transition-colors p-1 rounded-full hover:bg-gray-200/50 cursor-pointer flex items-center justify-center shrink-0 ml-2"
+                    title="Hủy trả lời">
+                    <i class="fa-solid fa-xmark text-xs"></i>
                   </button>
                 </div>
 
-                <!-- Zalo Toolbar (Top Row) -->
-                <div class="flex items-center justify-between px-3.5 py-1.5 bg-gray-50 border-b border-gray-200 rounded-t-xl select-none">
-                  <!-- Clean Zoom Toggle Button -->
-                  <div class="flex items-center gap-3 text-gray-400">
-                    <button @click="isChatExpanded = !isChatExpanded" type="button" class="hover:text-gray-655 transition-colors text-xs cursor-pointer focus:outline-none p-0.5 flex items-center justify-center animate-none" :title="isChatExpanded ? 'Thu nhỏ khung chat' : 'Mở rộng khung chat'">
-                      <i :class="isChatExpanded ? 'fa-solid fa-compress' : 'fa-solid fa-expand'"></i>
+                <!-- Main Chat Box Card (Zalo PC Style - Clean & Dynamic) -->
+                <div class="flex flex-col bg-white rounded-xl border border-gray-250 shadow-3xs relative">
+                  <!-- Project Suggestions Dropdown Popup -->
+                  <div v-if="showProjectSuggestions && filteredProjectsForSuggestion.length > 0"
+                    class="absolute z-50 bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-[160px] overflow-y-auto divide-y divide-gray-100">
+                    <div
+                      class="px-3 py-1.5 bg-gray-50 text-[9px] font-extrabold text-gray-400 uppercase tracking-wider">
+                      Gợi ý nhanh (Dự án, Thành viên, Nhóm):
+                    </div>
+                    <button v-for="(p, idx) in filteredProjectsForSuggestion" :key="'sugg-' + p.type + '-' + p.id"
+                      type="button" @mousedown.prevent @click="selectProjectSuggestion(p)"
+                      class="w-full text-left px-3.5 py-2 text-xs font-bold flex justify-between items-center transition-colors cursor-pointer hover:bg-emerald-50 hover:text-emerald-800 border-0"
+                      :class="idx === projectSuggestionIndex ? 'bg-emerald-50 text-emerald-800' : 'text-gray-700'">
+                      <span class="truncate flex-1 flex items-center gap-1.5">
+                        <i v-if="p.type === 'project'" class="fa-solid fa-folder text-emerald-600 text-[10px]"></i>
+                        <i v-else-if="p.type === 'member'" class="fa-solid fa-user text-blue-500 text-[10px]"></i>
+                        <i v-else-if="p.type === 'group'" class="fa-solid fa-users text-amber-500 text-[10px]"></i>
+                        <span>{{ p.title }}</span>
+                      </span>
+                      <span class="text-[10px] text-gray-400 font-semibold truncate max-w-[100px] shrink-0 ml-2">
+                        {{ p.subtitle }}
+                      </span>
                     </button>
                   </div>
-                  
-                  <!-- Project Select Badge -->
-                  <div class="flex items-center gap-1.5 ml-2">
-                    <span class="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider">Dự án:</span>
-                    <select v-model="chatProjectId" class="text-base sm:text-[11px] font-bold text-[#1A7A56] bg-emerald-50/50 border border-emerald-200/30 hover:border-emerald-500/50 rounded-full px-2.5 py-0.5 focus:ring-0 focus:outline-none max-w-[150px] truncate cursor-pointer transition-all duration-200 py-0">
-                      <option v-if="projectStore.projects.length === 0" :value="null">Chưa có dự án...</option>
-                      <option v-for="p in projectStore.projects" :key="p.id" :value="p.id">
-                        {{ p.title }}
-                      </option>
-                    </select>
-                  </div>
-                </div>
 
-                <!-- Input area + send button (Bottom Row) -->
-                <div class="flex items-end gap-2 p-2 rounded-b-xl bg-white">
-                  <textarea
-                    ref="chatTextareaRef"
-                    v-model="chatMessage"
-                    :rows="isChatExpanded ? 5 : 2"
-                    placeholder="Nhập cập nhật hoạt động mới..."
-                    class="flex-1 bg-transparent border-0 focus:ring-0 focus:outline-none text-base sm:text-xs font-semibold text-gray-800 resize-none p-0.5 placeholder-gray-400 leading-relaxed transition-all duration-200"
-                    :class="isChatExpanded ? 'min-h-[100px] max-h-[200px]' : 'min-h-[44px] max-h-[100px]'"
-                    autocomplete="one-time-code"
-                    name="chat_msg_non_autocomplete"
-                    id="chat_msg_non_autocomplete"
-                    spellcheck="false"
-                    @input="handleChatInput"
-                    @keydown="onChatKeydown"
-                  ></textarea>
-                  
-                  <!-- Right side buttons -->
-                  <div class="flex items-center gap-2 shrink-0 pb-0.5">
-                    <button
-                      @click="submitChat"
-                      :disabled="isSubmittingChat"
-                      type="button"
-                      class="font-extrabold text-xs uppercase tracking-wider focus:outline-none px-1 py-0.5 transition-colors"
-                      :class="isSubmittingChat ? 'text-gray-300 cursor-not-allowed' : 'text-[#1A7A56] hover:text-emerald-700 cursor-pointer'"
-                    >
-                      {{ isSubmittingChat ? 'Đang gửi...' : 'Gửi' }}
-                    </button>
+                  <!-- Zalo Toolbar (Top Row) -->
+                  <div
+                    class="flex items-center justify-between px-3.5 py-1.5 bg-gray-50 border-b border-gray-200 rounded-t-xl select-none">
+                    <!-- Clean Zoom Toggle Button -->
+                    <div class="flex items-center gap-3 text-gray-400">
+                      <button @click="isChatExpanded = !isChatExpanded" type="button"
+                        class="hover:text-gray-655 transition-colors text-xs cursor-pointer focus:outline-none p-0.5 flex items-center justify-center animate-none"
+                        :title="isChatExpanded ? 'Thu nhỏ khung chat' : 'Mở rộng khung chat'">
+                        <i :class="isChatExpanded ? 'fa-solid fa-compress' : 'fa-solid fa-expand'"></i>
+                      </button>
+                    </div>
+
+                    <!-- Project Select Badge -->
+                    <div class="flex items-center gap-1.5 ml-2">
+                      <span class="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider">Dự án:</span>
+                      <select v-model="chatProjectId"
+                        class="text-base sm:text-[11px] font-bold text-[#1A7A56] bg-emerald-50/50 border border-emerald-200/30 hover:border-emerald-500/50 rounded-full px-2.5 py-0.5 focus:ring-0 focus:outline-none max-w-[150px] truncate cursor-pointer transition-all duration-200 py-0">
+                        <option v-if="projectStore.projects.length === 0" :value="null">Chưa có dự án...</option>
+                        <option v-for="p in projectStore.projects" :key="p.id" :value="p.id">
+                          {{ p.title }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- Input area + send button (Bottom Row) -->
+                  <div class="flex items-end gap-2 p-2 rounded-b-xl bg-white">
+                    <textarea ref="chatTextareaRef" v-model="chatMessage" :rows="isChatExpanded ? 5 : 2"
+                      placeholder="Nhập cập nhật hoạt động mới..."
+                      class="flex-1 bg-transparent border-0 focus:ring-0 focus:outline-none text-base sm:text-xs font-semibold text-gray-800 resize-none p-0.5 placeholder-gray-400 leading-relaxed transition-all duration-200"
+                      :class="isChatExpanded ? 'min-h-[100px] max-h-[200px]' : 'min-h-[44px] max-h-[100px]'"
+                      autocomplete="one-time-code" name="chat_msg_non_autocomplete" id="chat_msg_non_autocomplete"
+                      spellcheck="false" @input="handleChatInput" @keydown="onChatKeydown"></textarea>
+
+                    <!-- Right side buttons -->
+                    <div class="flex items-center gap-2 shrink-0 pb-0.5">
+                      <button @click="submitChat" :disabled="isSubmittingChat" type="button"
+                        class="font-extrabold text-xs uppercase tracking-wider focus:outline-none px-1 py-0.5 transition-colors"
+                        :class="isSubmittingChat ? 'text-gray-300 cursor-not-allowed' : 'text-[#1A7A56] hover:text-emerald-700 cursor-pointer'">
+                        {{ isSubmittingChat ? 'Đang gửi...' : 'Gửi' }}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div class="h-4 sm:h-1 flex-shrink-0"></div>
-          </div>
-        </section>
+              <div class="h-4 sm:h-1 flex-shrink-0"></div>
+            </div>
+          </section>
         </div>
       </div>
     </main>
@@ -867,8 +861,12 @@
 
     <!-- Mobile Bottom Navigation Tabs -->
     <div v-if="viewMode !== 'notes'" class="mobile-home-tabs">
-      <button type="button" @click="mobileHomeTab = 'projects'" class="flex-1 rounded-lg py-2.5 text-sm font-extrabold transition-colors" :class="mobileHomeTab === 'projects' ? 'bg-emerald-600 text-white' : 'text-gray-500'">Dự án</button>
-      <button type="button" @click="mobileHomeTab = 'activities'" class="flex-1 rounded-lg py-2.5 text-sm font-extrabold transition-colors" :class="mobileHomeTab === 'activities' ? 'bg-emerald-600 text-white' : 'text-gray-500'">Hoạt động</button>
+      <button type="button" @click="mobileHomeTab = 'projects'"
+        class="flex-1 rounded-lg py-2.5 text-sm font-extrabold transition-colors"
+        :class="mobileHomeTab === 'projects' ? 'bg-emerald-600 text-white' : 'text-gray-500'">Dự án</button>
+      <button type="button" @click="mobileHomeTab = 'activities'"
+        class="flex-1 rounded-lg py-2.5 text-sm font-extrabold transition-colors"
+        :class="mobileHomeTab === 'activities' ? 'bg-emerald-600 text-white' : 'text-gray-500'">Hoạt động</button>
     </div>
   </div>
 </template>
@@ -2104,15 +2102,15 @@ watch(() => projectStore.projects, (newProjects) => {
 const handleReplyToActivity = (log) => {
   replyingToLog.value = log
   chatProjectId.value = log.project_id || log.project?.id || projectStore.projects[0]?.id
-  
+
   let mention = ''
   if (log.user) {
     const emailPrefix = log.user.email ? log.user.email.split('@')[0] : ''
     mention = `@${emailPrefix || log.user.name} `
   }
-  
+
   chatMessage.value = mention
-  
+
   nextTick(() => {
     chatTextareaRef.value?.focus()
   })
@@ -2128,15 +2126,15 @@ const isSubmittingChat = ref(false)
 const submitChat = async () => {
   if (isSubmittingChat.value) return
   if (!chatMessage.value.trim()) return
-  
+
   const pId = chatProjectId.value || projectStore.projects[0]?.id
   if (!pId) {
     toast.error('Vui lòng chọn hoặc tạo dự án để gửi cập nhật.')
     return
   }
-  
+
   isSubmittingChat.value = true
-  
+
   let finalContent = chatMessage.value
   if (replyingToLog.value) {
     const replyMeta = {
@@ -2145,13 +2143,13 @@ const submitChat = async () => {
     }
     finalContent = `[reply:${JSON.stringify(replyMeta)}]` + finalContent
   }
-  
+
   try {
     await axios.post('/api/comments', {
       project_id: pId,
       content: finalContent,
     })
-    
+
     toast.success('Gửi cập nhật hoạt động thành công!')
     chatMessage.value = ''
     replyingToLog.value = null
@@ -2175,21 +2173,21 @@ const mentionGroups = ref([])
 const filteredProjectsForSuggestion = computed(() => {
   const query = projectQuery.value
   const q = removeVietnameseAccents(query).toLowerCase()
-  
+
   const suggestions = []
-  
+
   const matches = (targetString) => {
     if (!targetString) return false
     const normTarget = removeVietnameseAccents(targetString).toLowerCase()
     // Direct substring match
     if (normTarget.includes(q)) return true
-    
+
     // Initials matching (first letters of words)
     const words = normTarget.split(/\s+/).filter(Boolean)
     const initials = words.map(w => w[0]).join('')
     return initials.includes(q)
   }
-  
+
   // 1. Projects
   const filteredProjects = projectStore.projects.filter(p => {
     if (!q) return true
@@ -2203,7 +2201,7 @@ const filteredProjectsForSuggestion = computed(() => {
       subtitle: p.customer?.name || 'Dự án'
     })
   })
-  
+
   // 2. Members (Users)
   const filteredUsers = (projectStore.users || []).filter(u => {
     if (!q) return true
@@ -2218,7 +2216,7 @@ const filteredProjectsForSuggestion = computed(() => {
       subtitle: 'Thành viên'
     })
   })
-  
+
   // 3. Groups (Mention Groups)
   const filteredGroups = (mentionGroups.value || []).filter(g => {
     if (!q) return true
@@ -2232,7 +2230,7 @@ const filteredProjectsForSuggestion = computed(() => {
       subtitle: g.description || 'Nhóm nhắc tên'
     })
   })
-  
+
   return suggestions.slice(0, 10)
 })
 
@@ -2241,9 +2239,9 @@ const handleChatInput = (event) => {
   const text = el.value
   const cursorPos = el.selectionStart || text.length
   const textBeforeCursor = text.substring(0, cursorPos)
-  
+
   const match = textBeforeCursor.match(/@([^\s@]*)$/)
-  
+
   if (match) {
     projectQuery.value = match[1]
     showProjectSuggestions.value = true
@@ -2255,25 +2253,25 @@ const handleChatInput = (event) => {
 
 const selectProjectSuggestion = (suggestion) => {
   if (!suggestion) return
-  
+
   if (suggestion.type === 'project') {
     chatProjectId.value = suggestion.id
   }
-  
+
   const el = chatTextareaRef.value
   const text = chatMessage.value || ''
   const cursorPos = el?.selectionStart || text.length
   const textBeforeCursor = text.substring(0, cursorPos)
   const textAfterCursor = text.substring(cursorPos)
-  
+
   const match = textBeforeCursor.match(/@([^\s@]*)$/)
-  const newBefore = match 
-    ? textBeforeCursor.substring(0, match.index) + `@${suggestion.title} ` 
+  const newBefore = match
+    ? textBeforeCursor.substring(0, match.index) + `@${suggestion.title} `
     : `${textBeforeCursor}@${suggestion.title} `
-  
+
   chatMessage.value = newBefore + textAfterCursor
   showProjectSuggestions.value = false
-  
+
   nextTick(() => {
     el?.focus()
     el?.setSelectionRange(newBefore.length, newBefore.length)
@@ -2303,7 +2301,7 @@ const onChatKeydown = (event) => {
       return
     }
   }
-  
+
   if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
     event.preventDefault()
     submitChat()
@@ -2536,7 +2534,7 @@ onMounted(async () => {
   await projectStore.fetchAuxData()
   await fetchActivities()
   await fetchBroadcasts()
-  axios.get('/api/mention-groups').then(res => { mentionGroups.value = res.data || [] }).catch(() => {})
+  axios.get('/api/mention-groups').then(res => { mentionGroups.value = res.data || [] }).catch(() => { })
   requestAnimationFrame(updateTvPosition)
 
   window.addEventListener('keydown', handleGlobalKeydown)
@@ -2603,8 +2601,18 @@ onUnmounted(() => {
   transition: all .15s ease;
 }
 
-.shortcut-hints-toggle:hover { border-color: #45a246; background: #edf8ee; }
-.shortcut-hints-popover { position: absolute; top: 50px; right: 0; z-index: 40; background: #f9f4ee; }
+.shortcut-hints-toggle:hover {
+  border-color: #45a246;
+  background: #edf8ee;
+}
+
+.shortcut-hints-popover {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  z-index: 40;
+  background: #f9f4ee;
+}
 
 @media (max-width: 767px) {
   .view-page-intro {
@@ -2633,7 +2641,9 @@ onUnmounted(() => {
     margin-bottom: 12px;
   }
 
-  .view-actions > * { margin-top: 0 !important; }
+  .view-actions>* {
+    margin-top: 0 !important;
+  }
 
   .mobile-icon-button {
     width: 42px !important;
@@ -2644,8 +2654,10 @@ onUnmounted(() => {
     gap: 0 !important;
   }
 
-  .create-project-action > span:last-child,
-  .view-switch-action span { display: none; }
+  .create-project-action>span:last-child,
+  .view-switch-action span {
+    display: none;
+  }
 
   .search-input-wrapper {
     display: none;
@@ -2655,7 +2667,10 @@ onUnmounted(() => {
     width: 100% !important;
   }
 
-  .search-input-wrapper.mobile-search-open { display: block; }
+  .search-input-wrapper.mobile-search-open {
+    display: block;
+  }
+
   .mobile-search-toggle {
     display: inline-flex !important;
     border: 2px solid #4d4d4d;
@@ -2664,7 +2679,10 @@ onUnmounted(() => {
     align-items: center;
     justify-content: center;
   }
-  .keyboard-hints { display: none; }
+
+  .keyboard-hints {
+    display: none;
+  }
 
   .mobile-panels-container {
     display: grid !important;
@@ -2732,16 +2750,15 @@ onUnmounted(() => {
     overflow-y: auto !important;
     margin-left: -16px !important;
     margin-right: -16px !important;
-    padding-left: 16px !important;
-    padding-right: 16px !important;
+    padding-left: 0px !important;
+    padding-right: 0px !important;
     padding-bottom: 24px !important;
     flex: 1;
   }
 
   .project-card {
-    width: calc(100% - 80px) !important;
-    margin-left: 40px !important;
-    margin-right: 40px !important;
+    width: calc(100% - 50px) !important;
+    margin-left: auto !important;
     padding: 12px !important;
     min-height: 64px;
   }
@@ -2785,8 +2802,13 @@ onUnmounted(() => {
     line-height: 1.2;
   }
 
-  .note-divider-line { margin-bottom: 5px; }
-  .note-sub-text { font-size: 11px; }
+  .note-divider-line {
+    margin-bottom: 5px;
+  }
+
+  .note-sub-text {
+    font-size: 11px;
+  }
 
   .bulk-action-bar {
     top: 84px !important;
@@ -2798,15 +2820,31 @@ onUnmounted(() => {
     gap: 8px !important;
   }
 
-  .bulk-selection-summary > span { display: none; }
-  .bulk-selection-summary button { margin-top: 0 !important; }
-  .bulk-divider { display: none; }
-  .bulk-status-control { flex-shrink: 0; }
-  .bulk-submit { flex-shrink: 0; }
+  .bulk-selection-summary>span {
+    display: none;
+  }
+
+  .bulk-selection-summary button {
+    margin-top: 0 !important;
+  }
+
+  .bulk-divider {
+    display: none;
+  }
+
+  .bulk-status-control {
+    flex-shrink: 0;
+  }
+
+  .bulk-submit {
+    flex-shrink: 0;
+  }
 }
 
 @media (min-width: 768px) {
-  .mobile-search-toggle { display: none !important; }
+  .mobile-search-toggle {
+    display: none !important;
+  }
 }
 
 .main-grid-standard {
@@ -3105,7 +3143,12 @@ onUnmounted(() => {
   box-shadow: inset 0 3px 4px rgba(255, 255, 255, .22), inset 0 -3px 7px #050606, 0 16px 20px rgba(0, 0, 0, .2);
 }
 
-.tv-broadcast-panel { position: fixed; z-index: 30; bottom: 64px; width: 300px; }
+.tv-broadcast-panel {
+  position: fixed;
+  z-index: 30;
+  bottom: 64px;
+  width: 300px;
+}
 
 .tv-broadcast-screen {
   height: 100%;
@@ -3122,24 +3165,245 @@ onUnmounted(() => {
   background: radial-gradient(circle at 15% 12%, rgba(255, 105, 105, .18), transparent 30%), #251111;
 }
 
-.tv-broadcast-avatar { width: 48px; height: 48px; object-fit: cover; border: 3px solid #71df8b; border-radius: 999px; box-shadow: 0 0 10px rgba(87, 235, 120, .65); }
-.tv-broadcast-frame.is-bad .tv-broadcast-avatar { border-color: #f58a86; box-shadow: 0 0 8px rgba(245, 110, 104, .65); }
-.tv-broadcast-label { margin: 0; color: #b4c9b7; font-size: 10px; font-weight: 900; letter-spacing: .14em; }
-.tv-broadcast-label-green { color: #57eb78 !important; font-size: 11px; font-weight: 900; letter-spacing: .1em; margin-top: 2px; }
-.tv-broadcast-label-standalone { padding-top: 2px; }
-.tv-broadcast-name { margin: 2px 0 0; overflow: hidden; color: white; font-size: 14px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }.tv-broadcast-star { margin-right: 4px; color: #f5dc55; font-size: 11px; filter: drop-shadow(0 0 3px rgba(245, 220, 85, .7)); }
-.tv-broadcast-content { display: -webkit-box; margin: 18px 0 0; overflow: hidden; font-size: 14px; font-weight: 700; line-height: 1.36; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
-.tv-broadcast-bad { height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 13px; }
-.tv-broadcast-bad-label { margin: 0; color: #ff8d88; font-size: 11px; font-weight: 900; letter-spacing: .1em; }.tv-broadcast-bad-label i { margin-right: 5px; color: #f1554e; font-size: 13px; }
-.tv-broadcast-bad-content { display: -webkit-box; margin: 0; overflow: hidden; color: #fff4f2; font-size: 16px; font-weight: 800; line-height: 1.4; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
-.tv-broadcast-good { height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 13px; }
-.tv-broadcast-good-label { margin: 0; color: #8df29c; font-size: 11px; font-weight: 900; letter-spacing: .1em; }.tv-broadcast-good-label i { margin-right: 5px; color: #57eb78; font-size: 13px; }
-.tv-broadcast-good-content { display: -webkit-box; margin: 0; overflow: hidden; color: #eef8ef; font-size: 16px; font-weight: 800; line-height: 1.4; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
-.tv-broadcast-empty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; color: #b3c7b7; font-size: 11px; font-weight: 800; text-align: center; }.tv-broadcast-empty i { color: #7be293; font-size: 23px; }
-.tv-broadcast-console { position: absolute; right: 13px; bottom: 8px; left: 13px; display: flex; align-items: center; gap: 3px; height: 12px; }.tv-broadcast-console span { width: 45px; height: 2px; border-radius: 999px; background: #080a09; box-shadow: 0 1px rgba(255, 255, 255, .1); }.tv-broadcast-console button { width: 20px; height: 20px; padding: 0; border: 1px solid #737773; border-radius: 50%; color: #e8eee8; background: #1b1e1c; font-size: 8px; cursor: pointer; }.tv-broadcast-console button:first-of-type { margin-left: auto; }.tv-broadcast-console button:hover:not(:disabled) { color: #8df29c; border-color: #8df29c; }.tv-broadcast-console button:disabled { opacity: .35; cursor: not-allowed; }.tv-broadcast-console .tv-broadcast-power { width: 7px; height: 7px; margin-left: 6px; border-radius: 50%; background: #7aea89; box-shadow: 0 0 5px #7aea89; }
-.tv-broadcast-leg { position: absolute; z-index: -1; bottom: -19px; width: 16px; height: 28px; border: 1px solid #0b0c0b; border-radius: 3px 3px 5px 5px; background: linear-gradient(90deg, #101211, #292b29 55%, #0d0f0e); box-shadow: inset 0 2px 2px rgba(255, 255, 255, .12), 0 5px 6px rgba(0, 0, 0, .24); }.tv-broadcast-leg-left { left: 37px; transform: skew(-14deg) rotate(5deg); }.tv-broadcast-leg-right { right: 37px; transform: skew(14deg) rotate(-5deg); }
-.tv-broadcast-controls { display: flex; align-items: center; justify-content: center; margin-top: 6px; }
-.tv-broadcast-status { min-width: 68px; margin: 0; color: #9aa49b; font-size: 9px; font-weight: 800; text-align: center; }
+.tv-broadcast-avatar {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border: 3px solid #71df8b;
+  border-radius: 999px;
+  box-shadow: 0 0 10px rgba(87, 235, 120, .65);
+}
+
+.tv-broadcast-frame.is-bad .tv-broadcast-avatar {
+  border-color: #f58a86;
+  box-shadow: 0 0 8px rgba(245, 110, 104, .65);
+}
+
+.tv-broadcast-label {
+  margin: 0;
+  color: #b4c9b7;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .14em;
+}
+
+.tv-broadcast-label-green {
+  color: #57eb78 !important;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .1em;
+  margin-top: 2px;
+}
+
+.tv-broadcast-label-standalone {
+  padding-top: 2px;
+}
+
+.tv-broadcast-name {
+  margin: 2px 0 0;
+  overflow: hidden;
+  color: white;
+  font-size: 14px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tv-broadcast-star {
+  margin-right: 4px;
+  color: #f5dc55;
+  font-size: 11px;
+  filter: drop-shadow(0 0 3px rgba(245, 220, 85, .7));
+}
+
+.tv-broadcast-content {
+  display: -webkit-box;
+  margin: 18px 0 0;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.36;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.tv-broadcast-bad {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 13px;
+}
+
+.tv-broadcast-bad-label {
+  margin: 0;
+  color: #ff8d88;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .1em;
+}
+
+.tv-broadcast-bad-label i {
+  margin-right: 5px;
+  color: #f1554e;
+  font-size: 13px;
+}
+
+.tv-broadcast-bad-content {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: #fff4f2;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.tv-broadcast-good {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 13px;
+}
+
+.tv-broadcast-good-label {
+  margin: 0;
+  color: #8df29c;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .1em;
+}
+
+.tv-broadcast-good-label i {
+  margin-right: 5px;
+  color: #57eb78;
+  font-size: 13px;
+}
+
+.tv-broadcast-good-content {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: #eef8ef;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.tv-broadcast-empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #b3c7b7;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.tv-broadcast-empty i {
+  color: #7be293;
+  font-size: 23px;
+}
+
+.tv-broadcast-console {
+  position: absolute;
+  right: 13px;
+  bottom: 8px;
+  left: 13px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 12px;
+}
+
+.tv-broadcast-console span {
+  width: 45px;
+  height: 2px;
+  border-radius: 999px;
+  background: #080a09;
+  box-shadow: 0 1px rgba(255, 255, 255, .1);
+}
+
+.tv-broadcast-console button {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid #737773;
+  border-radius: 50%;
+  color: #e8eee8;
+  background: #1b1e1c;
+  font-size: 8px;
+  cursor: pointer;
+}
+
+.tv-broadcast-console button:first-of-type {
+  margin-left: auto;
+}
+
+.tv-broadcast-console button:hover:not(:disabled) {
+  color: #8df29c;
+  border-color: #8df29c;
+}
+
+.tv-broadcast-console button:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.tv-broadcast-console .tv-broadcast-power {
+  width: 7px;
+  height: 7px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: #7aea89;
+  box-shadow: 0 0 5px #7aea89;
+}
+
+.tv-broadcast-leg {
+  position: absolute;
+  z-index: -1;
+  bottom: -19px;
+  width: 16px;
+  height: 28px;
+  border: 1px solid #0b0c0b;
+  border-radius: 3px 3px 5px 5px;
+  background: linear-gradient(90deg, #101211, #292b29 55%, #0d0f0e);
+  box-shadow: inset 0 2px 2px rgba(255, 255, 255, .12), 0 5px 6px rgba(0, 0, 0, .24);
+}
+
+.tv-broadcast-leg-left {
+  left: 37px;
+  transform: skew(-14deg) rotate(5deg);
+}
+
+.tv-broadcast-leg-right {
+  right: 37px;
+  transform: skew(14deg) rotate(-5deg);
+}
+
+.tv-broadcast-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+.tv-broadcast-status {
+  min-width: 68px;
+  margin: 0;
+  color: #9aa49b;
+  font-size: 9px;
+  font-weight: 800;
+  text-align: center;
+}
 
 /* Mobile/tablet layout: keep sticky notes in two columns and pin actions touch-visible. */
 @media (max-width: 1023px) {
@@ -3154,7 +3418,8 @@ onUnmounted(() => {
 }
 
 @media (max-width: 767px) {
-  .tv-broadcast-panel { display: none; }
+  .tv-broadcast-panel {
+    display: none;
+  }
 }
-
 </style>
