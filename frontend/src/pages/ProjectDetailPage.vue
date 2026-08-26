@@ -860,7 +860,7 @@
                 <!-- Input Area Container with Mention Dropdown & Paste Support -->
                 <div class="project-mention-picker flex-1 min-w-0 relative">
                   <textarea ref="stageTaskTitleInputRef" v-model="newStageTaskTitle" rows="1" required maxlength="1000"
-                    @input="onTitleInput" @keydown="onTitleKeydown" @paste="onTextareaPaste"
+                    @input="onTitleInput" @keydown="onTitleKeydown" @paste="onTextareaPaste" @focus="handleTextareaFocus"
                     placeholder="Chia sẻ cập nhật với team..."
                     class="w-full h-32 overflow-y-auto bg-transparent text-sm sm:text-base font-bold text-gray-900 leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none m-0 border-0"></textarea>
 
@@ -922,7 +922,7 @@
               </div>
 
               <!-- BOTTOM ROW: Attachment left, Person + Date + Submit right -->
-              <div class="flex items-center justify-between gap-2 pt-0.5">
+              <div class="flex flex-wrap items-center justify-between gap-2 pt-0.5">
 
                 <!-- LEFT: Attachment button only -->
                 <div class="flex items-center gap-2">
@@ -941,7 +941,7 @@
                 </div>
 
                 <!-- RIGHT: Person + Date + Submit -->
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 justify-end">
                   <!-- Person picker toggle button -->
                   <div class="project-person-picker relative" ref="personPickerRef">
                     <button type="button" @click="showPersonPicker = !showPersonPicker"
@@ -949,7 +949,7 @@
                       :class="newStageTaskTaggedUsers.length > 0 ? 'bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-700' : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600'"
                       title="Chọn người phụ trách / Tag tên">
                       <i class="fa-regular fa-user text-sm"></i>
-                      <span v-if="newStageTaskTaggedUsers.length > 0">
+                      <span v-if="newStageTaskTaggedUsers.length > 0" class="max-w-[80px] sm:max-w-[120px] truncate inline-block align-middle">
                         {{(() => {
                           const names = newStageTaskTaggedUsers.map(id => {
                             const u = users.find(user => String(user.id) === String(id));
@@ -1164,7 +1164,10 @@ const memberManagerRef = ref(null)
 const draftMemberIds = ref([])
 const isSavingMembers = ref(false)
 
-const openMemberManager = () => {
+const openMemberManager = async () => {
+  try {
+    await fetchUsers()
+  } catch (err) {}
   draftMemberIds.value = project.value?.members?.map(member => Number(member.id)) || []
   const creatorId = project.value?.creator_id
   const creatorIsSelectable = users.value.some(user => String(user.id) === String(creatorId))
@@ -1495,18 +1498,18 @@ const triggerFileInput = () => {
 const addFileToAttachments = async (file) => {
   if (!file) return
   const isImage = file.type.startsWith('image/')
-  let dataUrl = null
+  let processedFile = file
   if (isImage) {
-    dataUrl = await compressImageFile(file)
+    processedFile = await compressImageFile(file)
   }
-  const preview = isImage ? (dataUrl || URL.createObjectURL(file)) : null
+  const preview = isImage ? URL.createObjectURL(processedFile) : null
   attachedFiles.value.push({
-    file,
+    file: processedFile,
     name: file.name,
-    type: file.type,
+    type: processedFile.type,
     isImage,
     preview,
-    dataUrl
+    dataUrl: null
   })
 }
 
@@ -1563,9 +1566,16 @@ const compressImageFile = (file) => new Promise((resolve) => {
       canvas.width = width
       canvas.height = height
       canvas.getContext('2d').drawImage(img, 0, 0, width, height)
-      resolve(canvas.toDataURL(file.type.includes('png') ? 'image/png' : 'image/jpeg', 0.75))
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const compressedFile = new File([blob], file.name, { type: file.type || 'image/jpeg' })
+          resolve(compressedFile)
+        } else {
+          resolve(file)
+        }
+      }, file.type.includes('png') ? 'image/png' : 'image/jpeg', 0.75)
     }
-    img.onerror = () => resolve(e.target.result)
+    img.onerror = () => resolve(file)
     img.src = e.target.result
   }
   reader.readAsDataURL(file)
@@ -1642,13 +1652,9 @@ const buildAttachmentHtml = async (attachments) => {
   const uploadedAttachmentIds = []
   for (const att of attachments) {
     const safeName = escapeHtmlAttr(att.name || 'file')
-    if (att.isImage) {
-      // Images: compress and embed inline (small after compression)
-      const dataUrl = await readAttachmentDataUrl(att)
-      if (!dataUrl) continue
-      html += `<br/><img src="${dataUrl}" class="max-h-56 rounded-xl my-2 border border-gray-200 shadow-2xs block" />`
-    } else if (att.file && !att.isExisting) {
-      // New non-image file: upload to server
+    
+    if (att.file && !att.isExisting) {
+      // New file (image or non-image): upload to server!
       try {
         const formData = new FormData()
         formData.append('files[]', att.file)
@@ -1661,15 +1667,25 @@ const buildAttachmentHtml = async (attachments) => {
         if (!uploaded) throw new Error('Máy chủ không trả về thông tin tệp đã tải lên.')
         uploadedAttachmentIds.push(uploaded.id)
         const serverUrl = uploaded.url
-        const uploadedName = escapeHtmlAttr(uploaded.original_name || att.name)
-        html += `<br/><a href="${serverUrl}" download="${uploadedName}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 my-1">📎 Tệp đính kèm: ${uploadedName}</a>`
+        
+        if (att.isImage) {
+          // If it's an image, embed it as an <img> tag with the server URL!
+          html += `<br/><img src="${serverUrl}" class="max-h-56 rounded-xl my-2 border border-gray-200 shadow-2xs block" />`
+        } else {
+          // If it's a non-image file, embed it as a download link!
+          const uploadedName = escapeHtmlAttr(uploaded.original_name || att.name)
+          html += `<br/><a href="${serverUrl}" download="${uploadedName}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 my-1">📎 Tệp đính kèm: ${uploadedName}</a>`
+        }
       } catch (uploadErr) {
         console.error('Failed to upload file:', att.name, uploadErr)
         throw new Error(`Không thể tải lên tệp ${att.name}.`)
       }
-    } else if (att.isExisting && att.dataUrl) {
-      // Existing attachment: preserve as-is (backward compatible)
-      html += `<br/><a href="${att.dataUrl}" download="${safeName}" class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 my-1">📎 Tệp đính kèm: ${safeName}</a>`
+    } else if (att.isExisting) {
+      if (att.isImage) {
+        html += `<br/><img src="${att.dataUrl || att.preview}" class="max-h-56 rounded-xl my-2 border border-gray-200 shadow-2xs block" />`
+      } else {
+        html += `<br/><a href="${att.dataUrl}" download="${safeName}" class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 my-1">📎 Tệp đính kèm: ${safeName}</a>`
+      }
     } else {
       html += `<br/><span class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 my-1">📎 Tệp đính kèm: ${safeName}</span>`
     }
@@ -3437,16 +3453,20 @@ const loadAllData = async () => {
   try {
     await Promise.all([
       fetchProjectDetail(),
-      fetchUsers(),
       fetchMentionGroups(),
-      fetchComments(),
-      fetchCustomers()
+      fetchComments()
     ])
   } catch (err) {
     hasError.value = true
     toast.error('Không thể tải chi tiết dự án.')
   } finally {
     isDetailLoading.value = false
+  }
+}
+
+const handleTextareaFocus = () => {
+  if (users.value.length === 0) {
+    fetchUsers()
   }
 }
 
@@ -3458,7 +3478,13 @@ const toggleActionMenu = () => {
   }
 }
 
-const handleEditProject = () => {
+const handleEditProject = async () => {
+  try {
+    await Promise.all([
+      fetchUsers(),
+      fetchCustomers()
+    ])
+  } catch (err) {}
   isModalOpen.value = true
   isActionMenuOpen.value = false
 }

@@ -42,7 +42,7 @@
               <input
                 ref="customerInputRef"
                 v-model="searchQuery"
-                @focus="isOpenDropdown = true"
+                @focus="handleInputFocus"
                 @input="isOpenDropdown = true; highlightedIndex = 0"
                 @keydown="handleCustomerKeydown"
                 type="text"
@@ -409,6 +409,7 @@ const normalizeCustomerSearch = (value) => String(value || '')
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
   .replace(/đ/g, 'd')
+  .replace(/\s+/g, ' ')
   .trim()
 
 // Filter customers by query string
@@ -424,9 +425,15 @@ const filteredCustomers = computed(() => {
   }
 
   return props.customers.filter(c => {
-    return normalizeCustomerSearch(c.name).includes(q) || normalizeCustomerSearch(c.code).includes(q)
+    const combined = `${c.name} ${c.code ? `(${c.code})` : ''}`
+    return normalizeCustomerSearch(combined).includes(q)
   })
 })
+
+const handleInputFocus = (event) => {
+  isOpenDropdown.value = true
+  event.target.select()
+}
 
 const selectCustomer = (c) => {
   form.customer_id = c.id

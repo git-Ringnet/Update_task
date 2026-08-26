@@ -115,6 +115,18 @@
 
               <!-- Comment content -->
               <div class="text-xs font-semibold text-gray-700 leading-relaxed break-words mt-1 space-y-1.5">
+                <!-- Zalo Quote Reply Preview inside activity feed page -->
+                <div v-if="parseReplyInfo(act.content)" 
+                  class="bg-gray-100/75 px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1.5 select-none max-w-full">
+                  <div class="text-[10px] font-bold text-gray-500 flex items-center gap-1">
+                    <i class="fa-solid fa-reply text-[9px]"></i>
+                    <span>{{ parseReplyInfo(act.content).user }}</span>
+                  </div>
+                  <div class="text-[10px] text-gray-450 truncate mt-0.5 max-w-[280px]">
+                    {{ parseReplyInfo(act.content).text }}
+                  </div>
+                </div>
+
                 <div v-if="parseCommentText(act.content)" class="whitespace-pre-line">
                   {{ parseCommentText(act.content) }}
                 </div>
@@ -307,9 +319,23 @@ const openImagePreview = (url) => {
   activePreviewImage.value = url
 }
 
+const parseReplyInfo = (content) => {
+  if (!content) return null
+  const m = content.match(/^\[reply:(\{.*?\})\]/)
+  if (m) {
+    try {
+      return JSON.parse(m[1])
+    } catch (e) {
+      console.error('Failed to parse reply info:', e)
+    }
+  }
+  return null
+}
+
 const parseCommentText = (content) => {
   if (!content) return ''
   return content
+    .replace(/^\[reply:\{.*?\}\]/, '')
     .replace(/!\[.*?\]\((.*?)\)/g, '')
     .replace(/📎\s*\[(.*?)\]\((.*?)\)/g, '')
     .replace(/<img[^>]*>/gi, '')

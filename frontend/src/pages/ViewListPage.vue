@@ -25,7 +25,10 @@
 
         <!-- LEFT PANEL: Actions, Switcher & Search (Block 1) -->
         <aside ref="viewActionsRef" class="view-actions"
-          :class="viewMode === 'notes' ? 'space-y-3.5 select-none flex flex-col items-end w-full lg:-translate-x-[42px]' : 'space-y-3.5 select-none flex flex-col items-end w-[390px] flex-shrink-0'">
+          :class="[
+            viewMode === 'notes' ? 'space-y-3.5 select-none flex flex-col items-end w-full lg:-translate-x-[42px]' : 'space-y-3.5 select-none flex flex-col items-end w-[390px] flex-shrink-0',
+            mobileHomeTab === 'projects' ? '' : 'mobile-home-panel-hidden'
+          ]">
           <!-- Button Tạo dự án -->
           <button @click="isModalOpen = true" type="button"
             class="mobile-icon-button create-project-action w-fit bg-transparent hover:bg-gray-200/40 border-2 border-[#4d4d4d] text-gray-900 font-extrabold text-sm rounded-md px-4.5 py-2.5 flex items-center justify-center gap-1 transition-colors cursor-pointer focus:outline-none select-none"
@@ -367,6 +370,23 @@
           class="recent-activity-panel bg-transparent flex flex-col h-[calc(100vh-226px)] select-none w-[390px] flex-shrink-0"
           :class="mobileHomeTab === 'activities' ? '' : 'mobile-home-panel-hidden'">
 
+          <!-- Header Actions: Lọc người nhắc đến & Tất cả hoạt động gần đây -->
+          <div v-if="activities.length > 0" class="pb-3 flex-shrink-0 flex gap-2 border-b border-gray-250/60 mb-2">
+            <button @click="showMentionedActivities = !showMentionedActivities" type="button"
+              :title="showMentionedActivities ? 'Hiện tất cả hoạt động' : 'Chỉ hiện hoạt động có nhắc đến bạn'"
+              class="w-11 shrink-0 py-2 border rounded-xl font-extrabold text-sm transition-all cursor-pointer shadow-3xs focus:outline-none flex items-center justify-center"
+              :class="showMentionedActivities
+                ? 'bg-emerald-600 border-emerald-600 text-white'
+                : 'bg-[#f6f4ef] hover:bg-emerald-50 border-gray-300 text-[#1A7A56]'">
+              <i class="fa-solid fa-at"></i>
+            </button>
+
+            <button @click="router.push('/feed')" type="button"
+              class="flex-1 py-2 bg-[#f6f4ef] hover:bg-gray-150 border border-gray-300 text-gray-900 font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-3xs focus:outline-none text-center">
+              Tất cả hoạt động gần đây
+            </button>
+          </div>
+
           <!-- Skeleton Loading State -->
           <div v-if="isActivitiesLoading && displayedActivities.length === 0"
             class="space-y-3.5 flex-1 overflow-hidden pt-2">
@@ -387,7 +407,11 @@
                 leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
                 leave-to-class="opacity-0 -translate-y-2">
                 <div v-for="(log, idx) in displayedActivities.slice(0, 15)" :key="log.id"
-                  class="relative flex gap-3 select-none pb-6">
+                  class="activity-log-item relative flex gap-3 select-none pb-6 group cursor-pointer"
+                  @touchstart="handleTouchStart(log, $event)"
+                  @touchend="handleTouchEnd"
+                  @touchmove="handleTouchMove"
+                >
 
                   <!-- Absolute Timeline Line connecting avatars across padding boundaries -->
                   <div v-if="idx < Math.min(displayedActivities.length, 15) - 1"
@@ -413,9 +437,21 @@
                               log.project.customer.name }}</span>
                         </template>
                       </div>
-                      <span class="text-[11px] text-gray-400 font-bold flex-shrink-0">
-                        {{ formatCommentRelativeTime(log.created_at) }}
-                      </span>
+                      <div class="flex items-center gap-2 flex-shrink-0">
+                        <span class="text-[11px] text-gray-400 font-bold">
+                          {{ formatCommentRelativeTime(log.created_at) }}
+                        </span>
+                        <button
+                          v-if="log.project_id || log.project?.id"
+                          @click="handleReplyToActivity(log)"
+                          type="button"
+                          title="Trả lời hoạt động này"
+                          class="opacity-0 group-hover:opacity-100 transition-all duration-200 bg-white hover:bg-emerald-600 text-gray-500 hover:text-white border border-gray-200 hover:border-emerald-600 cursor-pointer rounded-full h-6 w-6 flex items-center justify-center shadow-3xs focus:outline-none shrink-0"
+                          :class="{ 'opacity-100': activeLogIdForMobileActions === log.id }"
+                        >
+                          <i class="fa-solid fa-reply text-[10px]"></i>
+                        </button>
+                      </div>
                     </div>
 
                     <!-- Project Link/Title (Green Bold text matching Image 2) -->
@@ -427,6 +463,18 @@
 
                     <!-- Comment Content (Plain text, no border card box) -->
                     <div class="text-xs font-semibold text-gray-700 leading-relaxed break-words mt-1 space-y-1.5">
+                      <!-- Zalo Quote Reply Preview inside list feed -->
+                      <div v-if="parseReplyInfo(log.content)" 
+                        class="bg-gray-100/75 px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1.5 select-none max-w-full">
+                        <div class="text-[10px] font-bold text-gray-500 flex items-center gap-1">
+                          <i class="fa-solid fa-reply text-[9px]"></i>
+                          <span>{{ parseReplyInfo(log.content).user }}</span>
+                        </div>
+                        <div class="text-[10px] text-gray-450 truncate mt-0.5 max-w-[280px]">
+                          {{ parseReplyInfo(log.content).text }}
+                        </div>
+                      </div>
+
                       <div v-if="parseCommentText(log.content)" class="whitespace-pre-line">
                         {{ parseCommentText(log.content) }}
                       </div>
@@ -465,21 +513,109 @@
               </div>
             </div>
 
-            <!-- Fixed Bottom Button: Tất cả hoạt động gần đây (Image 2) -->
-            <div v-if="activities.length > 0" class="pt-3 flex-shrink-0 flex gap-2">
-              <button @click="showMentionedActivities = !showMentionedActivities" type="button"
-                :title="showMentionedActivities ? 'Hiện tất cả hoạt động' : 'Chỉ hiện hoạt động có nhắc đến bạn'"
-                class="w-11 shrink-0 py-2.5 border rounded-xl font-extrabold text-sm transition-all cursor-pointer shadow-3xs focus:outline-none"
-                :class="showMentionedActivities
-                  ? 'bg-emerald-600 border-emerald-600 text-white'
-                  : 'bg-[#f6f4ef] hover:bg-emerald-50 border-gray-300 text-[#1A7A56]'">
-                <i class="fa-solid fa-at"></i>
-              </button>
-              <button @click="router.push('/feed')" type="button"
-                class="flex-1 py-2.5 bg-[#f6f4ef] hover:bg-gray-150 border border-gray-300 text-gray-900 font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-3xs focus:outline-none text-center">
-                Tất cả hoạt động gần đây
-              </button>
+            <!-- Chat Input box: Gửi cập nhật hoạt động mới (Always Visible) -->
+            <div class="mt-4 pt-2 border-t border-gray-250 flex-shrink-0 flex flex-col gap-2.5">
+              
+              <!-- Reply banner (Zalo Style Quote) -->
+              <div v-if="replyingToLog" class="flex items-start justify-between bg-gray-100/80 px-3.5 py-2.5 rounded-xl border-l-3 border-[#0068FF] text-xs transition-all duration-300 relative select-none">
+                <div class="flex-1 min-w-0">
+                  <div class="text-[10px] font-extrabold text-[#0068FF] uppercase tracking-wider flex items-center gap-1">
+                    <i class="fa-solid fa-reply text-[9px]"></i>
+                    <span>Trả lời {{ replyingToLog.user?.name || 'Hệ thống' }}</span>
+                  </div>
+                  <div class="text-[11px] text-gray-500 truncate mt-0.5 max-w-[280px]">
+                    {{ parseCommentText(replyingToLog.content) }}
+                  </div>
+                </div>
+                <button @click="cancelReply" type="button" class="text-gray-400 hover:text-gray-650 transition-colors p-1 rounded-full hover:bg-gray-200/50 cursor-pointer flex items-center justify-center shrink-0 ml-2" title="Hủy trả lời">
+                  <i class="fa-solid fa-xmark text-xs"></i>
+                </button>
+              </div>
+
+              <!-- Main Chat Box Card (Zalo PC Style - Clean & Dynamic) -->
+              <div class="flex flex-col bg-white rounded-xl border border-gray-250 shadow-3xs relative">
+                <!-- Project Suggestions Dropdown Popup -->
+                <div v-if="showProjectSuggestions && filteredProjectsForSuggestion.length > 0" 
+                  class="absolute z-50 bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-[160px] overflow-y-auto divide-y divide-gray-100">
+                  <div class="px-3 py-1.5 bg-gray-50 text-[9px] font-extrabold text-gray-400 uppercase tracking-wider">
+                    Gợi ý nhanh (Dự án, Thành viên, Nhóm):
+                  </div>
+                  <button 
+                    v-for="(p, idx) in filteredProjectsForSuggestion" 
+                    :key="'sugg-' + p.type + '-' + p.id" 
+                    type="button" 
+                    @mousedown.prevent
+                    @click="selectProjectSuggestion(p)"
+                    class="w-full text-left px-3.5 py-2 text-xs font-bold flex justify-between items-center transition-colors cursor-pointer hover:bg-emerald-50 hover:text-emerald-800 border-0"
+                    :class="idx === projectSuggestionIndex ? 'bg-emerald-50 text-emerald-800' : 'text-gray-700'"
+                  >
+                    <span class="truncate flex-1 flex items-center gap-1.5">
+                      <i v-if="p.type === 'project'" class="fa-solid fa-folder text-emerald-600 text-[10px]"></i>
+                      <i v-else-if="p.type === 'member'" class="fa-solid fa-user text-blue-500 text-[10px]"></i>
+                      <i v-else-if="p.type === 'group'" class="fa-solid fa-users text-amber-500 text-[10px]"></i>
+                      <span>{{ p.title }}</span>
+                    </span>
+                     <span class="text-[10px] text-gray-400 font-semibold truncate max-w-[100px] shrink-0 ml-2">
+                      {{ p.subtitle }}
+                    </span>
+                  </button>
+                </div>
+
+                <!-- Zalo Toolbar (Top Row) -->
+                <div class="flex items-center justify-between px-3.5 py-1.5 bg-gray-50 border-b border-gray-200 rounded-t-xl select-none">
+                  <!-- Clean Zoom Toggle Button -->
+                  <div class="flex items-center gap-3 text-gray-400">
+                    <button @click="isChatExpanded = !isChatExpanded" type="button" class="hover:text-gray-655 transition-colors text-xs cursor-pointer focus:outline-none p-0.5 flex items-center justify-center animate-none" :title="isChatExpanded ? 'Thu nhỏ khung chat' : 'Mở rộng khung chat'">
+                      <i :class="isChatExpanded ? 'fa-solid fa-compress' : 'fa-solid fa-expand'"></i>
+                    </button>
+                  </div>
+                  
+                  <!-- Project Select Badge -->
+                  <div class="flex items-center gap-1.5 ml-2">
+                    <span class="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider">Dự án:</span>
+                    <select v-model="chatProjectId" class="text-base sm:text-[11px] font-bold text-[#1A7A56] bg-emerald-50/50 border border-emerald-200/30 hover:border-emerald-500/50 rounded-full px-2.5 py-0.5 focus:ring-0 focus:outline-none max-w-[150px] truncate cursor-pointer transition-all duration-200 py-0">
+                      <option v-if="projectStore.projects.length === 0" :value="null">Chưa có dự án...</option>
+                      <option v-for="p in projectStore.projects" :key="p.id" :value="p.id">
+                        {{ p.title }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Input area + send button (Bottom Row) -->
+                <div class="flex items-end gap-2 p-2 rounded-b-xl bg-white">
+                  <textarea
+                    ref="chatTextareaRef"
+                    v-model="chatMessage"
+                    :rows="isChatExpanded ? 5 : 2"
+                    placeholder="Nhập cập nhật hoạt động mới..."
+                    class="flex-1 bg-transparent border-0 focus:ring-0 focus:outline-none text-base sm:text-xs font-semibold text-gray-800 resize-none p-0.5 placeholder-gray-400 leading-relaxed transition-all duration-200"
+                    :class="isChatExpanded ? 'min-h-[100px] max-h-[200px]' : 'min-h-[44px] max-h-[100px]'"
+                    autocomplete="one-time-code"
+                    name="chat_msg_non_autocomplete"
+                    id="chat_msg_non_autocomplete"
+                    spellcheck="false"
+                    @input="handleChatInput"
+                    @keydown="onChatKeydown"
+                  ></textarea>
+                  
+                  <!-- Right side buttons -->
+                  <div class="flex items-center gap-2 shrink-0 pb-0.5">
+                    <button
+                      @click="submitChat"
+                      :disabled="isSubmittingChat"
+                      type="button"
+                      class="font-extrabold text-xs uppercase tracking-wider focus:outline-none px-1 py-0.5 transition-colors"
+                      :class="isSubmittingChat ? 'text-gray-300 cursor-not-allowed' : 'text-[#1A7A56] hover:text-emerald-700 cursor-pointer'"
+                    >
+                      {{ isSubmittingChat ? 'Đang gửi...' : 'Gửi' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
+
+            <div class="h-4 sm:h-1 flex-shrink-0"></div>
           </div>
         </section>
         </div>
@@ -929,15 +1065,15 @@ const goToProjectDetail = (projectId, event) => {
   // selection, do not let the card click overwrite the selected range.
   if (suppressNextProjectClick) return
 
-  // Double-click navigates to detail
-  if (event.detail === 2) {
+  // On mobile, tapping the project card navigates directly to details page
+  if (window.matchMedia?.('(max-width: 767px)').matches) {
     router.push(`/projects/${projectId}`)
     return
   }
 
-  // Touch devices have no Ctrl/Cmd modifier, so every tap toggles selection.
-  if (window.matchMedia?.('(max-width: 767px)').matches) {
-    toggleProjectSelect(projectId)
+  // Double-click navigates to detail on desktop
+  if (event.detail === 2) {
+    router.push(`/projects/${projectId}`)
     return
   }
 
@@ -1826,9 +1962,23 @@ const openImagePreview = (url) => {
   activePreviewImage.value = url
 }
 
+const parseReplyInfo = (content) => {
+  if (!content) return null
+  const m = content.match(/^\[reply:(\{.*?\})\]/)
+  if (m) {
+    try {
+      return JSON.parse(m[1])
+    } catch (e) {
+      console.error('Failed to parse reply info:', e)
+    }
+  }
+  return null
+}
+
 const parseCommentText = (content) => {
   if (!content) return ''
   return content
+    .replace(/^\[reply:\{.*?\}\]/, '')
     .replace(/!\[.*?\]\((.*?)\)/g, '')
     .replace(/📎\s*\[(.*?)\]\((.*?)\)/g, '')
     .replace(/<img[^>]*>/gi, '')
@@ -1897,6 +2047,268 @@ const parseCommentFiles = (content) => {
 const activities = ref([])
 const isActivitiesLoading = ref(true)
 const showMentionedActivities = ref(false)
+
+// Chat / Reply logic for recent activities panel
+const chatMessage = ref('')
+const chatProjectId = ref(null)
+const replyingToLog = ref(null)
+const isChatExpanded = ref(false)
+const activeLogIdForMobileActions = ref(null)
+
+let touchTimer = null
+let touchStarted = false
+
+const handleTouchStart = (log, event) => {
+  touchStarted = true
+  touchTimer = setTimeout(() => {
+    if (touchStarted) {
+      if (navigator.vibrate) {
+        navigator.vibrate(50)
+      }
+      activeLogIdForMobileActions.value = log.id
+    }
+  }, 500)
+}
+
+const handleTouchEnd = () => {
+  touchStarted = false
+  if (touchTimer) clearTimeout(touchTimer)
+}
+
+const handleTouchMove = () => {
+  touchStarted = false
+  if (touchTimer) clearTimeout(touchTimer)
+}
+
+const handleGlobalClick = (e) => {
+  if (!e.target.closest('.activity-log-item')) {
+    activeLogIdForMobileActions.value = null
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleGlobalClick)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleGlobalClick)
+})
+
+// Initialize chatProjectId once projects are loaded
+watch(() => projectStore.projects, (newProjects) => {
+  if (newProjects && newProjects.length > 0 && !chatProjectId.value) {
+    chatProjectId.value = newProjects[0].id
+  }
+}, { immediate: true })
+
+const handleReplyToActivity = (log) => {
+  replyingToLog.value = log
+  chatProjectId.value = log.project_id || log.project?.id || projectStore.projects[0]?.id
+  
+  let mention = ''
+  if (log.user) {
+    const emailPrefix = log.user.email ? log.user.email.split('@')[0] : ''
+    mention = `@${emailPrefix || log.user.name} `
+  }
+  
+  chatMessage.value = mention
+  
+  nextTick(() => {
+    chatTextareaRef.value?.focus()
+  })
+}
+
+const cancelReply = () => {
+  replyingToLog.value = null
+  chatMessage.value = ''
+}
+
+const isSubmittingChat = ref(false)
+
+const submitChat = async () => {
+  if (isSubmittingChat.value) return
+  if (!chatMessage.value.trim()) return
+  
+  const pId = chatProjectId.value || projectStore.projects[0]?.id
+  if (!pId) {
+    toast.error('Vui lòng chọn hoặc tạo dự án để gửi cập nhật.')
+    return
+  }
+  
+  isSubmittingChat.value = true
+  
+  let finalContent = chatMessage.value
+  if (replyingToLog.value) {
+    const replyMeta = {
+      user: replyingToLog.value.user ? replyingToLog.value.user.name : 'Hệ thống',
+      text: parseCommentText(replyingToLog.value.content)
+    }
+    finalContent = `[reply:${JSON.stringify(replyMeta)}]` + finalContent
+  }
+  
+  try {
+    await axios.post('/api/comments', {
+      project_id: pId,
+      content: finalContent,
+    })
+    
+    toast.success('Gửi cập nhật hoạt động thành công!')
+    chatMessage.value = ''
+    replyingToLog.value = null
+    await fetchActivities()
+  } catch (err) {
+    console.error('Failed to submit chat:', err)
+    toast.error('Gửi cập nhật thất bại. Vui lòng thử lại.')
+  } finally {
+    isSubmittingChat.value = false
+  }
+}
+
+// Project Suggestion Autocomplete logic
+const showProjectSuggestions = ref(false)
+const projectQuery = ref('')
+const projectSuggestionIndex = ref(0)
+const chatTextareaRef = ref(null)
+
+const mentionGroups = ref([])
+
+const filteredProjectsForSuggestion = computed(() => {
+  const query = projectQuery.value
+  const q = removeVietnameseAccents(query).toLowerCase()
+  
+  const suggestions = []
+  
+  const matches = (targetString) => {
+    if (!targetString) return false
+    const normTarget = removeVietnameseAccents(targetString).toLowerCase()
+    // Direct substring match
+    if (normTarget.includes(q)) return true
+    
+    // Initials matching (first letters of words)
+    const words = normTarget.split(/\s+/).filter(Boolean)
+    const initials = words.map(w => w[0]).join('')
+    return initials.includes(q)
+  }
+  
+  // 1. Projects
+  const filteredProjects = projectStore.projects.filter(p => {
+    if (!q) return true
+    return matches(p.title) || (p.customer && matches(p.customer.name))
+  })
+  filteredProjects.forEach(p => {
+    suggestions.push({
+      type: 'project',
+      id: p.id,
+      title: p.title,
+      subtitle: p.customer?.name || 'Dự án'
+    })
+  })
+  
+  // 2. Members (Users)
+  const filteredUsers = (projectStore.users || []).filter(u => {
+    if (!q) return true
+    const emailPrefix = u.email ? u.email.split('@')[0] : ''
+    return matches(u.name) || matches(emailPrefix)
+  })
+  filteredUsers.forEach(u => {
+    suggestions.push({
+      type: 'member',
+      id: u.id,
+      title: u.name,
+      subtitle: 'Thành viên'
+    })
+  })
+  
+  // 3. Groups (Mention Groups)
+  const filteredGroups = (mentionGroups.value || []).filter(g => {
+    if (!q) return true
+    return matches(g.name) || matches(g.description)
+  })
+  filteredGroups.forEach(g => {
+    suggestions.push({
+      type: 'group',
+      id: g.id,
+      title: g.name,
+      subtitle: g.description || 'Nhóm nhắc tên'
+    })
+  })
+  
+  return suggestions.slice(0, 10)
+})
+
+const handleChatInput = (event) => {
+  const el = event.target
+  const text = el.value
+  const cursorPos = el.selectionStart || text.length
+  const textBeforeCursor = text.substring(0, cursorPos)
+  
+  const match = textBeforeCursor.match(/@([^\s@]*)$/)
+  
+  if (match) {
+    projectQuery.value = match[1]
+    showProjectSuggestions.value = true
+    projectSuggestionIndex.value = 0
+  } else {
+    showProjectSuggestions.value = false
+  }
+}
+
+const selectProjectSuggestion = (suggestion) => {
+  if (!suggestion) return
+  
+  if (suggestion.type === 'project') {
+    chatProjectId.value = suggestion.id
+  }
+  
+  const el = chatTextareaRef.value
+  const text = chatMessage.value || ''
+  const cursorPos = el?.selectionStart || text.length
+  const textBeforeCursor = text.substring(0, cursorPos)
+  const textAfterCursor = text.substring(cursorPos)
+  
+  const match = textBeforeCursor.match(/@([^\s@]*)$/)
+  const newBefore = match 
+    ? textBeforeCursor.substring(0, match.index) + `@${suggestion.title} ` 
+    : `${textBeforeCursor}@${suggestion.title} `
+  
+  chatMessage.value = newBefore + textAfterCursor
+  showProjectSuggestions.value = false
+  
+  nextTick(() => {
+    el?.focus()
+    el?.setSelectionRange(newBefore.length, newBefore.length)
+  })
+}
+
+const onChatKeydown = (event) => {
+  if (showProjectSuggestions.value && filteredProjectsForSuggestion.value.length > 0) {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      projectSuggestionIndex.value = (projectSuggestionIndex.value + 1) % filteredProjectsForSuggestion.value.length
+      return
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      projectSuggestionIndex.value = (projectSuggestionIndex.value - 1 + filteredProjectsForSuggestion.value.length) % filteredProjectsForSuggestion.value.length
+      return
+    } else if (event.key === 'Enter' || event.key === 'Tab') {
+      event.preventDefault()
+      const selected = filteredProjectsForSuggestion.value[projectSuggestionIndex.value]
+      if (selected) {
+        selectProjectSuggestion(selected)
+      }
+      return
+    } else if (event.key === 'Escape') {
+      event.preventDefault()
+      showProjectSuggestions.value = false
+      return
+    }
+  }
+  
+  if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+    event.preventDefault()
+    submitChat()
+  }
+}
 
 // The TV API already filters out broadcasts older than 24 hours. Records remain
 // in the database; they simply stop being returned to this screen.
@@ -2124,6 +2536,7 @@ onMounted(async () => {
   await projectStore.fetchAuxData()
   await fetchActivities()
   await fetchBroadcasts()
+  axios.get('/api/mention-groups').then(res => { mentionGroups.value = res.data || [] }).catch(() => {})
   requestAnimationFrame(updateTvPosition)
 
   window.addEventListener('keydown', handleGlobalKeydown)
@@ -2205,7 +2618,9 @@ onUnmounted(() => {
     flex-direction: column !important;
     align-items: stretch !important;
     gap: 0 !important;
-    padding-bottom: 80px;
+    height: calc(100vh - 64px - 58px - env(safe-area-inset-bottom, 0px)) !important;
+    overflow: hidden !important;
+    padding-bottom: 0 !important;
   }
 
   .view-actions {
@@ -2256,6 +2671,8 @@ onUnmounted(() => {
     grid-template-columns: 1fr;
     position: relative;
     width: 100%;
+    flex: 1 !important;
+    overflow: hidden !important;
   }
 
   .project-list-panel,
@@ -2266,23 +2683,33 @@ onUnmounted(() => {
     max-width: none !important;
     justify-self: stretch !important;
     flex-shrink: 1 !important;
-    transition: opacity 0.25s ease-out, transform 0.25s ease-out, visibility 0.25s;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    padding: 0 16px 12px 16px !important;
+    background-color: #F9F4EE !important;
+    transition: opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1), transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.22s;
     opacity: 1;
     transform: translateY(0);
     visibility: visible;
   }
 
   .mobile-home-panel-hidden {
-    display: block !important;
+    display: none !important;
+  }
+
+  .recent-activity-panel.mobile-home-panel-hidden,
+  .project-list-panel.mobile-home-panel-hidden {
     opacity: 0 !important;
-    pointer-events: none !important;
-    position: absolute !important;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 0 !important;
-    visibility: hidden !important;
     transform: translateY(12px) !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    display: flex !important;
+  }
+
+  .view-actions.mobile-home-panel-hidden {
+    display: none !important;
   }
 
   .mobile-home-tabs {
@@ -2302,15 +2729,19 @@ onUnmounted(() => {
 
   .project-scroll-container {
     max-height: none !important;
-    overflow-y: visible !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    padding-right: 0 !important;
+    overflow-y: auto !important;
+    margin-left: -16px !important;
+    margin-right: -16px !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    padding-bottom: 24px !important;
+    flex: 1;
   }
 
   .project-card {
-    width: calc(100% - 40px) !important;
+    width: calc(100% - 80px) !important;
     margin-left: 40px !important;
+    margin-right: 40px !important;
     padding: 12px !important;
     min-height: 64px;
   }
@@ -2372,11 +2803,6 @@ onUnmounted(() => {
   .bulk-divider { display: none; }
   .bulk-status-control { flex-shrink: 0; }
   .bulk-submit { flex-shrink: 0; }
-
-  .recent-activity-panel {
-    height: auto !important;
-    margin-top: 20px;
-  }
 }
 
 @media (min-width: 768px) {

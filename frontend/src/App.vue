@@ -3,7 +3,7 @@
     <router-view />
 
     <!-- Toast Notifications Container -->
-    <div class="fixed top-5 right-5 z-[9999] space-y-3 pointer-events-none max-w-sm w-full">
+    <div class="fixed top-5 left-1/2 sm:left-auto sm:right-5 -translate-x-1/2 sm:translate-x-0 z-[9999] space-y-3 pointer-events-none w-full max-w-[calc(100%-32px)] sm:max-w-sm">
       <transition-group 
         enter-active-class="transition duration-300 ease-out transform"
         enter-from-class="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"

@@ -953,10 +953,16 @@ const compressImage = (file) => {
         canvas.height = height
         const ctx = canvas.getContext('2d')
         ctx.drawImage(img, 0, 0, width, height)
-        const dataUrl = canvas.toDataURL(file.type.includes('png') ? 'image/png' : 'image/jpeg', 0.75)
-        resolve(dataUrl)
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const compressedFile = new File([blob], file.name, { type: file.type || 'image/jpeg' })
+            resolve(compressedFile)
+          } else {
+            resolve(file)
+          }
+        }, file.type.includes('png') ? 'image/png' : 'image/jpeg', 0.75)
       }
-      img.onerror = () => resolve(e.target.result)
+      img.onerror = () => resolve(file)
       img.src = e.target.result
     }
     reader.readAsDataURL(file)
@@ -974,16 +980,17 @@ const handleFileSelect = async (projectId, event) => {
   for (const file of Array.from(files)) {
     const isImg = file.type.startsWith('image/')
     if (isImg) {
-      const fileUrl = await compressImage(file)
+      const compressedFile = await compressImage(file)
+      const fileUrl = URL.createObjectURL(compressedFile)
       attachedFiles[projectId].push({
         name: file.name,
-        size: file.size,
-        type: file.type,
+        size: compressedFile.size,
+        type: compressedFile.type,
         url: fileUrl,
-        isImage: true
+        isImage: true,
+        file: compressedFile
       })
     } else {
-      // Keep original File object for server upload later (avoid base64 bloat)
       attachedFiles[projectId].push({
         name: file.name,
         size: file.size,
@@ -1016,16 +1023,18 @@ const handlePaste = async (projectId, event) => {
     const file = item.getAsFile()
     if (!file) continue
 
-    const fileUrl = await compressImage(file)
+    const compressedFile = await compressImage(file)
+    const fileUrl = URL.createObjectURL(compressedFile)
     const timestamp = new Date().toISOString().slice(11, 19).replace(/:/g, '')
     const ext = file.type.includes('png') ? 'png' : 'jpg'
 
     attachedFiles[projectId].push({
       name: `pasted_${timestamp}.${ext}`,
-      size: file.size,
-      type: file.type,
+      size: compressedFile.size,
+      type: compressedFile.type,
       url: fileUrl,
-      isImage: true
+      isImage: true,
+      file: compressedFile
     })
     isSaved[projectId] = false
   }
@@ -1033,6 +1042,10 @@ const handlePaste = async (projectId, event) => {
 
 const removeAttachment = (projectId, fileIndex) => {
   if (attachedFiles[projectId]) {
+    const item = attachedFiles[projectId][fileIndex]
+    if (item?.url && String(item.url).startsWith('blob:')) {
+      URL.revokeObjectURL(item.url)
+    }
     attachedFiles[projectId].splice(fileIndex, 1)
     isSaved[projectId] = false
   }
@@ -1215,12 +1228,9 @@ const saveUpdate = async (projectId) => {
   let titleText = text
   const uploadedAttachmentIds = []
   if (files.length > 0) {
-    // Upload non-image files to server; images stay inline (small after compression)
     for (const f of files) {
-      if (f.isImage) {
-        titleText += `<br/><img src="${f.url}" class="max-h-56 rounded-xl my-2 border border-gray-200 shadow-2xs block" />`
-      } else if (f.file) {
-        // Upload to server
+      if (f.file) {
+        // Upload to server (both images and files)
         try {
           const formData = new FormData()
           formData.append('files[]', f.file)
@@ -1233,8 +1243,13 @@ const saveUpdate = async (projectId) => {
           if (!uploaded) throw new Error('Máy chủ không trả về thông tin tệp đã tải lên.')
           uploadedAttachmentIds.push(uploaded.id)
           const serverUrl = uploaded.url
-          const safeName = (uploaded.original_name || f.name).replace(/</g, '&lt;').replace(/"/g, '&quot;')
-          titleText += `<br/><a href="${serverUrl}" download="${safeName}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 my-1">📎 Tệp đính kèm: ${safeName}</a>`
+          
+          if (f.isImage) {
+            titleText += `<br/><img src="${serverUrl}" class="max-h-56 rounded-xl my-2 border border-gray-200 shadow-2xs block" />`
+          } else {
+            const safeName = (uploaded.original_name || f.name).replace(/</g, '&lt;').replace(/"/g, '&quot;')
+            titleText += `<br/><a href="${serverUrl}" download="${safeName}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 my-1">📎 Tệp đính kèm: ${safeName}</a>`
+          }
         } catch (uploadErr) {
           console.error('Failed to upload file:', f.name, uploadErr)
           toast.error(`Không thể tải lên tệp ${f.name}. Vui lòng thử lại.`)
@@ -1242,6 +1257,9 @@ const saveUpdate = async (projectId) => {
           uploadProgress[projectId] = null
           return
         }
+      } else if (f.isImage && f.url) {
+        // Existing compressed image fallback
+        titleText += `<br/><img src="${f.url}" class="max-h-56 rounded-xl my-2 border border-gray-200 shadow-2xs block" />`
       } else {
         // Fallback for files without File object (e.g. already embedded)
         titleText += `<br/><span class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 my-1">📎 Tệp đính kèm: ${f.name}</span>`
