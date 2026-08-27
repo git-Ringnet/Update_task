@@ -803,7 +803,7 @@ const focusTextarea = (projectId) => {
 
 const onInputText = (projectId, event) => {
   isSaved[projectId] = false
-  const text = updateTexts[projectId] || ''
+  const text = event.target.value || ''
   const el = event.target
   if (el) {
     el.style.height = '128px'

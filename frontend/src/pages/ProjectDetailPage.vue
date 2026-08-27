@@ -2232,7 +2232,7 @@ const adjustTextareaHeight = () => {
 }
 
 const onTitleInput = (e) => {
-  const text = newStageTaskTitle.value || ''
+  const text = e.target.value || ''
 
   const el = e.target
   if (el) {
