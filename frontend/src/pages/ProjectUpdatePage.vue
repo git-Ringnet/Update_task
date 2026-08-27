@@ -1252,7 +1252,8 @@ const saveUpdate = async (projectId) => {
           }
         } catch (uploadErr) {
           console.error('Failed to upload file:', f.name, uploadErr)
-          toast.error(`Không thể tải lên tệp ${f.name}. Vui lòng thử lại.`)
+          const serverMessage = uploadErr.response?.data?.message
+          toast.error(serverMessage || `Không thể tải lên tệp ${f.name}. Vui lòng thử lại.`)
           isSaving[projectId] = false
           uploadProgress[projectId] = null
           return

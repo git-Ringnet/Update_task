@@ -1763,7 +1763,8 @@ const buildAttachmentHtml = async (attachments) => {
         }
       } catch (uploadErr) {
         console.error('Failed to upload file:', att.name, uploadErr)
-        throw new Error(`Không thể tải lên tệp ${att.name}.`)
+        const serverMessage = uploadErr.response?.data?.message
+        throw new Error(serverMessage || `Không thể tải lên tệp ${att.name}.`)
       }
     } else if (att.isExisting) {
       if (att.isImage) {
