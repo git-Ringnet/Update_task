@@ -193,10 +193,10 @@
 
             <!-- Grouped by Customer Mode (Matches Mockup) -->
             <div v-else-if="isGroupedByCustomer" ref="scrollContainerGrouped" @scroll="handleScroll"
-              class="project-scroll-container space-y-6 max-h-[calc(100vh-226px)] overflow-y-auto scrollbar-none">
+              class="project-scroll-container space-y-6 max-h-[calc(100vh-226px)] overflow-y-auto scrollbar-none md:ml-[-16px] md:mr-[-16px]">
               <div v-for="group in projectsByCustomer" :key="group.name" class="space-y-2.5">
                 <!-- Customer Header -->
-                <div class="flex items-center gap-2 pt-1 select-none md:pl-5">
+                <div class="flex items-center gap-2 pt-1 select-none md:pl-4">
                   <h3 class="text-xl font-black text-gray-900 tracking-tight font-heading">{{ group.name }}</h3>
                   <button @click.stop="togglePinCustomer(group.name)" type="button"
                     class="p-1 transition-colors hover:opacity-80"
@@ -380,7 +380,7 @@
             :class="mobileHomeTab === 'activities' ? '' : 'mobile-home-panel-hidden'">
 
             <!-- Header Actions: Lọc người nhắc đến & Tất cả hoạt động gần đây -->
-            <div v-if="activities.length > 0" class="pb-3 flex-shrink-0 flex gap-2 border-b border-gray-250/60 mb-2">
+            <div v-if="activities.length > 0" class="flex-shrink-0 flex gap-2 mb-2">
               <button @click="showMentionedActivities = !showMentionedActivities" type="button"
                 :title="showMentionedActivities ? 'Hiện tất cả hoạt động' : 'Chỉ hiện hoạt động có nhắc đến bạn'"
                 class="w-11 shrink-0 py-2 border rounded-xl font-extrabold text-sm transition-all cursor-pointer shadow-3xs focus:outline-none flex items-center justify-center"
@@ -410,17 +410,17 @@
 
             <!-- Activity Feed List -->
             <div v-else class="flex-1 flex flex-col justify-between min-h-0">
-              <div class="space-y-0 overflow-y-auto pr-1 scrollbar-none flex-1 pb-2">
+              <div class="activity-feed-scroll space-y-0 overflow-y-auto scrollbar-none flex-1">
                 <transition-group enter-active-class="transition duration-300 ease-out"
                   enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0"
                   leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
                   leave-to-class="opacity-0 -translate-y-2">
-                  <div v-for="(log, idx) in displayedActivities.slice(0, 15)" :key="log.id"
+                  <div v-for="(log, idx) in displayedActivities" :key="log.id"
                     class="activity-log-item relative flex gap-3 select-none pb-6 group cursor-pointer"
                     @touchstart="handleTouchStart(log, $event)" @touchend="handleTouchEnd" @touchmove="handleTouchMove">
 
                     <!-- Absolute Timeline Line connecting avatars across padding boundaries -->
-                    <div v-if="idx < Math.min(displayedActivities.length, 15) - 1"
+                    <div v-if="idx < displayedActivities.length - 1"
                       class="absolute top-11 bottom-2 left-[18px] w-[1.5px] bg-gray-300 z-0"></div>
 
                     <!-- Left Timeline column: Avatar -->
@@ -467,7 +467,7 @@
                       <div class="text-xs font-semibold text-gray-700 leading-relaxed break-words mt-1 space-y-1.5">
                         <!-- Zalo Quote Reply Preview inside list feed -->
                         <div v-if="parseReplyInfo(log.content)"
-                          class="bg-gray-100/75 px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1.5 select-none max-w-full">
+                          class="bg-[#e1e3ea] px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1.5 select-none max-w-full">
                           <div class="text-[10px] font-bold text-gray-500 flex items-center gap-1">
                             <i class="fa-solid fa-reply text-[9px]"></i>
                             <span>{{ parseReplyInfo(log.content).user }}</span>
@@ -515,99 +515,12 @@
                 </div>
               </div>
 
-              <!-- Chat Input box: Gửi cập nhật hoạt động mới (Always Visible) -->
-              <div class="mt-4 pt-2 border-t border-gray-250 flex-shrink-0 flex flex-col gap-2.5">
-
-                <!-- Reply banner (Zalo Style Quote) -->
-                <div v-if="replyingToLog"
-                  class="flex items-start justify-between bg-gray-100/80 px-3.5 py-2.5 rounded-xl border-l-3 border-[#0068FF] text-xs transition-all duration-300 relative select-none">
-                  <div class="flex-1 min-w-0">
-                    <div
-                      class="text-[10px] font-extrabold text-[#0068FF] uppercase tracking-wider flex items-center gap-1">
-                      <i class="fa-solid fa-reply text-[9px]"></i>
-                      <span>Trả lời {{ replyingToLog.user?.name || 'Hệ thống' }}</span>
-                    </div>
-                    <div class="text-[11px] text-gray-500 truncate mt-0.5 max-w-[280px]">
-                      {{ parseCommentText(replyingToLog.content) }}
-                    </div>
-                  </div>
-                  <button @click="cancelReply" type="button"
-                    class="text-gray-400 hover:text-gray-650 transition-colors p-1 rounded-full hover:bg-gray-200/50 cursor-pointer flex items-center justify-center shrink-0 ml-2"
-                    title="Hủy trả lời">
-                    <i class="fa-solid fa-xmark text-xs"></i>
-                  </button>
-                </div>
-
-                <!-- Main Chat Box Card (Zalo PC Style - Clean & Dynamic) -->
-                <div class="flex flex-col bg-white rounded-xl border border-gray-250 shadow-3xs relative">
-                  <!-- Project Suggestions Dropdown Popup -->
-                  <div v-if="showProjectSuggestions && filteredProjectsForSuggestion.length > 0"
-                    class="absolute z-50 bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-[160px] overflow-y-auto divide-y divide-gray-100">
-                    <div
-                      class="px-3 py-1.5 bg-gray-50 text-[9px] font-extrabold text-gray-400 uppercase tracking-wider">
-                      Gợi ý nhanh (Dự án, Thành viên, Nhóm):
-                    </div>
-                    <button v-for="(p, idx) in filteredProjectsForSuggestion" :key="'sugg-' + p.type + '-' + p.id"
-                      type="button" @mousedown.prevent @click="selectProjectSuggestion(p)"
-                      class="w-full text-left px-3.5 py-2 text-xs font-bold flex justify-between items-center transition-colors cursor-pointer hover:bg-emerald-50 hover:text-emerald-800 border-0"
-                      :class="idx === projectSuggestionIndex ? 'bg-emerald-50 text-emerald-800' : 'text-gray-700'">
-                      <span class="truncate flex-1 flex items-center gap-1.5">
-                        <i v-if="p.type === 'project'" class="fa-solid fa-folder text-emerald-600 text-[10px]"></i>
-                        <i v-else-if="p.type === 'member'" class="fa-solid fa-user text-blue-500 text-[10px]"></i>
-                        <i v-else-if="p.type === 'group'" class="fa-solid fa-users text-amber-500 text-[10px]"></i>
-                        <span>{{ p.title }}</span>
-                      </span>
-                      <span class="text-[10px] text-gray-400 font-semibold truncate max-w-[100px] shrink-0 ml-2">
-                        {{ p.subtitle }}
-                      </span>
-                    </button>
-                  </div>
-
-                  <!-- Zalo Toolbar (Top Row) -->
-                  <div
-                    class="flex items-center justify-between px-3.5 py-1.5 bg-gray-50 border-b border-gray-200 rounded-t-xl select-none">
-                    <!-- Clean Zoom Toggle Button -->
-                    <div class="flex items-center gap-3 text-gray-400">
-                      <button @click="isChatExpanded = !isChatExpanded" type="button"
-                        class="hover:text-gray-655 transition-colors text-xs cursor-pointer focus:outline-none p-0.5 flex items-center justify-center animate-none"
-                        :title="isChatExpanded ? 'Thu nhỏ khung chat' : 'Mở rộng khung chat'">
-                        <i :class="isChatExpanded ? 'fa-solid fa-compress' : 'fa-solid fa-expand'"></i>
-                      </button>
-                    </div>
-
-                    <!-- Project Select Badge -->
-                    <div class="flex items-center gap-1.5 ml-2">
-                      <span class="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider">Dự án:</span>
-                      <select v-model="chatProjectId"
-                        class="text-base sm:text-[11px] font-bold text-[#1A7A56] bg-emerald-50/50 border border-emerald-200/30 hover:border-emerald-500/50 rounded-full px-2.5 py-0.5 focus:ring-0 focus:outline-none max-w-[150px] truncate cursor-pointer transition-all duration-200 py-0">
-                        <option v-if="projectStore.projects.length === 0" :value="null">Chưa có dự án...</option>
-                        <option v-for="p in projectStore.projects" :key="p.id" :value="p.id">
-                          {{ p.title }}
-                        </option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <!-- Input area + send button (Bottom Row) -->
-                  <div class="flex items-end gap-2 p-2 rounded-b-xl bg-white">
-                    <textarea ref="chatTextareaRef" v-model="chatMessage" :rows="isChatExpanded ? 5 : 2"
-                      placeholder="Nhập cập nhật hoạt động mới..."
-                      class="flex-1 bg-transparent border-0 focus:ring-0 focus:outline-none text-base sm:text-xs font-semibold text-gray-800 resize-none p-0.5 placeholder-gray-400 leading-relaxed transition-all duration-200"
-                      :class="isChatExpanded ? 'min-h-[100px] max-h-[200px]' : 'min-h-[44px] max-h-[100px]'"
-                      autocomplete="one-time-code" name="chat_msg_non_autocomplete" id="chat_msg_non_autocomplete"
-                      spellcheck="false" @input="handleChatInput" @keydown="onChatKeydown"></textarea>
-
-                    <!-- Right side buttons -->
-                    <div class="flex items-center gap-2 shrink-0 pb-0.5">
-                      <button @click="submitChat" :disabled="isSubmittingChat" type="button"
-                        class="font-extrabold text-xs uppercase tracking-wider focus:outline-none px-1 py-0.5 transition-colors"
-                        :class="isSubmittingChat ? 'text-gray-300 cursor-not-allowed' : 'text-[#1A7A56] hover:text-emerald-700 cursor-pointer'">
-                        {{ isSubmittingChat ? 'Đang gửi...' : 'Gửi' }}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <!-- Chat Input box: dùng chung cho dashboard và trang Có gì mới -->
+              <ActivityComposer ref="activityComposerRef" v-model="chatMessage" v-model:project-id="chatProjectId"
+                class="mt-2 flex-shrink-0" :projects="projectStore.projects" :users="projectStore.users"
+                :groups="mentionGroups" :replying-to="replyingToLog"
+                :reply-text="parseCommentText(replyingToLog?.content)" :submitting="isSubmittingChat"
+                @submit="submitChat" @cancel-reply="cancelReply" />
 
               <div class="h-4 sm:h-1 flex-shrink-0"></div>
             </div>
@@ -818,7 +731,9 @@
                     class="rounded text-emerald-600 accent-emerald-600 cursor-pointer w-4 h-4" />
                   <div class="min-w-0 flex-1">
                     <div class="text-xs font-bold text-gray-888 truncate">{{ p.title }}</div>
-                    <div class="text-[10px] text-gray-400 font-semibold mt-0.5">{{ p.customer ? p.customer.name : 'Chưa phân khách hàng' }}</div>
+                    <div class="text-[10px] text-gray-400 font-semibold mt-0.5">
+                      {{ p.customer ? p.customer.name : 'Chưa phân khách hàng' }}
+                    </div>
                   </div>
                 </label>
 
@@ -861,12 +776,12 @@
 
     <!-- Mobile Bottom Navigation Tabs -->
     <div v-if="viewMode !== 'notes'" class="mobile-home-tabs">
-      <button type="button" @click="mobileHomeTab = 'projects'"
-        class="flex-1 rounded-lg py-2.5 text-sm font-extrabold transition-colors"
-        :class="mobileHomeTab === 'projects' ? 'bg-emerald-600 text-white' : 'text-gray-500'">Dự án</button>
       <button type="button" @click="mobileHomeTab = 'activities'"
         class="flex-1 rounded-lg py-2.5 text-sm font-extrabold transition-colors"
         :class="mobileHomeTab === 'activities' ? 'bg-emerald-600 text-white' : 'text-gray-500'">Hoạt động</button>
+      <button type="button" @click="mobileHomeTab = 'projects'"
+        class="flex-1 rounded-lg py-2.5 text-sm font-extrabold transition-colors"
+        :class="mobileHomeTab === 'projects' ? 'bg-emerald-600 text-white' : 'text-gray-500'">Dự án</button>
     </div>
   </div>
 </template>
@@ -876,6 +791,7 @@ import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
+import ActivityComposer from '../components/ActivityComposer.vue'
 import HealthStatusSelector from '../components/HealthStatusSelector.vue'
 import ProjectModal from '../components/ProjectModal.vue'
 import { useProjectStore } from '../stores/project'
@@ -897,7 +813,7 @@ const tvPositionReady = ref(false)
 const tvPanelTop = ref(null)
 const tvPanelScale = ref(1)
 const isShortcutHintsOpen = ref(false)
-const mobileHomeTab = ref('projects')
+const mobileHomeTab = ref('activities')
 
 const updateTvPosition = () => {
   const panel = viewActionsRef.value
@@ -1063,9 +979,13 @@ const goToProjectDetail = (projectId, event) => {
   // selection, do not let the card click overwrite the selected range.
   if (suppressNextProjectClick) return
 
-  // On mobile, tapping the project card navigates directly to details page
+  // On mobile, project cards drive the activity panel just like on desktop.
   if (window.matchMedia?.('(max-width: 767px)').matches) {
-    router.push(`/projects/${projectId}`)
+    selectedProjectIds.value = [projectId]
+    showAllCheckboxes.value = true
+    lastSelectionAnchorId.value = projectId
+    selectionFocusId.value = projectId
+    mobileHomeTab.value = 'activities'
     return
   }
 
@@ -1711,6 +1631,7 @@ const closeAllDropdowns = (e) => {
     !suppressNextOutsideSelectionClear &&
     !projectListPanelRef.value?.contains(e.target) &&
     !bulkActionBarRef.value?.contains(e.target) &&
+    !e.target.closest?.('.recent-activity-panel') &&
     !e.target.closest?.('.activity-project-link')
   ) {
     selectedProjectIds.value = []
@@ -1733,6 +1654,7 @@ watch(selectedProjectIds, (ids) => {
     lastSelectionAnchorId.value = null
     selectionFocusId.value = null
   }
+  fetchActivities()
 }, { deep: true })
 
 // Drag selection box functionality (Windows-style)
@@ -2045,12 +1967,13 @@ const parseCommentFiles = (content) => {
 const activities = ref([])
 const isActivitiesLoading = ref(true)
 const showMentionedActivities = ref(false)
+let activityRequestId = 0
 
 // Chat / Reply logic for recent activities panel
 const chatMessage = ref('')
 const chatProjectId = ref(null)
 const replyingToLog = ref(null)
-const isChatExpanded = ref(false)
+const activityComposerRef = ref(null)
 const activeLogIdForMobileActions = ref(null)
 
 let touchTimer = null
@@ -2111,7 +2034,7 @@ const handleReplyToActivity = (log) => {
   chatMessage.value = mention
 
   nextTick(() => {
-    chatTextareaRef.value?.focus()
+    activityComposerRef.value?.focus()
   })
 }
 
@@ -2124,7 +2047,6 @@ const isSubmittingChat = ref(false)
 
 const submitChat = async () => {
   if (isSubmittingChat.value) return
-  if (!chatMessage.value.trim()) return
 
   const pId = chatProjectId.value || projectStore.projects[0]?.id
   if (!pId) {
@@ -2134,16 +2056,19 @@ const submitChat = async () => {
 
   isSubmittingChat.value = true
 
-  let finalContent = chatMessage.value
-  if (replyingToLog.value) {
-    const replyMeta = {
-      user: replyingToLog.value.user ? replyingToLog.value.user.name : 'Hệ thống',
-      text: parseCommentText(replyingToLog.value.content)
-    }
-    finalContent = `[reply:${JSON.stringify(replyMeta)}]` + finalContent
-  }
-
   try {
+    const attachmentHtml = await activityComposerRef.value?.buildAttachmentHtml() || ''
+    if (!chatMessage.value.trim() && !attachmentHtml) return
+
+    let finalContent = chatMessage.value + attachmentHtml
+    if (replyingToLog.value) {
+      const replyMeta = {
+        user: replyingToLog.value.user ? replyingToLog.value.user.name : 'Hệ thống',
+        text: parseCommentText(replyingToLog.value.content)
+      }
+      finalContent = `[reply:${JSON.stringify(replyMeta)}]` + finalContent
+    }
+
     await axios.post('/api/comments', {
       project_id: pId,
       content: finalContent,
@@ -2152,160 +2077,17 @@ const submitChat = async () => {
     toast.success('Gửi cập nhật hoạt động thành công!')
     chatMessage.value = ''
     replyingToLog.value = null
-    await fetchActivities()
+    activityComposerRef.value?.clearAttachments()
+    fetchActivities()
   } catch (err) {
     console.error('Failed to submit chat:', err)
-    toast.error('Gửi cập nhật thất bại. Vui lòng thử lại.')
+    toast.error(err.response?.data?.message || err.message || 'Gửi cập nhật thất bại. Vui lòng thử lại.')
   } finally {
     isSubmittingChat.value = false
   }
 }
 
-// Project Suggestion Autocomplete logic
-const showProjectSuggestions = ref(false)
-const projectQuery = ref('')
-const projectSuggestionIndex = ref(0)
-const chatTextareaRef = ref(null)
-
 const mentionGroups = ref([])
-
-const filteredProjectsForSuggestion = computed(() => {
-  const query = projectQuery.value
-  const q = removeVietnameseAccents(query).toLowerCase()
-
-  const suggestions = []
-
-  const matches = (targetString) => {
-    if (!targetString) return false
-    const normTarget = removeVietnameseAccents(targetString).toLowerCase()
-    // Direct substring match
-    if (normTarget.includes(q)) return true
-
-    // Initials matching (first letters of words)
-    const words = normTarget.split(/\s+/).filter(Boolean)
-    const initials = words.map(w => w[0]).join('')
-    return initials.includes(q)
-  }
-
-  // 1. Projects
-  const filteredProjects = projectStore.projects.filter(p => {
-    if (!q) return true
-    return matches(p.title) || (p.customer && matches(p.customer.name))
-  })
-  filteredProjects.forEach(p => {
-    suggestions.push({
-      type: 'project',
-      id: p.id,
-      title: p.title,
-      subtitle: p.customer?.name || 'Dự án'
-    })
-  })
-
-  // 2. Members (Users)
-  const filteredUsers = (projectStore.users || []).filter(u => {
-    if (!q) return true
-    const emailPrefix = u.email ? u.email.split('@')[0] : ''
-    return matches(u.name) || matches(emailPrefix)
-  })
-  filteredUsers.forEach(u => {
-    suggestions.push({
-      type: 'member',
-      id: u.id,
-      title: u.name,
-      subtitle: 'Thành viên'
-    })
-  })
-
-  // 3. Groups (Mention Groups)
-  const filteredGroups = (mentionGroups.value || []).filter(g => {
-    if (!q) return true
-    return matches(g.name) || matches(g.description)
-  })
-  filteredGroups.forEach(g => {
-    suggestions.push({
-      type: 'group',
-      id: g.id,
-      title: g.name,
-      subtitle: g.description || 'Nhóm nhắc tên'
-    })
-  })
-
-  return suggestions.slice(0, 10)
-})
-
-const handleChatInput = (event) => {
-  const el = event.target
-  const text = el.value
-  const cursorPos = el.selectionStart || text.length
-  const textBeforeCursor = text.substring(0, cursorPos)
-
-  const match = textBeforeCursor.match(/@([^\s@]*)$/)
-
-  if (match) {
-    projectQuery.value = match[1]
-    showProjectSuggestions.value = true
-    projectSuggestionIndex.value = 0
-  } else {
-    showProjectSuggestions.value = false
-  }
-}
-
-const selectProjectSuggestion = (suggestion) => {
-  if (!suggestion) return
-
-  if (suggestion.type === 'project') {
-    chatProjectId.value = suggestion.id
-  }
-
-  const el = chatTextareaRef.value
-  const text = chatMessage.value || ''
-  const cursorPos = el?.selectionStart || text.length
-  const textBeforeCursor = text.substring(0, cursorPos)
-  const textAfterCursor = text.substring(cursorPos)
-
-  const match = textBeforeCursor.match(/@([^\s@]*)$/)
-  const newBefore = match
-    ? textBeforeCursor.substring(0, match.index) + `@${suggestion.title} `
-    : `${textBeforeCursor}@${suggestion.title} `
-
-  chatMessage.value = newBefore + textAfterCursor
-  showProjectSuggestions.value = false
-
-  nextTick(() => {
-    el?.focus()
-    el?.setSelectionRange(newBefore.length, newBefore.length)
-  })
-}
-
-const onChatKeydown = (event) => {
-  if (showProjectSuggestions.value && filteredProjectsForSuggestion.value.length > 0) {
-    if (event.key === 'ArrowDown') {
-      event.preventDefault()
-      projectSuggestionIndex.value = (projectSuggestionIndex.value + 1) % filteredProjectsForSuggestion.value.length
-      return
-    } else if (event.key === 'ArrowUp') {
-      event.preventDefault()
-      projectSuggestionIndex.value = (projectSuggestionIndex.value - 1 + filteredProjectsForSuggestion.value.length) % filteredProjectsForSuggestion.value.length
-      return
-    } else if (event.key === 'Enter' || event.key === 'Tab') {
-      event.preventDefault()
-      const selected = filteredProjectsForSuggestion.value[projectSuggestionIndex.value]
-      if (selected) {
-        selectProjectSuggestion(selected)
-      }
-      return
-    } else if (event.key === 'Escape') {
-      event.preventDefault()
-      showProjectSuggestions.value = false
-      return
-    }
-  }
-
-  if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
-    event.preventDefault()
-    submitChat()
-  }
-}
 
 // The TV API already filters out broadcasts older than 24 hours. Records remain
 // in the database; they simply stop being returned to this screen.
@@ -2354,15 +2136,30 @@ const displayedActivities = computed(() => {
   return list
 })
 
-const fetchActivities = async () => {
+async function fetchActivities() {
+  const requestId = ++activityRequestId
   try {
-    // This panel renders at most 15 entries; do not fetch the full activity history.
-    const res = await axios.get('/api/comments', { params: { limit: 15 } })
+    // The unfiltered dashboard stays compact. Once projects are selected, show
+    // their complete activity window for the last seven days instead.
+    const params = selectedProjectIds.value.length > 0
+      ? { project_ids: selectedProjectIds.value, days: 7 }
+      : { limit: 15 }
+    const res = await axios.get('/api/comments', { params })
     const filtered = (res.data || []).filter(c => {
       return Boolean(c.project_id)
     })
 
-    if (JSON.stringify(filtered) !== JSON.stringify(activities.value)) {
+    // Ignore a slower response for an older filter and avoid rebuilding the
+    // timeline every four seconds when its records have not changed.
+    if (requestId !== activityRequestId) return
+    const isUnchanged = filtered.length === activities.value.length && filtered.every((activity, index) => {
+      const current = activities.value[index]
+      return current
+        && activity.id === current.id
+        && activity.updated_at === current.updated_at
+        && activity.content === current.content
+    })
+    if (!isUnchanged) {
       activities.value = filtered
     }
   } catch (err) {
@@ -2529,11 +2326,13 @@ onMounted(async () => {
   projectStore.activePage = 'home'
   projectStore.activeStatus = null
   loadCustomViews()
-  await projectStore.fetchProjects()
-  await projectStore.fetchAuxData()
-  await fetchActivities()
-  await fetchBroadcasts()
-  axios.get('/api/mention-groups').then(res => { mentionGroups.value = res.data || [] }).catch(() => { })
+  await Promise.all([
+    projectStore.fetchProjects(),
+    projectStore.fetchAuxData(),
+    fetchActivities(),
+    fetchBroadcasts(),
+    axios.get('/api/mention-groups').then(res => { mentionGroups.value = res.data || [] }).catch(() => { }),
+  ])
   requestAnimationFrame(updateTvPosition)
 
   window.addEventListener('keydown', handleGlobalKeydown)
@@ -2586,6 +2385,11 @@ onUnmounted(() => {
 
 .mobile-home-tabs {
   display: none;
+}
+
+.activity-feed-scroll {
+  border-radius: 12px;
+  padding: 8px;
 }
 
 .shortcut-hints-toggle {
@@ -2738,10 +2542,15 @@ onUnmounted(() => {
     display: flex !important;
     background: #ffffff;
     border-top: 2px solid #4d4d4d;
-    padding: 8px 16px;
-    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    padding: 0;
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
     overflow: hidden !important;
+  }
+
+  .mobile-home-tabs button {
+    border-radius: 0 !important;
+    padding-top: 17px !important;
+    padding-bottom: calc(17px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .project-scroll-container {

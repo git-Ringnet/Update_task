@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Jobs\SendProjectCommentPush;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -31,7 +32,10 @@ class Comment extends Model
         });
 
         static::created(function (Comment $comment) {
-            app(\App\Services\ProjectPushService::class)->sendForComment($comment);
+            // Web Push can involve dozens of external Apple/FCM/WNS requests.
+            // Queue it so saving a chat message or project update never waits
+            // for those providers to respond.
+            SendProjectCommentPush::dispatch($comment->id);
         });
     }
 

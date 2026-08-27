@@ -1744,36 +1744,43 @@ const parseAttachmentsFromTitle = (titleText) => {
 const buildAttachmentHtml = async (attachments) => {
   let html = ''
   const uploadedAttachmentIds = []
+  const newAttachments = attachments.filter(att => att.file && !att.isExisting)
+  const uploadedByAttachment = new Map()
+
+  if (newAttachments.length > 0) {
+    try {
+      const formData = new FormData()
+      newAttachments.forEach(att => formData.append('files[]', att.file))
+      const uploadRes = await axios.post('/api/attachments', formData, {
+        onUploadProgress: (event) => {
+          if (event.total) uploadProgress.value = Math.round((event.loaded * 100) / event.total)
+        }
+      })
+      const uploadedFiles = uploadRes.data || []
+      if (uploadedFiles.length !== newAttachments.length) {
+        throw new Error('Máy chủ không trả về đầy đủ thông tin tệp đã tải lên.')
+      }
+      newAttachments.forEach((att, index) => uploadedByAttachment.set(att, uploadedFiles[index]))
+    } catch (uploadErr) {
+      console.error('Failed to upload attachments:', uploadErr)
+      const serverMessage = uploadErr.response?.data?.message
+      throw new Error(serverMessage || uploadErr.message || 'Không thể tải tệp lên máy chủ.')
+    }
+  }
+
   for (const att of attachments) {
     const safeName = escapeHtmlAttr(att.name || 'file')
-    
+
     if (att.file && !att.isExisting) {
-      // New file (image or non-image): upload to server!
-      try {
-        const formData = new FormData()
-        formData.append('files[]', att.file)
-        const uploadRes = await axios.post('/api/attachments', formData, {
-          onUploadProgress: (event) => {
-            if (event.total) uploadProgress.value = Math.round((event.loaded * 100) / event.total)
-          }
-        })
-        const uploaded = uploadRes.data?.[0]
-        if (!uploaded) throw new Error('Máy chủ không trả về thông tin tệp đã tải lên.')
-        uploadedAttachmentIds.push(uploaded.id)
-        const serverUrl = uploaded.url
-        
-        if (att.isImage) {
-          // If it's an image, embed it as an <img> tag with the server URL!
-          html += `<br/><img src="${serverUrl}" class="max-h-56 rounded-xl my-2 border border-gray-200 shadow-2xs block" />`
-        } else {
-          // If it's a non-image file, embed it as a download link!
-          const uploadedName = escapeHtmlAttr(uploaded.original_name || att.name)
-          html += `<br/><a href="${serverUrl}" download="${uploadedName}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 my-1">📎 Tệp đính kèm: ${uploadedName}</a>`
-        }
-      } catch (uploadErr) {
-        console.error('Failed to upload file:', att.name, uploadErr)
-        const serverMessage = uploadErr.response?.data?.message
-        throw new Error(serverMessage || `Không thể tải lên tệp ${att.name}.`)
+      const uploaded = uploadedByAttachment.get(att)
+      uploadedAttachmentIds.push(uploaded.id)
+      const serverUrl = uploaded.url
+
+      if (att.isImage) {
+        html += `<br/><img src="${serverUrl}" class="max-h-56 rounded-xl my-2 border border-gray-200 shadow-2xs block" />`
+      } else {
+        const uploadedName = escapeHtmlAttr(uploaded.original_name || att.name)
+        html += `<br/><a href="${serverUrl}" download="${uploadedName}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 my-1">📎 Tệp đính kèm: ${uploadedName}</a>`
       }
     } else if (att.isExisting) {
       if (att.isImage) {
@@ -3529,7 +3536,7 @@ const handleAddStageTaskSubmit = async () => {
         attachment_ids: uploadedAttachmentIds
       })
       toast.success('Đã cập nhật thông tin hoạt động!')
-      await refreshAllData()
+      refreshAllData()
       clearAttachedFiles()
     } catch (err) {
       console.error('Failed to update task:', err)
@@ -3591,7 +3598,7 @@ const handleAddStageTaskSubmit = async () => {
     }
 
     toast.success('Đã cập nhật hoạt động mới!')
-    await refreshAllData()
+    refreshAllData()
     clearAttachedFiles()
   } catch (err) {
     if (!project.value.tasks) project.value.tasks = []

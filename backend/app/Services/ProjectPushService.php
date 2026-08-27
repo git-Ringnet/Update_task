@@ -6,6 +6,7 @@ use App\Models\Comment;
 use App\Models\Project;
 use App\Models\PushSubscription;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Minishlink\WebPush\Subscription;
 use Minishlink\WebPush\WebPush;
 
@@ -53,6 +54,9 @@ class ProjectPushService
         $projectTitle = $project->title;
         $content = trim(preg_replace('/<[^>]*>/', ' ', strip_tags($comment->content)) ?? '');
         $content = preg_replace('/^\[reply:\{.*?\}\]\s*/i', '', $content);
+        // Web Push payloads are limited to roughly 4 KB. Attachments and long
+        // updates must not make the entire notification fail.
+        $content = Str::limit($content, 500);
         $body = "{$projectTitle}\n{$userName}: " . ($content ?: 'vừa cập nhật dự án.');
 
         $icon = url('cactus-logo-square.png');

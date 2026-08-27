@@ -13,12 +13,24 @@ class CommentController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Comment::with(['user', 'project.customer'])->orderBy('created_at', 'desc');
+        $query = Comment::with([
+            'user:id,name,avatar',
+            'project:id,customer_id,title',
+            'project.customer:id,name',
+        ])->orderByDesc('created_at');
 
         $user = auth()->user();
         $query->whereHas('project', fn ($q) => $q->visibleTo($user));
 
-        if ($request->has('project_id')) {
+        $projectIds = collect($request->input('project_ids', []))
+            ->map(fn ($id) => filter_var($id, FILTER_VALIDATE_INT))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($projectIds->isNotEmpty()) {
+            $query->whereIn('project_id', $projectIds);
+        } elseif ($request->has('project_id')) {
             $query->where('project_id', $request->project_id);
         } elseif (!$user->is_admin && !$user->isSystemAdmin()) {
             // The activity feed is an inbox, not the project's history. A member
@@ -40,6 +52,11 @@ class CommentController extends Controller
 
         if ($request->has('task_id')) {
             $query->where('task_id', $request->task_id);
+        }
+
+        $days = $request->integer('days');
+        if ($days > 0) {
+            $query->where('created_at', '>=', Carbon::now()->subDays(min($days, 90)));
         }
 
         // The dashboard only renders a short recent-activity list. Let callers

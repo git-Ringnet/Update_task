@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-[#F9F4EE] pb-24">
     <Navbar />
 
-    <main class="max-w-[800px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <main class="max-w-[800px] mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-52">
       <!-- Back Button -->
       <button
         @click="goBack"
@@ -76,8 +76,10 @@
             <div
               v-for="(act, idx) in group"
               :key="act.id"
-              @click="goToProject(act.project_id)"
-              class="relative flex gap-3 select-none pb-6 cursor-pointer group"
+              @click="handleActivityClick(act)"
+              @touchstart="handleActivityTouchStart(act)" @touchend="handleActivityTouchEnd"
+              @touchmove="handleActivityTouchMove" @contextmenu.prevent
+              class="feed-activity-item relative flex gap-3 select-none pb-6 cursor-pointer group"
             >
               <div v-if="idx < group.length - 1" class="absolute top-11 bottom-2 left-[18px] w-[1.5px] bg-gray-300 z-0"></div>
 
@@ -103,9 +105,15 @@
                     </template>
                   </span>
                 </div>
-                <span class="text-[11px] text-gray-400 font-bold flex-shrink-0">
-                  {{ formatCommentRelativeTime(act.created_at) }}
-                </span>
+                <div class="flex items-center gap-2 shrink-0">
+                  <button v-if="act.project_id || act.project?.id" type="button" title="Trả lời hoạt động này"
+                    @click.stop="handleReplyToActivity(act)"
+                    class="transition-all bg-white hover:bg-emerald-600 text-gray-500 hover:text-white border border-gray-200 hover:border-emerald-600 cursor-pointer rounded-full h-6 w-6 flex items-center justify-center shadow-3xs"
+                    :class="activeActivityIdForMobileActions === act.id ? 'opacity-100' : 'opacity-0 sm:group-hover:opacity-100'">
+                    <i class="fa-solid fa-reply text-[10px]"></i>
+                  </button>
+                  <span class="text-[11px] text-gray-400 font-bold">{{ formatCommentRelativeTime(act.created_at) }}</span>
+                </div>
               </div>
 
               <!-- Project title -->
@@ -117,7 +125,7 @@
               <div class="text-xs font-semibold text-gray-700 leading-relaxed break-words mt-1 space-y-1.5">
                 <!-- Zalo Quote Reply Preview inside activity feed page -->
                 <div v-if="parseReplyInfo(act.content)" 
-                  class="bg-gray-100/75 px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1.5 select-none max-w-full">
+                  class="bg-[#e1e3ea] px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1.5 select-none max-w-full">
                   <div class="text-[10px] font-bold text-gray-500 flex items-center gap-1">
                     <i class="fa-solid fa-reply text-[9px]"></i>
                     <span>{{ parseReplyInfo(act.content).user }}</span>
@@ -171,6 +179,13 @@
           </button>
         </div>
       </div>
+
+      <ActivityComposer v-if="activeTab !== 'operations'" ref="activityComposerRef"
+        v-model="chatMessage" v-model:project-id="chatProjectId"
+        class="fixed bottom-4 left-4 right-4 max-w-[800px] mx-auto z-40"
+        :projects="projectStore.projects" :users="projectStore.users" :groups="mentionGroups"
+        :replying-to="replyingToActivity" :reply-text="parseCommentText(replyingToActivity?.content)"
+        :submitting="isSubmittingChat" @submit="submitChat" @cancel-reply="cancelReply" />
     </main>
 
     <!-- Image Lightbox Modal -->
@@ -194,12 +209,17 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
+import ActivityComposer from '../components/ActivityComposer.vue'
 import { useAuthStore } from '../stores/auth'
+import { useProjectStore } from '../stores/project'
+import { useToastStore } from '../stores/toast'
 
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const projectStore = useProjectStore()
+const toast = useToastStore()
 
 const goBack = () => {
   if (window.history.state && window.history.state.back) {
@@ -212,6 +232,16 @@ const activities = ref([])
 const isLoading = ref(true)
 const displayLimit = ref(15)
 const activeTab = ref(route.query.tab || 'all')
+const chatMessage = ref('')
+const chatProjectId = ref(null)
+const replyingToActivity = ref(null)
+const isSubmittingChat = ref(false)
+const activityComposerRef = ref(null)
+const mentionGroups = ref([])
+const activeActivityIdForMobileActions = ref(null)
+let activityTouchTimer = null
+let activityTouchStarted = false
+let ignoreActivityClickUntil = 0
 
 watch(() => route.query.tab, (newTab) => {
   activeTab.value = newTab || 'all'
@@ -227,6 +257,85 @@ const fetchActivities = async () => {
     console.error('Failed to load activity feed:', err)
   } finally {
     isLoading.value = false
+  }
+}
+
+const handleReplyToActivity = (activity) => {
+  activeActivityIdForMobileActions.value = null
+  replyingToActivity.value = activity
+  chatProjectId.value = activity.project_id || activity.project?.id || projectStore.projects[0]?.id
+  chatMessage.value = activity.user?.name ? `@${activity.user.name} ` : ''
+  activityComposerRef.value?.focus()
+}
+
+const handleActivityTouchStart = (activity) => {
+  activityTouchStarted = true
+  activityTouchTimer = window.setTimeout(() => {
+    if (!activityTouchStarted) return
+    activeActivityIdForMobileActions.value = activity.id
+    ignoreActivityClickUntil = Date.now() + 700
+    navigator.vibrate?.(50)
+  }, 500)
+}
+
+const handleActivityTouchEnd = () => {
+  activityTouchStarted = false
+  if (activityTouchTimer) window.clearTimeout(activityTouchTimer)
+}
+
+const handleActivityTouchMove = () => {
+  handleActivityTouchEnd()
+}
+
+const handleActivityClick = (activity) => {
+  if (Date.now() < ignoreActivityClickUntil) return
+  goToProject(activity.project_id)
+}
+
+const handleOutsideActivityClick = (event) => {
+  if (!event.target.closest?.('.feed-activity-item')) {
+    activeActivityIdForMobileActions.value = null
+  }
+}
+
+const cancelReply = () => {
+  replyingToActivity.value = null
+  chatMessage.value = ''
+}
+
+const submitChat = async () => {
+  if (isSubmittingChat.value) return
+  const projectId = chatProjectId.value || projectStore.projects[0]?.id
+  if (!projectId) {
+    toast.error('Vui lòng chọn hoặc tạo dự án để gửi cập nhật.')
+    return
+  }
+
+  isSubmittingChat.value = true
+  try {
+    const attachmentHtml = await activityComposerRef.value?.buildAttachmentHtml() || ''
+    if (!chatMessage.value.trim() && !attachmentHtml) return
+
+    let content = chatMessage.value + attachmentHtml
+    if (replyingToActivity.value) {
+      const replyMeta = {
+        user: replyingToActivity.value.user?.name || 'Hệ thống',
+        text: parseCommentText(replyingToActivity.value.content),
+      }
+      content = `[reply:${JSON.stringify(replyMeta)}]${content}`
+    }
+
+    await axios.post('/api/comments', { project_id: projectId, content })
+    chatMessage.value = ''
+    replyingToActivity.value = null
+    activityComposerRef.value?.clearAttachments()
+    toast.success('Gửi cập nhật hoạt động thành công!')
+    fetchActivities()
+  } catch (err) {
+    console.error('Failed to submit activity:', err)
+    toast.error(err.response?.data?.message || err.message || 'Gửi cập nhật thất bại. Vui lòng thử lại.')
+  } finally {
+    isSubmittingChat.value = false
   }
 }
 
@@ -414,12 +523,22 @@ const handleKeydown = (e) => {
   }
 }
 
-onMounted(() => {
-  fetchActivities()
+onMounted(async () => {
+  projectStore.activePage = 'home'
+  projectStore.activeStatus = null
+  await Promise.all([
+    fetchActivities(),
+    projectStore.fetchProjects(),
+    projectStore.fetchAuxData(),
+    axios.get('/api/mention-groups').then(res => { mentionGroups.value = res.data || [] }).catch(() => {}),
+  ])
   window.addEventListener('keydown', handleKeydown)
+  document.addEventListener('click', handleOutsideActivityClick)
 })
 
 onUnmounted(() => {
+  if (activityTouchTimer) window.clearTimeout(activityTouchTimer)
   window.removeEventListener('keydown', handleKeydown)
+  document.removeEventListener('click', handleOutsideActivityClick)
 })
 </script>
