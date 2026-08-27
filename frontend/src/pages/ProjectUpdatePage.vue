@@ -203,7 +203,7 @@
                     <div
                       v-if="activeMentionProjectId === project.id && showMentionDropdown && filteredUsersForMention.length > 0"
                       class="absolute z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-2xl py-1 text-gray-800 ring-1 ring-black/5 animate-fade-in-up"
-                      :style="{ left: mentionPosition.left + 'px', top: (mentionPosition.top + mentionPosition.height + 4) + 'px' }">
+                      :style="mentionDropdownStyle">
                       <div
                         class="px-3 py-1 text-[10px] uppercase font-bold text-gray-400 border-b border-gray-100 mb-1 flex items-center justify-between">
                         <span>Gắn thẻ thành viên</span>
@@ -572,6 +572,29 @@ const showMentionDropdown = ref(false)
 const mentionQuery = ref('')
 const mentionIndex = ref(0)
 const mentionPosition = ref({ top: 0, left: 0, height: 0 })
+const activeTextareaHeight = ref(128)
+const isMobile = ref(false)
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
+
+const mentionDropdownStyle = computed(() => {
+  const coords = mentionPosition.value
+  if (isMobile.value) {
+    const bottomVal = activeTextareaHeight.value - coords.top + 4
+    return {
+      left: coords.left + 'px',
+      bottom: bottomVal + 'px',
+      top: 'auto'
+    }
+  } else {
+    return {
+      left: coords.left + 'px',
+      top: (coords.top + coords.height + 4) + 'px',
+      bottom: 'auto'
+    }
+  }
+})
 
 const removeVietnameseAccents = (str) => {
   if (!str) return ''
@@ -810,6 +833,7 @@ const onInputText = (projectId, event) => {
       const coords = getCaretCoordinates(el, cursorPos - match[1].length - 1)
       const dropdownWidth = 256
       const leftClamped = Math.max(0, Math.min(coords.left, el.clientWidth - dropdownWidth - 10))
+      activeTextareaHeight.value = el.clientHeight
       mentionPosition.value = {
         top: coords.top,
         left: leftClamped,
@@ -1454,6 +1478,8 @@ const closeTagPickersOnOutsideClick = (event) => {
 }
 
 onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
   loadProjects()
   window.addEventListener('keydown', handleGlobalKeyDown)
   window.addEventListener('scroll', handleScroll)
@@ -1461,6 +1487,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
   window.removeEventListener('keydown', handleGlobalKeyDown)
   window.removeEventListener('scroll', handleScroll)
   window.removeEventListener('click', closeTagPickersOnOutsideClick)

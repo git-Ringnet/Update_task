@@ -794,7 +794,8 @@
       <div v-if="isInlineFormOpen" ref="inlineFormRef"
         class="inline-update-shell fixed bottom-0 left-0 right-0 z-50 pointer-events-none pb-3 sm:pb-5 px-4 sm:px-6 lg:px-8 transition-all">
         <div
-          class="inline-update-card max-w-[720px] mx-auto pointer-events-auto bg-white border border-gray-200 shadow-2xl rounded-2xl p-4 sm:p-5 relative ring-1 ring-black/5">
+          class="inline-update-card max-w-[720px] mx-auto pointer-events-auto bg-white border border-gray-200 shadow-2xl rounded-2xl p-4 sm:p-5 relative ring-1 ring-black/5"
+          :class="{ 'overflow-visible-important': showMentionDropdown }">
 
           <!-- X CLOSE BUTTON (TOP RIGHT) -->
           <button type="button" @click="cancelEditTask"
@@ -910,10 +911,10 @@
                     placeholder="Chia sẻ cập nhật với team..."
                     class="w-full h-32 overflow-y-auto bg-transparent text-sm sm:text-base font-bold text-gray-900 leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none m-0 border-0"></textarea>
 
-                  <!-- AUTOCOMPLETE @MENTION DROPDOWN POPOVER (POPS UP DIRECTLY UNDER CARET CARET POSITION) -->
+                  <!-- AUTOCOMPLETE @MENTION DROPDOWN POPOVER -->
                   <div v-if="showMentionDropdown && filteredUsersForMention.length > 0"
                     class="absolute z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-xl py-1 text-gray-800 max-h-52 overflow-y-auto ring-1 ring-black/5"
-                    :style="{ left: mentionPosition.left + 'px', top: (mentionPosition.top + mentionPosition.height + 4) + 'px' }">
+                    :style="mentionDropdownStyle">
                     <div
                       class="px-3 py-1 text-[10px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1 flex items-center justify-between">
                       <span>Chọn người phụ trách (@)</span>
@@ -2095,6 +2096,31 @@ const showMentionDropdown = ref(false)
 const mentionQuery = ref('')
 const mentionIndex = ref(0)
 const mentionPosition = ref({ top: 0, left: 0, height: 0 })
+const isMobile = ref(false)
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
+
+const mentionDropdownStyle = computed(() => {
+  const coords = mentionPosition.value
+  const textarea = stageTaskTitleInputRef.value
+  if (!textarea) return {}
+
+  if (isMobile.value) {
+    const bottomVal = textarea.clientHeight - coords.top + 4
+    return {
+      left: coords.left + 'px',
+      bottom: bottomVal + 'px',
+      top: 'auto'
+    }
+  } else {
+    return {
+      left: coords.left + 'px',
+      top: (coords.top + coords.height + 4) + 'px',
+      bottom: 'auto'
+    }
+  }
+})
 const taggableUsers = computed(() => {
   const currentUserId = String(authStore.user?.id || '')
   return users.value.filter(user => String(user.id) !== currentUserId)
@@ -3911,6 +3937,8 @@ const handleKeydown = (e) => {
 }
 
 onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('click', handleDocumentClick)
   window.addEventListener('scroll', handleDetailScroll, { passive: true })
@@ -3918,6 +3946,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
   window.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('click', handleDocumentClick)
   window.removeEventListener('scroll', handleDetailScroll)
@@ -4019,6 +4048,10 @@ function getCaretCoordinates(element, position) {
 </script>
 
 <style scoped>
+.overflow-visible-important {
+  overflow: visible !important;
+}
+
 @keyframes float {
 
   0%,
