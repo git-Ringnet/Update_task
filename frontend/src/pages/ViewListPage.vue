@@ -196,7 +196,7 @@
               class="project-scroll-container space-y-6 max-h-[calc(100vh-226px)] overflow-y-auto scrollbar-none">
               <div v-for="group in projectsByCustomer" :key="group.name" class="space-y-2.5">
                 <!-- Customer Header -->
-                <div class="flex items-center gap-2 pt-1 select-none md:pl-4">
+                <div class="flex items-center gap-2 pt-1 select-none md:pl-5">
                   <h3 class="text-xl font-black text-gray-900 tracking-tight font-heading">{{ group.name }}</h3>
                   <button @click.stop="togglePinCustomer(group.name)" type="button"
                     class="p-1 transition-colors hover:opacity-80"
@@ -221,12 +221,12 @@
                     <!-- Same multi-select behavior as the default project view -->
                     <input type="checkbox" :checked="isSelected(project.id)"
                       @click.stop="toggleProjectSelect(project.id, $event)"
-                      class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer transition-opacity duration-200 absolute left-2 top-1/2 -translate-y-1/2"
+                      class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer transition-opacity duration-200 absolute left-2 md:left-0 top-1/2 -translate-y-1/2"
                       :class="showAllCheckboxes ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100'" />
 
                     <!-- Colored Project Rectangular Card (Identical to default mode) -->
                     <div @click="goToProjectDetail(project.id, $event)"
-                      class="project-card w-full md:w-[388px] ml-auto md:mx-auto rounded-lg p-4 flex items-center justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
+                      class="project-card w-full md:w-[380px] ml-auto md:mx-auto rounded-lg p-4 flex items-center justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
                       :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]">
                       <div class="min-w-0 flex-1">
                         <div class="font-extrabold text-gray-900 text-sm sm:text-base leading-snug break-words min-w-0">
@@ -323,12 +323,12 @@
                   <!-- Checkbox for multi-select (outside the card, but inside the scroll container) -->
                   <input type="checkbox" :checked="isSelected(project.id)"
                     @click.stop="toggleProjectSelect(project.id, $event)"
-                    class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer transition-opacity duration-200 absolute left-2 top-1/2 -translate-y-1/2"
+                    class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer transition-opacity duration-200 absolute left-2 md:left-0 top-1/2 -translate-y-1/2"
                     :class="showAllCheckboxes ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100'" />
 
                   <!-- Card Container -->
                   <div @click="goToProjectDetail(project.id, $event)"
-                    class="project-card w-full md:w-[388px] ml-auto md:mx-auto rounded-lg p-4 flex items-start justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
+                    class="project-card w-full md:w-[380px] ml-auto md:mx-auto rounded-lg p-4 flex items-start justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
                     :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]">
                     <div class="min-w-0 flex-1">
                       <div class="font-extrabold text-gray-900 text-sm sm:text-base leading-snug break-words min-w-0">
