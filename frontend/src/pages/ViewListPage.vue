@@ -20,7 +20,7 @@
       <!-- Main Layout Container -->
       <div class="view-page-layout" :class="viewMode === 'notes'
         ? 'grid grid-cols-1 lg:grid-cols-[390px_minmax(0,1fr)] gap-10 w-full lg:w-[1280px] mx-auto items-start'
-        : 'w-full flex justify-center items-start gap-10'">
+        : 'view-standard-layout w-full flex justify-center items-start gap-10'">
 
         <!-- LEFT PANEL: Actions, Switcher & Search (Block 1) -->
         <aside ref="viewActionsRef" class="view-actions" :class="[
@@ -196,7 +196,7 @@
               class="project-scroll-container space-y-6 max-h-[calc(100vh-226px)] overflow-y-auto scrollbar-none">
               <div v-for="group in projectsByCustomer" :key="group.name" class="space-y-2.5">
                 <!-- Customer Header -->
-                <div class="flex items-center gap-2 pt-1 select-none">
+                <div class="flex items-center gap-2 pt-1 select-none md:pl-4">
                   <h3 class="text-xl font-black text-gray-900 tracking-tight font-heading">{{ group.name }}</h3>
                   <button @click.stop="togglePinCustomer(group.name)" type="button"
                     class="p-1 transition-colors hover:opacity-80"
@@ -226,7 +226,7 @@
 
                     <!-- Colored Project Rectangular Card (Identical to default mode) -->
                     <div @click="goToProjectDetail(project.id, $event)"
-                      class="project-card w-full md:w-[388px] ml-auto rounded-lg p-4 flex items-center justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
+                      class="project-card w-full md:w-[388px] ml-auto md:mx-auto rounded-lg p-4 flex items-center justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
                       :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]">
                       <div class="min-w-0 flex-1">
                         <div class="font-extrabold text-gray-900 text-sm sm:text-base leading-snug break-words min-w-0">
@@ -328,7 +328,7 @@
 
                   <!-- Card Container -->
                   <div @click="goToProjectDetail(project.id, $event)"
-                    class="project-card w-full md:w-[388px] ml-auto rounded-lg p-4 flex items-start justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
+                    class="project-card w-full md:w-[388px] ml-auto md:mx-auto rounded-lg p-4 flex items-start justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
                     :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]">
                     <div class="min-w-0 flex-1">
                       <div class="font-extrabold text-gray-900 text-sm sm:text-base leading-snug break-words min-w-0">
@@ -444,15 +444,15 @@
                           </template>
                         </div>
                         <div class="flex items-center gap-2 flex-shrink-0">
-                          <span class="text-[11px] text-gray-400 font-bold">
-                            {{ formatCommentRelativeTime(log.created_at) }}
-                          </span>
                           <button v-if="log.project_id || log.project?.id" @click="handleReplyToActivity(log)"
                             type="button" title="Trả lời hoạt động này"
                             class="opacity-0 group-hover:opacity-100 transition-all duration-200 bg-white hover:bg-emerald-600 text-gray-500 hover:text-white border border-gray-200 hover:border-emerald-600 cursor-pointer rounded-full h-6 w-6 flex items-center justify-center shadow-3xs focus:outline-none shrink-0"
                             :class="{ 'opacity-100': activeLogIdForMobileActions === log.id }">
                             <i class="fa-solid fa-reply text-[10px]"></i>
                           </button>
+                          <span class="text-[11px] text-gray-400 font-bold">
+                            {{ formatCommentRelativeTime(log.created_at) }}
+                          </span>
                         </div>
                       </div>
 
@@ -2105,8 +2105,7 @@ const handleReplyToActivity = (log) => {
 
   let mention = ''
   if (log.user) {
-    const emailPrefix = log.user.email ? log.user.email.split('@')[0] : ''
-    mention = `@${emailPrefix || log.user.name} `
+    mention = `@${log.user.name} `
   }
 
   chatMessage.value = mention
@@ -2844,6 +2843,27 @@ onUnmounted(() => {
 @media (min-width: 768px) {
   .mobile-search-toggle {
     display: none !important;
+  }
+}
+
+/* The normal view has three fixed-width columns (about 1,280px in total).
+   Do not let that row overflow on a zoomed or narrower desktop viewport:
+   keep the project list centered until there is room for all three columns. */
+@media (min-width: 768px) and (max-width: 1279px) {
+  .view-standard-layout {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 0 !important;
+  }
+
+  .view-standard-layout .view-actions,
+  .view-standard-layout .recent-activity-panel {
+    display: none !important;
+  }
+
+  .view-standard-layout .project-list-panel {
+    width: min(420px, 100%) !important;
+    max-width: 100% !important;
   }
 }
 

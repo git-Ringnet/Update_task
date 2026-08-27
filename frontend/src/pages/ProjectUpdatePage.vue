@@ -202,7 +202,8 @@
                     <!-- MENTION DROPDOWN POPUP -->
                     <div
                       v-if="activeMentionProjectId === project.id && showMentionDropdown && filteredUsersForMention.length > 0"
-                      class="absolute left-0 top-full mt-1 z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-2xl py-1 text-gray-800 ring-1 ring-black/5 animate-fade-in-up">
+                      class="absolute z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-2xl py-1 text-gray-800 ring-1 ring-black/5 animate-fade-in-up"
+                      :style="{ left: mentionPosition.left + 'px', top: (mentionPosition.top + mentionPosition.height + 4) + 'px' }">
                       <div
                         class="px-3 py-1 text-[10px] uppercase font-bold text-gray-400 border-b border-gray-100 mb-1 flex items-center justify-between">
                         <span>Gắn thẻ thành viên</span>
@@ -216,7 +217,9 @@
                           class="w-6 h-6 rounded-full object-cover border border-gray-200" />
                         <div class="flex flex-col min-w-0 flex-1">
                           <span class="truncate font-bold">{{ u.name }}</span>
-                          <span class="text-[10px] text-gray-400 truncate">@{{ u.name }}</span>
+                          <span class="text-[10px] text-gray-400 truncate">
+                            {{ u.isMentionGroup ? u.description : '@' + u.name }}
+                          </span>
                         </div>
                       </button>
                     </div>
@@ -568,6 +571,7 @@ const activeMentionProjectId = ref(null)
 const showMentionDropdown = ref(false)
 const mentionQuery = ref('')
 const mentionIndex = ref(0)
+const mentionPosition = ref({ top: 0, left: 0, height: 0 })
 
 const removeVietnameseAccents = (str) => {
   if (!str) return ''
@@ -610,8 +614,9 @@ const filteredUsersForMention = computed(() => {
     mentionName: group.name,
     isMentionGroup: true,
     avatar: null,
+    description: group.description || 'Nhóm nhắc tên',
   }))
-  const allOption = { id: 'all', name: '@all', mentionName: 'all', isMentionGroup: true, avatar: null }
+  const allOption = { id: 'all', name: '@all', mentionName: 'all', isMentionGroup: true, avatar: null, description: 'Tất cả thành viên' }
 
   if (!mentionQuery.value) return [allOption, ...groupOptions, ...availableUsers]
 
@@ -801,6 +806,16 @@ const onInputText = (projectId, event) => {
     mentionQuery.value = match[1]
     showMentionDropdown.value = true
     mentionIndex.value = 0
+    nextTick(() => {
+      const coords = getCaretCoordinates(el, cursorPos - match[1].length - 1)
+      const dropdownWidth = 256
+      const leftClamped = Math.max(0, Math.min(coords.left, el.clientWidth - dropdownWidth - 10))
+      mentionPosition.value = {
+        top: coords.top,
+        left: leftClamped,
+        height: coords.height
+      }
+    })
   } else {
     showMentionDropdown.value = false
   }
@@ -1450,4 +1465,85 @@ onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
   window.removeEventListener('click', closeTagPickersOnOutsideClick)
 })
+
+function getCaretCoordinates(element, position) {
+  const properties = [
+    'direction',
+    'boxSizing',
+    'width',
+    'height',
+    'overflowX',
+    'overflowY',
+    'borderTopWidth',
+    'borderRightWidth',
+    'borderBottomWidth',
+    'borderLeftWidth',
+    'borderStyle',
+    'paddingTop',
+    'paddingRight',
+    'paddingBottom',
+    'paddingLeft',
+    'fontStyle',
+    'fontVariant',
+    'fontWeight',
+    'fontStretch',
+    'fontSize',
+    'fontSizeAdjust',
+    'lineHeight',
+    'fontFamily',
+    'textAlign',
+    'textTransform',
+    'textIndent',
+    'textDecoration',
+    'letterSpacing',
+    'wordSpacing',
+    'tabSize',
+    'MozTabSize'
+  ];
+
+  if (typeof window === 'undefined') return { top: 0, left: 0, height: 0 };
+
+  const div = document.createElement('div');
+  div.id = 'input-textarea-caret-position-mirror-div';
+  document.body.appendChild(div);
+
+  const style = div.style;
+  const computed = window.getComputedStyle(element);
+
+  let lineHeight = computed.lineHeight;
+  if (lineHeight === 'normal') {
+    lineHeight = parseFloat(computed.fontSize) * 1.2;
+  }
+
+  style.whiteSpace = 'pre-wrap';
+  style.wordWrap = 'break-word';
+  style.position = 'absolute';
+  style.visibility = 'hidden';
+
+  properties.forEach(prop => {
+    style[prop] = computed[prop];
+  });
+
+  if (computed.overflowY === 'scroll') {
+    style.overflowY = 'scroll';
+  } else {
+    style.overflowY = 'hidden';
+  }
+
+  div.textContent = element.value.substring(0, position);
+
+  const span = document.createElement('span');
+  span.textContent = element.value.substring(position) || '.';
+  div.appendChild(span);
+
+  const coordinates = {
+    top: span.offsetTop + parseInt(computed.borderTopWidth) - element.scrollTop,
+    left: span.offsetLeft + parseInt(computed.borderLeftWidth) - element.scrollLeft,
+    height: parseFloat(lineHeight)
+  };
+
+  document.body.removeChild(div);
+
+  return coordinates;
+}
 </script>

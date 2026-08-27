@@ -910,9 +910,10 @@
                     placeholder="Chia sẻ cập nhật với team..."
                     class="w-full h-32 overflow-y-auto bg-transparent text-sm sm:text-base font-bold text-gray-900 leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none m-0 border-0"></textarea>
 
-                  <!-- AUTOCOMPLETE @MENTION DROPDOWN POPOVER (POPS UP ABOVE INPUT & SHIFTED LEFT) -->
+                  <!-- AUTOCOMPLETE @MENTION DROPDOWN POPOVER (POPS UP DIRECTLY UNDER CARET CARET POSITION) -->
                   <div v-if="showMentionDropdown && filteredUsersForMention.length > 0"
-                    class="absolute left-[-50px] bottom-full mb-2 z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-xl py-1 text-gray-800 max-h-52 overflow-y-auto ring-1 ring-black/5">
+                    class="absolute z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-xl py-1 text-gray-800 max-h-52 overflow-y-auto ring-1 ring-black/5"
+                    :style="{ left: mentionPosition.left + 'px', top: (mentionPosition.top + mentionPosition.height + 4) + 'px' }">
                     <div
                       class="px-3 py-1 text-[10px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1 flex items-center justify-between">
                       <span>Chọn người phụ trách (@)</span>
@@ -1539,6 +1540,13 @@ const cancelReply = () => {
 }
 const handleReplyToTask = (task) => {
   replyingToLog.value = task
+  // A reply belongs to the same stage as the activity being replied to.
+  // Set it explicitly so an earlier form selection cannot redirect the update
+  // into another (including completed) stage.
+  const replyMilestoneId = task?.milestone_id ?? null
+  newStageTaskMilestoneId.value = replyMilestoneId
+  selectedTargetMilestoneId.value = replyMilestoneId
+  isStartStageSelected.value = replyMilestoneId === null
   isInlineFormOpen.value = true
   nextTick(() => {
     stageTaskTitleInputRef.value?.focus()
@@ -2086,6 +2094,7 @@ const tagFormattedDateTime = computed(() => {
 const showMentionDropdown = ref(false)
 const mentionQuery = ref('')
 const mentionIndex = ref(0)
+const mentionPosition = ref({ top: 0, left: 0, height: 0 })
 const taggableUsers = computed(() => {
   const currentUserId = String(authStore.user?.id || '')
   return users.value.filter(user => String(user.id) !== currentUserId)
@@ -2147,8 +2156,8 @@ const filteredUsersForMention = computed(() => {
   // Filter out users that are already tagged
   const availableUsers = taggableUsers.value.filter(u => !taggedUserIds.has(String(u.id)))
 
-  const groupOptions = mentionGroups.value.map(group => ({ id: `group-${group.id}`, name: `@${group.name}`, mentionName: group.name, isMentionGroup: true, avatar: null }))
-  const allOption = { id: 'all', name: '@all', mentionName: 'all', isMentionGroup: true, avatar: null }
+  const groupOptions = mentionGroups.value.map(group => ({ id: `group-${group.id}`, name: `@${group.name}`, mentionName: group.name, isMentionGroup: true, avatar: null, description: group.description || 'Nhóm nhắc tên' }))
+  const allOption = { id: 'all', name: '@all', mentionName: 'all', isMentionGroup: true, avatar: null, description: 'Tất cả thành viên' }
   if (!mentionQuery.value) return [allOption, ...groupOptions, ...availableUsers]
 
   const q = removeVietnameseAccents(mentionQuery.value).toLowerCase()
@@ -2223,6 +2232,16 @@ const onTitleInput = (e) => {
     mentionQuery.value = match[1]
     showMentionDropdown.value = true
     mentionIndex.value = 0
+    nextTick(() => {
+      const coords = getCaretCoordinates(el, cursorPos - match[1].length - 1)
+      const dropdownWidth = 256
+      const leftClamped = Math.max(0, Math.min(coords.left, el.clientWidth - dropdownWidth - 10))
+      mentionPosition.value = {
+        top: coords.top,
+        left: leftClamped,
+        height: coords.height
+      }
+    })
   } else {
     showMentionDropdown.value = false
   }
@@ -2361,8 +2380,11 @@ const openAddStageTaskForm = () => {
   newStageTaskAssignee.value = ''
   newStageTaskTaggedUsers.value = []
   newStageTaskHealth.value = project.value ? project.value.health : 'yellow'
-  if (!newStageTaskMilestoneId.value) {
-    newStageTaskMilestoneId.value = selectedMilestone.value ? selectedMilestone.value.id : (effectiveMilestones.value[0]?.id || null)
+  const currentTarget = effectiveMilestones.value.find(ms => ms.id === newStageTaskMilestoneId.value)
+  if (!newStageTaskMilestoneId.value || isStageCompleted(currentTarget)) {
+    newStageTaskMilestoneId.value = (selectedMilestone.value && !isStageCompleted(selectedMilestone.value))
+      ? selectedMilestone.value.id
+      : (activeTargetMilestones.value[0]?.id || null)
   }
   isInlineFormOpen.value = true
   nextTick(() => {
@@ -2423,10 +2445,20 @@ const allProjectCards = computed(() => {
   if (activityLogs.value) {
     activityLogs.value.forEach(c => {
       if (c.type !== 'status_change') {
+        let milestoneId = null
+        if (c.task_id && project.value && project.value.tasks) {
+          const correspondingTask = project.value.tasks.find(t => String(t.id) === String(c.task_id))
+          if (correspondingTask) {
+            milestoneId = correspondingTask.milestone_id
+          }
+        }
+
         cards.push({
           id: 'comment-' + c.id,
           realCommentId: c.id,
           project_id: c.project_id,
+          task_id: c.task_id,
+          milestone_id: milestoneId,
           title: c.content,
           created_by: c.user_id,
           creator: c.user,
@@ -3389,7 +3421,11 @@ const handleAddStageTaskSubmit = async () => {
     }
   }
 
-  const msId = newStageTaskMilestoneId.value || (selectedTargetMilestoneId.value && !selectedMilestone.value?.is_completed ? selectedTargetMilestoneId.value : null) || (activeTargetMilestones.value[0]?.id || null)
+  // Replies must stay in the exact stage of the original activity. Do not
+  // fall back to a previously selected or completed stage.
+  const msId = replyingToLog.value
+    ? (replyingToLog.value.milestone_id ?? null)
+    : (newStageTaskMilestoneId.value || (selectedTargetMilestoneId.value && !selectedMilestone.value?.is_completed ? selectedTargetMilestoneId.value : null) || (activeTargetMilestones.value[0]?.id || null))
 
   let titleText = newStageTaskTitle.value.trim()
   if (replyingToLog.value) {
@@ -3899,6 +3935,87 @@ watch(
 watch(showDetailStickyBar, () => {
   isActionMenuOpen.value = false
 })
+
+function getCaretCoordinates(element, position) {
+  const properties = [
+    'direction',
+    'boxSizing',
+    'width',
+    'height',
+    'overflowX',
+    'overflowY',
+    'borderTopWidth',
+    'borderRightWidth',
+    'borderBottomWidth',
+    'borderLeftWidth',
+    'borderStyle',
+    'paddingTop',
+    'paddingRight',
+    'paddingBottom',
+    'paddingLeft',
+    'fontStyle',
+    'fontVariant',
+    'fontWeight',
+    'fontStretch',
+    'fontSize',
+    'fontSizeAdjust',
+    'lineHeight',
+    'fontFamily',
+    'textAlign',
+    'textTransform',
+    'textIndent',
+    'textDecoration',
+    'letterSpacing',
+    'wordSpacing',
+    'tabSize',
+    'MozTabSize'
+  ];
+
+  if (typeof window === 'undefined') return { top: 0, left: 0, height: 0 };
+
+  const div = document.createElement('div');
+  div.id = 'input-textarea-caret-position-mirror-div';
+  document.body.appendChild(div);
+
+  const style = div.style;
+  const computed = window.getComputedStyle(element);
+
+  let lineHeight = computed.lineHeight;
+  if (lineHeight === 'normal') {
+    lineHeight = parseFloat(computed.fontSize) * 1.2;
+  }
+
+  style.whiteSpace = 'pre-wrap';
+  style.wordWrap = 'break-word';
+  style.position = 'absolute';
+  style.visibility = 'hidden';
+
+  properties.forEach(prop => {
+    style[prop] = computed[prop];
+  });
+
+  if (computed.overflowY === 'scroll') {
+    style.overflowY = 'scroll';
+  } else {
+    style.overflowY = 'hidden';
+  }
+
+  div.textContent = element.value.substring(0, position);
+
+  const span = document.createElement('span');
+  span.textContent = element.value.substring(position) || '.';
+  div.appendChild(span);
+
+  const coordinates = {
+    top: span.offsetTop + parseInt(computed.borderTopWidth) - element.scrollTop,
+    left: span.offsetLeft + parseInt(computed.borderLeftWidth) - element.scrollLeft,
+    height: parseFloat(lineHeight)
+  };
+
+  document.body.removeChild(div);
+
+  return coordinates;
+}
 </script>
 
 <style scoped>
