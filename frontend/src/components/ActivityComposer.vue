@@ -52,39 +52,68 @@
               :placeholder="projects.length ? 'Tìm dự án...' : 'Chưa có dự án...'"
               class="w-[150px] sm:w-[180px] text-base sm:text-[11px] font-bold text-[#1A7A56] bg-emerald-50/50 border border-emerald-200/30 hover:border-emerald-500/50 rounded-full pl-2.5 pr-7 py-0.5 focus:ring-1 focus:ring-emerald-400 focus:outline-none truncate"
               autocomplete="off" @focus="openProjectPicker" @input="isProjectPickerOpen = true"
-              @blur="closeProjectPicker" @keydown.esc.prevent="dismissProjectPicker" />
+              @blur="handleInputBlur" @keydown.esc.prevent="dismissProjectPicker" />
             <button type="button" tabindex="-1" @mousedown.prevent="toggleProjectPicker"
               class="absolute inset-y-0 right-0 w-7 flex items-center justify-center text-[#1A7A56] cursor-pointer">
               <i class="fa-solid fa-chevron-down text-[9px] transition-transform"
                 :class="isProjectPickerOpen ? 'rotate-180' : ''"></i>
             </button>
 
-            <div v-if="isProjectPickerOpen"
-              class="absolute z-[70] bottom-full right-0 mb-1 w-[min(320px,calc(100vw-32px))] bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
-              <div class="px-3 py-1.5 text-[9px] font-extrabold text-gray-400 uppercase tracking-wider bg-gray-50 border-b border-gray-100">
-                Tìm và chọn dự án
-              </div>
-              <div class="max-h-52 overflow-y-auto divide-y divide-gray-100">
-                <button v-for="project in filteredPickerProjects" :key="`picker-${project.id}`" type="button"
-                  @mousedown.prevent="selectProjectFromPicker(project)"
-                  class="w-full px-3 py-2.5 flex items-center justify-between gap-3 text-left hover:bg-emerald-50 cursor-pointer">
-                  <span class="min-w-0">
-                    <span class="block text-xs font-bold text-gray-800 truncate">{{ project.title }}</span>
-                    <span v-if="project.customer?.name" class="block text-[10px] text-gray-400 truncate mt-0.5">
-                      {{ project.customer.name }}
+            <Teleport to="body" :disabled="!isMobile">
+              <!-- Mobile backdrop overlay to close modal on outside click -->
+              <div v-if="isProjectPickerOpen && isMobile"
+                class="fixed inset-0 bg-black/30 z-[9998] backdrop-blur-[2px]"
+                @click="dismissProjectPicker"></div>
+
+              <div v-if="isProjectPickerOpen"
+                :class="isMobile 
+                  ? 'fixed top-[80px] left-4 right-4 z-[9999] bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[300px]' 
+                  : 'absolute z-[70] bottom-full right-0 mb-1 w-[min(320px,calc(100vw-32px))] bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden'"
+              >
+                <div class="px-3 py-1.5 text-[9px] font-extrabold text-gray-400 uppercase tracking-wider bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                  <span>Tìm và chọn dự án</span>
+                  <button v-if="isMobile" type="button" @click="dismissProjectPicker" class="text-gray-400 hover:text-gray-655 p-0.5">
+                    <i class="fa-solid fa-xmark text-xs"></i>
+                  </button>
+                </div>
+
+                <!-- Search input directly inside the modal on mobile -->
+                <div v-if="isMobile" class="p-2 border-b border-gray-100 bg-white flex-shrink-0">
+                  <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    <input 
+                      ref="mobileSearchInputRef"
+                      v-model="projectSearch" 
+                      type="text" 
+                      placeholder="Tìm kiếm dự án..."
+                      class="w-full pl-8 pr-3 py-1.5 text-xs font-semibold border border-gray-200 rounded-lg focus:outline-none focus:border-emerald-500 bg-gray-50/50"
+                      @keydown.esc.prevent="dismissProjectPicker"
+                    />
+                  </div>
+                </div>
+
+                <div class="max-h-52 overflow-y-auto divide-y divide-gray-100 flex-1">
+                  <button v-for="project in filteredPickerProjects" :key="`picker-${project.id}`" type="button"
+                    @mousedown.prevent="selectProjectFromPicker(project)"
+                    class="w-full px-3 py-2.5 flex items-center justify-between gap-3 text-left hover:bg-emerald-50 cursor-pointer">
+                    <span class="min-w-0">
+                      <span class="block text-xs font-bold text-gray-800 truncate">{{ project.title }}</span>
+                      <span v-if="project.customer?.name" class="block text-[10px] text-gray-400 truncate mt-0.5">
+                        {{ project.customer.name }}
+                      </span>
                     </span>
-                  </span>
-                  <span class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0"
-                    :class="String(project.id) === String(projectId) ? 'border-emerald-600' : 'border-gray-400'">
-                    <span v-if="String(project.id) === String(projectId)" class="w-2 h-2 rounded-full bg-emerald-600"></span>
-                  </span>
-                </button>
-                <div v-if="filteredPickerProjects.length === 0"
-                  class="px-3 py-5 text-center text-xs font-semibold text-gray-400">
-                  Không tìm thấy dự án phù hợp.
+                    <span class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0"
+                      :class="String(project.id) === String(projectId) ? 'border-emerald-600' : 'border-gray-400'">
+                      <span v-if="String(project.id) === String(projectId)" class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                    </span>
+                  </button>
+                  <div v-if="filteredPickerProjects.length === 0"
+                    class="px-3 py-5 text-center text-xs font-semibold text-gray-400">
+                    Không tìm thấy dự án phù hợp.
+                  </div>
                 </div>
               </div>
-            </div>
+            </Teleport>
           </div>
         </div>
       </div>
@@ -107,9 +136,10 @@
       </div>
 
       <div class="flex flex-col p-2 rounded-b-xl bg-white">
-        <textarea ref="textareaRef" v-model="message" rows="2"
-          placeholder="Nhập cập nhật; gõ @ để gắn thẻ, # để chọn dự án..."
-          class="w-full min-h-[44px] max-h-[200px] overflow-y-auto bg-transparent border-0 focus:ring-0 focus:outline-none text-base sm:text-xs font-semibold text-gray-800 resize-none p-0.5 placeholder-gray-400 leading-relaxed"
+        <textarea ref="textareaRef" v-model="messageModel" rows="2"
+          :placeholder="projects.length ? 'Nhập cập nhật; gõ @ để gắn thẻ, # để chọn dự án...' : 'Không có dự án đang theo dõi...'"
+          :disabled="!projects.length"
+          class="w-full min-h-[44px] max-h-[200px] overflow-y-auto bg-transparent border-0 focus:ring-0 focus:outline-none text-base sm:text-xs font-semibold text-gray-800 resize-none p-0.5 placeholder-gray-400 leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed"
           autocomplete="one-time-code" spellcheck="false" @input="handleInput" @keydown="handleKeydown"
           @paste="handlePaste"></textarea>
         <div class="flex items-center justify-end gap-2 mt-1">
@@ -132,7 +162,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import axios from 'axios'
 
 const props = defineProps({
@@ -147,10 +177,11 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'update:projectId', 'submit', 'cancel-reply'])
 const messageModel = defineModel({ type: String, default: '' })
 const projectModel = defineModel('projectId', { default: null })
-const message = computed({ get: () => messageModel.value, set: value => { messageModel.value = value } })
+const message = messageModel
 const projectId = computed({ get: () => projectModel.value, set: value => { projectModel.value = value } })
 
 const textareaRef = ref(null)
+const lastCursorPosition = ref(null)
 const projectPickerInputRef = ref(null)
 const isExpanded = ref(false)
 const isAutoExpanded = ref(false)
@@ -162,7 +193,35 @@ const query = ref('')
 const suggestionIndex = ref(0)
 const fileInputRef = ref(null)
 const attachments = ref([])
-const canSubmit = computed(() => Boolean(message.value.trim()) || attachments.value.length > 0)
+
+const isMobile = ref(false)
+const updateIsMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
+
+onMounted(() => {
+  updateIsMobile()
+  window.addEventListener('resize', updateIsMobile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateIsMobile)
+})
+
+const handleInputBlur = () => {
+  if (isMobile.value) return
+  closeProjectPicker()
+}
+
+const mobileSearchInputRef = ref(null)
+
+watch(isProjectPickerOpen, async (isOpen) => {
+  if (isOpen && isMobile.value) {
+    await nextTick()
+    mobileSearchInputRef.value?.focus()
+  }
+})
+const canSubmit = computed(() => props.projects.length > 0 && (Boolean(message.value.trim()) || attachments.value.length > 0))
 
 const resizeTextarea = () => {
   const textarea = textareaRef.value
@@ -372,7 +431,13 @@ const suggestions = computed(() => {
 })
 
 watch(() => props.projects, projects => {
-  if (!projectModel.value && projects.length) projectModel.value = projects[0].id
+  if (projects.length) {
+    if (!projectModel.value || !projects.some(p => String(p.id) === String(projectModel.value))) {
+      projectModel.value = projects[0].id
+    }
+  } else {
+    projectModel.value = null
+  }
 }, { immediate: true })
 
 watch([projectModel, () => props.projects], syncProjectSearch, { immediate: true })
@@ -386,6 +451,7 @@ const handleInput = event => {
   nextTick(resizeTextarea)
   const text = event.target.value
   const cursor = event.target.selectionStart ?? text.length
+  lastCursorPosition.value = cursor
   const match = text.substring(0, cursor).match(/([@#])([^\s@#]*)$/)
   if (!match) {
     showSuggestions.value = false
@@ -400,7 +466,7 @@ const handleInput = event => {
 const selectSuggestion = item => {
   const textarea = textareaRef.value
   const text = message.value
-  const cursor = textarea?.selectionStart ?? text.length
+  const cursor = lastCursorPosition.value ?? textarea?.selectionStart ?? text.length
   const before = text.substring(0, cursor)
   const after = text.substring(cursor)
   const tokenMatch = before.match(/([@#])([^\s@#]*)$/)
@@ -416,6 +482,7 @@ const selectSuggestion = item => {
 
   message.value = replacement + after
   showSuggestions.value = false
+  lastCursorPosition.value = null
   nextTick(() => {
     textarea?.focus()
     textarea?.setSelectionRange(replacement.length, replacement.length)

@@ -517,7 +517,7 @@
 
               <!-- Chat Input box: dùng chung cho dashboard và trang Có gì mới -->
               <ActivityComposer ref="activityComposerRef" v-model="chatMessage" v-model:project-id="chatProjectId"
-                class="mt-2 flex-shrink-0" :projects="projectStore.projects" :users="projectStore.users"
+                class="mt-2 flex-shrink-0" :projects="followingProjects" :users="projectStore.users"
                 :groups="mentionGroups" :replying-to="replyingToLog"
                 :reply-text="parseCommentText(replyingToLog?.content)" :submitting="isSubmittingChat"
                 @submit="submitChat" @cancel-reply="cancelReply" />
@@ -979,13 +979,9 @@ const goToProjectDetail = (projectId, event) => {
   // selection, do not let the card click overwrite the selected range.
   if (suppressNextProjectClick) return
 
-  // On mobile, project cards drive the activity panel just like on desktop.
+  // On mobile, clicking a project card navigates directly to the detail page.
   if (window.matchMedia?.('(max-width: 767px)').matches) {
-    selectedProjectIds.value = [projectId]
-    showAllCheckboxes.value = true
-    lastSelectionAnchorId.value = projectId
-    selectionFocusId.value = projectId
-    mobileHomeTab.value = 'activities'
+    router.push(`/projects/${projectId}`)
     return
   }
 
@@ -2015,16 +2011,24 @@ onUnmounted(() => {
   document.removeEventListener('click', handleGlobalClick)
 })
 
-// Initialize chatProjectId once projects are loaded
-watch(() => projectStore.projects, (newProjects) => {
-  if (newProjects && newProjects.length > 0 && !chatProjectId.value) {
-    chatProjectId.value = newProjects[0].id
+// Initialize chatProjectId once following projects are loaded
+const followingProjects = computed(() => {
+  return projectStore.projects.filter(p => p.tracking_status === 'following')
+})
+
+watch(() => followingProjects.value, (newProjects) => {
+  if (newProjects && newProjects.length > 0) {
+    if (!chatProjectId.value || !newProjects.some(p => p.id === chatProjectId.value)) {
+      chatProjectId.value = newProjects[0].id
+    }
+  } else {
+    chatProjectId.value = null
   }
 }, { immediate: true })
 
 const handleReplyToActivity = (log) => {
   replyingToLog.value = log
-  chatProjectId.value = log.project_id || log.project?.id || projectStore.projects[0]?.id
+  chatProjectId.value = log.project_id || log.project?.id || followingProjects.value[0]?.id
 
   let mention = ''
   if (log.user) {
@@ -2048,7 +2052,7 @@ const isSubmittingChat = ref(false)
 const submitChat = async () => {
   if (isSubmittingChat.value) return
 
-  const pId = chatProjectId.value || projectStore.projects[0]?.id
+  const pId = chatProjectId.value || followingProjects.value[0]?.id
   if (!pId) {
     toast.error('Vui lòng chọn hoặc tạo dự án để gửi cập nhật.')
     return

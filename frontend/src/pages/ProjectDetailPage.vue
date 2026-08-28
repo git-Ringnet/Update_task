@@ -3316,6 +3316,7 @@ const currentStageTasks = computed(() => {
 
 const isTaskInDoneStage = (task) => {
   if (!task) return false
+  if (authStore.user?.is_system_admin) return false
   if (selectedMilestone.value && selectedMilestone.value.is_completed) return true
   const msId = task.milestone_id
   if (!msId) return false
