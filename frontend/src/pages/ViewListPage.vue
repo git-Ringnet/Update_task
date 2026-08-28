@@ -416,6 +416,7 @@
                   leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
                   leave-to-class="opacity-0 -translate-y-2">
                   <div v-for="(log, idx) in displayedActivities" :key="log.id"
+                    :id="'activity-log-item-' + log.id"
                     class="activity-log-item relative flex gap-3 select-none pb-6 group cursor-pointer"
                     @touchstart="handleTouchStart(log, $event)" @touchend="handleTouchEnd" @touchmove="handleTouchMove">
 
@@ -443,16 +444,44 @@
                                 log.project.customer.name }}</span>
                           </template>
                         </div>
-                        <div class="flex items-center gap-2 flex-shrink-0">
+                        <div class="flex items-center gap-2 flex-shrink-0 relative">
                           <button v-if="log.project_id || log.project?.id" @click="handleReplyToActivity(log)"
                             type="button" title="Trả lời hoạt động này"
                             class="opacity-0 group-hover:opacity-100 transition-all duration-200 bg-white hover:bg-emerald-600 text-gray-500 hover:text-white border border-gray-200 hover:border-emerald-600 cursor-pointer rounded-full h-6 w-6 flex items-center justify-center shadow-3xs focus:outline-none shrink-0"
                             :class="{ 'opacity-100': activeLogIdForMobileActions === log.id }">
                             <i class="fa-solid fa-reply text-[10px]"></i>
                           </button>
-                          <span class="text-[11px] text-gray-400 font-bold">
-                            {{ formatCommentRelativeTime(log.created_at) }}
-                          </span>
+
+                          <div class="relative w-12 h-6 flex items-center justify-end">
+                            <span class="text-[11px] text-gray-400 font-bold transition-all duration-150"
+                              :class="[
+                                (activeLogIdForMobileActions === log.id || activeLogMenuId === log.id) ? 'opacity-0 pointer-events-none' : 'opacity-100',
+                                'group-hover:md:opacity-0 group-hover:md:pointer-events-none'
+                              ]">
+                              {{ formatCommentRelativeTime(log.created_at) }}
+                            </span>
+
+                            <button type="button"
+                              @click.stop="toggleActivityMenu(log.id)"
+                              class="absolute right-0 flex items-center justify-center w-6 h-6 rounded-md hover:bg-gray-100 hover:text-gray-600 text-gray-400 cursor-pointer transition-all duration-150"
+                              :class="[
+                                (activeLogMenuId === log.id || activeLogIdForMobileActions === log.id) ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
+                                'group-hover:md:opacity-100 group-hover:md:pointer-events-auto'
+                              ]"
+                              v-if="canDeleteComment(log)">
+                              <i class="fa-solid fa-ellipsis"></i>
+                            </button>
+
+                            <div v-if="activeLogMenuId === log.id" 
+                              class="absolute right-0 top-7 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[100px] text-left">
+                              <button type="button" 
+                                @click.stop="handleDeleteComment(log.id)" 
+                                class="w-full px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 font-bold flex items-center gap-1.5 transition-colors cursor-pointer">
+                                <i class="fa-solid fa-trash-can"></i>
+                                <span>Xóa</span>
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
@@ -467,7 +496,8 @@
                       <div class="text-xs font-semibold text-gray-700 leading-relaxed break-words mt-1 space-y-1.5">
                         <!-- Zalo Quote Reply Preview inside list feed -->
                         <div v-if="parseReplyInfo(log.content)"
-                          class="bg-[#e1e3ea] px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1.5 select-none max-w-full">
+                          @click.stop="scrollToComment(parseReplyInfo(log.content))"
+                          class="bg-[#e1e3ea] px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1.5 select-none max-w-full cursor-pointer hover:bg-[#d5d7de] transition-colors">
                           <div class="text-[10px] font-bold text-gray-500 flex items-center gap-1">
                             <i class="fa-solid fa-reply text-[9px]"></i>
                             <span>{{ parseReplyInfo(log.content).user }}</span>
@@ -1022,17 +1052,16 @@ const goToProjectDetail = (projectId, event) => {
 }
 
 const handleActivityProjectClick = (projectId, event) => {
-  const isShownOnHome = displayedProjects.value.some(project => Number(project.id) === Number(projectId))
+  const isCtrlOrMeta = event && (event.ctrlKey || event.metaKey)
 
-  // Activities can reference completed or unfollowed projects, which are not
-  // selectable from the home list. Open their detail instead of creating a
-  // hidden selection and showing the command bar.
-  if (!isShownOnHome) {
+  if (isCtrlOrMeta) {
+    const isShownOnHome = displayedProjects.value.some(project => Number(project.id) === Number(projectId))
+    if (isShownOnHome) {
+      goToProjectDetail(projectId, event)
+    }
+  } else {
     router.push(`/projects/${projectId}`)
-    return
   }
-
-  goToProjectDetail(projectId, event)
 }
 
 // Pagination for ViewListPage (Infinite Scroll)
@@ -1891,6 +1920,41 @@ const parseReplyInfo = (content) => {
   return null
 }
 
+const scrollToComment = (reply) => {
+  if (!reply) return
+
+  let targetId = reply.id
+
+  // Fallback for legacy comments
+  if (!targetId && reply.user && reply.text) {
+    const quoteTextNorm = reply.text.trim().toLowerCase()
+    const foundLog = activities.value.find(log => {
+      const creatorName = (log.user ? log.user.name : 'Hệ thống').trim().toLowerCase()
+      const logText = parseCommentText(log.content).trim().toLowerCase()
+      return creatorName === reply.user.trim().toLowerCase() && logText.includes(quoteTextNorm)
+    })
+    if (foundLog) {
+      targetId = foundLog.id
+    }
+  }
+
+  if (!targetId) {
+    toast.warning('Không tìm thấy bình luận gốc.')
+    return
+  }
+
+  const el = document.getElementById(`activity-log-item-${targetId}`)
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el.classList.add('activity-card-highlight')
+    setTimeout(() => {
+      el.classList.remove('activity-card-highlight')
+    }, 2000)
+  } else {
+    toast.warning('Không tìm thấy bình luận gốc trong danh sách hiển thị hiện tại.')
+  }
+}
+
 const parseCommentText = (content) => {
   if (!content) return ''
   return content
@@ -1971,6 +2035,37 @@ const chatProjectId = ref(null)
 const replyingToLog = ref(null)
 const activityComposerRef = ref(null)
 const activeLogIdForMobileActions = ref(null)
+const activeLogMenuId = ref(null)
+
+const toggleActivityMenu = (id) => {
+  activeLogMenuId.value = activeLogMenuId.value === id ? null : id
+}
+
+const canDeleteComment = (log) => {
+  if (!log || !currentUser.value) return false
+  if (currentUser.value.is_system_admin || currentUser.value.is_admin) {
+    return true
+  }
+  return String(log.user_id) === String(currentUser.value.id)
+}
+
+const handleDeleteComment = async (id) => {
+  const confirmed = await confirmStore.show({
+    title: 'Xóa bình luận',
+    message: 'Bạn có chắc chắn muốn xóa bình luận này?'
+  })
+  if (!confirmed) return
+
+  try {
+    await axios.delete(`/api/comments/${id}`)
+    activities.value = activities.value.filter(log => log.id !== id)
+    activeLogMenuId.value = null
+    activeLogIdForMobileActions.value = null
+    toast.success('Đã xóa bình luận!')
+  } catch (err) {
+    toast.error(err.response?.data?.message || err.message || 'Xóa bình luận thất bại.')
+  }
+}
 
 let touchTimer = null
 let touchStarted = false
@@ -2000,6 +2095,7 @@ const handleTouchMove = () => {
 const handleGlobalClick = (e) => {
   if (!e.target.closest('.activity-log-item')) {
     activeLogIdForMobileActions.value = null
+    activeLogMenuId.value = null
   }
 }
 
@@ -2067,6 +2163,7 @@ const submitChat = async () => {
     let finalContent = chatMessage.value + attachmentHtml
     if (replyingToLog.value) {
       const replyMeta = {
+        id: replyingToLog.value.id,
         user: replyingToLog.value.user ? replyingToLog.value.user.name : 'Hệ thống',
         text: parseCommentText(replyingToLog.value.content)
       }
@@ -3254,5 +3351,13 @@ onUnmounted(() => {
   .tv-broadcast-panel {
     display: none;
   }
+}
+@keyframes activity-card-flash {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: #ECFDF5; }
+}
+.activity-card-highlight {
+  animation: activity-card-flash 2s ease-in-out;
+  border-radius: 12px;
 }
 </style>

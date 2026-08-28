@@ -137,8 +137,10 @@ class TaskController extends Controller
         ]);
 
         $task = Task::findOrFail($id);
+        $user = auth()->user();
+        $canUpdate = $user->is_system_admin || $user->is_admin || (int) $task->created_by === (int) $user->id;
+        abort_unless($canUpdate, 403, 'Bạn không có quyền cập nhật hoạt động này.');
         $project = $task->project;
-        abort_unless($project->isVisibleTo(auth()->user()), 403, 'Bạn không có quyền cập nhật hoạt động này.');
         if (!empty($validated['milestone_id'])) {
             abort_unless($project->milestones()->whereKey($validated['milestone_id'])->exists(), 422, 'Cột mốc không thuộc dự án.');
         }
@@ -193,7 +195,9 @@ class TaskController extends Controller
     public function destroy($id)
     {
         $task = Task::findOrFail($id);
-        abort_unless($task->project->isVisibleTo(auth()->user()), 403, 'Bạn không có quyền xóa hoạt động này.');
+        $user = auth()->user();
+        $canDelete = $user->is_system_admin || $user->is_admin || (int) $task->created_by === (int) $user->id;
+        abort_unless($canDelete, 403, 'Bạn không có quyền xóa hoạt động này.');
         $task->delete();
 
         return response()->json(['message' => 'Đã xóa công việc']);

@@ -577,6 +577,7 @@
           <div v-else class="space-y-3">
             <!-- CARDS LIST -->
             <div v-for="t in displayedCards" :key="t.id"
+              :id="'task-card-' + t.id"
               @touchstart="handleTouchStart(t, $event)"
               @touchend="handleTouchEnd"
               @touchmove="handleTouchMove"
@@ -601,11 +602,11 @@
                 <i :class="[
                   t.health === 'red' ? 'fa-solid fa-circle-exclamation' : getTaskCardIcon(t),
                   'text-white text-2xl transition-all duration-200',
-                  !isTaskInDoneStage(t) ? 'group-hover:opacity-0 group-hover:scale-75' : '',
+                  !isTaskInDoneStage(t) && canEditOrDelete(t) ? 'group-hover:opacity-0 group-hover:scale-75' : '',
                   getTaskCardIcon(t) === 'fa-solid fa-shoe-prints' && t.health !== 'red' ? '-rotate-90' : ''
                 ]"></i>
 
-                <div v-if="!isTaskInDoneStage(t)"
+                <div v-if="!isTaskInDoneStage(t) && canEditOrDelete(t)"
                   class="task-card-actions absolute inset-0 flex flex-col opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200">
                   <button type="button"
                     class="w-full flex-1 bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center transition-colors cursor-pointer rounded-tl-2xl"
@@ -657,10 +658,10 @@
                       <button type="button" @click.stop="handleReplyToTask(t); activeTaskActionMenuId = null" class="border-b border-gray-100">
                         <i class="fa-solid fa-reply text-xs"></i><span>Trả lời</span>
                       </button>
-                      <button type="button" @click.stop="openEditStageTaskForm(t); activeTaskActionMenuId = null">
+                      <button v-if="canEditOrDelete(t)" type="button" @click.stop="openEditStageTaskForm(t); activeTaskActionMenuId = null">
                         <i class="fa-solid fa-pen-to-square"></i><span>Cập nhật</span>
                       </button>
-                      <button type="button" @click.stop="handleDeleteTask(t.id); activeTaskActionMenuId = null"
+                      <button v-if="canEditOrDelete(t)" type="button" @click.stop="handleDeleteTask(t.id); activeTaskActionMenuId = null"
                         class="is-danger">
                         <i class="fa-solid fa-trash-can"></i><span>Xóa</span>
                       </button>
@@ -672,7 +673,8 @@
                 <div class="mt-1 text-[17px] font-bold text-gray-900 leading-snug break-words">
                   <!-- Zalo Quote Reply Preview inside task feed -->
                   <div v-if="parseReplyInfo(t.title)" 
-                    class="bg-gray-50 px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1.5 select-none max-w-full font-semibold">
+                    @click.stop="scrollToTask(parseReplyInfo(t.title))"
+                    class="bg-gray-50 px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1.5 select-none max-w-full font-semibold cursor-pointer hover:bg-gray-100 transition-colors">
                     <div class="text-[10px] font-bold text-gray-500 flex items-center gap-1">
                       <i class="fa-solid fa-reply text-[9px]"></i>
                       <span>{{ parseReplyInfo(t.title).user }}</span>
@@ -2007,6 +2009,81 @@ const parseReplyInfo = (content) => {
     }
   }
   return null
+}
+
+const scrollToTask = async (reply) => {
+  if (!reply) return
+
+  let targetId = reply.id
+
+  // Fallback for legacy comments without id: search by username and text
+  if (!targetId && reply.user && reply.text) {
+    const quoteTextNorm = reply.text.trim().toLowerCase()
+    const foundCard = allProjectCards.value.find(c => {
+      const creatorName = getCreatorDisplayName(c).trim().toLowerCase()
+      const cTitle = parseCommentText(c.title || '').trim().toLowerCase()
+      return creatorName === reply.user.trim().toLowerCase() && cTitle.includes(quoteTextNorm)
+    })
+    if (foundCard) {
+      targetId = foundCard.id
+    }
+  }
+
+  if (!targetId) {
+    toast.warning('Không tìm thấy bình luận gốc.')
+    return
+  }
+
+  const id = targetId
+
+  // 1. Find the target card in the master list of all cards
+  const foundCard = allProjectCards.value.find(c => String(c.id) === String(id))
+  if (!foundCard) {
+    toast.warning('Không tìm thấy bình luận gốc.')
+    return
+  }
+
+  // 2. Automatically switch filter to the target milestone/stage
+  if (foundCard.isComment || foundCard.is_comment || foundCard.type === 'comment') {
+    // Comments are only visible in "All" view (no milestone or start stage filter selected)
+    selectedMilestone.value = null
+    isStartStageSelected.value = false
+  } else {
+    // Tasks are filtered by milestone
+    if (foundCard.milestone_id) {
+      const ms = effectiveMilestones.value.find(m => String(m.id) === String(foundCard.milestone_id))
+      if (ms) {
+        selectedMilestone.value = ms
+        isStartStageSelected.value = false
+      }
+    } else {
+      // Start stage
+      selectedMilestone.value = null
+      isStartStageSelected.value = true
+    }
+  }
+
+  await nextTick()
+
+  // 3. Make sure the card isn't paginated out (below "Load more" threshold)
+  const idx = totalCardsForCurrentView.value.findIndex(c => String(c.id) === String(id))
+  if (idx !== -1 && idx >= visibleCardCount.value) {
+    visibleCardCount.value = idx + 10
+  }
+
+  await nextTick()
+
+  // 4. Scroll smoothly and flash targeted card
+  const el = document.getElementById(`task-card-${id}`)
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el.classList.add('task-card-highlight')
+    setTimeout(() => {
+      el.classList.remove('task-card-highlight')
+    }, 2000)
+  } else {
+    toast.warning('Không tìm thấy bình luận gốc trong danh sách hiển thị.')
+  }
 }
 
 const parseCommentText = (content) => {
@@ -3361,6 +3438,14 @@ const isTaskInDoneStage = (task) => {
   return ms ? isStageCompleted(ms) : false
 }
 
+const canEditOrDelete = (task) => {
+  if (!task || !authStore.user) return false
+  if (authStore.user.is_system_admin || authStore.user.is_admin) {
+    return true
+  }
+  return String(task.created_by) === String(authStore.user.id)
+}
+
 const parseDateTimeStrings = (dateStr) => {
   if (!dateStr) return { date: '', time: '' }
   let str = String(dateStr).trim()
@@ -3502,7 +3587,7 @@ const handleAddStageTaskSubmit = async () => {
   if (replyingToLog.value) {
     const quoteText = parseCommentText(replyingToLog.value.title || '').replace(/\n/g, ' ')
     const quoteUser = getCreatorDisplayName(replyingToLog.value)
-    titleText = `[reply:{"user":"${quoteUser}","text":"${quoteText.substring(0, 100)}"}] ${titleText}`
+    titleText = `[reply:{"id":"${replyingToLog.value.id}","user":"${quoteUser}","text":"${quoteText.substring(0, 100)}"}] ${titleText}`
   }
   let uploadedAttachmentIds = []
 
@@ -3871,20 +3956,7 @@ const handleDeleteTask = async (id) => {
     }
     toast.success('Đã xóa hoạt động!')
   } catch (err) {
-    if (isCommentCard) {
-      if (activityLogs.value) {
-        activityLogs.value = activityLogs.value.filter(c => c.id != rawId)
-      }
-    } else {
-      if (project.value && project.value.tasks) {
-        project.value.tasks = project.value.tasks.filter(t => t.id !== id)
-      }
-      if (selectedMilestone.value && selectedMilestone.value.tasks) {
-        selectedMilestone.value.tasks = selectedMilestone.value.tasks.filter(t => t.id !== id)
-        selectedMilestone.value.tasks_count = Math.max(0, (selectedMilestone.value.tasks_count || 1) - 1)
-      }
-    }
-    toast.success('Đã xóa hoạt động!')
+    toast.error(err.response?.data?.message || err.message || 'Xóa hoạt động thất bại.')
   }
 }
 
@@ -4402,5 +4474,12 @@ function getCaretCoordinates(element, position) {
     font-weight: 800;
     cursor: pointer;
   }
+}
+@keyframes task-card-flash {
+  0%, 100% { border-color: rgba(229, 231, 235, 0.8); box-shadow: none; }
+  50% { border-color: #10B981; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2); background-color: #ECFDF5; }
+}
+.task-card-highlight {
+  animation: task-card-flash 2s ease-in-out;
 }
 </style>
