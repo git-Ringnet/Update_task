@@ -1962,6 +1962,19 @@ const formatTitleWithMentions = (titleText) => {
     .replace(/"/g, '&quot;')
 
   // 6) Format @mentions
+  const groupList = (mentionGroups && mentionGroups.value) ? mentionGroups.value : []
+  if (groupList && groupList.length > 0) {
+    const sortedGroups = [...groupList].sort((a, b) => (b.name ? b.name.length : 0) - (a.name ? a.name.length : 0))
+    sortedGroups.forEach(g => {
+      if (g && g.name) {
+        const escapedName = g.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const regex = new RegExp(`@${escapedName}`, 'gi')
+        escaped = escaped.replace(regex, `<span class="text-emerald-600 font-bold">@${g.name}</span>`)
+      }
+    })
+  }
+  escaped = escaped.replace(/@all/gi, '<span class="text-emerald-600 font-bold">@all</span>')
+
   const userList = (users && users.value) ? users.value : []
   if (userList && userList.length > 0) {
     const sortedUsers = [...userList].sort((a, b) => (b.name ? b.name.length : 0) - (a.name ? a.name.length : 0))
@@ -2194,20 +2207,34 @@ const filteredUsersForMention = computed(() => {
   if (!mentionQuery.value) return [allOption, ...groupOptions, ...availableUsers]
 
   const q = removeVietnameseAccents(mentionQuery.value).toLowerCase()
-  const firstWordMatches = availableUsers.filter(u => {
-    const nameAcc = removeVietnameseAccents(u.name).toLowerCase()
-    return nameAcc.split(/\s+/)[0]?.startsWith(q)
+
+  const matches = (name) => {
+    if (!name) return false
+    const nameNorm = removeVietnameseAccents(name).toLowerCase()
+
+    if (q.includes(' ')) {
+      return nameNorm.includes(q)
+    }
+
+    const words = nameNorm.split(/\s+/).filter(Boolean)
+    const startsWithWord = words.some(word => word.startsWith(q))
+    const initials = words.map(word => word[0]).join('')
+    return startsWithWord || initials.includes(q)
+  }
+
+  const specialMatches = [allOption, ...groupOptions].filter(item => matches(item.mentionName))
+  const matchedUsers = availableUsers.filter(u => matches(u.name))
+
+  matchedUsers.sort((a, b) => {
+    const aNorm = removeVietnameseAccents(a.name).toLowerCase()
+    const bNorm = removeVietnameseAccents(b.name).toLowerCase()
+    const aStarts = aNorm.startsWith(q) ? 1 : 0
+    const bStarts = bNorm.startsWith(q) ? 1 : 0
+    if (aStarts !== bStarts) return bStarts - aStarts
+    return aNorm.localeCompare(bNorm)
   })
 
-  // Prefer the name's first word. Only fall back to later words when no first
-  // name matches, e.g. @K => Khanh, but @Ka can reveal Cảnh Kaynblue.
-  const specialMatches = [allOption, ...groupOptions].filter(item => removeVietnameseAccents(item.mentionName).includes(q))
-  if (firstWordMatches.length > 0) return [...specialMatches, ...firstWordMatches]
-
-  return [...specialMatches, ...availableUsers.filter(u => {
-    const words = removeVietnameseAccents(u.name).toLowerCase().split(/\s+/)
-    return words.slice(1).some(word => word.startsWith(q))
-  })]
+  return [...specialMatches, ...matchedUsers]
 })
 
 const autoDetectAssigneeFromText = (text) => {
@@ -2259,7 +2286,7 @@ const onTitleInput = (e) => {
   // 2. Mention dropdown trigger
   const cursorPos = e.target.selectionStart || text.length
   const textBeforeCursor = text.substring(0, cursorPos)
-  const match = textBeforeCursor.match(/@([^\s@]*)$/)
+  const match = textBeforeCursor.match(/@([^@]{0,30})$/)
 
   if (match) {
     mentionQuery.value = match[1]
@@ -2319,7 +2346,7 @@ const selectMentionUser = (user) => {
     const cursorPos = stageTaskTitleInputRef.value?.selectionStart || text.length
     const textBeforeCursor = text.substring(0, cursorPos)
     const textAfterCursor = text.substring(cursorPos)
-    const match = textBeforeCursor.match(/@([^\s@]*)$/)
+    const match = textBeforeCursor.match(/@([^@]{0,30})$/)
     const newBefore = match ? textBeforeCursor.substring(0, match.index) + `@${user.mentionName} ` : `${textBeforeCursor}@${user.mentionName} `
     newStageTaskTitle.value = newBefore + textAfterCursor
     showMentionDropdown.value = false
@@ -2338,7 +2365,7 @@ const selectMentionUser = (user) => {
   const textAfterCursor = text.substring(cursorPos)
 
   let newCursorPos = cursorPos
-  const match = textBeforeCursor.match(/@([^\s@]*)$/)
+  const match = textBeforeCursor.match(/@([^@]{0,30})$/)
   if (match) {
     const startIndex = match.index
     const newBefore = textBeforeCursor.substring(0, startIndex) + `@${user.name} `
@@ -2561,27 +2588,15 @@ const handleViewAll = () => {
 
 // TASK CARD COLOR DEFINITIONS MATCHING DESIGN
 const isAssignedHuhuTask = (task) => {
-  if (!task) return false
-  if (task.assignee_id || task.assignee?.id) return true
-  if (task.title && users.value && users.value.length > 0) {
-    const match = task.title.match(/@([^\s@,.:;!?()\n<]+)/)
-    if (match && match[1]) {
-      const mentionName = match[1].toLowerCase()
-      return users.value.some(user => user.name && user.name.toLowerCase() === mentionName)
-    }
-  }
-  return false
+  return getTaggedUsers(task).length > 0
 }
 
 const getTaskCardBgColor = (task) => {
-  if (!task) return 'bg-emerald-600'
+  if (!task) return 'bg-[#45A246]'
   if (isAssignedHuhuTask(task)) {
-    return 'bg-amber-500'
+    return 'bg-[#EF8511]'
   }
-  if (task.type === 'comment' || task.is_comment) {
-    return 'bg-purple-600'
-  }
-  return 'bg-emerald-600'
+  return 'bg-[#45A246]'
 }
 
 const getTaskCardIcon = (task) => {
@@ -2590,7 +2605,9 @@ const getTaskCardIcon = (task) => {
     return 'fa-solid fa-bell'
   }
   if (task.type === 'comment' || task.is_comment) {
-    return 'fa-solid fa-comment-dots'
+    if (parseReplyInfo(task.title)) {
+      return 'fa-solid fa-comment-dots'
+    }
   }
   return 'fa-solid fa-shoe-prints'
 }
@@ -2602,11 +2619,12 @@ const getAssigneeAvatar = (task) => {
     const u = users.value.find(user => user.id == task.assignee_id || String(user.id) === String(task.assignee_id))
     if (u?.avatar) return u.avatar
   }
-  if (task.title && users.value && users.value.length > 0) {
-    const match = task.title.match(/@([^\s@,.:;!?()\n<]+)/)
-    if (match && match[1]) {
-      const mentionName = match[1].toLowerCase()
-      const u = users.value.find(user => user.name && user.name.toLowerCase() === mentionName)
+  const tags = getTaggedUsers(task)
+  if (tags.length > 0) {
+    const firstTag = tags[0]
+    if (firstTag.id.startsWith('user-')) {
+      const uId = firstTag.id.replace('user-', '')
+      const u = users.value.find(user => String(user.id) === String(uId))
       if (u?.avatar) return u.avatar
     }
   }
@@ -2620,40 +2638,59 @@ const getAssigneeDisplayName = (task) => {
     const u = users.value.find(user => user.id == task.assignee_id || String(user.id) === String(task.assignee_id))
     if (u) return u.name
   }
-  if (task.title && users.value && users.value.length > 0) {
-    const match = task.title.match(/@([^\s@,.:;!?()\n<]+)/)
-    if (match && match[1]) {
-      const mentionName = match[1].toLowerCase()
-      const u = users.value.find(user => user.name && user.name.toLowerCase() === mentionName)
-      if (u) return u.name
-    }
-  }
+  const tags = getTaggedUsers(task)
+  if (tags.length > 0) return tags[0].name
   return ''
 }
 
 const getTaggedUsers = (task) => {
   if (!task) return []
 
-  const taggedUsers = new Map()
-  const addUser = (user) => {
-    if (user?.id) taggedUsers.set(String(user.id), user)
+  const taggedList = []
+  const seenIds = new Set()
+
+  const addTarget = (id, name) => {
+    if (!id || seenIds.has(id)) return
+    seenIds.add(id)
+    taggedList.push({ id, name })
   }
 
-  // Preserve the assigned person even when their name was not typed with @.
+  // Preserve the assigned person
   if (task.assignee?.id) {
-    addUser(task.assignee)
+    addTarget(`user-${task.assignee.id}`, task.assignee.name)
   } else if (task.assignee_id && users.value) {
-    addUser(users.value.find(user => String(user.id) === String(task.assignee_id)))
+    const u = users.value.find(user => String(user.id) === String(task.assignee_id))
+    if (u) addTarget(`user-${u.id}`, u.name)
   }
 
-  // A task may tag more than one person in its title.
-  const mentions = task.title?.match(/@([^\s@,.:;!?()\n<]+)/g) || []
-  mentions.forEach((mention) => {
-    const mentionName = mention.slice(1).toLowerCase()
-    addUser(users.value.find(user => user.name?.toLowerCase() === mentionName))
-  })
+  if (task.title) {
+    const titleLower = task.title.toLowerCase()
 
-  return [...taggedUsers.values()]
+    // 1. Check @all
+    if (titleLower.includes('@all')) {
+      addTarget('all', 'all')
+    }
+
+    // 2. Check group mentions
+    if (mentionGroups.value) {
+      mentionGroups.value.forEach(g => {
+        if (g.name && titleLower.includes(`@${g.name.toLowerCase()}`)) {
+          addTarget(`group-${g.id}`, g.name)
+        }
+      })
+    }
+
+    // 3. Check user mentions
+    if (users.value) {
+      users.value.forEach(u => {
+        if (u.name && titleLower.includes(`@${u.name.toLowerCase()}`)) {
+          addTarget(`user-${u.id}`, u.name)
+        }
+      })
+    }
+  }
+
+  return taggedList
 }
 
 const getCreatorAvatar = (task) => {
@@ -3516,7 +3553,22 @@ const handleAddStageTaskSubmit = async () => {
     }
   }
 
-  const assignedUserId = newStageTaskAssignee.value ? Number(newStageTaskAssignee.value) : null
+  // Filter actual tagged users based on what is still inside titleText
+  const finalTaggedUserIds = newStageTaskTaggedUsers.value.filter(id => {
+    const u = users.value.find(user => String(user.id) === String(id))
+    if (!u || !u.name) return false
+    return titleText.toLowerCase().includes(`@${u.name.toLowerCase()}`)
+  })
+
+  let assignedUserId = newStageTaskAssignee.value ? Number(newStageTaskAssignee.value) : null
+  if (assignedUserId) {
+    const u = users.value.find(user => user.id === assignedUserId)
+    if (u && u.name && !titleText.toLowerCase().includes(`@${u.name.toLowerCase()}`)) {
+      // If the assignee was set via tag selection but the tag was deleted, clear it or fall back
+      assignedUserId = finalTaggedUserIds.length > 0 ? Number(finalTaggedUserIds[0]) : null
+    }
+  }
+
   const currentUserId = authStore.user?.id || 1
 
   if (editingTaskId.value) {
@@ -3533,7 +3585,7 @@ const handleAddStageTaskSubmit = async () => {
         priority: 'medium',
         due_date: selectedDueDate,
         health: newStageTaskHealth.value,
-        tagged_user_ids: newStageTaskTaggedUsers.value.map(Number),
+        tagged_user_ids: finalTaggedUserIds.map(Number),
         attachment_ids: uploadedAttachmentIds
       })
       toast.success('Đã cập nhật thông tin hoạt động!')
@@ -3583,7 +3635,7 @@ const handleAddStageTaskSubmit = async () => {
       due_date: selectedDueDate,
       created_by: currentUserId,
       health: newStageTaskHealth.value,
-      tagged_user_ids: newStageTaskTaggedUsers.value.map(Number),
+      tagged_user_ids: finalTaggedUserIds.map(Number),
       attachment_ids: uploadedAttachmentIds
     })
 

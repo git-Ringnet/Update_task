@@ -14,7 +14,7 @@ class SendProjectCommentPush implements ShouldQueue
     public int $tries = 1;
     public int $timeout = 60;
 
-    public function __construct(public int $commentId)
+    public function __construct(public int $commentId, public ?string $baseUrl = null)
     {
     }
 
@@ -22,7 +22,7 @@ class SendProjectCommentPush implements ShouldQueue
     {
         $comment = Comment::find($this->commentId);
         if ($comment) {
-            $pushService->sendForComment($comment);
+            $pushService->sendForComment($comment, $this->baseUrl);
         }
     }
 }

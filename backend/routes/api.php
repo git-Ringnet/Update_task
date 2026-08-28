@@ -164,6 +164,43 @@ Route::middleware('auth.token')->group(function () {
                     $extension = 'gif';
                 }
 
+                // Resize image to max 150x150 to keep file size extremely small for notifications
+                if (function_exists('imagecreatefromstring')) {
+                    $img = @imagecreatefromstring($decodedData);
+                    if ($img) {
+                        $width = imagesx($img);
+                        $height = imagesy($img);
+                        $maxDim = 150;
+                        if ($width > $maxDim || $height > $maxDim) {
+                            $ratio = $width / $height;
+                            if ($ratio > 1) {
+                                $newWidth = $maxDim;
+                                $newHeight = (int)($maxDim / $ratio);
+                            } else {
+                                $newHeight = $maxDim;
+                                $newWidth = (int)($maxDim * $ratio);
+                            }
+                            $newImg = imagecreatetruecolor($newWidth, $newHeight);
+                            
+                            // Handle transparency for PNG/GIF
+                            imagealphablending($newImg, false);
+                            imagesavealpha($newImg, true);
+                            
+                            imagecopyresampled($newImg, $img, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+                            
+                            ob_start();
+                            imagepng($newImg, null, 9); // Max compression PNG
+                            $resizedData = ob_get_clean();
+                            if ($resizedData) {
+                                $decodedData = $resizedData;
+                                $extension = 'png';
+                            }
+                            imagedestroy($newImg);
+                        }
+                        imagedestroy($img);
+                    }
+                }
+
                 $fileName = 'avatars/user_' . $user->id . '_' . time() . '.' . $extension;
                 \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $decodedData);
                 $validated['avatar'] = \Illuminate\Support\Facades\Storage::url($fileName);

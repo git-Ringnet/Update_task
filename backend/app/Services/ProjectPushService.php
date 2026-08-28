@@ -12,7 +12,7 @@ use Minishlink\WebPush\WebPush;
 
 class ProjectPushService
 {
-    public function sendForComment(Comment $comment): void
+    public function sendForComment(Comment $comment, ?string $baseUrl = null): void
     {
         $project = $comment->project()->with('members')->first();
         if (!$project || !$this->isConfigured()) {
@@ -59,7 +59,79 @@ class ProjectPushService
         $content = Str::limit($content, 500);
         $body = "{$projectTitle}\n{$userName}: " . ($content ?: 'vừa cập nhật dự án.');
 
-        $icon = url('cactus-logo-square.png');
+        $base = $baseUrl ?: config('app.url');
+        $avatar = $comment->user?->avatar;
+        if ($avatar) {
+            if (str_starts_with($avatar, 'data:image/')) {
+                try {
+                    $user = $comment->user;
+                    $data = $avatar;
+                    list($type, $data) = explode(';', $data);
+                    list(, $data)      = explode(',', $data);
+                    $decodedData = base64_decode($data);
+
+                    $extension = 'png';
+                    if (str_contains($type, 'jpeg') || str_contains($type, 'jpg')) {
+                        $extension = 'jpg';
+                    } elseif (str_contains($type, 'gif')) {
+                        $extension = 'gif';
+                    }
+
+                    if (function_exists('imagecreatefromstring')) {
+                        $img = @imagecreatefromstring($decodedData);
+                        if ($img) {
+                            $width = imagesx($img);
+                            $height = imagesy($img);
+                            $maxDim = 150;
+                            if ($width > $maxDim || $height > $maxDim) {
+                                $ratio = $width / $height;
+                                if ($ratio > 1) {
+                                    $newWidth = $maxDim;
+                                    $newHeight = (int)($maxDim / $ratio);
+                                } else {
+                                    $newHeight = $maxDim;
+                                    $newWidth = (int)($maxDim * $ratio);
+                                }
+                                $newImg = imagecreatetruecolor($newWidth, $newHeight);
+                                imagealphablending($newImg, false);
+                                imagesavealpha($newImg, true);
+                                imagecopyresampled($newImg, $img, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+                                ob_start();
+                                imagepng($newImg, null, 9);
+                                $resizedData = ob_get_clean();
+                                if ($resizedData) {
+                                    $decodedData = $resizedData;
+                                    $extension = 'png';
+                                }
+                                imagedestroy($newImg);
+                            }
+                            imagedestroy($img);
+                        }
+                    }
+
+                    $fileName = 'avatars/user_' . $user->id . '_' . time() . '.' . $extension;
+                    \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $decodedData);
+                    $newAvatarUrl = \Illuminate\Support\Facades\Storage::url($fileName);
+                    
+                    $user->avatar = $newAvatarUrl;
+                    $user->save();
+                    
+                    $avatar = $newAvatarUrl;
+                } catch (\Throwable $e) {
+                    $avatar = null;
+                }
+            }
+
+            if ($avatar && !str_starts_with($avatar, 'data:image/')) {
+                $icon = (str_starts_with($avatar, 'http://') || str_starts_with($avatar, 'https://'))
+                    ? $avatar
+                    : rtrim($base, '/') . '/' . ltrim($avatar, '/');
+            } else {
+                $icon = rtrim($base, '/') . '/cactus-logo-square.png';
+            }
+        } else {
+            $icon = rtrim($base, '/') . '/cactus-logo-square.png';
+        }
 
         $payload = json_encode([
             'title' => $title,

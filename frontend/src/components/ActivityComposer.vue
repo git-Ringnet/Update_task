@@ -164,6 +164,7 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import axios from 'axios'
+import { useAuthStore } from '../stores/auth'
 
 const props = defineProps({
   projects: { type: Array, default: () => [] },
@@ -180,6 +181,7 @@ const projectModel = defineModel('projectId', { default: null })
 const message = messageModel
 const projectId = computed({ get: () => projectModel.value, set: value => { projectModel.value = value } })
 
+const authStore = useAuthStore()
 const textareaRef = ref(null)
 const lastCursorPosition = ref(null)
 const projectPickerInputRef = ref(null)
@@ -358,8 +360,15 @@ const matches = (value) => {
   const normalizedQuery = normalize(query.value)
   if (!normalizedQuery) return true
   const normalizedValue = normalize(value)
-  const initials = normalizedValue.split(/\s+/).filter(Boolean).map(word => word[0]).join('')
-  return normalizedValue.includes(normalizedQuery) || initials.includes(normalizedQuery)
+
+  if (normalizedQuery.includes(' ')) {
+    return normalizedValue.includes(normalizedQuery)
+  }
+
+  const words = normalizedValue.split(/\s+/).filter(Boolean)
+  const startsWithWord = words.some(word => word.startsWith(normalizedQuery))
+  const initials = words.map(word => word[0]).join('')
+  return startsWithWord || initials.includes(normalizedQuery)
 }
 
 const selectedProject = computed(() => props.projects.find(project => String(project.id) === String(projectId.value)) || null)
@@ -421,8 +430,11 @@ const suggestions = computed(() => {
 
   if (trigger.value !== '@') return []
   const items = []
-  if (matches('all')) items.push({ type: 'all', id: 'all', title: '@all', token: 'all', subtitle: `Tất cả ${props.users.length} thành viên` })
-  props.users.filter(user => matches(user.name) || matches(String(user.email || '').split('@')[0])).forEach(user => {
+  const currentUserId = String(authStore.user?.id || '')
+  const otherUsers = props.users.filter(user => String(user.id) !== currentUserId)
+
+  if (matches('all')) items.push({ type: 'all', id: 'all', title: '@all', token: 'all', subtitle: `Tất cả ${otherUsers.length} thành viên` })
+  otherUsers.filter(user => matches(user.name) || matches(String(user.email || '').split('@')[0])).forEach(user => {
     items.push({ type: 'member', id: user.id, title: user.name, subtitle: 'Thành viên' })
   })
   props.groups.filter(group => matches(group.name) || matches(group.description)).forEach(group => {
@@ -459,7 +471,7 @@ const handleInput = event => {
   hasText.value = Boolean(text.trim())
   const cursor = event.target.selectionStart ?? text.length
   lastCursorPosition.value = cursor
-  const match = text.substring(0, cursor).match(/([@#])([^\s@#]*)$/)
+  const match = text.substring(0, cursor).match(/([@#])([^@#]{0,30})$/)
   if (!match) {
     showSuggestions.value = false
     return
@@ -478,7 +490,7 @@ const selectSuggestion = item => {
   const cursor = lastCursorPosition.value ?? textarea.selectionStart ?? text.length
   const before = text.substring(0, cursor)
   const after = text.substring(cursor)
-  const tokenMatch = before.match(/([@#])([^\s@#]*)$/)
+  const tokenMatch = before.match(/([@#])([^@#]{0,30})$/)
   const prefix = tokenMatch ? before.substring(0, tokenMatch.index) : before
   let replacement = ''
 

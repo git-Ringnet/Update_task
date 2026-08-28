@@ -35,7 +35,8 @@ class Comment extends Model
             // Web Push can involve dozens of external Apple/FCM/WNS requests.
             // Queue it so saving a chat message or project update never waits
             // for those providers to respond.
-            SendProjectCommentPush::dispatch($comment->id);
+            $baseUrl = request()->getSchemeAndHttpHost();
+            SendProjectCommentPush::dispatch($comment->id, $baseUrl);
         });
     }
 
