@@ -221,7 +221,8 @@ watch(isProjectPickerOpen, async (isOpen) => {
     mobileSearchInputRef.value?.focus()
   }
 })
-const canSubmit = computed(() => props.projects.length > 0 && (Boolean(message.value.trim()) || attachments.value.length > 0))
+const hasText = ref(Boolean(messageModel.value?.trim()))
+const canSubmit = computed(() => props.projects.length > 0 && (hasText.value || attachments.value.length > 0))
 
 const resizeTextarea = () => {
   const textarea = textareaRef.value
@@ -443,13 +444,19 @@ watch(() => props.projects, projects => {
 watch([projectModel, () => props.projects], syncProjectSearch, { immediate: true })
 
 watch(messageModel, value => {
-  if (!String(value || '').trim()) isAutoExpanded.value = false
+  if (!String(value || '').trim()) {
+    isAutoExpanded.value = false
+    hasText.value = false
+  } else {
+    hasText.value = true
+  }
   nextTick(resizeTextarea)
 })
 
 const handleInput = event => {
   nextTick(resizeTextarea)
   const text = event.target.value
+  hasText.value = Boolean(text.trim())
   const cursor = event.target.selectionStart ?? text.length
   lastCursorPosition.value = cursor
   const match = text.substring(0, cursor).match(/([@#])([^\s@#]*)$/)
@@ -465,8 +472,10 @@ const handleInput = event => {
 
 const selectSuggestion = item => {
   const textarea = textareaRef.value
+  if (!textarea) return
+
   const text = message.value
-  const cursor = lastCursorPosition.value ?? textarea?.selectionStart ?? text.length
+  const cursor = lastCursorPosition.value ?? textarea.selectionStart ?? text.length
   const before = text.substring(0, cursor)
   const after = text.substring(cursor)
   const tokenMatch = before.match(/([@#])([^\s@#]*)$/)
@@ -480,12 +489,17 @@ const selectSuggestion = item => {
     replacement = `${prefix}@${item.token || item.title} `
   }
 
-  message.value = replacement + after
+  const finalValue = replacement + after
+
+  // Force DOM value updates directly to reset browser's active IME composition buffer on mobile
+  textarea.value = finalValue
+  textarea.dispatchEvent(new Event('input'))
+
   showSuggestions.value = false
   lastCursorPosition.value = null
   nextTick(() => {
-    textarea?.focus()
-    textarea?.setSelectionRange(replacement.length, replacement.length)
+    textarea.focus()
+    textarea.setSelectionRange(replacement.length, replacement.length)
   })
 }
 
