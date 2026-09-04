@@ -170,7 +170,8 @@ class ProjectPushService
             }
 
             foreach ($webPush->flush() as $report) {
-                if ($report->isSubscriptionExpired()) {
+                $statusCode = $report->getResponse()?->getStatusCode();
+                if ($report->isSubscriptionExpired() || in_array($statusCode, [400, 403, 404, 410])) {
                     PushSubscription::where('endpoint', $report->getEndpoint())->delete();
                 }
                 if (!$report->isSuccess()) {
@@ -178,7 +179,7 @@ class ProjectPushService
                         'comment_id' => $comment->id,
                         'endpoint' => $report->getEndpoint(),
                         'reason' => $report->getReason(),
-                        'status' => $report->getResponse()?->getStatusCode(),
+                        'status' => $statusCode,
                     ]);
                 }
             }

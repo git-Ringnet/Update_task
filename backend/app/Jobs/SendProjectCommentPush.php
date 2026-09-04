@@ -4,10 +4,9 @@ namespace App\Jobs;
 
 use App\Models\Comment;
 use App\Services\ProjectPushService;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
-class SendProjectCommentPush implements ShouldQueue
+class SendProjectCommentPush
 {
     use Queueable;
 

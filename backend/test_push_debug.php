@@ -75,6 +75,17 @@ if ($subscriptions->isEmpty()) {
 }
 
 echo "\n=== VAPID CONFIG ===\n";
-echo "Subject: " . (config('webpush.subject') ? 'Configured' : 'MISSING') . "\n";
-echo "Public Key: " . (config('webpush.public_key') ? 'Configured' : 'MISSING') . "\n";
+echo "Subject: " . (config('webpush.subject') ? config('webpush.subject') : 'MISSING') . "\n";
+echo "Public Key: " . (config('webpush.public_key') ? 'Configured (' . substr(config('webpush.public_key'), 0, 15) . '...)' : 'MISSING') . "\n";
 echo "Private Key: " . (config('webpush.private_key') ? 'Configured' : 'MISSING') . "\n";
+
+echo "\n=== SENDING LIVE TEST PUSH VIA ProjectPushService ===\n";
+try {
+    $service = app(\App\Services\ProjectPushService::class);
+    $service->sendForComment($comment);
+    echo "[+] Push execution finished. Check devices or warnings above!\n";
+} catch (\Throwable $e) {
+    echo "[-] Exception occurred: " . $e->getMessage() . "\n";
+    echo $e->getTraceAsString() . "\n";
+}
+
