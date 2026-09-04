@@ -442,14 +442,14 @@
                           <!-- Relative Time (shown when not hovered and menu not active) -->
                           <span
                             class="text-[15px] sm:text-[16px] text-gray-400 font-medium whitespace-nowrap leading-snug text-right"
-                            :class="activeLogMenuId === log.id ? 'hidden' : 'group-hover:hidden'">
+                            :class="(activeLogMenuId === log.id || activeLogIdForMobileActions === log.id) ? 'hidden' : 'group-hover:hidden'">
                             {{ formatCommentRelativeTime(log.created_at) }}
                           </span>
 
                           <!-- 3-dots Menu Button (shown on hover or when menu is active) -->
                           <button type="button" @click.stop="toggleActivityMenu(log.id, $event)" title="Tùy chọn"
                             class="text-gray-400 hover:text-gray-700 w-5 h-5 rounded flex items-center justify-center cursor-pointer transition-colors p-0 -mr-0.5"
-                            :class="activeLogMenuId === log.id ? 'flex text-gray-700 bg-gray-200/60' : 'hidden group-hover:flex'">
+                            :class="(activeLogMenuId === log.id || activeLogIdForMobileActions === log.id) ? 'flex text-gray-700 bg-gray-200/60' : 'hidden group-hover:flex'">
                             <i class="fa-solid fa-ellipsis-vertical text-base leading-none"></i>
                           </button>
 
