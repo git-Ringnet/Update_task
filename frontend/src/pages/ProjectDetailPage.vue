@@ -796,8 +796,21 @@
       <div v-if="isInlineFormOpen" ref="inlineFormRef"
         class="inline-update-shell fixed bottom-0 left-0 right-0 z-50 pointer-events-none pb-3 sm:pb-5 px-4 sm:px-6 lg:px-8 transition-all">
         <div
-          class="inline-update-card max-w-[720px] mx-auto pointer-events-auto bg-white border border-gray-200 shadow-2xl rounded-2xl p-4 sm:p-5 relative ring-1 ring-black/5"
-          :class="{ 'overflow-visible-important': showMentionDropdown }">
+          class="inline-update-card max-w-[720px] mx-auto pointer-events-auto bg-white border border-gray-200 shadow-2xl rounded-2xl p-4 sm:p-5 relative ring-1 ring-black/5 transition-all"
+          :class="{ 'overflow-visible-important': showMentionDropdown, 'ring-2 ring-emerald-500 border-emerald-400': isDraggingTaskUpdate }"
+          @dragenter.prevent="handleTaskDragEnter"
+          @dragover.prevent="handleTaskDragOver"
+          @dragleave.prevent="handleTaskDragLeave"
+          @drop.prevent="handleTaskDrop">
+
+          <!-- DRAG OVERLAY -->
+          <div v-if="isDraggingTaskUpdate"
+            class="absolute inset-0 z-40 bg-emerald-500/10 border-2 border-dashed border-emerald-500 rounded-2xl flex flex-col items-center justify-center gap-2 backdrop-blur-[2px] pointer-events-none transition-all">
+            <div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm animate-bounce">
+              <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
+            </div>
+            <p class="text-sm font-bold text-emerald-800">Thả tệp hoặc ảnh vào đây để tải lên cập nhật</p>
+          </div>
 
           <!-- X CLOSE BUTTON (TOP RIGHT) -->
           <button type="button" @click="cancelEditTask"
@@ -1586,9 +1599,42 @@ const handleTouchMove = () => {
 // ATTACHMENTS & CLIPBOARD PASTED IMAGES STATE
 const attachedFiles = ref([])
 const fileInputRef = ref(null)
+const isDraggingTaskUpdate = ref(false)
+let taskDragCounter = 0
 
 const triggerFileInput = () => {
   if (fileInputRef.value) fileInputRef.value.click()
+}
+
+const handleTaskDragEnter = (e) => {
+  if (e.dataTransfer?.types?.includes('Files')) {
+    taskDragCounter++
+    isDraggingTaskUpdate.value = true
+  }
+}
+
+const handleTaskDragOver = (e) => {
+  if (e.dataTransfer?.types?.includes('Files')) {
+    e.dataTransfer.dropEffect = 'copy'
+  }
+}
+
+const handleTaskDragLeave = (e) => {
+  if (e.dataTransfer?.types?.includes('Files')) {
+    taskDragCounter = Math.max(0, taskDragCounter - 1)
+    if (taskDragCounter === 0) {
+      isDraggingTaskUpdate.value = false
+    }
+  }
+}
+
+const handleTaskDrop = async (e) => {
+  taskDragCounter = 0
+  isDraggingTaskUpdate.value = false
+  const files = Array.from(e.dataTransfer?.files || [])
+  for (const file of files) {
+    await addFileToAttachments(file)
+  }
 }
 
 const addFileToAttachments = async (file) => {
@@ -1813,15 +1859,19 @@ const onTextareaPaste = async (e) => {
   const clipboardData = e.clipboardData || window.clipboardData
   if (!clipboardData || !clipboardData.items) return
 
-  const items = clipboardData.items
-  for (let i = 0; i < items.length; i++) {
-    if (items[i].type.indexOf('image') !== -1) {
-      const file = items[i].getAsFile()
-      if (file) {
-        const pasteName = `pasted_image_${Date.now()}.png`
-        const renamedFile = new File([file], pasteName, { type: file.type })
-        await addFileToAttachments(renamedFile)
-      }
+  const items = Array.from(clipboardData.items)
+  const files = items.map(item => item.getAsFile()).filter(Boolean)
+  if (!files.length) return
+
+  e.preventDefault()
+  for (const [index, file] of files.entries()) {
+    if (file.type.indexOf('image') !== -1) {
+      const ext = file.type.split('/')[1] || 'png'
+      const pasteName = file.name || `pasted_image_${Date.now()}_${index + 1}.${ext}`
+      const renamedFile = new File([file], pasteName, { type: file.type })
+      await addFileToAttachments(renamedFile)
+    } else {
+      await addFileToAttachments(file)
     }
   }
 }

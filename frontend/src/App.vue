@@ -68,35 +68,35 @@
         <div class="fixed inset-0 bg-gray-950/60 backdrop-blur-xs" @click="confirmStore.cancel"></div>
 
         <!-- Dialog Box -->
-        <div class="relative bg-white rounded-3xl p-6 shadow-2xl border border-gray-100 w-full max-w-sm text-left animate-fade-in-up">
-          <div class="flex items-start gap-4">
+        <div class="relative bg-white rounded-3xl p-7 sm:p-8 shadow-2xl border border-gray-100 w-full max-w-md text-left animate-fade-in-up">
+          <div class="flex items-start gap-4 sm:gap-5">
             <!-- Warning Icon -->
-            <span class="flex-shrink-0 w-11 h-11 rounded-full bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center text-lg">
-              <i class="fa-solid fa-triangle-exclamation animate-bounce"></i>
+            <span class="flex-shrink-0 w-14 h-14 rounded-full bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center text-2xl shadow-3xs">
+              <i class="fa-solid fa-triangle-exclamation"></i>
             </span>
 
-            <div class="flex-1 min-w-0">
-              <h3 class="text-base font-extrabold text-gray-900 font-heading leading-snug">
+            <div class="flex-1 min-w-0 pt-0.5">
+              <h3 class="text-[20px] sm:text-[22px] font-black text-gray-900 font-heading leading-snug">
                 {{ confirmStore.title }}
               </h3>
-              <p class="text-xs font-semibold text-gray-500 mt-1.5 leading-relaxed break-words">
+              <p class="text-[15px] sm:text-[16px] font-medium text-gray-600 mt-2 leading-relaxed break-words">
                 {{ confirmStore.message }}
               </p>
             </div>
           </div>
 
-          <div class="mt-6 flex items-center justify-end gap-2.5">
+          <div class="mt-7 flex items-center justify-end gap-3">
             <button
               @click="confirmStore.cancel"
               type="button"
-              class="px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 font-extrabold text-xs rounded-xl shadow-3xs transition-colors cursor-pointer focus:outline-none"
+              class="px-5 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 font-extrabold text-[15px] rounded-xl shadow-3xs transition-colors cursor-pointer focus:outline-none"
             >
               Hủy
             </button>
             <button
               @click="confirmStore.confirm"
               type="button"
-              class="px-4.5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-3xs hover:shadow-2xs transition-all cursor-pointer focus:outline-none"
+              class="px-6 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-[15px] rounded-xl shadow-3xs hover:shadow-2xs transition-all cursor-pointer focus:outline-none"
             >
               Đồng ý
             </button>
@@ -136,8 +136,16 @@ const handleGlobalKeydown = (e) => {
   }
 }
 
+const preventGlobalDrop = (e) => {
+  if (e.dataTransfer?.types?.includes('Files')) {
+    e.preventDefault()
+  }
+}
+
 onMounted(() => {
   window.addEventListener('keydown', handleGlobalKeydown)
+  window.addEventListener('dragover', preventGlobalDrop)
+  window.addEventListener('drop', preventGlobalDrop)
   browserNotifications.refreshPermission()
   requestBrowserNotificationPermission()
 })
@@ -149,5 +157,7 @@ watch(() => authStore.user?.id, (userId) => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleGlobalKeydown)
+  window.removeEventListener('dragover', preventGlobalDrop)
+  window.removeEventListener('drop', preventGlobalDrop)
 })
 </script>

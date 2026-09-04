@@ -1,22 +1,11 @@
 <template>
-  <div class="min-h-screen flex flex-col pb-12 transition-colors duration-200"
-    :class="viewMode === 'notes' ? 'sticky-board-bg' : 'bg-[#F9F4EE]'">
+  <div class="min-h-screen flex flex-col pb-2 transition-colors duration-200"
+    :class="viewMode === 'notes' ? 'sticky-board-bg pb-12' : 'bg-[#F9F4EE]'">
     <!-- Navbar Component -->
     <Navbar @search="handleSearch" />
 
     <!-- Main Container -->
-    <main class="max-w-[1260px] mx-auto px-4 sm:px-6 lg:px-8 py-4 w-full">
-
-      <!-- Header (Top Center) -->
-      <div class="view-page-intro flex flex-col items-center text-center mt-1 mb-6 select-none">
-        <h1 class="text-2xl font-black text-gray-900 tracking-tight font-heading mb-1">Help IT Managers become badass.
-        </h1>
-        <p class="text-[11px] text-gray-400 font-bold uppercase tracking-wider">You must think about how IT managers
-          appear in the eyes of their audiences</p>
-      </div>
-
-
-
+    <main class="max-w-[1260px] mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
       <!-- Main Layout Container -->
       <div class="view-page-layout" :class="viewMode === 'notes'
         ? 'grid grid-cols-1 lg:grid-cols-[390px_minmax(0,1fr)] gap-10 w-full lg:w-[1280px] mx-auto items-start'
@@ -24,23 +13,22 @@
 
         <!-- LEFT PANEL: Actions, Switcher & Search (Block 1) -->
         <aside ref="viewActionsRef" class="view-actions" :class="[
-          viewMode === 'notes' ? 'space-y-3.5 select-none flex flex-col items-end w-full lg:-translate-x-[42px]' : 'space-y-3.5 select-none flex flex-col items-end w-[390px] flex-shrink-0',
-          mobileHomeTab === 'projects' ? '' : 'mobile-home-panel-hidden'
+          viewMode === 'notes' ? 'space-y-3.5 select-none flex flex-col items-end w-full lg:-translate-x-[42px]' : 'space-y-3.5 select-none flex flex-col items-end w-[390px] flex-shrink-0'
         ]">
           <!-- Button Tạo dự án -->
           <button @click="isModalOpen = true" type="button"
-            class="mobile-icon-button create-project-action w-fit bg-transparent hover:bg-gray-200/40 border-2 border-[#4d4d4d] text-gray-900 font-extrabold text-sm rounded-md px-4.5 py-2.5 flex items-center justify-center gap-1 transition-colors cursor-pointer focus:outline-none select-none"
+            class="mobile-icon-button create-project-action w-fit bg-transparent hover:bg-gray-200/40 border-2 border-[#4d4d4d] text-gray-900 font-extrabold text-[18px] rounded-md px-4.5 py-2.5 flex items-center justify-center gap-1.5 transition-colors cursor-pointer focus:outline-none select-none"
             title="Tạo dự án mới (Ctrl + K)">
-            <span class="text-base font-normal mr-0.5">+</span>
+            <span class="text-[20px] font-normal mr-0.5 leading-none">+</span>
             <span>Tạo dự án mới</span>
           </button>
 
-          <!-- Project / Customer Switcher (Simple Button) -->
+          <!-- Project / Customer / Activities Switcher (Simple Button) -->
           <button @click="toggleCustomerGroup" type="button" :disabled="isViewModeChanging"
-            class="mobile-icon-button view-switch-action w-fit bg-transparent hover:bg-gray-200/40 border-2 border-[#4d4d4d] text-gray-900 font-extrabold text-sm rounded-md px-4.5 py-2.5 flex items-center justify-center transition-colors cursor-pointer focus:outline-none select-none"
-            :class="isGroupedByCustomer ? 'bg-emerald-50/10' : ''" title="Chuyển đổi chế độ xem (Ctrl + B)">
+            class="mobile-icon-button view-switch-action w-fit bg-transparent hover:bg-gray-200/40 border-2 border-[#4d4d4d] text-gray-900 font-extrabold text-[18px] rounded-md px-4.5 py-2.5 flex items-center justify-center transition-colors cursor-pointer focus:outline-none select-none"
+            :class="isGroupedByCustomer || viewMode === 'activities' ? 'bg-emerald-50/10' : ''" :title="viewModeTitle">
             <div class="flex items-center gap-2">
-              <i class="fa-solid fa-list-ol text-sm text-[#4d4d4d]"></i>
+              <i class="fa-solid fa-list-ol text-[18px] text-[#4d4d4d]"></i>
               <span>Đổi kiểu xem</span>
             </div>
           </button>
@@ -49,13 +37,14 @@
           <div class="search-input-wrapper relative w-full max-w-[270px]"
             :class="{ 'mobile-search-open': isMobileSearchOpen }">
             <i
-              class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4d4d4d] text-sm"></i>
+              class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4d4d4d] text-[18px]"></i>
             <input ref="searchInputRef" v-model="projectStore.searchQuery" type="text" placeholder="Tìm kiếm"
-              class="w-full bg-transparent border-2 border-[#4d4d4d] rounded-md pl-10 pr-4 py-2.5 text-sm font-extrabold text-gray-900 focus:outline-none placeholder-gray-400" />
+              class="w-full bg-white sm:bg-transparent border-2 border-[#4d4d4d] rounded-md pl-11 pr-4 py-2.5 text-[18px] font-extrabold text-gray-900 focus:outline-none placeholder-gray-400" />
           </div>
           <button type="button" class="mobile-search-toggle mobile-icon-button"
-            @click="isMobileSearchOpen = !isMobileSearchOpen" title="Tìm kiếm">
-            <i class="fa-solid fa-magnifying-glass text-sm"></i>
+            :class="{ 'bg-emerald-50 border-emerald-600 text-emerald-700': isMobileSearchOpen || projectStore.searchQuery }"
+            @click="toggleMobileSearch" title="Tìm kiếm">
+            <i class="fa-solid fa-magnifying-glass text-[18px]"></i>
           </button>
 
           <!-- Keyboard shortcuts are collapsed by default to leave room for TV. -->
@@ -173,11 +162,11 @@
         <div class="mobile-panels-container">
           <!-- CENTER PANEL: Projects List (Block 2 - Wider Column, expands when notes view) -->
           <section ref="projectListPanelRef" class="project-list-panel"
-            :class="[viewMode === 'notes' ? 'space-y-3.5 select-none w-full' : 'space-y-3.5 select-none w-[420px] flex-shrink-0', mobileHomeTab === 'projects' ? '' : 'mobile-home-panel-hidden']">
+            :class="[viewMode === 'notes' ? 'space-y-3.5 select-none w-full' : 'space-y-3.5 select-none w-[420px] flex-shrink-0', viewMode === 'activities' ? 'mobile-activities-active' : '']">
 
             <!-- Skeleton Loading State -->
             <div v-if="projectStore.isLoading && displayedProjects.length === 0"
-              class="space-y-3 max-h-[calc(100vh-200px)]">
+              class="space-y-3 max-h-[calc(100vh-130px)]">
               <div v-for="i in 3" :key="'sk-proj-' + i"
                 class="rounded-2xl p-4 bg-white/80 border border-gray-200 animate-pulse flex items-center justify-between h-20 shadow-3xs">
                 <div class="flex items-center gap-3.5 flex-1">
@@ -193,11 +182,11 @@
 
             <!-- Grouped by Customer Mode (Matches Mockup) -->
             <div v-else-if="isGroupedByCustomer" ref="scrollContainerGrouped" @scroll="handleScroll"
-              class="project-scroll-container space-y-6 max-h-[calc(100vh-226px)] overflow-y-auto scrollbar-none md:ml-[-16px] md:mr-[-16px]">
+              class="project-scroll-container space-y-6 max-h-[calc(100vh-130px)] overflow-y-auto scrollbar-none md:ml-[-16px] md:mr-[-16px]">
               <div v-for="group in projectsByCustomer" :key="group.name" class="space-y-2.5">
                 <!-- Customer Header -->
                 <div class="flex items-center gap-2 pt-1 select-none md:pl-4">
-                  <h3 class="text-xl font-black text-gray-900 tracking-tight font-heading">{{ group.name }}</h3>
+                  <h3 class="text-[24px] font-black text-gray-900 tracking-tight font-heading">{{ group.name }}</h3>
                   <button @click.stop="togglePinCustomer(group.name)" type="button"
                     class="p-1 transition-colors hover:opacity-80"
                     :title="group.is_pinned ? 'Bỏ ghim khách hàng' : 'Ghim khách hàng'">
@@ -207,7 +196,7 @@
                 </div>
 
                 <!-- Customer Projects List -->
-                <div class="space-y-2">
+                <div class="space-y-3.5">
                   <div v-for="(project, pIdx) in group.projects" :key="project.id" :data-project-id="project.id"
                     draggable="true" @dragstart="onGroupedDragStart($event, project, group, pIdx)"
                     @dragover.prevent="onGroupedDragOver($event, pIdx)" @dragleave="onGroupedDragLeave"
@@ -229,7 +218,8 @@
                       class="project-card w-full md:w-[380px] ml-auto md:mx-auto rounded-lg p-4 flex items-center justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
                       :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]">
                       <div class="min-w-0 flex-1">
-                        <div class="font-extrabold text-gray-900 text-sm sm:text-base leading-snug break-words min-w-0">
+                        <div
+                          class="font-extrabold text-gray-900 text-[18px] sm:text-[20px] leading-snug break-words min-w-0">
                           {{ project.title }}
                         </div>
                       </div>
@@ -258,7 +248,7 @@
 
             <!-- Sticky Notes View (Grid Layout) -->
             <div v-else-if="viewMode === 'notes'" ref="scrollContainerNotes" @scroll="handleScroll"
-              class="project-scroll-container overflow-y-auto pr-1 pb-8 max-h-[calc(100vh-226px)] scrollbar-none">
+              class="project-scroll-container overflow-y-auto pr-1 pb-8 max-h-[calc(100vh-130px)] scrollbar-none">
               <div class="sticky-grid">
                 <div v-for="project in displayedProjects" :key="project.id" :data-project-id="project.id"
                   @click="goToProjectDetail(project.id, $event)" class="note-card" :class="getStickyNoteStyle(project)">
@@ -306,7 +296,7 @@
 
             <!-- Default Cards list -->
             <div v-else ref="scrollContainerDefault" @scroll="handleScroll"
-              class="project-scroll-container space-y-3.5 max-h-[calc(100vh-226px)] overflow-y-auto scrollbar-none ml-[-16px] mr-[-16px]">
+              class="project-scroll-container space-y-3.5 max-h-[calc(100vh-130px)] overflow-y-auto scrollbar-none ml-[-16px] mr-[-16px]">
               <transition-group enter-active-class="transition duration-300 ease-out"
                 enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0"
                 leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
@@ -331,10 +321,11 @@
                     class="project-card w-full md:w-[380px] ml-auto md:mx-auto rounded-lg p-4 flex items-start justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
                     :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]">
                     <div class="min-w-0 flex-1">
-                      <div class="font-extrabold text-gray-900 text-sm sm:text-base leading-snug break-words min-w-0">
+                      <div
+                        class="font-extrabold text-gray-900 text-[18px] sm:text-[20px] leading-snug break-words min-w-0">
                         {{ project.title }}
                       </div>
-                      <div class="text-xs text-gray-700 font-bold mt-1 uppercase tracking-wider">
+                      <div class="text-[16px] text-gray-700 font-bold mt-1 uppercase tracking-wider">
                         {{ project.customer ? project.customer.name : 'Chưa phân khách hàng' }}
                       </div>
                     </div>
@@ -364,8 +355,8 @@
                 v-if="displayedProjects.length < projectStore.projects.filter(p => p.tracking_status === 'following').length"
                 class="flex justify-center pt-2">
                 <button @click="loadMore" type="button"
-                  class="px-5 py-2.5 bg-white hover:bg-emerald-50 border border-gray-200 hover:border-emerald-500 text-gray-700 hover:text-emerald-700 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-3xs focus:outline-none">
-                  <i class="fa-solid fa-angles-down text-[10px]"></i>
+                  class="px-5 py-2.5 bg-white hover:bg-emerald-50 border border-gray-200 hover:border-emerald-500 text-gray-700 hover:text-emerald-700 font-bold text-[16px] rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-3xs focus:outline-none">
+                  <i class="fa-solid fa-angles-down text-xs"></i>
                   <span>Xem thêm dự án (Còn {{projectStore.projects.filter(p => p.tracking_status ===
                     'following').length
                     - displayedProjects.length}} dự án)</span>
@@ -376,29 +367,30 @@
 
           <!-- RIGHT PANEL: Hoạt động gần đây (Block 3 - Hidden in notes view) -->
           <section v-if="viewMode !== 'notes'"
-            class="recent-activity-panel bg-transparent flex flex-col h-[calc(100vh-226px)] select-none w-[390px] flex-shrink-0"
-            :class="mobileHomeTab === 'activities' ? '' : 'mobile-home-panel-hidden'">
+            class="recent-activity-panel bg-[#F9F4EE] border-2 border-[#4d4d4d] rounded-2xl p-0 flex flex-col h-[calc(100vh-130px)] select-none w-[390px] flex-shrink-0 shadow-3xs overflow-hidden"
+            :class="{ 'mobile-activities-active': viewMode === 'activities' }">
 
-            <!-- Header Actions: Lọc người nhắc đến & Tất cả hoạt động gần đây -->
-            <div v-if="activities.length > 0" class="flex-shrink-0 flex gap-2 mb-2">
-              <button @click="showMentionedActivities = !showMentionedActivities" type="button"
-                :title="showMentionedActivities ? 'Hiện tất cả hoạt động' : 'Chỉ hiện hoạt động có nhắc đến bạn'"
-                class="w-11 shrink-0 py-2 border rounded-xl font-extrabold text-sm transition-all cursor-pointer shadow-3xs focus:outline-none flex items-center justify-center"
-                :class="showMentionedActivities
-                  ? 'bg-emerald-600 border-emerald-600 text-white'
-                  : 'bg-[#f6f4ef] hover:bg-emerald-50 border-gray-300 text-[#1A7A56]'">
-                <i class="fa-solid fa-at"></i>
-              </button>
+            <!-- Header: "Hoạt động của đội" & Expand Button (Full width edge-to-edge border) -->
+            <div class="flex items-center justify-between px-4 py-3 border-b border-[#4d4d4d] flex-shrink-0">
+              <div class="flex items-center gap-2">
+                <h2 class="text-[20px] sm:text-[22px] font-black text-gray-900 font-heading">Hoạt động của đội</h2>
+                <button @click="showMentionedActivities = !showMentionedActivities" type="button"
+                  :title="showMentionedActivities ? 'Hiện tất cả hoạt động' : 'Chỉ hiện hoạt động có nhắc đến bạn'"
+                  class="w-5 h-5 rounded-full flex items-center justify-center text-xs transition-colors cursor-pointer hidden"
+                  :class="showMentionedActivities ? 'bg-emerald-600 text-white' : 'text-gray-400 hover:text-emerald-700 hover:bg-emerald-50'">
+                  <i class="fa-solid fa-at"></i>
+                </button>
+              </div>
 
-              <button @click="router.push('/feed')" type="button"
-                class="flex-1 py-2 bg-[#f6f4ef] hover:bg-gray-150 border border-gray-300 text-gray-900 font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-3xs focus:outline-none text-center">
-                Tất cả hoạt động gần đây
+              <button @click="router.push('/feed')" type="button" title="Mở rộng tất cả hoạt động"
+                class="text-gray-700 hover:text-emerald-700 p-1 rounded-lg hover:bg-gray-200/50 cursor-pointer transition-colors">
+                <i class="fa-solid fa-up-right-and-down-left-from-center text-base"></i>
               </button>
             </div>
 
             <!-- Skeleton Loading State -->
             <div v-if="isActivitiesLoading && displayedActivities.length === 0"
-              class="space-y-3.5 flex-1 overflow-hidden pt-2">
+              class="space-y-3.5 flex-1 overflow-hidden p-4">
               <div v-for="i in 4" :key="'sk-act-' + i" class="animate-pulse space-y-2 pb-3 border-b border-gray-100">
                 <div class="flex justify-between items-center">
                   <div class="w-1/3 h-4 bg-gray-200 rounded-md"></div>
@@ -410,115 +402,107 @@
 
             <!-- Activity Feed List -->
             <div v-else class="flex-1 flex flex-col justify-between min-h-0">
-              <div class="activity-feed-scroll space-y-0 overflow-y-auto scrollbar-none flex-1">
+              <div class="activity-feed-scroll space-y-0 overflow-y-auto scrollbar-none flex-1 px-4 pt-3.5 pr-3">
                 <transition-group enter-active-class="transition duration-300 ease-out"
                   enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0"
                   leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
                   leave-to-class="opacity-0 -translate-y-2">
-                  <div v-for="(log, idx) in displayedActivities" :key="log.id"
-                    :id="'activity-log-item-' + log.id"
-                    class="activity-log-item relative flex gap-3 select-none pb-6 group cursor-pointer"
+                  <div v-for="(log, idx) in displayedActivities" :key="log.id" :id="'activity-log-item-' + log.id"
+                    class="activity-log-item relative flex gap-3 select-none pb-5 group cursor-pointer"
                     @touchstart="handleTouchStart(log, $event)" @touchend="handleTouchEnd" @touchmove="handleTouchMove">
 
                     <!-- Absolute Timeline Line connecting avatars across padding boundaries -->
                     <div v-if="idx < displayedActivities.length - 1"
-                      class="absolute top-11 bottom-2 left-[18px] w-[1.5px] bg-gray-300 z-0"></div>
+                      class="absolute top-10 bottom-0 left-[15px] w-[1.5px] bg-gray-300 z-0"></div>
 
                     <!-- Left Timeline column: Avatar -->
-                    <div class="flex-shrink-0 w-9 z-10">
-                      <img
-                        :src="log.user?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=60'"
-                        class="w-9 h-9 rounded-full object-cover border border-gray-250 relative z-10" />
+                    <div class="flex-shrink-0 w-8 z-10">
+                      <img :src="log.user?.avatar || defaultAvatar"
+                        class="w-8 h-8 rounded-full object-cover border border-gray-200 relative z-10 shadow-3xs" />
                     </div>
 
                     <!-- Right content column -->
-                    <div class="flex-1 min-w-0 pt-0.5 z-10">
-                      <!-- Top Row: User Name + hỗ trợ Customer & Timestamp -->
-                      <div class="flex items-center justify-between gap-2">
-                        <div class="font-extrabold text-sm text-gray-900 truncate">
+                    <div class="flex-1 min-w-0 pt-0 z-10">
+                      <!-- Top Row: User Name + hỗ trợ Customer & Timestamp / 3-dots menu -->
+                      <div class="flex items-center justify-between gap-2 relative">
+                        <div
+                          class="font-extrabold text-[18px] sm:text-[19px] text-gray-900 truncate flex-1 min-w-0 leading-snug">
                           <span>{{ log.user ? log.user.name : 'Hệ thống' }}</span>
                           <template v-if="log.project?.customer">
-                            <span class="font-extrabold text-gray-900"> hỗ trợ </span>
-                            <span class="text-[#1A7A56] cursor-pointer hover:underline"
-                              @click.stop="$router.push(`/customers/${log.project.customer.id}`)">{{
-                                log.project.customer.name }}</span>
+                            <span class="font-bold text-gray-800">&nbsp;hỗ trợ&nbsp;</span>
+                            <span class="text-[#1A7A56] font-extrabold cursor-pointer hover:underline"
+                              @click.stop="$router.push(`/customers/${log.project.customer.id}`)">
+                              {{ log.project.customer.name }}
+                            </span>
                           </template>
                         </div>
-                        <div class="flex items-center gap-2 flex-shrink-0 relative">
-                          <button v-if="log.project_id || log.project?.id" @click="handleReplyToActivity(log)"
-                            type="button" title="Trả lời hoạt động này"
-                            class="opacity-0 group-hover:opacity-100 transition-all duration-200 bg-white hover:bg-emerald-600 text-gray-500 hover:text-white border border-gray-200 hover:border-emerald-600 cursor-pointer rounded-full h-6 w-6 flex items-center justify-center shadow-3xs focus:outline-none shrink-0"
-                            :class="{ 'opacity-100': activeLogIdForMobileActions === log.id }">
-                            <i class="fa-solid fa-reply text-[10px]"></i>
+
+                        <!-- Right: Timestamp normally, 3-dots icon button on hover / when menu open -->
+                        <div class="relative shrink-0 flex items-center justify-end min-w-[28px]" @click.stop>
+                          <!-- Relative Time (shown when not hovered and menu not active) -->
+                          <span
+                            class="text-[15px] sm:text-[16px] text-gray-400 font-medium whitespace-nowrap leading-snug text-right"
+                            :class="activeLogMenuId === log.id ? 'hidden' : 'group-hover:hidden'">
+                            {{ formatCommentRelativeTime(log.created_at) }}
+                          </span>
+
+                          <!-- 3-dots Menu Button (shown on hover or when menu is active) -->
+                          <button type="button" @click.stop="toggleActivityMenu(log.id, $event)" title="Tùy chọn"
+                            class="text-gray-400 hover:text-gray-700 w-5 h-5 rounded flex items-center justify-center cursor-pointer transition-colors p-0 -mr-0.5"
+                            :class="activeLogMenuId === log.id ? 'flex text-gray-700 bg-gray-200/60' : 'hidden group-hover:flex'">
+                            <i class="fa-solid fa-ellipsis-vertical text-base leading-none"></i>
                           </button>
 
-                          <div class="relative w-12 h-6 flex items-center justify-end">
-                            <span class="text-[11px] text-gray-400 font-bold transition-all duration-150"
-                              :class="[
-                                (activeLogIdForMobileActions === log.id || activeLogMenuId === log.id) ? 'opacity-0 pointer-events-none' : 'opacity-100',
-                                'group-hover:md:opacity-0 group-hover:md:pointer-events-none'
-                              ]">
-                              {{ formatCommentRelativeTime(log.created_at) }}
-                            </span>
-
-                            <button type="button"
-                              @click.stop="toggleActivityMenu(log.id)"
-                              class="absolute right-0 flex items-center justify-center w-6 h-6 rounded-md hover:bg-gray-100 hover:text-gray-600 text-gray-400 cursor-pointer transition-all duration-150"
-                              :class="[
-                                (activeLogMenuId === log.id || activeLogIdForMobileActions === log.id) ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
-                                'group-hover:md:opacity-100 group-hover:md:pointer-events-auto'
-                              ]"
-                              v-if="canDeleteComment(log)">
-                              <i class="fa-solid fa-ellipsis"></i>
+                          <!-- Dropdown Menu for Delete -->
+                          <div v-if="activeLogMenuId === log.id"
+                            class="absolute top-full right-0 mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[110px] animate-fade-in-up">
+                            <button v-if="canDeleteComment(log)" type="button" @click.stop="handleDeleteComment(log.id)"
+                              class="w-full text-left px-3 py-1.5 text-sm font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors">
+                              <i class="fa-solid fa-trash-can text-xs"></i>
+                              <span>Xóa</span>
                             </button>
-
-                            <div v-if="activeLogMenuId === log.id" 
-                              class="absolute right-0 top-7 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[100px] text-left">
-                              <button type="button" 
-                                @click.stop="handleDeleteComment(log.id)" 
-                                class="w-full px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 font-bold flex items-center gap-1.5 transition-colors cursor-pointer">
-                                <i class="fa-solid fa-trash-can"></i>
-                                <span>Xóa</span>
-                              </button>
+                            <div v-else class="px-3 py-1.5 text-xs font-semibold text-gray-400">
+                              Không có thao tác
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      <!-- Project Link/Title (Green Bold text matching Image 2) -->
+                      <!-- Project Link/Title (Bold Green text matching mockup) -->
                       <div v-if="log.project" @click="handleActivityProjectClick(log.project.id, $event)"
-                        class="activity-project-link text-[#1A7A56] hover:underline font-extrabold text-sm cursor-pointer mt-1 mb-1 max-w-full truncate block"
+                        class="activity-project-link text-[#1A7A56] hover:underline font-extrabold text-[18px] sm:text-[19px] cursor-pointer mt-0.5 mb-1 max-w-full truncate block leading-snug"
                         :title="log.project.title">
                         {{ log.project.title }}
                       </div>
 
-                      <!-- Comment Content (Plain text, no border card box) -->
-                      <div class="text-xs font-semibold text-gray-700 leading-relaxed break-words mt-1 space-y-1.5">
+                      <!-- Comment Content (Plain text) -->
+                      <div
+                        class="text-[16px] sm:text-[18px] text-gray-900 leading-relaxed break-words mt-0.5 space-y-1">
                         <!-- Zalo Quote Reply Preview inside list feed -->
                         <div v-if="parseReplyInfo(log.content)"
                           @click.stop="scrollToComment(parseReplyInfo(log.content))"
-                          class="bg-[#e1e3ea] px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1.5 select-none max-w-full cursor-pointer hover:bg-[#d5d7de] transition-colors">
-                          <div class="text-[10px] font-bold text-gray-500 flex items-center gap-1">
-                            <i class="fa-solid fa-reply text-[9px]"></i>
+                          class="bg-[#e1e3ea] px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1 select-none max-w-full cursor-pointer hover:bg-[#d5d7de] transition-colors">
+                          <div class="text-[14px] font-bold text-gray-500 flex items-center gap-1">
+                            <i class="fa-solid fa-reply text-xs"></i>
                             <span>{{ parseReplyInfo(log.content).user }}</span>
                           </div>
-                          <div class="text-[10px] text-gray-450 truncate mt-0.5 max-w-[280px]">
+                          <div class="text-[14px] text-gray-450 truncate mt-0.5 max-w-[280px]">
                             {{ parseReplyInfo(log.content).text }}
                           </div>
                         </div>
 
-                        <div v-if="parseCommentText(log.content)" class="whitespace-pre-line">
+                        <div v-if="parseCommentText(log.content)" class="whitespace-pre-line font-normal text-gray-900">
                           {{ parseCommentText(log.content) }}
                         </div>
 
                         <!-- Render Attachments -->
                         <div
                           v-if="parseCommentImages(log.content).length > 0 || parseCommentFiles(log.content).length > 0"
-                          class="flex flex-wrap items-end gap-1.5 pt-0.5">
+                          class="flex flex-wrap items-end gap-1.5 pt-1">
                           <!-- Images -->
                           <button v-for="(img, imgIdx) in parseCommentImages(log.content)" :key="'img-' + imgIdx"
                             type="button" @click.stop="openImagePreview(img.url)"
-                            class="w-10 h-10 rounded border border-gray-200 overflow-hidden bg-gray-50 cursor-pointer hover:ring-2 hover:ring-emerald-300 transition-all flex-shrink-0"
+                            class="w-11 h-11 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 cursor-pointer hover:ring-2 hover:ring-emerald-400 transition-all flex-shrink-0 shadow-3xs"
                             :title="'Xem ảnh: ' + img.name">
                             <img :src="img.url" class="w-full h-full object-cover" alt="" loading="lazy" />
                           </button>
@@ -526,13 +510,21 @@
                           <!-- Files -->
                           <a v-for="(file, fIdx) in parseCommentFiles(log.content)" :key="'file-' + fIdx"
                             :href="file.url" :download="file.name" target="_blank" @click.stop
-                            class="w-7 h-9 rounded-sm border border-[#d4a574] bg-[#f5e6d0] hover:bg-[#edd9bc] flex flex-col items-center justify-end overflow-hidden cursor-pointer transition-colors flex-shrink-0"
+                            class="w-8 h-10 rounded border border-[#d4a574] bg-[#f5e6d0] hover:bg-[#edd9bc] flex flex-col items-center justify-end overflow-hidden cursor-pointer transition-colors flex-shrink-0"
                             :title="'Tải xuống: ' + file.name">
-                            <i class="fa-solid fa-file text-[#c87828] text-[11px] mb-0.5"></i>
+                            <i class="fa-solid fa-file text-[#c87828] text-xs mb-0.5"></i>
                             <span
-                              class="text-[7px] font-bold text-[#8b5a2b] bg-[#e8c99a] w-full text-center py-0.5 leading-none">FILE</span>
+                              class="text-[8px] font-bold text-[#8b5a2b] bg-[#e8c99a] w-full text-center py-0.5 leading-none">FILE</span>
                           </a>
                         </div>
+                      </div>
+
+                      <!-- Bottom Actions: Reply icon -->
+                      <div class="flex items-center gap-3 mt-1.5">
+                        <button @click.stop="handleReplyToActivity(log)" type="button" title="Trả lời hoạt động này"
+                          class="text-gray-400 hover:text-emerald-700 cursor-pointer transition-colors inline-flex items-center gap-1 p-0.5">
+                          <i class="fa-solid fa-reply text-[17px] sm:text-[19px]"></i>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -545,14 +537,12 @@
                 </div>
               </div>
 
-              <!-- Chat Input box: dùng chung cho dashboard và trang Có gì mới -->
+              <!-- Chat Input box: full border attached to bottom of panel -->
               <ActivityComposer ref="activityComposerRef" v-model="chatMessage" v-model:project-id="chatProjectId"
-                class="mt-2 flex-shrink-0" :projects="followingProjects" :users="projectStore.users"
-                :groups="mentionGroups" :replying-to="replyingToLog"
+                class="flex-shrink-0 border-t border-[#4d4d4d]" :projects="followingProjects"
+                :users="projectStore.users" :groups="mentionGroups" :replying-to="replyingToLog"
                 :reply-text="parseCommentText(replyingToLog?.content)" :submitting="isSubmittingChat"
                 @submit="submitChat" @cancel-reply="cancelReply" />
-
-              <div class="h-4 sm:h-1 flex-shrink-0"></div>
             </div>
           </section>
         </div>
@@ -570,7 +560,7 @@
       leave-from-class="transform translate-y-0 opacity-100 scale-100"
       leave-to-class="transform -translate-y-10 opacity-0 scale-95">
       <div v-if="selectedProjectIds.length > 0" ref="bulkActionBarRef"
-        class="bulk-action-bar fixed top-20 sm:top-[88px] left-1/2 -translate-x-1/2 z-50 bg-[#fafaf7] sm:bg-white/95 backdrop-blur-md px-3.5 py-2.5 sm:px-6 sm:py-3 rounded-2xl shadow-2xl border border-gray-200/90 flex items-center gap-2.5 sm:gap-4 max-w-4xl select-none transition-all">
+        class="bulk-action-bar fixed top-2 sm:top-2.5 left-1/2 -translate-x-1/2 z-50 bg-[#fafaf7] sm:bg-white/95 backdrop-blur-md px-3.5 py-2 sm:px-6 sm:py-2.5 rounded-2xl shadow-2xl border border-gray-200/90 flex items-center gap-2.5 sm:gap-4 max-w-4xl select-none transition-all">
         <!-- LEFT: COUNT BADGE & TEXT -->
         <div class="flex items-center gap-2 sm:gap-2.5">
           <div
@@ -803,16 +793,6 @@
         </button>
       </div>
     </div>
-
-    <!-- Mobile Bottom Navigation Tabs -->
-    <div v-if="viewMode !== 'notes'" class="mobile-home-tabs">
-      <button type="button" @click="mobileHomeTab = 'activities'"
-        class="flex-1 rounded-lg py-2.5 text-sm font-extrabold transition-colors"
-        :class="mobileHomeTab === 'activities' ? 'bg-emerald-600 text-white' : 'text-gray-500'">Hoạt động</button>
-      <button type="button" @click="mobileHomeTab = 'projects'"
-        class="flex-1 rounded-lg py-2.5 text-sm font-extrabold transition-colors"
-        :class="mobileHomeTab === 'projects' ? 'bg-emerald-600 text-white' : 'text-gray-500'">Dự án</button>
-    </div>
   </div>
 </template>
 
@@ -843,7 +823,6 @@ const tvPositionReady = ref(false)
 const tvPanelTop = ref(null)
 const tvPanelScale = ref(1)
 const isShortcutHintsOpen = ref(false)
-const mobileHomeTab = ref('activities')
 
 const updateTvPosition = () => {
   const panel = viewActionsRef.value
@@ -948,6 +927,13 @@ const isModalOpen = ref(false)
 // Search input ref for keyboard shortcuts
 const searchInputRef = ref(null)
 const isMobileSearchOpen = ref(false)
+const toggleMobileSearch = async () => {
+  isMobileSearchOpen.value = !isMobileSearchOpen.value
+  if (isMobileSearchOpen.value) {
+    await nextTick()
+    searchInputRef.value?.focus()
+  }
+}
 const scrollContainerDefault = ref(null)
 const scrollContainerGrouped = ref(null)
 const scrollContainerNotes = ref(null)
@@ -1134,10 +1120,24 @@ const removeVietnameseAccents = (str) => {
     .toLowerCase()
 }
 
-// Switcher view mode (Grouped by Customer)
+// Switcher view mode (Grouped by Customer, Notes, Activities)
 const isGroupedByCustomer = ref(false)
-const viewMode = ref('list') // 'list', 'grouped', 'notes'
+const viewMode = ref('list') // 'list', 'activities', 'grouped', 'notes'
 const isViewModeChanging = ref(false)
+
+const viewModeLabel = computed(() => {
+  if (viewMode.value === 'grouped') return 'Khách hàng'
+  if (viewMode.value === 'notes') return 'Ghi chú'
+  if (viewMode.value === 'activities') return 'Hoạt động'
+  return 'Đổi kiểu xem'
+})
+
+const viewModeTitle = computed(() => {
+  if (viewMode.value === 'grouped') return 'Chế độ xem: Theo khách hàng (Ctrl + B để đổi)'
+  if (viewMode.value === 'notes') return 'Chế độ xem: Ghi chú (Ctrl + B để đổi)'
+  if (viewMode.value === 'activities') return 'Chế độ xem: Hoạt động gần đây (Ctrl + B để đổi)'
+  return 'Chế độ xem: Dự án (Ctrl + B để đổi)'
+})
 
 watch(viewMode, async () => {
   // Each view has a different actions-column position. Recalculate the TV
@@ -1154,7 +1154,7 @@ watch(() => authStore.user?.view_mode, (newVal) => {
   // This prevents an older profile response from briefly switching the layout back.
   if (isViewModeChanging.value) return
 
-  if (newVal && ['list', 'grouped', 'notes'].includes(newVal)) {
+  if (newVal && ['list', 'grouped', 'notes', 'activities'].includes(newVal)) {
     viewMode.value = newVal
     isGroupedByCustomer.value = (newVal === 'grouped')
   }
@@ -1163,12 +1163,29 @@ watch(() => authStore.user?.view_mode, (newVal) => {
 const toggleCustomerGroup = async () => {
   if (isViewModeChanging.value) return
 
-  // Cycle through view modes: list -> grouped -> notes -> list
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
   let nextMode = 'list'
-  if (viewMode.value === 'list') {
-    nextMode = 'grouped'
-  } else if (viewMode.value === 'grouped') {
-    nextMode = 'notes'
+
+  if (isMobile) {
+    // Mobile cycle: list (Dự án) -> grouped (Khách hàng) -> notes (Ghi chú) -> activities (Hoạt động gần đây) -> list (Dự án)
+    if (viewMode.value === 'list') {
+      nextMode = 'grouped'
+    } else if (viewMode.value === 'grouped') {
+      nextMode = 'notes'
+    } else if (viewMode.value === 'notes') {
+      nextMode = 'activities'
+    } else {
+      nextMode = 'list'
+    }
+  } else {
+    // Desktop cycle: list (or activities) -> grouped -> notes -> list
+    if (viewMode.value === 'list' || viewMode.value === 'activities') {
+      nextMode = 'grouped'
+    } else if (viewMode.value === 'grouped') {
+      nextMode = 'notes'
+    } else {
+      nextMode = 'list'
+    }
   }
 
   const previousMode = viewMode.value
@@ -1642,6 +1659,7 @@ const handleGlobalKeydown = (event) => {
 
 const closeAllDropdowns = (e) => {
   openLeadMenuId.value = null
+  activeLogMenuId.value = null
   if (profileDropdownRef.value && !profileDropdownRef.value.contains(e.target)) {
     isProfileDropdownOpen.value = false
   }
@@ -2037,7 +2055,8 @@ const activityComposerRef = ref(null)
 const activeLogIdForMobileActions = ref(null)
 const activeLogMenuId = ref(null)
 
-const toggleActivityMenu = (id) => {
+const toggleActivityMenu = (id, event) => {
+  event?.stopPropagation?.()
   activeLogMenuId.value = activeLogMenuId.value === id ? null : id
 }
 
@@ -2530,19 +2549,28 @@ onUnmounted(() => {
     flex-direction: column !important;
     align-items: stretch !important;
     gap: 0 !important;
-    height: calc(100vh - 64px - 58px - env(safe-area-inset-bottom, 0px)) !important;
+    height: calc(100vh - 64px - 62px - env(safe-area-inset-bottom, 0px)) !important;
     overflow: hidden !important;
     padding-bottom: 0 !important;
   }
 
   .view-actions {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 45 !important;
+    background: #F9F4EE !important;
+    border-top: 2px solid #4d4d4d !important;
+    padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px)) 16px !important;
+    margin: 0 !important;
     width: 100% !important;
     flex-direction: row !important;
-    flex-wrap: wrap;
+    flex-wrap: wrap !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 8px !important;
-    margin-bottom: 12px;
+    gap: 12px !important;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08) !important;
   }
 
   .view-actions>* {
@@ -2550,11 +2578,18 @@ onUnmounted(() => {
   }
 
   .mobile-icon-button {
-    width: 42px !important;
-    height: 42px !important;
-    min-width: 42px;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
     padding: 0 !important;
-    border-radius: 10px !important;
+    border-radius: 12px !important;
+    border: 2px solid #4d4d4d !important;
+    background: #ffffff !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
     gap: 0 !important;
   }
 
@@ -2565,20 +2600,25 @@ onUnmounted(() => {
 
   .search-input-wrapper {
     display: none;
-    order: 10;
+    order: -1;
     flex-basis: 100%;
     max-width: none !important;
     width: 100% !important;
+    margin-bottom: 2px !important;
   }
 
   .search-input-wrapper.mobile-search-open {
-    display: block;
+    display: block !important;
+  }
+
+  .search-input-wrapper input {
+    background: #ffffff !important;
   }
 
   .mobile-search-toggle {
     display: inline-flex !important;
     border: 2px solid #4d4d4d;
-    background: transparent;
+    background: #ffffff;
     color: #4d4d4d;
     align-items: center;
     justify-content: center;
@@ -2617,41 +2657,24 @@ onUnmounted(() => {
     visibility: visible;
   }
 
-  .mobile-home-panel-hidden {
+  .project-list-panel.mobile-activities-active {
     display: none !important;
-  }
-
-  .recent-activity-panel.mobile-home-panel-hidden,
-  .project-list-panel.mobile-home-panel-hidden {
     opacity: 0 !important;
     transform: translateY(12px) !important;
     visibility: hidden !important;
     pointer-events: none !important;
-    display: flex !important;
   }
 
-  .view-actions.mobile-home-panel-hidden {
+  .recent-activity-panel:not(.mobile-activities-active) {
     display: none !important;
+    opacity: 0 !important;
+    transform: translateY(12px) !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
 
-  .mobile-home-tabs {
-    position: fixed !important;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 45;
-    display: flex !important;
-    background: #ffffff;
-    border-top: 2px solid #4d4d4d;
-    padding: 0;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
-    overflow: hidden !important;
-  }
-
-  .mobile-home-tabs button {
-    border-radius: 0 !important;
-    padding-top: 17px !important;
-    padding-bottom: calc(17px + env(safe-area-inset-bottom, 0px)) !important;
+  .mobile-home-panel-hidden {
+    display: none !important;
   }
 
   .project-scroll-container {
@@ -3352,12 +3375,21 @@ onUnmounted(() => {
     display: none;
   }
 }
+
 @keyframes activity-card-flash {
-  0%, 100% { background-color: transparent; }
-  50% { background-color: #ECFDF5; }
+  0%,
+  100% {
+    background-color: transparent;
+  }
+
+  15%,
+  70% {
+    background-color: #a7f3d0;
+  }
 }
+
 .activity-card-highlight {
-  animation: activity-card-flash 2s ease-in-out;
+  animation: activity-card-flash 2.5s ease-in-out;
   border-radius: 12px;
 }
 </style>

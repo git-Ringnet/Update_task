@@ -96,7 +96,22 @@
         <!-- SELECTED PROJECTS LIST: EACH CARD USES HÚ HÚ FORM LAYOUT (MAX-W 720PX CENTERED MATCHING DETAIL PAGE) -->
         <div v-else class="space-y-4 max-w-[720px] mx-auto w-full">
           <div v-for="project in projects" :key="project.id"
-            class="bg-white border border-gray-200 shadow-xl rounded-2xl p-4 sm:p-5 relative ring-1 ring-black/5">
+            class="bg-white border border-gray-200 shadow-xl rounded-2xl p-4 sm:p-5 relative ring-1 ring-black/5 transition-all"
+            :class="{ 'ring-2 ring-emerald-500 border-emerald-400': draggingMap[project.id] }"
+            @dragenter.prevent="handleProjectDragEnter(project.id, $event)"
+            @dragover.prevent="handleProjectDragOver(project.id, $event)"
+            @dragleave.prevent="handleProjectDragLeave(project.id, $event)"
+            @drop.prevent="handleProjectDrop(project.id, $event)">
+
+            <!-- DRAG OVERLAY -->
+            <div v-if="draggingMap[project.id]"
+              class="absolute inset-0 z-40 bg-emerald-500/10 border-2 border-dashed border-emerald-500 rounded-2xl flex flex-col items-center justify-center gap-2 backdrop-blur-[2px] pointer-events-none transition-all">
+              <div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm animate-bounce">
+                <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
+              </div>
+              <p class="text-sm font-bold text-emerald-800">Thả tệp hoặc ảnh vào đây để cập nhật {{ project.title }}</p>
+            </div>
+
             <form @submit.prevent="saveUpdate(project.id)"
               class="flex flex-col lg:flex-row items-stretch lg:items-start gap-4 lg:gap-5">
 
@@ -1045,12 +1060,74 @@ const handleFileSelect = async (projectId, event) => {
   event.target.value = ''
 }
 
+const draggingMap = reactive({})
+const dragCounters = {}
+
+const handleProjectDragEnter = (projectId, e) => {
+  if (!e.dataTransfer?.types?.includes('Files')) return
+  dragCounters[projectId] = (dragCounters[projectId] || 0) + 1
+  draggingMap[projectId] = true
+}
+
+const handleProjectDragOver = (projectId, e) => {
+  if (e.dataTransfer?.types?.includes('Files')) {
+    e.dataTransfer.dropEffect = 'copy'
+  }
+}
+
+const handleProjectDragLeave = (projectId, e) => {
+  if (e.dataTransfer?.types?.includes('Files')) {
+    dragCounters[projectId] = Math.max(0, (dragCounters[projectId] || 1) - 1)
+    if (dragCounters[projectId] === 0) {
+      draggingMap[projectId] = false
+    }
+  }
+}
+
+const handleProjectDrop = async (projectId, e) => {
+  dragCounters[projectId] = 0
+  draggingMap[projectId] = false
+  const files = Array.from(e.dataTransfer?.files || [])
+  if (!files.length) return
+
+  if (!attachedFiles[projectId]) {
+    attachedFiles[projectId] = []
+  }
+
+  for (const file of files) {
+    const isImg = file.type.startsWith('image/')
+    if (isImg) {
+      const compressedFile = await compressImage(file)
+      const fileUrl = URL.createObjectURL(compressedFile)
+      attachedFiles[projectId].push({
+        name: file.name,
+        size: compressedFile.size,
+        type: compressedFile.type,
+        url: fileUrl,
+        isImage: true,
+        file: compressedFile
+      })
+    } else {
+      attachedFiles[projectId].push({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url: null,
+        isImage: false,
+        file: file
+      })
+    }
+    isSaved[projectId] = false
+  }
+}
+
 const handlePaste = async (projectId, event) => {
   const clipboardData = event.clipboardData
   if (!clipboardData || !clipboardData.items) return
 
-  const imageItems = Array.from(clipboardData.items).filter(item => item.type.startsWith('image/'))
-  if (imageItems.length === 0) return
+  const items = Array.from(clipboardData.items)
+  const files = items.map(item => item.getAsFile()).filter(Boolean)
+  if (files.length === 0) return
 
   event.preventDefault()
 
@@ -1058,23 +1135,32 @@ const handlePaste = async (projectId, event) => {
     attachedFiles[projectId] = []
   }
 
-  for (const item of imageItems) {
-    const file = item.getAsFile()
-    if (!file) continue
+  for (const [index, file] of files.entries()) {
+    const isImg = file.type.startsWith('image/')
+    if (isImg) {
+      const compressedFile = await compressImage(file)
+      const fileUrl = URL.createObjectURL(compressedFile)
+      const timestamp = new Date().toISOString().slice(11, 19).replace(/:/g, '')
+      const ext = file.type.includes('png') ? 'png' : 'jpg'
 
-    const compressedFile = await compressImage(file)
-    const fileUrl = URL.createObjectURL(compressedFile)
-    const timestamp = new Date().toISOString().slice(11, 19).replace(/:/g, '')
-    const ext = file.type.includes('png') ? 'png' : 'jpg'
-
-    attachedFiles[projectId].push({
-      name: `pasted_${timestamp}.${ext}`,
-      size: compressedFile.size,
-      type: compressedFile.type,
-      url: fileUrl,
-      isImage: true,
-      file: compressedFile
-    })
+      attachedFiles[projectId].push({
+        name: file.name || `pasted_${timestamp}_${index + 1}.${ext}`,
+        size: compressedFile.size,
+        type: compressedFile.type,
+        url: fileUrl,
+        isImage: true,
+        file: compressedFile
+      })
+    } else {
+      attachedFiles[projectId].push({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url: null,
+        isImage: false,
+        file: file
+      })
+    }
     isSaved[projectId] = false
   }
 }

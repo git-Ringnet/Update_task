@@ -146,7 +146,7 @@ Route::middleware('auth.token')->group(function () {
             'name' => 'sometimes|required|string|max:255',
             'email' => 'sometimes|required|email|unique:users,email,' . $user->id,
             'avatar' => 'sometimes|nullable|string',
-            'view_mode' => 'sometimes|nullable|string|in:list,grouped,notes',
+            'view_mode' => 'sometimes|nullable|string|in:list,grouped,notes,activities',
             'pinned_customers' => 'sometimes|nullable|array',
         ]);
 

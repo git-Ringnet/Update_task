@@ -1,130 +1,157 @@
 <template>
-  <div class="flex flex-col gap-2.5">
+  <div class="flex flex-col">
+    <!-- Replying to banner if replying -->
     <div v-if="replyingTo"
-      class="flex items-start justify-between bg-[#e1e3ea] px-3.5 py-2.5 rounded-xl border-l-3 border-[#0068FF] text-xs shadow-3xs">
+      class="flex items-start justify-between bg-[#e1e3ea] px-3.5 py-2 border-l-3 border-[#0068FF] text-sm shadow-3xs border-b border-gray-300">
       <div class="flex-1 min-w-0">
-        <div class="text-[10px] font-extrabold text-[#0068FF] uppercase tracking-wider flex items-center gap-1">
-          <i class="fa-solid fa-reply text-[9px]"></i>
+        <div class="text-[14px] font-extrabold text-[#0068FF] uppercase tracking-wider flex items-center gap-1">
+          <i class="fa-solid fa-reply text-xs"></i>
           <span>Trả lời {{ replyingTo.user?.name || 'Hệ thống' }}</span>
         </div>
-        <div class="text-[11px] text-gray-500 truncate mt-0.5">{{ replyText }}</div>
+        <div class="text-[15px] text-gray-600 truncate mt-0.5">{{ replyText }}</div>
       </div>
       <button type="button" title="Hủy trả lời" @click="$emit('cancel-reply')"
         class="text-gray-400 hover:text-gray-650 p-1 rounded-full hover:bg-gray-200/50 cursor-pointer shrink-0 ml-2">
-        <i class="fa-solid fa-xmark text-xs"></i>
+        <i class="fa-solid fa-xmark text-sm"></i>
       </button>
     </div>
 
-    <div class="flex flex-col bg-white rounded-xl border border-gray-300 shadow-sm relative">
+    <!-- Main Composer Box (Integrated seamlessly into bottom of panel) -->
+    <div class="flex flex-col bg-transparent relative transition-all overflow-visible"
+      :class="{ 'ring-2 ring-emerald-500': isDragging }"
+      @dragenter.prevent="handleDragEnter"
+      @dragover.prevent="handleDragOver"
+      @dragleave.prevent="handleDragLeave"
+      @drop.prevent="handleDrop">
+
+      <!-- Drag Over Visual Overlay -->
+      <div v-if="isDragging"
+        class="absolute inset-0 z-40 bg-emerald-500/10 border-2 border-dashed border-emerald-500 rounded-xl flex flex-col items-center justify-center gap-1.5 backdrop-blur-[2px] pointer-events-none transition-all">
+        <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm animate-bounce">
+          <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
+        </div>
+        <p class="text-sm font-bold text-emerald-800">Thả tệp hoặc ảnh vào đây để tải lên</p>
+      </div>
+
+      <!-- Mention / Project Autocomplete Suggestions -->
       <div v-if="showSuggestions && suggestions.length"
         class="absolute z-50 bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-[220px] overflow-y-auto divide-y divide-gray-100">
-        <div class="px-3 py-1.5 bg-gray-50 text-[9px] font-extrabold text-gray-400 uppercase tracking-wider">
+        <div class="px-3 py-1.5 bg-gray-50 text-[13px] font-extrabold text-gray-400 uppercase tracking-wider">
           {{ trigger === '#' ? 'Chọn dự án' : 'Gắn thẻ thành viên hoặc nhóm' }}
         </div>
         <button v-for="(item, index) in suggestions" :key="`${item.type}-${item.id}`" type="button"
           @mousedown.prevent @click="selectSuggestion(item)"
-          class="w-full text-left px-3.5 py-2 text-xs font-bold flex justify-between items-center cursor-pointer hover:bg-emerald-50 hover:text-emerald-800"
+          class="w-full text-left px-3.5 py-2 text-[16px] font-bold flex justify-between items-center cursor-pointer hover:bg-emerald-50 hover:text-emerald-800"
           :class="index === suggestionIndex ? 'bg-emerald-50 text-emerald-800' : 'text-gray-700'">
           <span class="truncate flex-1 flex items-center gap-1.5">
-            <i v-if="item.type === 'project'" class="fa-solid fa-folder text-emerald-600 text-[10px]"></i>
-            <i v-else-if="item.type === 'all'" class="fa-solid fa-users text-emerald-600 text-[10px]"></i>
-            <i v-else-if="item.type === 'member'" class="fa-solid fa-user text-blue-500 text-[10px]"></i>
-            <i v-else class="fa-solid fa-users text-amber-500 text-[10px]"></i>
+            <i v-if="item.type === 'project'" class="fa-solid fa-folder text-emerald-600 text-xs"></i>
+            <i v-else-if="item.type === 'all'" class="fa-solid fa-users text-emerald-600 text-xs"></i>
+            <i v-else-if="item.type === 'member'" class="fa-solid fa-user text-blue-500 text-xs"></i>
+            <i v-else class="fa-solid fa-users text-amber-500 text-xs"></i>
             <span>{{ item.title }}</span>
           </span>
-          <span class="text-[10px] text-gray-400 font-semibold truncate max-w-[130px] shrink-0 ml-2">
+          <span class="text-[14px] text-gray-400 font-semibold truncate max-w-[130px] shrink-0 ml-2">
             {{ item.subtitle }}
           </span>
         </button>
       </div>
 
-      <div class="flex items-center justify-between px-3.5 py-1.5 bg-gray-50 border-b border-gray-200 rounded-t-xl select-none">
-        <button @click="toggleExpanded" type="button"
-          class="text-gray-400 hover:text-gray-650 text-xs cursor-pointer p-0.5"
-          :title="isExpanded ? 'Thu nhỏ khung chat' : 'Mở rộng khung chat'">
-          <i :class="isExpanded ? 'fa-solid fa-compress' : 'fa-solid fa-expand'"></i>
-        </button>
+      <!-- Top Toolbar Row: Paperclip, Image, Project Selector Pill -->
+      <div class="flex items-center justify-between px-3.5 py-2 bg-[#F9F4EE] rounded-t-[14px] border-b border-gray-300/90 select-none">
+        <div class="flex items-center gap-3 text-gray-700">
+          <input ref="fileInputRef" type="file" multiple
+            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar" class="hidden" @change="handleFileSelection" />
+          <input ref="imageFileInputRef" type="file" multiple
+            accept="image/*" class="hidden" @change="handleFileSelection" />
 
-        <div class="flex items-center gap-1.5 ml-2 min-w-0">
-          <span class="text-[9px] font-extrabold text-gray-400 uppercase tracking-wider shrink-0">Dự án:</span>
-          <div class="relative min-w-0">
-            <input ref="projectPickerInputRef" v-model="projectSearch" type="text"
-              :placeholder="projects.length ? 'Tìm dự án...' : 'Chưa có dự án...'"
-              class="w-[150px] sm:w-[180px] text-base sm:text-[11px] font-bold text-[#1A7A56] bg-emerald-50/50 border border-emerald-200/30 hover:border-emerald-500/50 rounded-full pl-2.5 pr-7 py-0.5 focus:ring-1 focus:ring-emerald-400 focus:outline-none truncate"
-              autocomplete="off" @focus="openProjectPicker" @input="isProjectPickerOpen = true"
-              @blur="handleInputBlur" @keydown.esc.prevent="dismissProjectPicker" />
-            <button type="button" tabindex="-1" @mousedown.prevent="toggleProjectPicker"
-              class="absolute inset-y-0 right-0 w-7 flex items-center justify-center text-[#1A7A56] cursor-pointer">
-              <i class="fa-solid fa-chevron-down text-[9px] transition-transform"
-                :class="isProjectPickerOpen ? 'rotate-180' : ''"></i>
-            </button>
+          <!-- Paperclip button -->
+          <button type="button" title="Đính kèm tệp" @click="fileInputRef?.click()"
+            class="text-gray-700 hover:text-[#1A7A56] cursor-pointer transition-colors p-0.5">
+            <i class="fa-solid fa-paperclip text-lg"></i>
+          </button>
 
-            <Teleport to="body" :disabled="!isMobile">
-              <!-- Mobile backdrop overlay to close modal on outside click -->
-              <div v-if="isProjectPickerOpen && isMobile"
-                class="fixed inset-0 bg-black/30 z-[9998] backdrop-blur-[2px]"
-                @click="dismissProjectPicker"></div>
+          <!-- Image button -->
+          <button type="button" title="Đính kèm ảnh" @click="imageFileInputRef?.click()"
+            class="text-gray-700 hover:text-[#1A7A56] cursor-pointer transition-colors p-0.5">
+            <i class="fa-solid fa-image text-lg"></i>
+          </button>
+        </div>
 
-              <div v-if="isProjectPickerOpen"
-                :class="isMobile 
-                  ? 'fixed top-[80px] left-4 right-4 z-[9999] bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[300px]' 
-                  : 'absolute z-[70] bottom-full right-0 mb-1 w-[min(320px,calc(100vw-32px))] bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden'"
-              >
-                <div class="px-3 py-1.5 text-[9px] font-extrabold text-gray-400 uppercase tracking-wider bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                  <span>Tìm và chọn dự án</span>
-                  <button v-if="isMobile" type="button" @click="dismissProjectPicker" class="text-gray-400 hover:text-gray-655 p-0.5">
-                    <i class="fa-solid fa-xmark text-xs"></i>
-                  </button>
-                </div>
+        <!-- Project Selector Pill (Green pill matching image) -->
+        <div class="relative min-w-0 max-w-[210px]">
+          <button type="button" @click="toggleProjectPicker"
+            class="px-3 py-1 bg-[#e6f4ea] hover:bg-[#d8edd9] border border-emerald-300/80 rounded-full flex items-center gap-1.5 cursor-pointer text-[#1A7A56] font-extrabold text-[16px] transition-colors max-w-full truncate shadow-3xs"
+            :title="selectedProject ? selectedProject.title : 'Chọn dự án'">
+            <span class="truncate">{{ selectedProject ? selectedProject.title : 'Chọn dự án...' }}</span>
+            <i class="fa-solid fa-chevron-down text-xs shrink-0 transition-transform"
+              :class="isProjectPickerOpen ? 'rotate-180' : ''"></i>
+          </button>
 
-                <!-- Search input directly inside the modal on mobile -->
-                <div v-if="isMobile" class="p-2 border-b border-gray-100 bg-white flex-shrink-0">
-                  <div class="relative">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-                    <input 
-                      ref="mobileSearchInputRef"
-                      v-model="projectSearch" 
-                      type="text" 
-                      placeholder="Tìm kiếm dự án..."
-                      class="w-full pl-8 pr-3 py-1.5 text-xs font-semibold border border-gray-200 rounded-lg focus:outline-none focus:border-emerald-500 bg-gray-50/50"
-                      @keydown.esc.prevent="dismissProjectPicker"
-                    />
-                  </div>
-                </div>
+          <Teleport to="body">
+            <!-- Backdrop overlay -->
+            <div v-if="isProjectPickerOpen"
+              class="fixed inset-0 bg-black/25 z-[9998] backdrop-blur-[1px]"
+              @click="dismissProjectPicker"></div>
 
-                <div class="max-h-52 overflow-y-auto divide-y divide-gray-100 flex-1">
-                  <button v-for="project in filteredPickerProjects" :key="`picker-${project.id}`" type="button"
-                    @mousedown.prevent="selectProjectFromPicker(project)"
-                    class="w-full px-3 py-2.5 flex items-center justify-between gap-3 text-left hover:bg-emerald-50 cursor-pointer">
-                    <span class="min-w-0">
-                      <span class="block text-xs font-bold text-gray-800 truncate">{{ project.title }}</span>
-                      <span v-if="project.customer?.name" class="block text-[10px] text-gray-400 truncate mt-0.5">
-                        {{ project.customer.name }}
-                      </span>
-                    </span>
-                    <span class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0"
-                      :class="String(project.id) === String(projectId) ? 'border-emerald-600' : 'border-gray-400'">
-                      <span v-if="String(project.id) === String(projectId)" class="w-2 h-2 rounded-full bg-emerald-600"></span>
-                    </span>
-                  </button>
-                  <div v-if="filteredPickerProjects.length === 0"
-                    class="px-3 py-5 text-center text-xs font-semibold text-gray-400">
-                    Không tìm thấy dự án phù hợp.
-                  </div>
+            <div v-if="isProjectPickerOpen"
+              class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-[min(340px,calc(100vw-32px))] bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[360px]"
+            >
+              <div class="px-3.5 py-2.5 text-sm font-black text-gray-700 uppercase tracking-wider bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                <span>Chọn dự án</span>
+                <button type="button" @click="dismissProjectPicker" class="text-gray-400 hover:text-gray-700 p-1">
+                  <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+              </div>
+
+              <div class="p-2 border-b border-gray-100 bg-white flex-shrink-0">
+                <div class="relative">
+                  <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                  <input 
+                    ref="mobileSearchInputRef"
+                    v-model="projectSearch" 
+                    type="text" 
+                    placeholder="Tìm kiếm dự án..."
+                    class="w-full pl-8 pr-3 py-1.5 text-sm font-bold border border-gray-200 rounded-lg focus:outline-none focus:border-emerald-500 bg-gray-50"
+                    autocomplete="off"
+                    @keydown="handlePickerKeydown"
+                  />
                 </div>
               </div>
-            </Teleport>
-          </div>
+
+              <div ref="projectPickerListRef" class="max-h-56 overflow-y-auto divide-y divide-gray-100 flex-1">
+                <button v-for="(project, pIdx) in filteredPickerProjects" :key="`picker-${project.id}`" type="button"
+                  @mousedown.prevent="selectProjectFromPicker(project)"
+                  class="w-full px-3.5 py-2.5 flex items-center justify-between gap-3 text-left cursor-pointer transition-colors"
+                  :class="pIdx === pickerSelectedIndex ? 'bg-emerald-50 text-emerald-900' : 'hover:bg-gray-50'">
+                  <span class="min-w-0">
+                    <span class="block text-[16px] font-extrabold text-gray-900 truncate">{{ project.title }}</span>
+                    <span v-if="project.customer?.name" class="block text-[14px] text-gray-400 font-semibold truncate mt-0.5">
+                      {{ project.customer.name }}
+                    </span>
+                  </span>
+                  <span class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0"
+                    :class="String(project.id) === String(projectId) ? 'border-emerald-600' : 'border-gray-300'">
+                    <span v-if="String(project.id) === String(projectId)" class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                  </span>
+                </button>
+                <div v-if="filteredPickerProjects.length === 0"
+                  class="px-3 py-5 text-center text-sm font-semibold text-gray-400">
+                  Không tìm thấy dự án phù hợp.
+                </div>
+              </div>
+            </div>
+          </Teleport>
         </div>
       </div>
 
-      <div v-if="attachments.length" class="flex flex-wrap gap-2 px-3 pt-2">
+      <!-- Attachment list preview -->
+      <div v-if="attachments.length" class="flex flex-wrap gap-2 px-3.5 pt-2 pb-1 bg-white">
         <div v-for="(attachment, index) in attachments" :key="attachment.key"
           class="relative flex-shrink-0">
           <img v-if="attachment.isImage" :src="attachment.preview" :alt="attachment.name"
-            class="w-11 h-11 rounded-lg object-cover border border-gray-200 bg-gray-50" />
+            class="w-11 h-11 rounded-lg object-cover border border-gray-200 bg-gray-50 shadow-3xs" />
           <div v-else
-            class="h-11 max-w-[150px] px-2 rounded-lg border border-amber-200 bg-amber-50 flex items-center gap-1.5 text-[10px] font-bold text-amber-800">
+            class="h-11 max-w-[150px] px-2 rounded-lg border border-amber-200 bg-amber-50 flex items-center gap-1.5 text-[14px] font-bold text-amber-800">
             <i class="fa-solid fa-file text-amber-600"></i>
             <span class="truncate">{{ attachment.name }}</span>
           </div>
@@ -135,25 +162,25 @@
         </div>
       </div>
 
-      <div class="flex flex-col p-2 rounded-b-xl bg-white">
-        <textarea ref="textareaRef" v-model="messageModel" rows="2"
-          :placeholder="projects.length ? 'Nhập cập nhật; gõ @ để gắn thẻ, # để chọn dự án...' : 'Không có dự án đang theo dõi...'"
+      <!-- Textarea Input Area: full width with bottom submit button when typing/attaching -->
+      <div class="flex flex-col px-3.5 py-2 bg-[#ebe6df] rounded-b-[14px]">
+        <textarea ref="textareaRef" v-model="messageModel" rows="1"
+          name="chat_activity_message"
+          id="activity-composer-textarea"
+          placeholder="Báo thông tin cho đồng đội"
           :disabled="!projects.length"
-          class="w-full min-h-[44px] max-h-[200px] overflow-y-auto bg-transparent border-0 focus:ring-0 focus:outline-none text-base sm:text-xs font-semibold text-gray-800 resize-none p-0.5 placeholder-gray-400 leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed"
-          autocomplete="one-time-code" spellcheck="false" @input="handleInput" @keydown="handleKeydown"
+          class="w-full min-h-[36px] max-h-[140px] overflow-y-auto bg-transparent border-0 focus:ring-0 focus:outline-none text-[16px] sm:text-[18px] font-normal text-gray-900 resize-none p-0 placeholder-gray-500 leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed"
+          autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+          data-lpignore="true" data-1p-ignore="true" data-form-type="other" aria-autocomplete="none"
+          @input="handleInput" @keydown="handleKeydown"
           @paste="handlePaste"></textarea>
-        <div class="flex items-center justify-end gap-2 mt-1">
-          <input ref="fileInputRef" type="file" multiple
-            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar" class="hidden" @change="handleFileSelection" />
-          <button type="button" title="Đính kèm ảnh hoặc tệp" @click="fileInputRef?.click()"
-            class="text-gray-400 hover:text-[#1A7A56] cursor-pointer h-7 w-7 rounded-lg hover:bg-gray-100 flex items-center justify-center shrink-0">
-            <i class="fa-solid fa-paperclip text-sm"></i>
-          </button>
+        
+        <div v-if="messageModel?.trim() || attachments.length" class="flex justify-end pt-1.5">
           <button @click="$emit('submit')" :disabled="submitting || !canSubmit" type="button"
-            class="px-3 py-2 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-xs transition-colors shrink-0"
-            :class="submitting || !canSubmit ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#45A246] hover:bg-[#3a903b] cursor-pointer'">
-            <i class="fa-solid fa-dove text-xs"></i>
-            <span>{{ submitting ? '...' : 'Hú Hú' }}</span>
+            title="Gửi cập nhật (Hú hú)"
+            class="w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-xs transition-colors shrink-0 cursor-pointer"
+            :class="submitting || !canSubmit ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#45A246] hover:bg-[#3a903b]'">
+            <i class="fa-solid fa-dove text-sm"></i>
           </button>
         </div>
       </div>
@@ -184,7 +211,6 @@ const projectId = computed({ get: () => projectModel.value, set: value => { proj
 const authStore = useAuthStore()
 const textareaRef = ref(null)
 const lastCursorPosition = ref(null)
-const projectPickerInputRef = ref(null)
 const isExpanded = ref(false)
 const isAutoExpanded = ref(false)
 const isProjectPickerOpen = ref(false)
@@ -194,35 +220,11 @@ const trigger = ref('')
 const query = ref('')
 const suggestionIndex = ref(0)
 const fileInputRef = ref(null)
+const imageFileInputRef = ref(null)
 const attachments = ref([])
-
-const isMobile = ref(false)
-const updateIsMobile = () => {
-  isMobile.value = window.innerWidth < 768
-}
-
-onMounted(() => {
-  updateIsMobile()
-  window.addEventListener('resize', updateIsMobile)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', updateIsMobile)
-})
-
-const handleInputBlur = () => {
-  if (isMobile.value) return
-  closeProjectPicker()
-}
 
 const mobileSearchInputRef = ref(null)
 
-watch(isProjectPickerOpen, async (isOpen) => {
-  if (isOpen && isMobile.value) {
-    await nextTick()
-    mobileSearchInputRef.value?.focus()
-  }
-})
 const hasText = ref(Boolean(messageModel.value?.trim()))
 const canSubmit = computed(() => props.projects.length > 0 && (hasText.value || attachments.value.length > 0))
 
@@ -231,22 +233,7 @@ const resizeTextarea = () => {
   if (!textarea) return
   textarea.style.height = 'auto'
   const contentHeight = textarea.scrollHeight
-  isAutoExpanded.value = contentHeight > 64
-
-  // Automatic growth uses the former expand-button size. Explicit expansion
-  // opens the larger editor, independently of the message length.
-  if (isExpanded.value) {
-    textarea.style.height = '200px'
-  } else if (isAutoExpanded.value) {
-    textarea.style.height = '100px'
-  } else {
-    textarea.style.height = `${Math.min(64, Math.max(44, contentHeight))}px`
-  }
-}
-
-const toggleExpanded = () => {
-  isExpanded.value = !isExpanded.value
-  nextTick(resizeTextarea)
+  textarea.style.height = `${Math.min(140, Math.max(36, contentHeight))}px`
 }
 
 const compressImage = file => new Promise(resolve => {
@@ -295,21 +282,57 @@ const addAttachment = async file => {
   })
 }
 
+const isDragging = ref(false)
+let dragCounter = 0
+
+const handleDragEnter = (e) => {
+  if (e.dataTransfer?.types?.includes('Files')) {
+    dragCounter++
+    isDragging.value = true
+  }
+}
+
+const handleDragOver = (e) => {
+  if (e.dataTransfer?.types?.includes('Files')) {
+    e.dataTransfer.dropEffect = 'copy'
+  }
+}
+
+const handleDragLeave = (e) => {
+  if (e.dataTransfer?.types?.includes('Files')) {
+    dragCounter = Math.max(0, dragCounter - 1)
+    if (dragCounter === 0) {
+      isDragging.value = false
+    }
+  }
+}
+
+const handleDrop = async (e) => {
+  dragCounter = 0
+  isDragging.value = false
+  const files = Array.from(e.dataTransfer?.files || [])
+  for (const file of files) {
+    await addAttachment(file)
+  }
+}
+
 const handleFileSelection = async event => {
   for (const file of Array.from(event.target.files || [])) await addAttachment(file)
   event.target.value = ''
 }
 
 const handlePaste = async event => {
-  const imageFiles = Array.from(event.clipboardData?.items || [])
-    .filter(item => item.type.startsWith('image/'))
-    .map(item => item.getAsFile())
-    .filter(Boolean)
-  if (!imageFiles.length) return
+  const items = Array.from(event.clipboardData?.items || [])
+  const files = items.map(item => item.getAsFile()).filter(Boolean)
+  if (!files.length) return
   event.preventDefault()
-  for (const [index, file] of imageFiles.entries()) {
-    const extension = file.type.split('/')[1] || 'png'
-    await addAttachment(new File([file], `pasted_image_${Date.now()}_${index + 1}.${extension}`, { type: file.type }))
+  for (const [index, file] of files.entries()) {
+    if (file.type.startsWith('image/')) {
+      const extension = file.type.split('/')[1] || 'png'
+      await addAttachment(new File([file], file.name || `pasted_image_${Date.now()}_${index + 1}.${extension}`, { type: file.type }))
+    } else {
+      await addAttachment(file)
+    }
   }
 }
 
@@ -374,9 +397,8 @@ const matches = (value) => {
 const selectedProject = computed(() => props.projects.find(project => String(project.id) === String(projectId.value)) || null)
 const filteredPickerProjects = computed(() => {
   const rawQuery = projectSearch.value.trim()
-  const queryToUse = rawQuery === selectedProject.value?.title ? '' : rawQuery
-  if (!queryToUse) return props.projects
-  const normalizedQuery = normalize(queryToUse)
+  if (!rawQuery) return props.projects
+  const normalizedQuery = normalize(rawQuery)
   return props.projects.filter(project => {
     const title = normalize(project.title)
     const customer = normalize(project.customer?.name)
@@ -385,38 +407,77 @@ const filteredPickerProjects = computed(() => {
 })
 
 const syncProjectSearch = () => {
-  if (!isProjectPickerOpen.value) projectSearch.value = selectedProject.value?.title || ''
-}
-
-const openProjectPicker = event => {
-  isProjectPickerOpen.value = true
-  nextTick(() => event?.target?.select())
-}
-
-const closeProjectPicker = () => {
-  window.setTimeout(() => {
-    isProjectPickerOpen.value = false
-    syncProjectSearch()
-  }, 120)
+  if (!isProjectPickerOpen.value) projectSearch.value = ''
 }
 
 const dismissProjectPicker = () => {
   isProjectPickerOpen.value = false
   syncProjectSearch()
-  projectPickerInputRef.value?.blur()
 }
 
 const toggleProjectPicker = () => {
+  isProjectPickerOpen.value = !isProjectPickerOpen.value
   if (isProjectPickerOpen.value) {
+    projectSearch.value = ''
+    nextTick(() => {
+      mobileSearchInputRef.value?.focus()
+    })
+  }
+}
+
+const pickerSelectedIndex = ref(0)
+const projectPickerListRef = ref(null)
+
+watch([filteredPickerProjects, isProjectPickerOpen], () => {
+  pickerSelectedIndex.value = 0
+})
+
+const scrollPickerItemIntoView = () => {
+  nextTick(() => {
+    const listEl = projectPickerListRef.value
+    if (!listEl) return
+    const activeItem = listEl.children[pickerSelectedIndex.value]
+    if (activeItem?.scrollIntoView) {
+      activeItem.scrollIntoView({ block: 'nearest' })
+    }
+  })
+}
+
+const handlePickerKeydown = (event) => {
+  if (event.key === 'Escape') {
+    event.preventDefault()
     dismissProjectPicker()
-  } else {
-    projectPickerInputRef.value?.focus()
+    return
+  }
+  const total = filteredPickerProjects.value.length
+  if (!total) return
+
+  if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    pickerSelectedIndex.value = (pickerSelectedIndex.value + 1) % total
+    scrollPickerItemIntoView()
+    return
+  }
+
+  if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    pickerSelectedIndex.value = (pickerSelectedIndex.value - 1 + total) % total
+    scrollPickerItemIntoView()
+    return
+  }
+
+  if (event.key === 'Enter') {
+    event.preventDefault()
+    const selected = filteredPickerProjects.value[pickerSelectedIndex.value]
+    if (selected) {
+      selectProjectFromPicker(selected)
+    }
   }
 }
 
 const selectProjectFromPicker = project => {
   projectId.value = project.id
-  projectSearch.value = project.title
+  projectSearch.value = ''
   isProjectPickerOpen.value = false
   nextTick(() => textareaRef.value?.focus())
 }
@@ -452,8 +513,6 @@ watch(() => props.projects, projects => {
     projectModel.value = null
   }
 }, { immediate: true })
-
-watch([projectModel, () => props.projects], syncProjectSearch, { immediate: true })
 
 watch(messageModel, value => {
   if (!String(value || '').trim()) {
@@ -503,7 +562,6 @@ const selectSuggestion = item => {
 
   const finalValue = replacement + after
 
-  // Force DOM value updates directly to reset browser's active IME composition buffer on mobile
   textarea.value = finalValue
   textarea.dispatchEvent(new Event('input'))
 
