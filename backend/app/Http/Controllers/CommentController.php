@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Comment;
 use App\Models\Project;
+use App\Models\Task;
+use App\Models\Attachment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -112,6 +114,26 @@ class CommentController extends Controller
         $user = auth()->user();
         $canDelete = $user->is_system_admin || $user->is_admin || (int) $comment->user_id === (int) $user->id;
         abort_unless($canDelete, 403, 'Bạn không có quyền xóa bình luận này.');
+
+        // Delete associated task and attachments if this comment represents a project task/update
+        if ($comment->task_id) {
+            $task = Task::find($comment->task_id);
+            if ($task) {
+                Attachment::where('task_id', $task->id)->delete();
+                $task->delete();
+            }
+        } else {
+            // Also check for matching task by project, user, and content if task_id wasn't populated
+            $matchingTask = Task::where('project_id', $comment->project_id)
+                ->where('title', $comment->content)
+                ->where('created_by', $comment->user_id)
+                ->first();
+            if ($matchingTask) {
+                Attachment::where('task_id', $matchingTask->id)->delete();
+                $matchingTask->delete();
+            }
+        }
+
         $comment->delete();
 
         return response()->json(['message' => 'Đã xóa bình luận']);

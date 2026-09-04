@@ -148,6 +148,8 @@ class TaskController extends Controller
         $attachmentIds = $validated['attachment_ids'] ?? [];
         unset($validated['tagged_user_ids'], $validated['attachment_ids']);
         $task->update($validated);
+        $task->created_at = Carbon::now();
+        $task->save();
 
         // Link newly uploaded attachments to this task
         if (!empty($attachmentIds)) {
@@ -165,12 +167,11 @@ class TaskController extends Controller
         // Update or create corresponding comment to show up at the top of Recent Activity
         $comment = Comment::where('task_id', $task->id)->where('type', 'status_change')->first();
         if ($comment) {
-            $comment->update([
-                'content' => $task->title,
-                'user_id' => auth()->id() ?? $task->created_by ?? 1,
-                'created_at' => Carbon::now(),
-                'updated_at' => Carbon::now()
-            ]);
+            $comment->content = $task->title;
+            $comment->user_id = auth()->id() ?? $task->created_by ?? 1;
+            $comment->created_at = Carbon::now();
+            $comment->updated_at = Carbon::now();
+            $comment->save();
         } else {
             Comment::create([
                 'project_id' => $task->project_id,
@@ -198,6 +199,10 @@ class TaskController extends Controller
         $user = auth()->user();
         $canDelete = $user->is_system_admin || $user->is_admin || (int) $task->created_by === (int) $user->id;
         abort_unless($canDelete, 403, 'Bạn không có quyền xóa hoạt động này.');
+
+        // Delete associated comments and attachments
+        Comment::where('task_id', $task->id)->delete();
+        Attachment::where('task_id', $task->id)->delete();
         $task->delete();
 
         return response()->json(['message' => 'Đã xóa công việc']);

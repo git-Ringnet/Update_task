@@ -576,22 +576,15 @@
 
           <div v-else class="space-y-3">
             <!-- CARDS LIST -->
-            <div v-for="t in displayedCards" :key="t.id"
-              :id="'task-card-' + t.id"
-              @touchstart="handleTouchStart(t, $event)"
-              @touchend="handleTouchEnd"
-              @touchmove="handleTouchMove"
+            <div v-for="t in displayedCards" :key="t.id" :id="'task-card-' + t.id"
+              @touchstart="handleTouchStart(t, $event)" @touchend="handleTouchEnd" @touchmove="handleTouchMove"
               class="relative bg-white border border-gray-200/80 hover:border-gray-300 rounded-2xl shadow-2xs hover:shadow-xs transition-all group flex items-stretch overflow-visible"
               :title="isTaskInDoneStage(t) ? 'Chặng đã hoàn thành (Không thể chỉnh sửa)' : undefined">
 
               <!-- Desktop/Mobile reply button (Outside Right Edge) -->
-              <button
-                @click.stop="handleReplyToTask(t)"
-                type="button"
-                title="Trả lời hoạt động này"
+              <button @click.stop="handleReplyToTask(t)" type="button" title="Trả lời hoạt động này"
                 class="absolute right-[-14px] top-1/2 -translate-y-1/2 opacity-0 md:group-hover:opacity-100 transition-all duration-200 bg-white hover:bg-emerald-600 text-gray-500 hover:text-white border border-gray-200 hover:border-emerald-600 cursor-pointer rounded-full h-7 w-7 flex items-center justify-center shadow-2xs z-20 focus:outline-none"
-                :class="{ 'opacity-100 pointer-events-auto': activeTaskIdForMobileActions === t.id }"
-              >
+                :class="{ 'opacity-100 pointer-events-auto': activeTaskIdForMobileActions === t.id }">
                 <i class="fa-solid fa-reply text-xs"></i>
               </button>
 
@@ -655,14 +648,16 @@
                       <i class="fa-solid fa-ellipsis-vertical"></i>
                     </button>
                     <div v-if="activeTaskActionMenuId === t.id" class="task-mobile-menu-popover">
-                      <button type="button" @click.stop="handleReplyToTask(t); activeTaskActionMenuId = null" class="border-b border-gray-100">
+                      <button type="button" @click.stop="handleReplyToTask(t); activeTaskActionMenuId = null"
+                        class="border-b border-gray-100">
                         <i class="fa-solid fa-reply text-xs"></i><span>Trả lời</span>
                       </button>
-                      <button v-if="canEditOrDelete(t)" type="button" @click.stop="openEditStageTaskForm(t); activeTaskActionMenuId = null">
+                      <button v-if="canEditOrDelete(t)" type="button"
+                        @click.stop="openEditStageTaskForm(t); activeTaskActionMenuId = null">
                         <i class="fa-solid fa-pen-to-square"></i><span>Cập nhật</span>
                       </button>
-                      <button v-if="canEditOrDelete(t)" type="button" @click.stop="handleDeleteTask(t.id); activeTaskActionMenuId = null"
-                        class="is-danger">
+                      <button v-if="canEditOrDelete(t)" type="button"
+                        @click.stop="handleDeleteTask(t.id); activeTaskActionMenuId = null" class="is-danger">
                         <i class="fa-solid fa-trash-can"></i><span>Xóa</span>
                       </button>
                     </div>
@@ -672,8 +667,7 @@
                 <!-- Body: message content -->
                 <div class="mt-1 text-[17px] font-bold text-gray-900 leading-snug break-words">
                   <!-- Zalo Quote Reply Preview inside task feed -->
-                  <div v-if="parseReplyInfo(t.title)" 
-                    @click.stop="scrollToTask(parseReplyInfo(t.title))"
+                  <div v-if="parseReplyInfo(t.title)" @click.stop="scrollToTask(parseReplyInfo(t.title))"
                     class="bg-gray-50 px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1.5 select-none max-w-full font-semibold cursor-pointer hover:bg-gray-100 transition-colors">
                     <div class="text-[10px] font-bold text-gray-500 flex items-center gap-1">
                       <i class="fa-solid fa-reply text-[9px]"></i>
@@ -798,15 +792,14 @@
         <div
           class="inline-update-card max-w-[720px] mx-auto pointer-events-auto bg-white border border-gray-200 shadow-2xl rounded-2xl p-4 sm:p-5 relative ring-1 ring-black/5 transition-all"
           :class="{ 'overflow-visible-important': showMentionDropdown, 'ring-2 ring-emerald-500 border-emerald-400': isDraggingTaskUpdate }"
-          @dragenter.prevent="handleTaskDragEnter"
-          @dragover.prevent="handleTaskDragOver"
-          @dragleave.prevent="handleTaskDragLeave"
-          @drop.prevent="handleTaskDrop">
+          @dragenter.prevent="handleTaskDragEnter" @dragover.prevent="handleTaskDragOver"
+          @dragleave.prevent="handleTaskDragLeave" @drop.prevent="handleTaskDrop">
 
           <!-- DRAG OVERLAY -->
           <div v-if="isDraggingTaskUpdate"
             class="absolute inset-0 z-40 bg-emerald-500/10 border-2 border-dashed border-emerald-500 rounded-2xl flex flex-col items-center justify-center gap-2 backdrop-blur-[2px] pointer-events-none transition-all">
-            <div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm animate-bounce">
+            <div
+              class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm animate-bounce">
               <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
             </div>
             <p class="text-sm font-bold text-emerald-800">Thả tệp hoặc ảnh vào đây để tải lên cập nhật</p>
@@ -906,9 +899,11 @@
                 <!-- Input Area Container with Mention Dropdown & Paste Support -->
                 <div class="project-mention-picker flex-1 min-w-0 relative">
                   <!-- Reply banner (Zalo Style Quote) -->
-                  <div v-if="replyingToLog" class="flex items-start justify-between bg-gray-100/80 px-3.5 py-2.5 rounded-xl border-l-3 border-[#0068FF] text-xs transition-all duration-300 relative select-none mb-2">
+                  <div v-if="replyingToLog"
+                    class="flex items-start justify-between bg-gray-100/80 px-3.5 py-2.5 rounded-xl border-l-3 border-[#0068FF] text-xs transition-all duration-300 relative select-none mb-2">
                     <div class="flex-1 min-w-0">
-                      <div class="text-[10px] font-extrabold text-[#0068FF] uppercase tracking-wider flex items-center gap-1">
+                      <div
+                        class="text-[10px] font-extrabold text-[#0068FF] uppercase tracking-wider flex items-center gap-1">
                         <i class="fa-solid fa-reply text-[9px]"></i>
                         <span>Trả lời {{ getCreatorDisplayName(replyingToLog) }}</span>
                       </div>
@@ -916,14 +911,16 @@
                         {{ parseCommentText(replyingToLog.title) }}
                       </div>
                     </div>
-                    <button @click="cancelReply" type="button" class="text-gray-400 hover:text-gray-650 transition-colors p-1 rounded-full hover:bg-gray-200/50 cursor-pointer flex items-center justify-center shrink-0 ml-2" title="Hủy trả lời">
+                    <button @click="cancelReply" type="button"
+                      class="text-gray-400 hover:text-gray-650 transition-colors p-1 rounded-full hover:bg-gray-200/50 cursor-pointer flex items-center justify-center shrink-0 ml-2"
+                      title="Hủy trả lời">
                       <i class="fa-solid fa-xmark text-xs"></i>
                     </button>
                   </div>
 
-                  <textarea ref="stageTaskTitleInputRef" v-model="newStageTaskTitle" rows="1" required maxlength="1000"
-                    @input="onTitleInput" @keydown="onTitleKeydown" @paste="onTextareaPaste" @focus="handleTextareaFocus"
-                    placeholder="Chia sẻ cập nhật với team..."
+                  <textarea ref="stageTaskTitleInputRef" v-model="newStageTaskTitle" rows="1" required
+                    @input="onTitleInput" @keydown="onTitleKeydown" @paste="onTextareaPaste"
+                    @focus="handleTextareaFocus" placeholder="Chia sẻ cập nhật với team..."
                     class="w-full h-32 overflow-y-auto bg-transparent text-sm sm:text-base font-bold text-gray-900 leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none m-0 border-0"></textarea>
 
                   <!-- AUTOCOMPLETE @MENTION DROPDOWN POPOVER -->
@@ -1012,7 +1009,8 @@
                       :class="newStageTaskTaggedUsers.length > 0 ? 'bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-700' : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600'"
                       title="Chọn người phụ trách / Tag tên">
                       <i class="fa-regular fa-user text-sm"></i>
-                      <span v-if="newStageTaskTaggedUsers.length > 0" class="max-w-[80px] sm:max-w-[120px] truncate inline-block align-middle">
+                      <span v-if="newStageTaskTaggedUsers.length > 0"
+                        class="max-w-[80px] sm:max-w-[120px] truncate inline-block align-middle">
                         {{(() => {
                           const names = newStageTaskTaggedUsers.map(id => {
                             const u = users.find(user => String(user.id) === String(id));
@@ -1230,7 +1228,7 @@ const isSavingMembers = ref(false)
 const openMemberManager = async () => {
   try {
     await fetchUsers()
-  } catch (err) {}
+  } catch (err) { }
   draftMemberIds.value = project.value?.members?.map(member => Number(member.id)) || []
   const creatorId = project.value?.creator_id
   const creatorIsSelectable = users.value.some(user => String(user.id) === String(creatorId))
@@ -2619,7 +2617,7 @@ const activePreviewImage = ref(null)
 // ALL PROJECT CARDS SORTED NEWEST FIRST
 const allProjectCards = computed(() => {
   const cards = []
-  
+
   if (project.value && project.value.tasks) {
     project.value.tasks.forEach(t => {
       cards.push({
@@ -3854,7 +3852,7 @@ const refreshAllData = async () => {
       fetchProjectDetail(),
       fetchComments()
     ])
-  } catch (err) {}
+  } catch (err) { }
 }
 
 const fetchCustomers = async () => {
@@ -3905,7 +3903,7 @@ const handleEditProject = async () => {
       fetchUsers(),
       fetchCustomers()
     ])
-  } catch (err) {}
+  } catch (err) { }
   isModalOpen.value = true
   isActionMenuOpen.value = false
 }
@@ -4525,10 +4523,22 @@ function getCaretCoordinates(element, position) {
     cursor: pointer;
   }
 }
+
 @keyframes task-card-flash {
-  0%, 100% { border-color: rgba(229, 231, 235, 0.8); box-shadow: none; }
-  50% { border-color: #10B981; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2); background-color: #ECFDF5; }
+
+  0%,
+  100% {
+    border-color: rgba(229, 231, 235, 0.8);
+    box-shadow: none;
+  }
+
+  50% {
+    border-color: #10B981;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+    background-color: #ECFDF5;
+  }
 }
+
 .task-card-highlight {
   animation: task-card-flash 2s ease-in-out;
 }

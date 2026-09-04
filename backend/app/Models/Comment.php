@@ -18,6 +18,8 @@ class Comment extends Model
         'content',
         'type',
         'project_health',
+        'created_at',
+        'updated_at',
     ];
 
     protected static function booted()

@@ -106,7 +106,8 @@
             <!-- DRAG OVERLAY -->
             <div v-if="draggingMap[project.id]"
               class="absolute inset-0 z-40 bg-emerald-500/10 border-2 border-dashed border-emerald-500 rounded-2xl flex flex-col items-center justify-center gap-2 backdrop-blur-[2px] pointer-events-none transition-all">
-              <div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm animate-bounce">
+              <div
+                class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm animate-bounce">
                 <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
               </div>
               <p class="text-sm font-bold text-emerald-800">Thả tệp hoặc ảnh vào đây để cập nhật {{ project.title }}</p>
@@ -210,7 +211,7 @@
                   <div class="project-mention-picker flex-1 min-w-0 relative">
                     <textarea :ref="(el) => setTextareaRef(el, project.id)" v-model="updateTexts[project.id]"
                       @input="onInputText(project.id, $event)" @keydown="onTextareaKeydown(project.id, $event)"
-                      @paste="handlePaste(project.id, $event)" rows="1" maxlength="1000"
+                      @paste="handlePaste(project.id, $event)" rows="1"
                       placeholder="Chia sẻ cập nhật với team... (Gõ @ để nhắc tên, 'ngày mai', 'hôm nay' để đặt ngày)"
                       class="w-full h-32 overflow-y-auto bg-transparent text-sm sm:text-base font-bold text-gray-900 leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none m-0 border-0"></textarea>
 
@@ -297,7 +298,7 @@
                     <!-- Status indicator -->
                     <template v-if="isSaved[project.id]">
                       <span class="text-xs text-gray-400 font-semibold whitespace-nowrap">{{ savedTimes[project.id]
-                        }}</span>
+                      }}</span>
                       <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
                     </template>
 
@@ -385,7 +386,7 @@
                           :style="{ width: `${uploadProgress[project.id]}%` }"></div>
                       </div>
                       <p class="mt-1 text-center text-[9px] font-bold text-emerald-700">{{ uploadProgress[project.id]
-                        }}%</p>
+                      }}%</p>
                     </div>
                     <button type="submit"
                       :disabled="(getActiveMilestonesForProject(project).length > 0 && !selectedMilestoneMap[project.id]) || isSaving[project.id]"
@@ -1368,7 +1369,7 @@ const saveUpdate = async (projectId) => {
           if (!uploaded) throw new Error('Máy chủ không trả về thông tin tệp đã tải lên.')
           uploadedAttachmentIds.push(uploaded.id)
           const serverUrl = uploaded.url
-          
+
           if (f.isImage) {
             titleText += `<br/><img src="${serverUrl}" class="max-h-56 rounded-xl my-2 border border-gray-200 shadow-2xs block" />`
           } else {
