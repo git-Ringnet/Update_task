@@ -5,13 +5,13 @@
     <main class="max-w-[800px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2 flex-1 flex flex-col min-h-0">
       <!-- Header Row: Back Button & Vertically Centered Title "Hoạt động của đội" -->
       <div class="relative flex items-center justify-center mb-4 min-h-[40px] flex-shrink-0">
-        <button @click="goBack" type="button"
-          class="absolute left-0 top-1/2 -translate-y-1/2 inline-flex items-center gap-2 text-[15px] text-gray-700 hover:text-emerald-700 font-extrabold transition-colors cursor-pointer focus:outline-none">
-          <i class="fa-solid fa-arrow-left text-sm"></i>
-          <span>Quay lại</span>
+        <button @click="goBack" type="button" title="Quay lại"
+          class="absolute left-0 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-auto sm:h-auto rounded-full sm:rounded-none flex items-center justify-center sm:gap-2 text-[15px] text-gray-700 hover:text-emerald-700 font-extrabold transition-colors cursor-pointer focus:outline-none hover:bg-stone-200/60 sm:hover:bg-transparent">
+          <i class="fa-solid fa-arrow-left text-base sm:text-sm"></i>
+          <span class="hidden sm:inline">Quay lại</span>
         </button>
 
-        <h1 class="text-[20px] sm:text-[22px] font-black text-gray-900 font-heading tracking-tight">
+        <h1 class="text-[20px] sm:text-[22px] font-black text-[#32312F] font-heading tracking-tight">
           Hoạt động của đội
         </h1>
       </div>
@@ -60,7 +60,7 @@
       <div v-else class="flex-1 overflow-y-auto scrollbar-none pr-1 mb-3 space-y-6">
         <div v-for="(group, dateStr) in groupedActivities" :key="dateStr" class="space-y-3">
           <!-- Date Header -->
-          <h2 class="text-[18px] sm:text-[19px] font-black text-gray-900 font-heading mb-5 pt-1">{{ dateStr }}</h2>
+          <h2 class="text-[18px] sm:text-[19px] font-black text-[#32312F] font-heading mb-5 pt-1">{{ dateStr }}</h2>
 
           <!-- Timeline list, matching the recent-activity panel -->
           <div class="space-y-0">
@@ -80,12 +80,12 @@
 
               <div class="flex-1 min-w-0 z-10">
                 <!-- Top Row: Avatar + User Name & supports & relative time / 3-dots menu -->
-                <div class="flex items-center justify-between gap-2 relative">
+                <div class="flex items-center justify-between gap-2 relative min-h-[26px]">
                   <div class="min-w-0 flex-1">
-                    <span class="font-extrabold text-[18px] sm:text-[19px] text-gray-900 truncate leading-snug">
+                    <span class="font-extrabold text-[18px] sm:text-[19px] text-[#32312F] truncate leading-tight block">
                       <span>{{ act.user ? act.user.name : 'Thành viên' }}</span>
                       <template v-if="act.project?.customer">
-                        <span class="font-bold text-gray-800">&nbsp;hỗ trợ&nbsp;</span>
+                        <span class="font-bold text-[#32312F]">&nbsp;hỗ trợ&nbsp;</span>
                         <span class="text-[#1A7A56] hover:underline cursor-pointer font-extrabold"
                           @click.stop="$router.push(`/customers/${act.project.customer.id}`)">
                           {{ act.project.customer.name }}
@@ -95,19 +95,19 @@
                   </div>
 
                   <!-- Right: Timestamp normally, 3-dots icon button on hover / when menu open -->
-                  <div class="relative shrink-0 flex items-center justify-end min-w-[28px]" @click.stop>
+                  <div class="relative shrink-0 flex items-center justify-end h-6 min-w-[28px]" @click.stop>
                     <!-- Relative Time (shown when not hovered and menu not active) -->
                     <span
-                      class="text-[15px] sm:text-[16px] text-gray-400 font-medium whitespace-nowrap leading-snug text-right"
+                      class="text-[14px] sm:text-[15px] text-gray-400 font-medium whitespace-nowrap leading-none text-right"
                       :class="(activeActivityMenuId === act.id || activeActivityIdForMobileActions === act.id) ? 'hidden' : 'group-hover:hidden'">
                       {{ formatCommentRelativeTime(act.created_at) }}
                     </span>
 
                     <!-- 3-dots Menu Button (shown on hover or when menu is active) -->
                     <button type="button" @click.stop="toggleActivityMenu(act.id, $event)" title="Tùy chọn"
-                      class="text-gray-400 hover:text-gray-700 w-5 h-5 rounded flex items-center justify-center cursor-pointer transition-colors p-0 -mr-0.5"
-                      :class="(activeActivityMenuId === act.id || activeActivityIdForMobileActions === act.id) ? 'flex text-gray-700 bg-gray-200/60' : 'hidden group-hover:flex'">
-                      <i class="fa-solid fa-ellipsis-vertical text-base leading-none"></i>
+                      class="text-gray-400 hover:text-gray-800 hover:bg-gray-200/70 w-6 h-6 rounded-md flex items-center justify-center cursor-pointer transition-colors p-0"
+                      :class="(activeActivityMenuId === act.id || activeActivityIdForMobileActions === act.id) ? 'flex text-gray-800 bg-gray-200/80' : 'hidden group-hover:flex'">
+                      <i class="fa-solid fa-ellipsis-vertical text-sm leading-none"></i>
                     </button>
 
                     <!-- Dropdown Menu for Delete -->
@@ -176,8 +176,8 @@
                 <!-- Bottom Actions: Reply icon -->
                 <div class="flex items-center gap-3 mt-1.5">
                   <button @click.stop="handleReplyToActivity(act)" type="button" title="Trả lời hoạt động này"
-                    class="text-gray-400 hover:text-emerald-700 cursor-pointer transition-colors inline-flex items-center gap-1 p-0.5">
-                    <i class="fa-solid fa-reply text-[17px] sm:text-[19px]"></i>
+                    class="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-emerald-700 hover:bg-gray-200/70 active:bg-gray-300/60 cursor-pointer transition-colors -ml-1">
+                    <i class="fa-solid fa-reply text-[15px] sm:text-[16px]"></i>
                   </button>
                 </div>
               </div>

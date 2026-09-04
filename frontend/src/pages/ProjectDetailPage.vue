@@ -125,7 +125,7 @@
             <!-- MAIN PROJECT TITLE (CĂN GIỮA) -->
             <div class="project-header-title text-center flex-1 min-w-0">
               <h1
-                class="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight font-heading uppercase break-words max-w-full leading-tight mx-auto">
+                class="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight font-heading break-words max-w-full leading-tight mx-auto">
                 {{ project.title }}
               </h1>
             </div>

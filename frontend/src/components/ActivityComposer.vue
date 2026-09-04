@@ -57,7 +57,7 @@
       </div>
 
       <!-- Top Toolbar Row: Paperclip, Image, Project Selector Pill -->
-      <div class="flex items-center justify-between px-3.5 py-2 bg-[#F9F4EE] rounded-t-[14px] border-b border-gray-300/90 select-none">
+      <div class="flex items-center justify-between px-3.5 py-2 bg-[#F9F4EE] rounded-t-[14px] border-b border-gray-300/40 select-none">
         <div class="flex items-center gap-3 text-gray-700">
           <input ref="fileInputRef" type="file" multiple
             accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar" class="hidden" @change="handleFileSelection" />

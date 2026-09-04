@@ -5,11 +5,11 @@
     <Navbar @search="handleSearch" />
 
     <!-- Main Container -->
-    <main class="max-w-[1260px] mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
+    <main class="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
       <!-- Main Layout Container -->
       <div class="view-page-layout" :class="viewMode === 'notes'
-        ? 'grid grid-cols-1 lg:grid-cols-[390px_minmax(0,1fr)] gap-10 w-full lg:w-[1280px] mx-auto items-start'
-        : 'view-standard-layout w-full flex justify-center items-start gap-10'">
+        ? 'grid grid-cols-1 lg:grid-cols-[390px_minmax(0,1fr)] gap-15 w-full lg:w-[1280px] mx-auto items-start'
+        : 'view-standard-layout w-full flex justify-center items-start gap-15'">
 
         <!-- LEFT PANEL: Actions, Switcher & Search (Block 1) -->
         <aside ref="viewActionsRef" class="view-actions" :class="[
@@ -17,7 +17,7 @@
         ]">
           <!-- Button Tạo dự án -->
           <button @click="isModalOpen = true" type="button"
-            class="mobile-icon-button create-project-action w-fit bg-transparent hover:bg-gray-200/40 border-2 border-[#4d4d4d] text-gray-900 font-extrabold text-[18px] rounded-md px-4.5 py-2.5 flex items-center justify-center gap-1.5 transition-colors cursor-pointer focus:outline-none select-none"
+            class="mobile-icon-button create-project-action w-fit bg-transparent hover:bg-gray-200/40 border-[2.5px] border-[#4d4d4d] text-[#32312F] font-extrabold text-[18px] rounded-md px-4.5 py-2.5 flex items-center justify-center gap-1.5 transition-colors cursor-pointer focus:outline-none select-none"
             title="Tạo dự án mới (Ctrl + K)">
             <span class="text-[20px] font-normal mr-0.5 leading-none">+</span>
             <span>Tạo dự án mới</span>
@@ -25,7 +25,7 @@
 
           <!-- Project / Customer / Activities Switcher (Simple Button) -->
           <button @click="toggleCustomerGroup" type="button" :disabled="isViewModeChanging"
-            class="mobile-icon-button view-switch-action w-fit bg-transparent hover:bg-gray-200/40 border-2 border-[#4d4d4d] text-gray-900 font-extrabold text-[18px] rounded-md px-4.5 py-2.5 flex items-center justify-center transition-colors cursor-pointer focus:outline-none select-none"
+            class="mobile-icon-button view-switch-action w-fit bg-transparent hover:bg-gray-200/40 border-[2.5px] border-[#4d4d4d] text-[#32312F] font-extrabold text-[18px] rounded-md px-4.5 py-2.5 flex items-center justify-center transition-colors cursor-pointer focus:outline-none select-none"
             :class="isGroupedByCustomer || viewMode === 'activities' ? 'bg-emerald-50/10' : ''" :title="viewModeTitle">
             <div class="flex items-center gap-2">
               <i class="fa-solid fa-list-ol text-[18px] text-[#4d4d4d]"></i>
@@ -39,7 +39,7 @@
             <i
               class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4d4d4d] text-[18px]"></i>
             <input ref="searchInputRef" v-model="projectStore.searchQuery" type="text" placeholder="Tìm kiếm"
-              class="w-full bg-white sm:bg-transparent border-2 border-[#4d4d4d] rounded-md pl-11 pr-4 py-2.5 text-[18px] font-extrabold text-gray-900 focus:outline-none placeholder-gray-400" />
+              class="w-full bg-white sm:bg-transparent border-[2.5px] border-[#4d4d4d] rounded-md pl-11 pr-4 py-2.5 text-[18px] font-extrabold text-[#32312F] focus:outline-none placeholder-gray-400" />
           </div>
           <button type="button" class="mobile-search-toggle mobile-icon-button"
             :class="{ 'bg-emerald-50 border-emerald-600 text-emerald-700': isMobileSearchOpen || projectStore.searchQuery }"
@@ -215,12 +215,15 @@
 
                     <!-- Colored Project Rectangular Card (Identical to default mode) -->
                     <div @click="goToProjectDetail(project.id, $event)"
-                      class="project-card w-full md:w-[380px] ml-auto md:mx-auto rounded-lg p-4 flex items-center justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
+                      class="project-card w-full md:w-[380px] ml-auto md:mx-auto rounded-lg p-4 flex items-start justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
                       :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]">
                       <div class="min-w-0 flex-1">
                         <div
-                          class="font-extrabold text-gray-900 text-[18px] sm:text-[20px] leading-snug break-words min-w-0">
+                          class="font-extrabold text-[#32312F] text-[18px] sm:text-[20px] leading-snug break-words min-w-0">
                           {{ project.title }}
+                        </div>
+                        <div class="text-[14px] sm:text-[16px] text-[#32312F] font-semibold mt-1">
+                          {{ project.customer ? project.customer.name : 'Chưa phân khách hàng' }}
                         </div>
                       </div>
 
@@ -322,10 +325,10 @@
                     :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]">
                     <div class="min-w-0 flex-1">
                       <div
-                        class="font-extrabold text-gray-900 text-[18px] sm:text-[20px] leading-snug break-words min-w-0">
+                        class="font-extrabold text-[#32312F] text-[18px] sm:text-[20px] leading-snug break-words min-w-0">
                         {{ project.title }}
                       </div>
-                      <div class="text-[16px] text-gray-700 font-bold mt-1 uppercase tracking-wider">
+                      <div class="text-[14px] sm:text-[16px] text-[#32312F] font-semibold mt-1">
                         {{ project.customer ? project.customer.name : 'Chưa phân khách hàng' }}
                       </div>
                     </div>
@@ -367,13 +370,13 @@
 
           <!-- RIGHT PANEL: Hoạt động gần đây (Block 3 - Hidden in notes view) -->
           <section v-if="viewMode !== 'notes'"
-            class="recent-activity-panel bg-[#F9F4EE] border-2 border-[#4d4d4d] rounded-2xl p-0 flex flex-col h-[calc(100vh-130px)] select-none w-[390px] flex-shrink-0 shadow-3xs overflow-hidden"
+            class="recent-activity-panel bg-[#F9F4EE] border-[2.5px] border-[#4d4d4d] rounded-lg p-0 flex flex-col h-[calc(100vh-130px)] select-none w-[390px] flex-shrink-0 shadow-3xs overflow-hidden"
             :class="{ 'mobile-activities-active': viewMode === 'activities' }">
 
             <!-- Header: "Hoạt động của đội" & Expand Button (Full width edge-to-edge border) -->
-            <div class="flex items-center justify-between px-4 py-3 border-b border-[#4d4d4d] flex-shrink-0">
+            <div class="flex items-center justify-between px-4 py-3 border-b-[2.5px] border-[#4d4d4d] flex-shrink-0">
               <div class="flex items-center gap-2">
-                <h2 class="text-[20px] sm:text-[22px] font-black text-gray-900 font-heading">Hoạt động của đội</h2>
+                <h2 class="text-[20px] sm:text-[22px] font-black text-[#32312F] font-heading">Hoạt động của đội</h2>
                 <button @click="showMentionedActivities = !showMentionedActivities" type="button"
                   :title="showMentionedActivities ? 'Hiện tất cả hoạt động' : 'Chỉ hiện hoạt động có nhắc đến bạn'"
                   class="w-5 h-5 rounded-full flex items-center justify-center text-xs transition-colors cursor-pointer hidden"
@@ -383,8 +386,8 @@
               </div>
 
               <button @click="router.push('/feed')" type="button" title="Mở rộng tất cả hoạt động"
-                class="text-gray-700 hover:text-emerald-700 p-1 rounded-lg hover:bg-gray-200/50 cursor-pointer transition-colors">
-                <i class="fa-solid fa-up-right-and-down-left-from-center text-base"></i>
+                class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-700 hover:text-emerald-700 hover:bg-gray-200/60 active:bg-gray-300/60 cursor-pointer transition-colors">
+                <i class="fa-solid fa-up-right-and-down-left-from-center text-[15px]"></i>
               </button>
             </div>
 
@@ -424,12 +427,12 @@
                     <!-- Right content column -->
                     <div class="flex-1 min-w-0 pt-0 z-10">
                       <!-- Top Row: User Name + hỗ trợ Customer & Timestamp / 3-dots menu -->
-                      <div class="flex items-center justify-between gap-2 relative">
+                      <div class="flex items-center justify-between gap-2 relative min-h-[26px]">
                         <div
-                          class="font-extrabold text-[18px] sm:text-[19px] text-gray-900 truncate flex-1 min-w-0 leading-snug">
+                          class="font-extrabold text-[18px] sm:text-[19px] text-[#32312F] truncate flex-1 min-w-0 leading-tight">
                           <span>{{ log.user ? log.user.name : 'Hệ thống' }}</span>
                           <template v-if="log.project?.customer">
-                            <span class="font-bold text-gray-800">&nbsp;hỗ trợ&nbsp;</span>
+                            <span class="font-bold text-[#32312F]">&nbsp;hỗ trợ&nbsp;</span>
                             <span class="text-[#1A7A56] font-extrabold cursor-pointer hover:underline"
                               @click.stop="$router.push(`/customers/${log.project.customer.id}`)">
                               {{ log.project.customer.name }}
@@ -438,19 +441,19 @@
                         </div>
 
                         <!-- Right: Timestamp normally, 3-dots icon button on hover / when menu open -->
-                        <div class="relative shrink-0 flex items-center justify-end min-w-[28px]" @click.stop>
+                        <div class="relative shrink-0 flex items-center justify-end h-6 min-w-[28px]" @click.stop>
                           <!-- Relative Time (shown when not hovered and menu not active) -->
                           <span
-                            class="text-[15px] sm:text-[16px] text-gray-400 font-medium whitespace-nowrap leading-snug text-right"
+                            class="text-[14px] sm:text-[15px] text-gray-400 font-medium whitespace-nowrap leading-none text-right"
                             :class="(activeLogMenuId === log.id || activeLogIdForMobileActions === log.id) ? 'hidden' : 'group-hover:hidden'">
                             {{ formatCommentRelativeTime(log.created_at) }}
                           </span>
 
                           <!-- 3-dots Menu Button (shown on hover or when menu is active) -->
                           <button type="button" @click.stop="toggleActivityMenu(log.id, $event)" title="Tùy chọn"
-                            class="text-gray-400 hover:text-gray-700 w-5 h-5 rounded flex items-center justify-center cursor-pointer transition-colors p-0 -mr-0.5"
-                            :class="(activeLogMenuId === log.id || activeLogIdForMobileActions === log.id) ? 'flex text-gray-700 bg-gray-200/60' : 'hidden group-hover:flex'">
-                            <i class="fa-solid fa-ellipsis-vertical text-base leading-none"></i>
+                            class="text-gray-400 hover:text-gray-800 hover:bg-gray-200/70 w-6 h-6 rounded-md flex items-center justify-center cursor-pointer transition-colors p-0"
+                            :class="(activeLogMenuId === log.id || activeLogIdForMobileActions === log.id) ? 'flex text-gray-800 bg-gray-200/80' : 'hidden group-hover:flex'">
+                            <i class="fa-solid fa-ellipsis-vertical text-sm leading-none"></i>
                           </button>
 
                           <!-- Dropdown Menu for Delete -->
@@ -522,8 +525,8 @@
                       <!-- Bottom Actions: Reply icon -->
                       <div class="flex items-center gap-3 mt-1.5">
                         <button @click.stop="handleReplyToActivity(log)" type="button" title="Trả lời hoạt động này"
-                          class="text-gray-400 hover:text-emerald-700 cursor-pointer transition-colors inline-flex items-center gap-1 p-0.5">
-                          <i class="fa-solid fa-reply text-[17px] sm:text-[19px]"></i>
+                          class="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-emerald-700 hover:bg-gray-200/70 active:bg-gray-300/60 cursor-pointer transition-colors -ml-1">
+                          <i class="fa-solid fa-reply text-[15px] sm:text-[16px]"></i>
                         </button>
                       </div>
                     </div>
@@ -1154,9 +1157,12 @@ watch(() => authStore.user?.view_mode, (newVal) => {
   // This prevents an older profile response from briefly switching the layout back.
   if (isViewModeChanging.value) return
 
-  if (newVal && ['list', 'grouped', 'notes', 'activities'].includes(newVal)) {
+  if (newVal && ['list', 'grouped', 'activities'].includes(newVal)) {
     viewMode.value = newVal
     isGroupedByCustomer.value = (newVal === 'grouped')
+  } else if (newVal === 'notes') {
+    viewMode.value = 'list'
+    isGroupedByCustomer.value = false
   }
 }, { immediate: true })
 
@@ -1167,22 +1173,18 @@ const toggleCustomerGroup = async () => {
   let nextMode = 'list'
 
   if (isMobile) {
-    // Mobile cycle: list (Dự án) -> grouped (Khách hàng) -> notes (Ghi chú) -> activities (Hoạt động gần đây) -> list (Dự án)
+    // Mobile cycle: list (Dự án) -> grouped (Khách hàng) -> activities (Hoạt động gần đây) -> list (Dự án)
     if (viewMode.value === 'list') {
       nextMode = 'grouped'
     } else if (viewMode.value === 'grouped') {
-      nextMode = 'notes'
-    } else if (viewMode.value === 'notes') {
       nextMode = 'activities'
     } else {
       nextMode = 'list'
     }
   } else {
-    // Desktop cycle: list (or activities) -> grouped -> notes -> list
+    // Desktop cycle: list -> grouped -> list
     if (viewMode.value === 'list' || viewMode.value === 'activities') {
       nextMode = 'grouped'
-    } else if (viewMode.value === 'grouped') {
-      nextMode = 'notes'
     } else {
       nextMode = 'list'
     }
@@ -1386,10 +1388,10 @@ const getProjectStatusStyle = (project) => {
 
   if (health === 'red') {
     cardBg = 'bg-[#fca5a5]' // Darker red
-    borderClass = 'border-2 border-[#f87171]'
+    borderClass = 'border-[2.5px] border-[#f87171]'
   } else {
     cardBg = 'bg-transparent shadow-sm' // Transparent background for other health status
-    borderClass = 'border-2 border-[#4d4d4d]' // Dark border matching the buttons
+    borderClass = 'border-[2.5px] border-[#4d4d4d]' // Dark border matching the buttons
   }
 
   return {
@@ -2544,12 +2546,21 @@ onUnmounted(() => {
 }
 
 @media (max-width: 767px) {
+  main {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    padding-top: 8px !important;
+    padding-bottom: 0 !important;
+    max-width: 100% !important;
+  }
+
   .view-page-layout {
     display: flex !important;
     flex-direction: column !important;
     align-items: stretch !important;
     gap: 0 !important;
-    height: calc(100vh - 64px - 62px - env(safe-area-inset-bottom, 0px)) !important;
+    height: calc(100dvh - 60px - 115px - env(safe-area-inset-bottom, 0px)) !important;
+    max-height: calc(100dvh - 60px - 115px - env(safe-area-inset-bottom, 0px)) !important;
     overflow: hidden !important;
     padding-bottom: 0 !important;
   }
@@ -2561,16 +2572,17 @@ onUnmounted(() => {
     right: 0 !important;
     z-index: 45 !important;
     background: #F9F4EE !important;
-    border-top: 2px solid #4d4d4d !important;
-    padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px)) 16px !important;
+    border: none !important;
+    border-top: none !important;
+    padding: 6px 16px calc(22px + env(safe-area-inset-bottom, 0px)) 16px !important;
     margin: 0 !important;
     width: 100% !important;
     flex-direction: row !important;
     flex-wrap: wrap !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 12px !important;
-    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08) !important;
+    gap: 16px !important;
+    box-shadow: none !important;
   }
 
   .view-actions>* {
@@ -2578,12 +2590,12 @@ onUnmounted(() => {
   }
 
   .mobile-icon-button {
-    width: 44px !important;
-    height: 44px !important;
-    min-width: 44px !important;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
     padding: 0 !important;
     border-radius: 12px !important;
-    border: 2px solid #4d4d4d !important;
+    border: 2.5px solid #4d4d4d !important;
     background: #ffffff !important;
     display: inline-flex !important;
     align-items: center !important;
@@ -2593,9 +2605,14 @@ onUnmounted(() => {
     gap: 0 !important;
   }
 
+  .create-project-action {
+    font-size: 24px !important;
+    color: #111827 !important;
+  }
+
   .create-project-action>span:last-child,
   .view-switch-action span {
-    display: none;
+    display: none !important;
   }
 
   .search-input-wrapper {
@@ -2604,7 +2621,7 @@ onUnmounted(() => {
     flex-basis: 100%;
     max-width: none !important;
     width: 100% !important;
-    margin-bottom: 2px !important;
+    margin-bottom: 6px !important;
   }
 
   .search-input-wrapper.mobile-search-open {
@@ -2613,19 +2630,21 @@ onUnmounted(() => {
 
   .search-input-wrapper input {
     background: #ffffff !important;
+    border: 2.5px solid #4d4d4d !important;
+    border-radius: 12px !important;
   }
 
   .mobile-search-toggle {
     display: inline-flex !important;
-    border: 2px solid #4d4d4d;
-    background: #ffffff;
-    color: #4d4d4d;
-    align-items: center;
-    justify-content: center;
+    border: 2.5px solid #4d4d4d !important;
+    background: #ffffff !important;
+    color: #4d4d4d !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
   .keyboard-hints {
-    display: none;
+    display: none !important;
   }
 
   .mobile-panels-container {
@@ -2637,70 +2656,103 @@ onUnmounted(() => {
     overflow: hidden !important;
   }
 
-  .project-list-panel,
-  .recent-activity-panel {
+  .project-list-panel {
     grid-column: 1;
     grid-row: 1;
     width: 100% !important;
-    max-width: none !important;
+    max-width: 100% !important;
     justify-self: stretch !important;
     flex-shrink: 1 !important;
     height: 100% !important;
     display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important;
-    padding: 0 16px 12px 16px !important;
-    background-color: #F9F4EE !important;
-    transition: opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1), transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.22s;
-    opacity: 1;
-    transform: translateY(0);
-    visibility: visible;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    box-sizing: border-box !important;
   }
 
   .project-list-panel.mobile-activities-active {
     display: none !important;
     opacity: 0 !important;
-    transform: translateY(12px) !important;
     visibility: hidden !important;
     pointer-events: none !important;
   }
 
-  .recent-activity-panel:not(.mobile-activities-active) {
+  .recent-activity-panel {
+    grid-column: 1;
+    grid-row: 1;
+    width: 100% !important;
+    max-width: 100% !important;
+    justify-self: stretch !important;
+    flex-shrink: 1 !important;
+    height: 100% !important;
     display: none !important;
     opacity: 0 !important;
-    transform: translateY(12px) !important;
     visibility: hidden !important;
     pointer-events: none !important;
+    box-sizing: border-box !important;
   }
 
-  .mobile-home-panel-hidden {
-    display: none !important;
+  .recent-activity-panel.mobile-activities-active {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    border: 2.5px solid #4d4d4d !important;
+    border-radius: 14px !important;
+    background-color: #F9F4EE !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    box-shadow: none !important;
   }
 
   .project-scroll-container {
     max-height: none !important;
     overflow-y: auto !important;
-    margin-left: -16px !important;
-    margin-right: -16px !important;
-    padding-left: 0px !important;
-    padding-right: 0px !important;
-    padding-bottom: 24px !important;
+    margin: 0 !important;
+    padding: 4px 2px 28px 2px !important;
     flex: 1;
   }
 
   .project-card {
-    width: calc(100% - 50px) !important;
+    width: calc(100% - 38px) !important;
     margin-left: auto !important;
-    padding: 12px !important;
+    margin-right: 0 !important;
+    padding: 12px 14px !important;
+    border: 2.5px solid #4d4d4d !important;
+    border-radius: 14px !important;
+    background-color: #ffffff !important;
     min-height: 64px;
+    box-sizing: border-box !important;
+  }
+
+  .project-card.bg-\[\#fca5a5\],
+  .project-card.bg-\[\#ea7c7c\] {
+    background-color: #ea7c7c !important;
+  }
+
+  .project-card button {
+    opacity: 1 !important;
   }
 
   .project-list-panel input[type="checkbox"] {
     opacity: 1 !important;
-    width: 24px !important;
-    height: 24px !important;
-    left: 8px !important;
-    cursor: pointer;
+    width: 22px !important;
+    height: 22px !important;
+    left: 2px !important;
+    cursor: pointer !important;
+    accent-color: #10b981 !important;
+    border: 2.5px solid #4d4d4d !important;
+    border-radius: 6px !important;
   }
 
   .sticky-grid {
@@ -3037,7 +3089,7 @@ onUnmounted(() => {
 
 .note-sub-text {
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.65);
+  color: #32312F;
   font-weight: 600;
 }
 
