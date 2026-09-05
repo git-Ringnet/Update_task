@@ -834,10 +834,13 @@ let keyboardBlurTimeout = null
 const updateKeyboardState = () => {
   if (window.innerWidth >= 768) {
     isVirtualKeyboardOpen.value = false
+    document.documentElement.style.removeProperty('--vvh')
     return
   }
   if (window.visualViewport) {
-    const heightDiff = window.innerHeight - window.visualViewport.height
+    const currentVVH = window.visualViewport.height
+    document.documentElement.style.setProperty('--vvh', `${currentVVH}px`)
+    const heightDiff = window.innerHeight - currentVVH
     if (heightDiff > 100) {
       isVirtualKeyboardOpen.value = true
     } else {
@@ -2936,6 +2939,9 @@ onUnmounted(() => {
   main {
     padding: 0 !important;
     max-width: 100% !important;
+    height: calc(var(--vvh, 100dvh) - 64px) !important;
+    max-height: calc(var(--vvh, 100dvh) - 64px) !important;
+    overflow: hidden !important;
   }
 
   .view-page-layout {
@@ -2943,16 +2949,16 @@ onUnmounted(() => {
     flex-direction: column !important;
     align-items: stretch !important;
     gap: 0 !important;
-    height: calc(100dvh - 64px) !important;
-    max-height: calc(100dvh - 64px) !important;
+    height: 100% !important;
+    max-height: 100% !important;
     overflow: hidden !important;
-    padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px)) !important;
     box-sizing: border-box !important;
   }
 
   .view-page-layout.mobile-keyboard-open {
-    height: calc(100dvh - 64px) !important;
-    max-height: calc(100dvh - 64px) !important;
+    height: 100% !important;
+    max-height: 100% !important;
     padding-bottom: 0 !important;
   }
 
