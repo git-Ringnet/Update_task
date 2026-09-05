@@ -166,8 +166,16 @@
       <div class="flex items-end gap-2 px-3.5 py-2 bg-[#ebe6df] rounded-none">
         <textarea ref="textareaRef"
           :value="messageModel"
-          @input="handleInput"
+          @input="syncInputState"
+          @beforeinput="syncInputState"
+          @compositionstart="syncInputState"
+          @compositionupdate="syncInputState"
+          @compositionend="syncInputState"
+          @keyup="syncInputState"
           @keydown="handleKeydown"
+          @change="syncInputState"
+          @focus="syncInputState"
+          @blur="syncInputState"
           @paste="handlePaste"
           rows="1"
           name="chat_activity_message"
@@ -182,7 +190,7 @@
           <button @click="handleSubmit" :disabled="submitting || !canSend" type="button"
             title="Gửi cập nhật (Hú hú)"
             class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-white shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
-            :class="canSend ? 'bg-[#45A246] hover:bg-[#3a903b] opacity-100 shadow-sm' : 'bg-gray-300/80 opacity-40 cursor-not-allowed'">
+            :class="canSend && !submitting ? 'bg-[#45A246] hover:bg-[#3a903b] opacity-100 shadow-sm' : 'bg-gray-300/80 opacity-40 cursor-not-allowed'">
             <i class="fa-solid fa-dove text-sm"></i>
           </button>
         </div>
@@ -229,12 +237,15 @@ const attachments = ref([])
 const mobileSearchInputRef = ref(null)
 
 const rawInputText = ref(messageModel.value || '')
-const hasText = ref(Boolean(messageModel.value?.trim()))
 const canSend = computed(() => {
-  if (props.submitting) return false
-  const text = (rawInputText.value || messageModel.value || '').trim()
-  return Boolean(text) || attachments.value.length > 0
+  const domText = textareaRef.value?.value || ''
+  const rawText = rawInputText.value || ''
+  const modelText = messageModel.value || ''
+  const currentText = (domText || rawText || modelText).trim()
+  return Boolean(currentText.length > 0 || attachments.value.length > 0)
 })
+const hasText = canSend
+const isButtonActive = canSend
 const canSubmit = canSend
 
 const resizeTextarea = () => {
@@ -527,20 +538,30 @@ watch(messageModel, value => {
   rawInputText.value = value || ''
   if (!String(value || '').trim()) {
     isAutoExpanded.value = false
-    hasText.value = false
-  } else {
-    hasText.value = true
   }
   nextTick(resizeTextarea)
 })
 
-const handleInput = event => {
-  const text = event.target.value ?? ''
+const syncInputState = (event) => {
+  let text = ''
+  if (event && event.target && typeof event.target.value === 'string') {
+    text = event.target.value
+  } else if (textareaRef.value && typeof textareaRef.value.value === 'string') {
+    text = textareaRef.value.value
+  } else {
+    text = messageModel.value || ''
+  }
+
   rawInputText.value = text
-  messageModel.value = text
-  hasText.value = Boolean(text.trim())
+  if (messageModel.value !== text) {
+    messageModel.value = text
+  }
+
   nextTick(resizeTextarea)
-  const cursor = event.target.selectionStart ?? text.length
+
+  const cursor = (event?.target?.selectionStart !== undefined && event?.target?.selectionStart !== null)
+    ? event.target.selectionStart
+    : (textareaRef.value?.selectionStart ?? text.length)
   lastCursorPosition.value = cursor
   const match = text.substring(0, cursor).match(/([@#])([^@#]{0,30})$/)
   if (!match) {
@@ -553,7 +574,14 @@ const handleInput = event => {
   showSuggestions.value = true
 }
 
+const handleInput = syncInputState
+
 const handleSubmit = () => {
+  if (textareaRef.value && typeof textareaRef.value.value === 'string') {
+    const directVal = textareaRef.value.value
+    rawInputText.value = directVal
+    messageModel.value = directVal
+  }
   if (!canSend.value) return
   emit('submit')
 }
@@ -562,7 +590,7 @@ const selectSuggestion = item => {
   const textarea = textareaRef.value
   if (!textarea) return
 
-  const text = message.value
+  const text = (rawInputText.value || messageModel.value || textarea.value || '')
   const cursor = lastCursorPosition.value ?? textarea.selectionStart ?? text.length
   const before = text.substring(0, cursor)
   const after = text.substring(cursor)
@@ -580,7 +608,7 @@ const selectSuggestion = item => {
   const finalValue = replacement + after
 
   textarea.value = finalValue
-  textarea.dispatchEvent(new Event('input'))
+  syncInputState({ target: textarea })
 
   showSuggestions.value = false
   lastCursorPosition.value = null
@@ -591,6 +619,7 @@ const selectSuggestion = item => {
 }
 
 const handleKeydown = event => {
+  syncInputState(event)
   if (showSuggestions.value && suggestions.value.length) {
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault()
@@ -616,11 +645,36 @@ const handleKeydown = event => {
       return
     }
     event.preventDefault()
-    emit('submit')
+    handleSubmit()
   }
 }
 
-onUnmounted(clearAttachments)
+onMounted(() => {
+  const el = textareaRef.value
+  if (el) {
+    el.addEventListener('compositionstart', syncInputState)
+    el.addEventListener('compositionupdate', syncInputState)
+    el.addEventListener('compositionend', syncInputState)
+    el.addEventListener('input', syncInputState)
+    el.addEventListener('beforeinput', syncInputState)
+    el.addEventListener('keyup', syncInputState)
+    el.addEventListener('change', syncInputState)
+  }
+})
+
+onUnmounted(() => {
+  clearAttachments()
+  const el = textareaRef.value
+  if (el) {
+    el.removeEventListener('compositionstart', syncInputState)
+    el.removeEventListener('compositionupdate', syncInputState)
+    el.removeEventListener('compositionend', syncInputState)
+    el.removeEventListener('input', syncInputState)
+    el.removeEventListener('beforeinput', syncInputState)
+    el.removeEventListener('keyup', syncInputState)
+    el.removeEventListener('change', syncInputState)
+  }
+})
 
 const focus = () => nextTick(() => textareaRef.value?.focus())
 defineExpose({ focus, buildAttachmentHtml, clearAttachments })
