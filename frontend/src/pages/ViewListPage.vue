@@ -7,13 +7,17 @@
     <!-- Main Container -->
     <main class="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
       <!-- Main Layout Container -->
-      <div class="view-page-layout" :class="viewMode === 'notes'
-        ? 'grid grid-cols-1 lg:grid-cols-[390px_minmax(0,1fr)] gap-15 w-full lg:w-[1280px] mx-auto items-start'
-        : 'view-standard-layout w-full flex justify-center items-start gap-15'">
+      <div class="view-page-layout" :class="[
+        viewMode === 'notes'
+          ? 'grid grid-cols-1 lg:grid-cols-[390px_minmax(0,1fr)] gap-15 w-full lg:w-[1280px] mx-auto items-start'
+          : 'view-standard-layout w-full flex justify-center items-start gap-15',
+        { 'mobile-keyboard-open': isVirtualKeyboardOpen }
+      ]">
 
         <!-- LEFT PANEL: Actions, Switcher & Search (Block 1) -->
         <aside ref="viewActionsRef" class="view-actions" :class="[
-          viewMode === 'notes' ? 'space-y-3.5 select-none flex flex-col items-end w-full lg:-translate-x-[42px]' : 'space-y-3.5 select-none flex flex-col items-end w-[390px] flex-shrink-0'
+          viewMode === 'notes' ? 'space-y-3.5 select-none flex flex-col items-end w-full lg:-translate-x-[42px]' : 'space-y-3.5 select-none flex flex-col items-end w-[390px] flex-shrink-0',
+          { 'mobile-keyboard-open': isVirtualKeyboardOpen }
         ]">
           <!-- Button Tạo dự án -->
           <button @click="isModalOpen = true" type="button"
@@ -24,10 +28,10 @@
           </button>
 
           <!-- Project / Customer / Activities Switcher (Simple Button) -->
-          <button @click="toggleCustomerGroup" type="button" :disabled="isViewModeChanging"
+          <button @click="toggleCustomerGroup" type="button"
             class="mobile-icon-button view-switch-action w-fit bg-transparent hover:bg-gray-200/40 border-[2.5px] border-[#4d4d4d] text-[#32312F] font-extrabold text-[18px] rounded-md px-4.5 py-2.5 flex items-center justify-center transition-colors cursor-pointer focus:outline-none select-none"
             :class="isGroupedByCustomer || viewMode === 'activities' ? 'bg-emerald-50/10' : ''" :title="viewModeTitle">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 pointer-events-none">
               <i class="fa-solid fa-list-ol text-[18px] text-[#4d4d4d]"></i>
               <span>Đổi kiểu xem</span>
             </div>
@@ -39,6 +43,7 @@
             <i
               class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4d4d4d] text-[18px]"></i>
             <input ref="searchInputRef" v-model="projectStore.searchQuery" type="text" placeholder="Tìm kiếm"
+              autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="project_search_query"
               class="w-full bg-white sm:bg-transparent border-[2.5px] border-[#4d4d4d] rounded-md pl-11 pr-4 py-2.5 text-[18px] font-extrabold text-[#32312F] focus:outline-none placeholder-gray-400" />
           </div>
           <button type="button" class="mobile-search-toggle mobile-icon-button"
@@ -213,17 +218,14 @@
                       class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer transition-opacity duration-200 absolute left-2 md:left-0 top-1/2 -translate-y-1/2"
                       :class="showAllCheckboxes ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100'" />
 
-                    <!-- Colored Project Rectangular Card (Identical to default mode) -->
+                    <!-- Colored Project Rectangular Card (Grouped mode - no redundant customer name) -->
                     <div @click="goToProjectDetail(project.id, $event)"
-                      class="project-card w-full md:w-[380px] ml-auto md:mx-auto rounded-lg p-4 flex items-start justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
+                      class="project-card w-full md:w-[380px] ml-auto md:mx-auto rounded-lg p-4 flex items-center justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
                       :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]">
                       <div class="min-w-0 flex-1">
                         <div
                           class="font-extrabold text-[#32312F] text-[18px] sm:text-[20px] leading-snug break-words min-w-0">
                           {{ project.title }}
-                        </div>
-                        <div class="text-[14px] sm:text-[16px] text-[#32312F] font-semibold mt-1">
-                          {{ project.customer ? project.customer.name : 'Chưa phân khách hàng' }}
                         </div>
                       </div>
 
@@ -826,10 +828,66 @@ const tvPositionReady = ref(false)
 const tvPanelTop = ref(null)
 const tvPanelScale = ref(1)
 const isShortcutHintsOpen = ref(false)
+const isVirtualKeyboardOpen = ref(false)
+let keyboardBlurTimeout = null
+
+const handleVirtualKeyboardFocusIn = (e) => {
+  if (window.innerWidth >= 768) return
+  const target = e.target
+  if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+    if (keyboardBlurTimeout) {
+      clearTimeout(keyboardBlurTimeout)
+      keyboardBlurTimeout = null
+    }
+    isVirtualKeyboardOpen.value = true
+  }
+}
+
+const handleVirtualKeyboardFocusOut = () => {
+  if (window.innerWidth >= 768) return
+  if (keyboardBlurTimeout) clearTimeout(keyboardBlurTimeout)
+  keyboardBlurTimeout = setTimeout(() => {
+    const activeEl = document.activeElement
+    const isInputFocused = activeEl && (
+      activeEl.tagName === 'INPUT' ||
+      activeEl.tagName === 'TEXTAREA' ||
+      activeEl.isContentEditable
+    )
+    if (!isInputFocused) {
+      isVirtualKeyboardOpen.value = false
+    }
+  }, 120)
+}
+
+const handleVisualViewportResize = () => {
+  if (window.innerWidth >= 768) {
+    isVirtualKeyboardOpen.value = false
+    return
+  }
+  if (window.visualViewport) {
+    const heightDiff = window.innerHeight - window.visualViewport.height
+    if (heightDiff > 120) {
+      isVirtualKeyboardOpen.value = true
+    } else {
+      const activeEl = document.activeElement
+      const isInputFocused = activeEl && (
+        activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'TEXTAREA' ||
+        activeEl.isContentEditable
+      )
+      if (!isInputFocused) {
+        isVirtualKeyboardOpen.value = false
+      }
+    }
+  }
+}
 
 const updateTvPosition = () => {
   const panel = viewActionsRef.value
-  if (!panel || window.innerWidth < 768) return
+  if (!panel || window.innerWidth < 1400) {
+    tvPositionReady.value = false
+    return
+  }
   // The shortcut card is right-aligned inside this panel; align the TV's right
   // edge with it rather than with the browser edge.
   const rect = panel.getBoundingClientRect()
@@ -1126,7 +1184,6 @@ const removeVietnameseAccents = (str) => {
 // Switcher view mode (Grouped by Customer, Notes, Activities)
 const isGroupedByCustomer = ref(false)
 const viewMode = ref('list') // 'list', 'activities', 'grouped', 'notes'
-const isViewModeChanging = ref(false)
 
 const viewModeLabel = computed(() => {
   if (viewMode.value === 'grouped') return 'Khách hàng'
@@ -1153,10 +1210,6 @@ watch(viewMode, async () => {
 })
 
 watch(() => authStore.user?.view_mode, (newVal) => {
-  // Keep the optimistic selection on screen until its save request settles.
-  // This prevents an older profile response from briefly switching the layout back.
-  if (isViewModeChanging.value) return
-
   if (newVal && ['list', 'grouped', 'activities'].includes(newVal)) {
     viewMode.value = newVal
     isGroupedByCustomer.value = (newVal === 'grouped')
@@ -1166,9 +1219,7 @@ watch(() => authStore.user?.view_mode, (newVal) => {
   }
 }, { immediate: true })
 
-const toggleCustomerGroup = async () => {
-  if (isViewModeChanging.value) return
-
+const toggleCustomerGroup = () => {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
   let nextMode = 'list'
 
@@ -1190,25 +1241,20 @@ const toggleCustomerGroup = async () => {
     }
   }
 
-  const previousMode = viewMode.value
-  isViewModeChanging.value = true
   viewMode.value = nextMode
   isGroupedByCustomer.value = (nextMode === 'grouped')
-  // Clear the previous view's fixed TV coordinates before the new view paints.
+
+  // Clear previous fixed TV coordinates before new view paints
   tvPanelTop.value = null
   tvPanelScale.value = 1
-  await nextTick()
-  requestAnimationFrame(updateTvPosition)
+  nextTick().then(() => {
+    requestAnimationFrame(updateTvPosition)
+  })
 
-  try {
-    await authStore.updateViewMode(nextMode)
-  } catch (error) {
-    // Keep the screen and saved preference consistent if the update fails.
-    viewMode.value = previousMode
-    isGroupedByCustomer.value = (previousMode === 'grouped')
-  } finally {
-    isViewModeChanging.value = false
-  }
+  // Persist preference asynchronously in the background
+  authStore.updateViewMode(nextMode).catch(err => {
+    console.error('Failed to update view mode:', err)
+  })
 }
 
 // Pinned Customers logic
@@ -1662,6 +1708,11 @@ const handleGlobalKeydown = (event) => {
 const closeAllDropdowns = (e) => {
   openLeadMenuId.value = null
   activeLogMenuId.value = null
+  if (isMobileSearchOpen.value && !e?.target?.closest?.('.search-input-wrapper') && !e?.target?.closest?.('.mobile-search-toggle')) {
+    if (!projectStore.searchQuery) {
+      isMobileSearchOpen.value = false
+    }
+  }
   if (profileDropdownRef.value && !profileDropdownRef.value.contains(e.target)) {
     isProfileDropdownOpen.value = false
   }
@@ -2459,6 +2510,11 @@ onMounted(async () => {
 
   window.addEventListener('keydown', handleGlobalKeydown)
   window.addEventListener('click', closeAllDropdowns)
+  document.addEventListener('focusin', handleVirtualKeyboardFocusIn)
+  document.addEventListener('focusout', handleVirtualKeyboardFocusOut)
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', handleVisualViewportResize)
+  }
 
   // Drag selection events
   window.addEventListener('mousedown', startSelection)
@@ -2482,12 +2538,18 @@ onMounted(async () => {
 onUnmounted(() => {
   if (pollTimer) clearInterval(pollTimer)
   if (broadcastRotationTimer) clearInterval(broadcastRotationTimer)
+  if (keyboardBlurTimeout) clearTimeout(keyboardBlurTimeout)
   // Search is local to this screen; do not carry a hidden filter to the next visit.
   projectStore.searchQuery = ''
   isMobileSearchOpen.value = false
   window.removeEventListener('keydown', handleGlobalKeydown)
   window.removeEventListener('click', closeAllDropdowns)
   window.removeEventListener('resize', updateTvPosition)
+  document.removeEventListener('focusin', handleVirtualKeyboardFocusIn)
+  document.removeEventListener('focusout', handleVirtualKeyboardFocusOut)
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', handleVisualViewportResize)
+  }
 
   // Clean up drag selection events
   window.removeEventListener('mousedown', startSelection)
@@ -2539,6 +2601,330 @@ onUnmounted(() => {
   background: #f9f4ee;
 }
 
+.mobile-search-toggle {
+  display: none;
+}
+
+/* Tablet / iPad / Narrow desktop (768px - 1023px) - Bottom centered buttons matching Image 1 */
+@media (min-width: 768px) and (max-width: 1023px) {
+  main {
+    max-width: 100% !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    padding-bottom: 24px !important;
+  }
+
+  .view-standard-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 16px !important;
+    width: 100% !important;
+  }
+
+  .mobile-panels-container {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    gap: 16px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    order: 1 !important;
+  }
+
+  .project-list-panel {
+    width: 380px !important;
+    max-width: calc(50% - 8px) !important;
+    min-width: 280px !important;
+    flex-shrink: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .project-card {
+    width: 100% !important;
+  }
+
+  .recent-activity-panel {
+    width: 380px !important;
+    max-width: calc(50% - 8px) !important;
+    min-width: 280px !important;
+    flex-shrink: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .view-actions {
+    position: relative !important;
+    order: 2 !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 16px !important;
+    margin: 0 !important;
+    margin-top: 10px !important;
+    z-index: 30 !important;
+  }
+
+  .view-actions > * {
+    margin: 0 !important;
+  }
+
+  .create-project-action {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    border: 2.5px solid #4d4d4d !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #ffffff !important;
+  }
+
+  .create-project-action > span:last-child {
+    display: none !important;
+  }
+
+  .create-project-action > span:first-child {
+    font-size: 26px !important;
+    margin-right: 0 !important;
+    line-height: 1 !important;
+  }
+
+  .view-switch-action {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    border: 2.5px solid #4d4d4d !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #ffffff !important;
+  }
+
+  .view-switch-action span {
+    display: none !important;
+  }
+
+  .view-switch-action i {
+    font-size: 18px !important;
+    margin: 0 !important;
+  }
+
+  .search-input-wrapper {
+    display: none !important;
+  }
+
+  .search-input-wrapper.mobile-search-open {
+    display: block !important;
+    position: absolute !important;
+    bottom: 64px !important;
+    top: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 280px !important;
+    z-index: 50 !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15) !important;
+    background: #ffffff !important;
+    border-radius: 12px !important;
+  }
+
+  .mobile-search-toggle {
+    display: inline-flex !important;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    border: 2.5px solid #4d4d4d !important;
+    background: #ffffff !important;
+    color: #4d4d4d !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+  }
+
+  .mobile-search-toggle i {
+    font-size: 18px !important;
+    color: #4d4d4d !important;
+  }
+
+  .keyboard-hints {
+    display: none !important;
+  }
+
+  .tv-broadcast-panel {
+    display: none !important;
+  }
+}
+
+/* Medium Desktop (1024px - 1399px) - Left column with 3 icon buttons */
+@media (min-width: 1024px) and (max-width: 1399px) {
+  main {
+    max-width: 100% !important;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+
+  .view-standard-layout {
+    display: flex !important;
+    position: relative !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    width: 100% !important;
+  }
+
+  .view-actions {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 48px !important;
+    min-width: 48px !important;
+    flex-shrink: 0 !important;
+    align-items: flex-start !important;
+    gap: 14px !important;
+    margin: 0 !important;
+    z-index: 30 !important;
+  }
+
+  .view-actions > * {
+    margin: 0 !important;
+    margin-bottom: 14px !important;
+  }
+
+  .create-project-action {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    border: 2.5px solid #4d4d4d !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #ffffff !important;
+  }
+
+  .create-project-action > span:last-child {
+    display: none !important;
+  }
+
+  .create-project-action > span:first-child {
+    font-size: 26px !important;
+    margin-right: 0 !important;
+    line-height: 1 !important;
+  }
+
+  .view-switch-action {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    border: 2.5px solid #4d4d4d !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #ffffff !important;
+  }
+
+  .view-switch-action span {
+    display: none !important;
+  }
+
+  .view-switch-action i {
+    font-size: 18px !important;
+    margin: 0 !important;
+  }
+
+  .search-input-wrapper {
+    display: none !important;
+  }
+
+  .search-input-wrapper.mobile-search-open {
+    display: block !important;
+    position: absolute !important;
+    left: 62px !important;
+    top: 124px !important;
+    width: 270px !important;
+    z-index: 50 !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15) !important;
+    background: #ffffff !important;
+    border-radius: 12px !important;
+  }
+
+  .mobile-search-toggle {
+    display: inline-flex !important;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    border: 2.5px solid #4d4d4d !important;
+    background: #ffffff !important;
+    color: #4d4d4d !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+  }
+
+  .mobile-search-toggle i {
+    font-size: 18px !important;
+    color: #4d4d4d !important;
+  }
+
+  .keyboard-hints {
+    display: none !important;
+  }
+
+  .tv-broadcast-panel {
+    display: none !important;
+  }
+
+  .mobile-panels-container {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    gap: 24px !important;
+    width: fit-content !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+  }
+
+  .project-list-panel {
+    width: 380px !important;
+    max-width: 380px !important;
+    min-width: 300px !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .project-card {
+    width: 100% !important;
+    max-width: 380px !important;
+  }
+
+  .recent-activity-panel {
+    width: 380px !important;
+    max-width: 380px !important;
+    min-width: 300px !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+}
+
 @media (max-width: 767px) {
   .view-page-intro {
     display: none !important;
@@ -2565,6 +2951,12 @@ onUnmounted(() => {
     padding-bottom: 0 !important;
   }
 
+  .view-page-layout.mobile-keyboard-open {
+    height: calc(100dvh - 60px) !important;
+    max-height: calc(100dvh - 60px) !important;
+    padding-bottom: 0 !important;
+  }
+
   .view-actions {
     position: fixed !important;
     bottom: 0 !important;
@@ -2583,6 +2975,16 @@ onUnmounted(() => {
     justify-content: center !important;
     gap: 16px !important;
     box-shadow: none !important;
+  }
+
+  .view-actions.mobile-keyboard-open {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
   }
 
   .view-actions>* {
@@ -2822,33 +3224,6 @@ onUnmounted(() => {
 
   .bulk-submit {
     flex-shrink: 0;
-  }
-}
-
-@media (min-width: 768px) {
-  .mobile-search-toggle {
-    display: none !important;
-  }
-}
-
-/* The normal view has three fixed-width columns (about 1,280px in total).
-   Do not let that row overflow on a zoomed or narrower desktop viewport:
-   keep the project list centered until there is room for all three columns. */
-@media (min-width: 768px) and (max-width: 1279px) {
-  .view-standard-layout {
-    flex-direction: column !important;
-    align-items: center !important;
-    gap: 0 !important;
-  }
-
-  .view-standard-layout .view-actions,
-  .view-standard-layout .recent-activity-panel {
-    display: none !important;
-  }
-
-  .view-standard-layout .project-list-panel {
-    width: min(420px, 100%) !important;
-    max-width: 100% !important;
   }
 }
 

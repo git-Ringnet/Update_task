@@ -264,8 +264,10 @@ watch(() => route.query.tab, (newTab) => {
   activeTab.value = newTab || 'all'
 })
 
-const fetchActivities = async () => {
-  isLoading.value = true
+let pollTimer = null
+
+const fetchActivities = async (silent = false) => {
+  if (!silent) isLoading.value = true
   try {
     const res = await axios.get('/api/comments')
     // Filter only comments/activities associated with a project
@@ -273,7 +275,7 @@ const fetchActivities = async () => {
   } catch (err) {
     console.error('Failed to load activity feed:', err)
   } finally {
-    isLoading.value = false
+    if (!silent) isLoading.value = false
   }
 }
 
@@ -571,6 +573,12 @@ const handleKeydown = (e) => {
   }
 }
 
+const handleVisibilityOrFocus = () => {
+  if (document.visibilityState === 'visible' && !isLoading.value) {
+    fetchActivities(true)
+  }
+}
+
 onMounted(async () => {
   projectStore.activePage = 'home'
   projectStore.activeStatus = null
@@ -582,6 +590,24 @@ onMounted(async () => {
   ])
   window.addEventListener('keydown', handleKeydown)
   document.addEventListener('click', handleOutsideActivityClick)
+
+  // Realtime background polling (every 4s)
+  pollTimer = window.setInterval(() => {
+    if (!isSubmittingChat.value && !isLoading.value) {
+      fetchActivities(true)
+    }
+  }, 4000)
+
+  document.addEventListener('visibilitychange', handleVisibilityOrFocus)
+  window.addEventListener('focus', handleVisibilityOrFocus)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+  document.removeEventListener('click', handleOutsideActivityClick)
+  if (pollTimer) window.clearInterval(pollTimer)
+  document.removeEventListener('visibilitychange', handleVisibilityOrFocus)
+  window.removeEventListener('focus', handleVisibilityOrFocus)
 })
 
 const scrollToComment = (reply) => {

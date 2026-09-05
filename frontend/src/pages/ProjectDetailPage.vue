@@ -1199,6 +1199,7 @@ const confirmStore = useConfirmStore()
 
 const projectId = computed(() => route.params.id)
 let accessCheckInterval = null
+let pollTimer = null
 
 const verifyProjectAccess = async () => {
   if (!projectId.value) return
@@ -3823,6 +3824,12 @@ const fetchProjectDetail = async () => {
     if (effectiveMilestones.value.length > 0 && !selectedTargetMilestoneId.value) {
       selectedTargetMilestoneId.value = effectiveMilestones.value[0].id
     }
+    if (selectedMilestone.value) {
+      const matchedMs = effectiveMilestones.value.find(m => String(m.id) === String(selectedMilestone.value.id))
+      if (matchedMs) {
+        selectedMilestone.value = matchedMs
+      }
+    }
   }
 }
 
@@ -4116,6 +4123,12 @@ const handleKeydown = (e) => {
   }
 }
 
+const handleVisibilityOrFocus = () => {
+  if (document.visibilityState === 'visible' && projectId.value && !isDetailLoading.value) {
+    refreshAllData()
+  }
+}
+
 onMounted(() => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
@@ -4123,6 +4136,16 @@ onMounted(() => {
   window.addEventListener('click', handleDocumentClick)
   window.addEventListener('scroll', handleDetailScroll, { passive: true })
   accessCheckInterval = window.setInterval(verifyProjectAccess, 15000)
+
+  // Realtime polling matching ViewListPage (every 4s)
+  pollTimer = window.setInterval(() => {
+    if (projectId.value && !isDetailLoading.value && !isSubmittingStageTask.value && !isRenamingSaving.value) {
+      refreshAllData()
+    }
+  }, 4000)
+
+  document.addEventListener('visibilitychange', handleVisibilityOrFocus)
+  window.addEventListener('focus', handleVisibilityOrFocus)
 })
 
 onUnmounted(() => {
@@ -4131,6 +4154,9 @@ onUnmounted(() => {
   window.removeEventListener('click', handleDocumentClick)
   window.removeEventListener('scroll', handleDetailScroll)
   if (accessCheckInterval) window.clearInterval(accessCheckInterval)
+  if (pollTimer) window.clearInterval(pollTimer)
+  document.removeEventListener('visibilitychange', handleVisibilityOrFocus)
+  window.removeEventListener('focus', handleVisibilityOrFocus)
 })
 
 watch(
