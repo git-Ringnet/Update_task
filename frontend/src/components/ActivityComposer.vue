@@ -57,7 +57,7 @@
       </div>
 
       <!-- Top Toolbar Row: Paperclip, Image, Project Selector Pill -->
-      <div class="flex items-center justify-between px-3.5 py-2 bg-[#F9F4EE] rounded-t-[14px] border-b border-gray-300/40 select-none">
+      <div class="flex items-center justify-between px-3.5 py-2 bg-[#F9F4EE] rounded-none border-b border-gray-300/40 select-none">
         <div class="flex items-center gap-3 text-gray-700">
           <input ref="fileInputRef" type="file" multiple
             accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar" class="hidden" @change="handleFileSelection" />
@@ -162,24 +162,24 @@
         </div>
       </div>
 
-      <!-- Textarea Input Area: full width with bottom submit button when typing/attaching -->
-      <div class="flex flex-col px-3.5 py-2 bg-[#ebe6df] rounded-b-[14px]">
+      <!-- Textarea Input Area: inline with submit button for instant visibility on all devices -->
+      <div class="flex items-end gap-2 px-3.5 py-2 bg-[#ebe6df] rounded-none">
         <textarea ref="textareaRef" v-model="messageModel" rows="1"
           name="chat_activity_message"
           id="activity-composer-textarea"
           placeholder="Báo thông tin cho đồng đội"
           :disabled="!projects.length"
-          class="w-full min-h-[36px] max-h-[140px] overflow-y-auto bg-transparent border-0 focus:ring-0 focus:outline-none text-[16px] sm:text-[18px] font-normal text-gray-900 resize-none p-0 placeholder-gray-500 leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed"
+          class="flex-1 min-h-[36px] max-h-[140px] overflow-y-auto bg-transparent border-0 focus:ring-0 focus:outline-none text-[16px] sm:text-[18px] font-normal text-gray-900 resize-none p-0 placeholder-gray-500 leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed"
           autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
           data-lpignore="true" data-1p-ignore="true" data-form-type="other" aria-autocomplete="none"
           @input="handleInput" @keydown="handleKeydown"
           @paste="handlePaste"></textarea>
         
-        <div v-if="messageModel?.trim() || attachments.length" class="flex justify-end pt-1.5">
-          <button @click="$emit('submit')" :disabled="submitting || !canSubmit" type="button"
+        <div class="flex-shrink-0 flex items-center mb-0.5">
+          <button @click="$emit('submit')" :disabled="submitting || !canSubmit || (!messageModel?.trim() && !attachments.length)" type="button"
             title="Gửi cập nhật (Hú hú)"
-            class="w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-xs transition-colors shrink-0 cursor-pointer"
-            :class="submitting || !canSubmit ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#45A246] hover:bg-[#3a903b]'">
+            class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-white shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
+            :class="(!messageModel?.trim() && !attachments.length) || submitting || !canSubmit ? 'bg-gray-300/80 opacity-50 cursor-not-allowed' : 'bg-[#45A246] hover:bg-[#3a903b] opacity-100'">
             <i class="fa-solid fa-dove text-sm"></i>
           </button>
         </div>
@@ -592,7 +592,12 @@ const handleKeydown = event => {
       return
     }
   }
+  const isMobileDevice = typeof window !== 'undefined' && (window.innerWidth < 768 || ('ontouchstart' in window) || navigator.maxTouchPoints > 0)
   if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+    if (isMobileDevice) {
+      // On mobile / virtual keyboards, Enter should insert a newline, only pressing the submit button sends
+      return
+    }
     event.preventDefault()
     emit('submit')
   }

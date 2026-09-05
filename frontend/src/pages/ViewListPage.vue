@@ -42,7 +42,8 @@
             :class="{ 'mobile-search-open': isMobileSearchOpen }">
             <i
               class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4d4d4d] text-[18px]"></i>
-            <input ref="searchInputRef" v-model="projectStore.searchQuery" type="text" placeholder="Tìm kiếm"
+            <input ref="searchInputRef" :value="projectStore.searchQuery"
+              @input="projectStore.searchQuery = $event.target.value" type="text" placeholder="Tìm kiếm"
               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="project_search_query"
               class="w-full bg-white sm:bg-transparent border-[2.5px] border-[#4d4d4d] rounded-md pl-11 pr-4 py-2.5 text-[18px] font-extrabold text-[#32312F] focus:outline-none placeholder-gray-400" />
           </div>
@@ -1130,12 +1131,20 @@ const displayedProjects = computed(() => {
     list = list.filter(p => p.is_pinned == 1 || p.is_pinned === true)
   }
 
-  if (projectStore.searchQuery) {
-    const q = removeVietnameseAccents(projectStore.searchQuery)
+  if (projectStore.searchQuery && projectStore.searchQuery.trim()) {
+    const rawQ = projectStore.searchQuery.toLowerCase().trim()
+    const normQ = removeVietnameseAccents(projectStore.searchQuery)
     list = list.filter(p => {
-      const title = removeVietnameseAccents(p.title)
-      const customerName = p.customer ? removeVietnameseAccents(p.customer.name) : ''
-      return title.includes(q) || customerName.includes(q)
+      const rawTitle = (p.title || '').toLowerCase()
+      const normTitle = removeVietnameseAccents(p.title)
+      const rawCustomerName = p.customer ? (p.customer.name || '').toLowerCase() : ''
+      const normCustomerName = p.customer ? removeVietnameseAccents(p.customer.name) : ''
+      return (
+        rawTitle.includes(rawQ) ||
+        normTitle.includes(normQ) ||
+        rawCustomerName.includes(rawQ) ||
+        normCustomerName.includes(normQ)
+      )
     })
   }
 
@@ -1180,9 +1189,22 @@ const removeVietnameseAccents = (str) => {
   return str
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[àáạảãâầấậẩẫăằắặẳẵ]/g, 'a')
+    .replace(/[ÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ]/g, 'a')
+    .replace(/[èéẹẻẽêềếệểễ]/g, 'e')
+    .replace(/[ÈÉẸẺẼÊỀẾỆỂỄ]/g, 'e')
+    .replace(/[ìíịỉĩ]/g, 'i')
+    .replace(/[ÌÍỊỈĨ]/g, 'i')
+    .replace(/[òóọỏõôồốộổỗơờớợởỡ]/g, 'o')
+    .replace(/[ÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ]/g, 'o')
+    .replace(/[ùúụủũưừứựửữ]/g, 'u')
+    .replace(/[ÙÚỤỦŨƯỪỨỰỬỮ]/g, 'u')
+    .replace(/[ỳýỵỷỹ]/g, 'y')
+    .replace(/[ỲÝỴỶỸ]/g, 'y')
     .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
+    .replace(/Đ/g, 'd')
     .toLowerCase()
+    .trim()
 }
 
 // Switcher view mode (Grouped by Customer, Notes, Activities)
@@ -2952,7 +2974,7 @@ onUnmounted(() => {
     height: 100% !important;
     max-height: 100% !important;
     overflow: hidden !important;
-    padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
     box-sizing: border-box !important;
   }
 
@@ -2967,20 +2989,20 @@ onUnmounted(() => {
     bottom: 0 !important;
     left: 0 !important;
     right: 0 !important;
+    margin: 0 auto !important;
     z-index: 45 !important;
     background: #F9F4EE !important;
     border: none !important;
     border-top: none !important;
-    padding: 4px 16px calc(6px + env(safe-area-inset-bottom, 0px)) 16px !important;
-    margin: 0 !important;
+    padding: 6px 16px calc(8px + env(safe-area-inset-bottom, 0px)) 16px !important;
     width: 100% !important;
-    height: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
+    height: calc(62px + env(safe-area-inset-bottom, 0px)) !important;
     box-sizing: border-box !important;
+    display: flex !important;
     flex-direction: row !important;
-    flex-wrap: wrap !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 16px !important;
+    gap: 20px !important;
     box-shadow: none !important;
   }
 
@@ -2995,7 +3017,7 @@ onUnmounted(() => {
   }
 
   .view-actions>* {
-    margin-top: 0 !important;
+    margin: 0 !important;
   }
 
   .mobile-icon-button {
@@ -3148,7 +3170,7 @@ onUnmounted(() => {
     max-height: none !important;
     overflow-y: auto !important;
     margin: 0 !important;
-    padding: 6px 12px 28px 12px !important;
+    padding: 6px 12px 42px 12px !important;
     flex: 1;
   }
 
