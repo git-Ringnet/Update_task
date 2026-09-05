@@ -376,7 +376,7 @@
             :class="{ 'mobile-activities-active': viewMode === 'activities' }">
 
             <!-- Header: "Hoạt động của đội" & Expand Button (Full width edge-to-edge border) -->
-            <div class="flex items-center justify-between px-4 py-3 border-b-[2.5px] border-[#4d4d4d] flex-shrink-0">
+            <div class="flex items-center justify-between px-4 py-2.5 border-b border-[#4d4d4d] flex-shrink-0">
               <div class="flex items-center gap-2">
                 <h2 class="text-[20px] sm:text-[22px] font-black text-[#32312F] font-heading">Hoạt động của đội</h2>
                 <button @click="showMentionedActivities = !showMentionedActivities" type="button"
@@ -831,6 +831,34 @@ const isShortcutHintsOpen = ref(false)
 const isVirtualKeyboardOpen = ref(false)
 let keyboardBlurTimeout = null
 
+const updateKeyboardState = () => {
+  if (window.innerWidth >= 768) {
+    isVirtualKeyboardOpen.value = false
+    return
+  }
+  if (window.visualViewport) {
+    const heightDiff = window.innerHeight - window.visualViewport.height
+    if (heightDiff > 100) {
+      isVirtualKeyboardOpen.value = true
+    } else {
+      // Height restored -> Virtual keyboard closed (e.g. swiped down, back button pressed)
+      isVirtualKeyboardOpen.value = false
+      const activeEl = document.activeElement
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
+        activeEl.blur()
+      }
+    }
+  } else {
+    const activeEl = document.activeElement
+    const isInputFocused = activeEl && (
+      activeEl.tagName === 'INPUT' ||
+      activeEl.tagName === 'TEXTAREA' ||
+      activeEl.isContentEditable
+    )
+    isVirtualKeyboardOpen.value = !!isInputFocused
+  }
+}
+
 const handleVirtualKeyboardFocusIn = (e) => {
   if (window.innerWidth >= 768) return
   const target = e.target
@@ -847,39 +875,12 @@ const handleVirtualKeyboardFocusOut = () => {
   if (window.innerWidth >= 768) return
   if (keyboardBlurTimeout) clearTimeout(keyboardBlurTimeout)
   keyboardBlurTimeout = setTimeout(() => {
-    const activeEl = document.activeElement
-    const isInputFocused = activeEl && (
-      activeEl.tagName === 'INPUT' ||
-      activeEl.tagName === 'TEXTAREA' ||
-      activeEl.isContentEditable
-    )
-    if (!isInputFocused) {
-      isVirtualKeyboardOpen.value = false
-    }
-  }, 120)
+    updateKeyboardState()
+  }, 100)
 }
 
 const handleVisualViewportResize = () => {
-  if (window.innerWidth >= 768) {
-    isVirtualKeyboardOpen.value = false
-    return
-  }
-  if (window.visualViewport) {
-    const heightDiff = window.innerHeight - window.visualViewport.height
-    if (heightDiff > 120) {
-      isVirtualKeyboardOpen.value = true
-    } else {
-      const activeEl = document.activeElement
-      const isInputFocused = activeEl && (
-        activeEl.tagName === 'INPUT' ||
-        activeEl.tagName === 'TEXTAREA' ||
-        activeEl.isContentEditable
-      )
-      if (!isInputFocused) {
-        isVirtualKeyboardOpen.value = false
-      }
-    }
-  }
+  updateKeyboardState()
 }
 
 const updateTvPosition = () => {
@@ -2684,7 +2685,7 @@ onUnmounted(() => {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    background: #ffffff !important;
+    background: transparent !important;
   }
 
   .create-project-action > span:last-child {
@@ -2707,7 +2708,7 @@ onUnmounted(() => {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    background: #ffffff !important;
+    background: transparent !important;
   }
 
   .view-switch-action span {
@@ -2745,7 +2746,7 @@ onUnmounted(() => {
     padding: 0 !important;
     border-radius: 10px !important;
     border: 2.5px solid #4d4d4d !important;
-    background: #ffffff !important;
+    background: transparent !important;
     color: #4d4d4d !important;
     align-items: center !important;
     justify-content: center !important;
@@ -2811,7 +2812,7 @@ onUnmounted(() => {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    background: #ffffff !important;
+    background: transparent !important;
   }
 
   .create-project-action > span:last-child {
@@ -2834,7 +2835,7 @@ onUnmounted(() => {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    background: #ffffff !important;
+    background: transparent !important;
   }
 
   .view-switch-action span {
@@ -2870,7 +2871,7 @@ onUnmounted(() => {
     padding: 0 !important;
     border-radius: 10px !important;
     border: 2.5px solid #4d4d4d !important;
-    background: #ffffff !important;
+    background: transparent !important;
     color: #4d4d4d !important;
     align-items: center !important;
     justify-content: center !important;
@@ -2933,10 +2934,7 @@ onUnmounted(() => {
 
 @media (max-width: 767px) {
   main {
-    padding-left: 10px !important;
-    padding-right: 10px !important;
-    padding-top: 8px !important;
-    padding-bottom: 0 !important;
+    padding: 0 !important;
     max-width: 100% !important;
   }
 
@@ -2945,15 +2943,16 @@ onUnmounted(() => {
     flex-direction: column !important;
     align-items: stretch !important;
     gap: 0 !important;
-    height: calc(100dvh - 60px - 115px - env(safe-area-inset-bottom, 0px)) !important;
-    max-height: calc(100dvh - 60px - 115px - env(safe-area-inset-bottom, 0px)) !important;
+    height: calc(100dvh - 64px) !important;
+    max-height: calc(100dvh - 64px) !important;
     overflow: hidden !important;
-    padding-bottom: 0 !important;
+    padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
+    box-sizing: border-box !important;
   }
 
   .view-page-layout.mobile-keyboard-open {
-    height: calc(100dvh - 60px) !important;
-    max-height: calc(100dvh - 60px) !important;
+    height: calc(100dvh - 64px) !important;
+    max-height: calc(100dvh - 64px) !important;
     padding-bottom: 0 !important;
   }
 
@@ -2966,9 +2965,11 @@ onUnmounted(() => {
     background: #F9F4EE !important;
     border: none !important;
     border-top: none !important;
-    padding: 6px 16px calc(22px + env(safe-area-inset-bottom, 0px)) 16px !important;
+    padding: 4px 16px calc(6px + env(safe-area-inset-bottom, 0px)) 16px !important;
     margin: 0 !important;
     width: 100% !important;
+    height: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
+    box-sizing: border-box !important;
     flex-direction: row !important;
     flex-wrap: wrap !important;
     align-items: center !important;
@@ -2998,7 +2999,7 @@ onUnmounted(() => {
     padding: 0 !important;
     border-radius: 12px !important;
     border: 2.5px solid #4d4d4d !important;
-    background: #ffffff !important;
+    background: transparent !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -3039,7 +3040,7 @@ onUnmounted(() => {
   .mobile-search-toggle {
     display: inline-flex !important;
     border: 2.5px solid #4d4d4d !important;
-    background: #ffffff !important;
+    background: transparent !important;
     color: #4d4d4d !important;
     align-items: center !important;
     justify-content: center !important;
@@ -3054,7 +3055,10 @@ onUnmounted(() => {
     grid-template-columns: 1fr;
     position: relative;
     width: 100%;
+    height: 100% !important;
+    max-height: 100% !important;
     flex: 1 !important;
+    min-height: 0 !important;
     overflow: hidden !important;
   }
 
@@ -3106,22 +3110,39 @@ onUnmounted(() => {
     pointer-events: auto !important;
     flex-direction: column !important;
     overflow: hidden !important;
-    border: 2.5px solid #4d4d4d !important;
-    border-radius: 14px !important;
-    background-color: #F9F4EE !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background-color: transparent !important;
     width: 100% !important;
     max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     box-sizing: border-box !important;
     box-shadow: none !important;
   }
 
+  .recent-activity-panel > .flex-1 {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .activity-feed-scroll {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    padding: 8px 14px 8px 14px !important;
+  }
+
   .project-scroll-container {
     max-height: none !important;
     overflow-y: auto !important;
     margin: 0 !important;
-    padding: 4px 2px 28px 2px !important;
+    padding: 6px 12px 28px 12px !important;
     flex: 1;
   }
 

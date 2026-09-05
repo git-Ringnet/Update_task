@@ -1,10 +1,10 @@
 <template>
-  <div class="min-h-screen md:h-screen flex flex-col bg-[#F9F4EE] pb-2 md:overflow-hidden">
+  <div class="h-[100dvh] flex flex-col bg-[#F9F4EE] overflow-hidden">
     <Navbar />
 
-    <main class="max-w-[800px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2 flex-1 flex flex-col min-h-0">
+    <main class="max-w-[800px] w-full mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-2 sm:pb-3 flex-1 flex flex-col min-h-0 overflow-hidden">
       <!-- Header Row: Back Button & Vertically Centered Title "Hoạt động của đội" -->
-      <div class="relative flex items-center justify-center mb-4 min-h-[40px] flex-shrink-0">
+      <div class="relative flex items-center justify-center mb-3 sm:mb-4 min-h-[40px] flex-shrink-0">
         <button @click="goBack" type="button" title="Quay lại"
           class="absolute left-0 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-auto sm:h-auto rounded-full sm:rounded-none flex items-center justify-center sm:gap-2 text-[15px] text-gray-700 hover:text-emerald-700 font-extrabold transition-colors cursor-pointer focus:outline-none hover:bg-stone-200/60 sm:hover:bg-transparent">
           <i class="fa-solid fa-arrow-left text-base sm:text-sm"></i>
@@ -57,7 +57,7 @@
       </div>
 
       <!-- Grouped Activities Feed (Scrollable inner list) -->
-      <div v-else class="flex-1 overflow-y-auto scrollbar-none pr-1 mb-3 space-y-6">
+      <div v-else class="flex-1 min-h-0 overflow-y-auto scrollbar-none pr-1 mb-2 sm:mb-3 space-y-6">
         <div v-for="(group, dateStr) in groupedActivities" :key="dateStr" class="space-y-3">
           <!-- Date Header -->
           <h2 class="text-[18px] sm:text-[19px] font-black text-[#32312F] font-heading mb-5 pt-1">{{ dateStr }}</h2>
