@@ -164,22 +164,25 @@
 
       <!-- Textarea Input Area: inline with submit button for instant visibility on all devices -->
       <div class="flex items-end gap-2 px-3.5 py-2 bg-[#ebe6df] rounded-none">
-        <textarea ref="textareaRef" v-model="messageModel" rows="1"
+        <textarea ref="textareaRef"
+          :value="messageModel"
+          @input="handleInput"
+          @keydown="handleKeydown"
+          @paste="handlePaste"
+          rows="1"
           name="chat_activity_message"
           id="activity-composer-textarea"
           placeholder="Báo thông tin cho đồng đội"
           :disabled="!projects.length"
           class="flex-1 min-h-[36px] max-h-[140px] overflow-y-auto bg-transparent border-0 focus:ring-0 focus:outline-none text-[16px] sm:text-[18px] font-normal text-gray-900 resize-none p-0 placeholder-gray-500 leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed"
           autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-          data-lpignore="true" data-1p-ignore="true" data-form-type="other" aria-autocomplete="none"
-          @input="handleInput" @keydown="handleKeydown"
-          @paste="handlePaste"></textarea>
+          data-lpignore="true" data-1p-ignore="true" data-form-type="other" aria-autocomplete="none"></textarea>
         
         <div class="flex-shrink-0 flex items-center mb-0.5">
-          <button @click="$emit('submit')" :disabled="submitting || !canSubmit || (!messageModel?.trim() && !attachments.length)" type="button"
+          <button @click="handleSubmit" :disabled="submitting || !canSend" type="button"
             title="Gửi cập nhật (Hú hú)"
             class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-white shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
-            :class="(!messageModel?.trim() && !attachments.length) || submitting || !canSubmit ? 'bg-gray-300/80 opacity-50 cursor-not-allowed' : 'bg-[#45A246] hover:bg-[#3a903b] opacity-100'">
+            :class="canSend ? 'bg-[#45A246] hover:bg-[#3a903b] opacity-100 shadow-sm' : 'bg-gray-300/80 opacity-40 cursor-not-allowed'">
             <i class="fa-solid fa-dove text-sm"></i>
           </button>
         </div>
@@ -225,8 +228,14 @@ const attachments = ref([])
 
 const mobileSearchInputRef = ref(null)
 
+const rawInputText = ref(messageModel.value || '')
 const hasText = ref(Boolean(messageModel.value?.trim()))
-const canSubmit = computed(() => props.projects.length > 0 && (hasText.value || attachments.value.length > 0))
+const canSend = computed(() => {
+  if (props.submitting) return false
+  const text = (rawInputText.value || messageModel.value || '').trim()
+  return Boolean(text) || attachments.value.length > 0
+})
+const canSubmit = canSend
 
 const resizeTextarea = () => {
   const textarea = textareaRef.value
@@ -515,6 +524,7 @@ watch(() => props.projects, projects => {
 }, { immediate: true })
 
 watch(messageModel, value => {
+  rawInputText.value = value || ''
   if (!String(value || '').trim()) {
     isAutoExpanded.value = false
     hasText.value = false
@@ -525,9 +535,11 @@ watch(messageModel, value => {
 })
 
 const handleInput = event => {
-  nextTick(resizeTextarea)
-  const text = event.target.value
+  const text = event.target.value ?? ''
+  rawInputText.value = text
+  messageModel.value = text
   hasText.value = Boolean(text.trim())
+  nextTick(resizeTextarea)
   const cursor = event.target.selectionStart ?? text.length
   lastCursorPosition.value = cursor
   const match = text.substring(0, cursor).match(/([@#])([^@#]{0,30})$/)
@@ -539,6 +551,11 @@ const handleInput = event => {
   query.value = match[2]
   suggestionIndex.value = 0
   showSuggestions.value = true
+}
+
+const handleSubmit = () => {
+  if (!canSend.value) return
+  emit('submit')
 }
 
 const selectSuggestion = item => {
