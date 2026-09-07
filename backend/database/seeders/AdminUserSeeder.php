@@ -26,18 +26,16 @@ class AdminUserSeeder extends Seeder
         DB::table('project_members')->where('user_id', $admin->id)->delete();
 
         $systemEmail = env('SYSTEM_ADMIN_EMAIL', 'system-admin@xuongrong.vn');
-        $systemPassword = env('SYSTEM_ADMIN_PASSWORD');
+        $systemPassword = env('SYSTEM_ADMIN_PASSWORD', 'password@123');
 
-        if ($systemPassword) {
-            User::updateOrCreate(
-                ['email' => $systemEmail],
-                [
-                    'name' => env('SYSTEM_ADMIN_NAME', 'System Admin'),
-                    'password' => Hash::make($systemPassword),
-                    'is_admin' => true,
-                    'is_system_admin' => true,
-                ]
-            );
-        }
+        User::updateOrCreate(
+            ['email' => $systemEmail],
+            [
+                'name' => env('SYSTEM_ADMIN_NAME', 'System Admin'),
+                'password' => Hash::make($systemPassword),
+                'is_admin' => true,
+                'is_system_admin' => true,
+            ]
+        );
     }
 }

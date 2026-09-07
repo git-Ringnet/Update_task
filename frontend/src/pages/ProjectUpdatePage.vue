@@ -248,7 +248,8 @@
                   <div v-for="(file, fIdx) in attachedFiles[project.id]" :key="fIdx"
                     class="relative group flex-shrink-0">
                     <!-- Image Thumbnail -->
-                    <div v-if="file.isImage" @click="openImageModal(file.url)"
+                    <div v-if="file.isImage"
+                      @click="openImageModal(file.url, (attachedFiles[project.id] || []).filter(f => f.isImage), (attachedFiles[project.id] || []).filter(f => f.isImage).findIndex(f => f.url === file.url))"
                       class="w-14 h-14 rounded-xl border border-gray-200 overflow-hidden bg-gray-100 shadow-2xs relative cursor-pointer hover:opacity-90 group transition-all"
                       title="Nhấn để xem ảnh phóng to">
                       <img :src="file.url" class="w-full h-full object-cover" />
@@ -319,95 +320,96 @@
                             return names[0] + (names.length > 1 ? ' ...' : '');
                           })()}}
                         </span>
-                        <span v-else></span>
+                        <span v-else>Phụ trách</span>
                       </button>
 
+                      <!-- Person Picker Dropdown -->
                       <div v-if="activePersonPickerProjectId === project.id"
-                        class="absolute right-0 bottom-full mb-2 z-50 w-56 bg-white border border-gray-200 rounded-xl shadow-xl py-1 max-h-52 overflow-y-auto ring-1 ring-black/5">
-                        <div
-                          class="px-3 py-1 text-[10px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1">
-                          Chọn người phụ trách / Tag tên
+                        class="fixed sm:absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 sm:top-auto sm:bottom-full sm:left-auto sm:right-0 sm:translate-x-0 sm:translate-y-0 sm:mb-2 z-50 w-[min(300px,calc(100vw-32px))] sm:w-60 bg-white border border-gray-200 rounded-2xl shadow-xl p-2 animate-fade-in-up"
+                        @click.stop>
+                        <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-2 py-1">Tag thành
+                          viên</div>
+                        <div class="max-h-48 overflow-y-auto space-y-1">
+                          <button v-for="user in taggableUsers" :key="user.id" type="button"
+                            @click="toggleTagUser(project.id, user.id)"
+                            class="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-50 cursor-pointer transition-colors"
+                            :class="isUserTagged(project.id, user.id) ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-gray-700'">
+                            <span class="flex items-center gap-2">
+                              <img :src="user.avatar || defaultAvatar"
+                                class="w-5 h-5 rounded-full object-cover border border-gray-200" />
+                              <span>{{ user.name }}</span>
+                            </span>
+                            <i v-if="isUserTagged(project.id, user.id)"
+                              class="fa-solid fa-check text-emerald-600 text-xs"></i>
+                          </button>
                         </div>
-                        <button v-if="taggedUsersMap[project.id] && taggedUsersMap[project.id].length > 0" type="button"
-                          @click="clearTaggedUsers(project.id)"
-                          class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-rose-50 text-rose-500 transition-colors text-left border-b border-gray-100">
-                          <i class="fa-solid fa-xmark text-xs"></i><span>Bỏ chọn tất cả</span>
-                        </button>
-                        <button v-for="u in taggableUsers" :key="u.id" type="button"
-                          @click="toggleTaggedUser(project.id, u)"
-                          class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left"
-                          :class="{ 'bg-emerald-50 text-emerald-800 font-bold': taggedUsersMap[project.id] && taggedUsersMap[project.id].includes(String(u.id)) }">
-                          <input type="checkbox"
-                            :checked="taggedUsersMap[project.id] && taggedUsersMap[project.id].includes(String(u.id))"
-                            class="rounded text-emerald-600 accent-emerald-600 cursor-pointer w-3.5 h-3.5"
-                            @click.stop="toggleTaggedUser(project.id, u)" />
-                          <img v-if="!u.isMentionGroup" :src="u.avatar || defaultAvatar"
-                            class="w-5 h-5 rounded-full object-cover border border-gray-200" />
-                          <span class="truncate flex-1">{{ u.name }}</span>
-                        </button>
                       </div>
                     </div>
 
-                    <!-- Date & Time picker button -->
-                    <div class="relative inline-flex items-center gap-1">
+                    <!-- Date & Time picker trigger button -->
+                    <div class="project-date-picker relative">
                       <button type="button" @click="toggleProjectDatePicker(project.id)"
-                        class="inline-flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none shadow-3xs"
-                        :class="(dueDateMap[project.id] || dueTimeMap[project.id]) ? 'bg-blue-50 hover:bg-blue-100/80 border border-blue-200 text-blue-700 px-3 py-1.5' : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 w-9 h-9'"
-                        title="Chọn ngày & giờ">
-                        <i class="fa-regular fa-calendar-days text-sm"></i>
-                        <span v-if="dueDateMap[project.id] || dueTimeMap[project.id]">{{
-                          formatDueDateTag(dueDateMap[project.id],
-                            dueTimeMap[project.id]) }}</span>
+                        class="inline-flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none shadow-3xs px-3 py-1.5"
+                        :class="dueDateMap[project.id] ? 'bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-700' : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600'"
+                        title="Chọn ngày giờ hết hạn">
+                        <i class="fa-regular fa-calendar text-sm"></i>
+                        <span>{{ getFormattedDateTime(project.id) || 'Hạn chót' }}</span>
                       </button>
+
+                      <!-- Date & Time Picker Popover -->
                       <div v-if="activeDatePickerProjectId === project.id"
-                        class="absolute right-0 bottom-full mb-2 z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-xl p-3 ring-1 ring-black/5">
-                        <div class="text-[10px] uppercase font-bold text-gray-500 mb-2">Chọn ngày & giờ</div>
-                        <div class="space-y-2">
-                          <div>
-                            <label class="text-[10px] font-bold text-gray-400 block mb-1">Ngày hết hạn</label>
-                            <input type="date" v-model="dueDateMap[project.id]"
-                              class="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500" />
-                          </div>
-                          <div>
-                            <label class="text-[10px] font-bold text-gray-400 block mb-1">Giờ (hh:mm)</label>
-                            <input type="time" v-model="dueTimeMap[project.id]"
-                              class="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500" />
-                          </div>
+                        class="fixed sm:absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 sm:top-auto sm:bottom-full sm:left-auto sm:right-0 sm:translate-x-0 sm:translate-y-0 sm:mb-2 z-50 w-[min(300px,calc(100vw-32px))] sm:w-64 bg-white border border-gray-200 rounded-2xl shadow-xl p-3 animate-fade-in-up"
+                        @click.stop>
+                        <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Hạn hoàn thành
                         </div>
-                        <button type="button" @click="activeDatePickerProjectId = null"
-                          class="mt-3 w-full px-3 py-1.5 bg-emerald-600 text-white font-bold text-xs rounded-lg cursor-pointer hover:bg-emerald-700 transition-colors">Xong</button>
+
+                        <!-- Date input -->
+                        <div class="mb-2">
+                          <label class="block text-[11px] font-semibold text-gray-600 mb-1">Ngày</label>
+                          <input type="date" v-model="dueDateMap[project.id]"
+                            class="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-semibold focus:outline-none focus:border-emerald-500" />
+                        </div>
+
+                        <!-- Time input -->
+                        <div class="mb-3">
+                          <label class="block text-[11px] font-semibold text-gray-600 mb-1">Giờ (không bắt buộc)</label>
+                          <input type="time" v-model="dueTimeMap[project.id]"
+                            class="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-semibold focus:outline-none focus:border-emerald-500" />
+                        </div>
+
+                        <!-- Quick buttons -->
+                        <div class="flex items-center gap-1 mb-2">
+                          <button type="button" @click="setToday(project.id)"
+                            class="flex-1 py-1 text-[11px] font-bold bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-md transition-colors cursor-pointer">Hôm
+                            nay</button>
+                          <button type="button" @click="setTomorrow(project.id)"
+                            class="flex-1 py-1 text-[11px] font-bold bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-md transition-colors cursor-pointer">Ngày
+                            mai</button>
+                        </div>
+
+                        <!-- Clear & Close -->
+                        <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+                          <button type="button" @click="clearDueDate(project.id)"
+                            class="text-[11px] font-bold text-rose-500 hover:text-rose-700 cursor-pointer">Xóa
+                            hạn</button>
+                          <button type="button" @click="activeDatePickerProjectId = null"
+                            class="px-2.5 py-1 text-[11px] font-bold bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors cursor-pointer">Xong</button>
+                        </div>
                       </div>
                     </div>
 
-                    <!-- Submit "Hú hú!" Button (Vô hiệu hóa khi có chặng nhưng chưa chọn chặng) -->
-                    <div v-if="isSaving[project.id] && uploadProgress[project.id] !== null" class="w-20 self-center">
-                      <div class="h-1.5 overflow-hidden rounded-full bg-emerald-100">
-                        <div class="h-full rounded-full bg-emerald-600 transition-all duration-200"
-                          :style="{ width: `${uploadProgress[project.id]}%` }"></div>
-                      </div>
-                      <p class="mt-1 text-center text-[9px] font-bold text-emerald-700">{{ uploadProgress[project.id]
-                      }}%</p>
-                    </div>
-                    <button type="submit"
-                      :disabled="(getActiveMilestonesForProject(project).length > 0 && !selectedMilestoneMap[project.id]) || isSaving[project.id]"
-                      class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#45A246] hover:bg-[#3a903b] text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                      <i v-if="!isSaving[project.id]" class="fa-solid fa-dove text-sm"></i>
-                      <svg v-else class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
-                        viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
-                        </circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z">
-                        </path>
-                      </svg>
-                      <span>{{ isSaving[project.id] ? 'Đang tải lên...' : 'Hú hú!' }}</span>
-                      <i v-if="!isSaving[project.id]" class="fa-solid fa-chevron-down text-[10px] opacity-80"></i>
+                    <!-- Submit single project update button -->
+                    <button type="button" @click="saveUpdate(project.id)"
+                      :disabled="isSaving[project.id] || (!updateTexts[project.id]?.trim() && (!attachedFiles[project.id] || attachedFiles[project.id].length === 0))"
+                      class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#45A246] hover:bg-[#3a903b] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl shadow-3xs transition-all cursor-pointer select-none">
+                      <i v-if="isSaving[project.id]" class="fa-solid fa-spinner fa-spin text-xs"></i>
+                      <i v-else class="fa-solid fa-paper-plane text-xs"></i>
+                      <span class="hidden sm:inline">Cập nhật</span>
                     </button>
                   </div>
-
                 </div>
 
               </div>
-
             </form>
           </div>
         </div>
@@ -417,14 +419,55 @@
           enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in"
           leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
           <div v-if="previewModalImageUrl" @click="closeImageModal"
-            class="fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 cursor-zoom-out">
-            <div class="relative max-w-5xl max-h-[90vh] flex items-center justify-center" @click.stop>
-              <img :src="previewModalImageUrl"
-                class="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-white/20" />
-              <button type="button" @click="closeImageModal"
-                class="absolute -top-4 -right-4 w-9 h-9 rounded-full bg-white text-gray-800 hover:bg-rose-600 hover:text-white flex items-center justify-center font-bold text-base shadow-xl transition-all cursor-pointer">
-                <i class="fa-solid fa-xmark"></i>
-              </button>
+            class="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 select-none">
+            <div class="relative max-w-5xl max-h-[90vh] flex flex-col items-center justify-center" @click.stop
+              @touchstart="handleModalTouchStart" @touchend="handleModalTouchEnd">
+              
+              <!-- Top Bar: Image count badge + Close button -->
+              <div class="absolute -top-10 sm:-top-12 left-0 right-0 flex items-center justify-between px-1 pointer-events-auto">
+                <div v-if="previewModalImages.length > 1"
+                  class="px-3 py-1 bg-black/60 backdrop-blur-md text-white/90 text-xs sm:text-sm font-bold rounded-full border border-white/10 shadow-lg">
+                  {{ previewModalIndex + 1 }} / {{ previewModalImages.length }}
+                </div>
+                <div v-else></div>
+
+                <button type="button" @click="closeImageModal"
+                  class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/20 hover:bg-rose-600 text-white flex items-center justify-center font-bold text-sm sm:text-base backdrop-blur-md shadow-xl transition-all cursor-pointer border border-white/20"
+                  title="Đóng (Esc)">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+
+              <!-- Main Image and Prev/Next Navigation -->
+              <div class="relative flex items-center justify-center">
+                <img :src="previewModalImageUrl"
+                  class="max-w-full max-h-[75vh] sm:max-h-[80vh] object-contain rounded-2xl shadow-2xl border border-white/15 transition-all duration-150" />
+
+                <!-- PREV BUTTON (shown when > 1 image) -->
+                <button v-if="previewModalImages.length > 1" type="button" @click="prevPreviewImage"
+                  class="absolute -left-3 sm:-left-6 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center font-bold text-base sm:text-lg backdrop-blur-md shadow-xl transition-all cursor-pointer border border-white/20 hover:scale-110 active:scale-95"
+                  title="Ảnh trước (Phím ←)">
+                  <i class="fa-solid fa-chevron-left"></i>
+                </button>
+
+                <!-- NEXT BUTTON (shown when > 1 image) -->
+                <button v-if="previewModalImages.length > 1" type="button" @click="nextPreviewImage"
+                  class="absolute -right-3 sm:-right-6 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center font-bold text-base sm:text-lg backdrop-blur-md shadow-xl transition-all cursor-pointer border border-white/20 hover:scale-110 active:scale-95"
+                  title="Ảnh tiếp theo (Phím →)">
+                  <i class="fa-solid fa-chevron-right"></i>
+                </button>
+              </div>
+
+              <!-- Thumbnails / Dots strip at bottom -->
+              <div v-if="previewModalImages.length > 1" class="flex items-center justify-center gap-2 mt-4 max-w-full overflow-x-auto py-1 px-2">
+                <button v-for="(pImg, pIdx) in previewModalImages" :key="'thumb-' + pIdx"
+                  type="button" @click="previewModalIndex = pIdx"
+                  class="w-10 h-10 rounded-lg overflow-hidden border-2 transition-all cursor-pointer flex-shrink-0"
+                  :class="pIdx === previewModalIndex ? 'border-emerald-400 scale-110 shadow-lg ring-2 ring-emerald-400/50' : 'border-white/30 opacity-60 hover:opacity-100'">
+                  <img :src="pImg.url || pImg.src || pImg" class="w-full h-full object-cover" />
+                </button>
+              </div>
+
             </div>
           </div>
         </transition>
@@ -480,14 +523,65 @@ const isLoading = ref(true)
 const loadError = ref(null)
 
 // IMAGE LIGHTBOX PREVIEW MODAL STATE & HANDLERS
-const previewModalImageUrl = ref(null)
+const previewModalImages = ref([])
+const previewModalIndex = ref(0)
+const previewModalImageUrl = computed(() => {
+  if (!previewModalImages.value || previewModalImages.value.length === 0) return null
+  const item = previewModalImages.value[previewModalIndex.value]
+  return typeof item === 'string' ? item : (item?.url || item?.src || null)
+})
 
-const openImageModal = (url) => {
-  if (url) previewModalImageUrl.value = url
+const openImageModal = (url, imagesList = [], initialIndex = 0) => {
+  if (imagesList && imagesList.length > 0) {
+    previewModalImages.value = imagesList
+    const foundIdx = initialIndex >= 0 ? initialIndex : imagesList.findIndex(img => (img.url || img.src || img) === url)
+    previewModalIndex.value = Math.max(0, foundIdx)
+  } else if (url) {
+    previewModalImages.value = [{ url, name: 'Ảnh đính kèm' }]
+    previewModalIndex.value = 0
+  }
 }
 
 const closeImageModal = () => {
-  previewModalImageUrl.value = null
+  previewModalImages.value = []
+  previewModalIndex.value = 0
+}
+
+const prevPreviewImage = (e) => {
+  if (e) e.stopPropagation()
+  if (previewModalImages.value.length > 1) {
+    previewModalIndex.value = (previewModalIndex.value - 1 + previewModalImages.value.length) % previewModalImages.value.length
+  }
+}
+
+const nextPreviewImage = (e) => {
+  if (e) e.stopPropagation()
+  if (previewModalImages.value.length > 1) {
+    previewModalIndex.value = (previewModalIndex.value + 1) % previewModalImages.value.length
+  }
+}
+
+let modalTouchStartX = 0
+let modalTouchEndX = 0
+
+const handleModalTouchStart = (e) => {
+  if (e.touches && e.touches[0]) {
+    modalTouchStartX = e.touches[0].clientX
+  }
+}
+
+const handleModalTouchEnd = (e) => {
+  if (e.changedTouches && e.changedTouches[0]) {
+    modalTouchEndX = e.changedTouches[0].clientX
+    const diff = modalTouchEndX - modalTouchStartX
+    if (Math.abs(diff) > 40) {
+      if (diff < 0) {
+        nextPreviewImage()
+      } else {
+        prevPreviewImage()
+      }
+    }
+  }
 }
 
 // Reactive structures to store user updates
@@ -986,6 +1080,9 @@ const clearTaggedUsers = (projectId) => {
 }
 
 const compressImage = (file) => {
+  if (!/^image\/(jpeg|png|webp)$/i.test(file.type) || file.size <= 350 * 1024) {
+    return Promise.resolve(file)
+  }
   return new Promise((resolve) => {
     const reader = new FileReader()
     reader.onload = (e) => {
@@ -1032,10 +1129,15 @@ const handleFileSelect = async (projectId, event) => {
     attachedFiles[projectId] = []
   }
 
-  for (const file of Array.from(files)) {
+  const inputFiles = Array.from(files)
+  const processedFiles = await Promise.all(inputFiles.map(file =>
+    file.type.startsWith('image/') ? compressImage(file) : Promise.resolve(file)
+  ))
+
+  for (const [fileIndex, file] of inputFiles.entries()) {
     const isImg = file.type.startsWith('image/')
     if (isImg) {
-      const compressedFile = await compressImage(file)
+      const compressedFile = processedFiles[fileIndex]
       const fileUrl = URL.createObjectURL(compressedFile)
       attachedFiles[projectId].push({
         name: file.name,
@@ -1247,6 +1349,36 @@ const formatDueDateTag = (dateStr, timeStr) => {
   return result
 }
 
+const getFormattedDateTime = (projectId) => {
+  return formatDueDateTag(dueDateMap[projectId], dueTimeMap[projectId])
+}
+
+const toDateInputValue = (date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const setToday = (projectId) => {
+  dueDateMap[projectId] = toDateInputValue(new Date())
+  isSaved[projectId] = false
+}
+
+const setTomorrow = (projectId) => {
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  dueDateMap[projectId] = toDateInputValue(tomorrow)
+  isSaved[projectId] = false
+}
+
+const clearDueDate = (projectId) => {
+  dueDateMap[projectId] = ''
+  dueTimeMap[projectId] = ''
+  activeDatePickerProjectId.value = null
+  isSaved[projectId] = false
+}
+
 // Compute progress indicators
 const updatedCount = computed(() => {
   return Object.values(isSaved).filter(Boolean).length
@@ -1354,17 +1486,34 @@ const saveUpdate = async (projectId) => {
   let titleText = text
   const uploadedAttachmentIds = []
   if (files.length > 0) {
+    const uploadableFiles = files.filter(file => file.file && !file.uploaded)
+    if (uploadableFiles.length > 0) {
+      try {
+        const formData = new FormData()
+        uploadableFiles.forEach(file => formData.append('files[]', file.file))
+        const uploadRes = await axios.post('/api/attachments', formData, {
+          onUploadProgress: (event) => {
+            if (event.total) uploadProgress[projectId] = Math.round((event.loaded * 100) / event.total)
+          }
+        })
+        const uploadedFiles = uploadRes.data || []
+        if (uploadedFiles.length !== uploadableFiles.length) throw new Error('Incomplete attachment upload response')
+        uploadableFiles.forEach((file, index) => { file.uploaded = uploadedFiles[index] })
+      } catch (uploadErr) {
+        console.error('Failed to upload attachments:', uploadErr)
+        const serverMessage = uploadErr.response?.data?.message
+        toast.error(serverMessage || uploadErr.message)
+        isSaving[projectId] = false
+        uploadProgress[projectId] = null
+        return
+      }
+    }
+
     for (const f of files) {
       if (f.file) {
         // Upload to server (both images and files)
         try {
-          const formData = new FormData()
-          formData.append('files[]', f.file)
-          const uploadRes = await axios.post('/api/attachments', formData, {
-            onUploadProgress: (event) => {
-              if (event.total) uploadProgress[projectId] = Math.round((event.loaded * 100) / event.total)
-            }
-          })
+          const uploadRes = { data: [f.uploaded] }
           const uploaded = uploadRes.data?.[0]
           if (!uploaded) throw new Error('Máy chủ không trả về thông tin tệp đã tải lên.')
           uploadedAttachmentIds.push(uploaded.id)
@@ -1526,12 +1675,26 @@ const handleFinishAll = async () => {
 }
 
 const handleGlobalKeyDown = (e) => {
-  if (e.key === 'Escape') {
-    if (previewModalImageUrl.value) {
+  if (previewModalImageUrl.value) {
+    if (e.key === 'ArrowLeft' || e.code === 'ArrowLeft') {
+      prevPreviewImage()
+      e.preventDefault()
+      return
+    }
+    if (e.key === 'ArrowRight' || e.code === 'ArrowRight') {
+      nextPreviewImage()
+      e.preventDefault()
+      return
+    }
+    if (e.key === 'Escape') {
       e.preventDefault()
       closeImageModal()
       return
     }
+  }
+
+  if (e.key === 'Escape') {
+    closeImageModal()
   }
 
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {

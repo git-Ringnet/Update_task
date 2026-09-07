@@ -1,15 +1,31 @@
+self.addEventListener('install', () => self.skipWaiting())
+self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()))
+
 self.addEventListener('push', (event) => {
   const payload = event.data ? event.data.json() : {}
   const options = {
-    body: payload.body || 'C\u00f3 c\u1eadp nh\u1eadt m\u1edbi trong d\u1ef1 \u00e1n.',
+    body: payload.body || 'Có cập nhật mới trong dự án.',
     icon: payload.icon || '/cactus-logo-square.png',
     badge: '/cactus-logo-square.png',
     tag: payload.tag || 'project-update',
     renotify: true,
-    data: { url: payload.url || '/views' },
+    data: { url: payload.url || '/views', payload },
   }
 
-  event.waitUntil(self.registration.showNotification(payload.title || 'X\u01b0\u1edfng R\u1ed3ng', options))
+  try {
+    const channel = new BroadcastChannel('project_realtime_channel')
+    channel.postMessage({ type: 'PUSH_RECEIVED', payload })
+    channel.close()
+  } catch (e) { }
+
+  const notifyClientsPromise = self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+    clients.forEach((client) => client.postMessage({ type: 'PUSH_RECEIVED', payload }))
+  })
+
+  event.waitUntil(Promise.all([
+    self.registration.showNotification(payload.title || 'Xương Rồng', options),
+    notifyClientsPromise
+  ]))
 })
 
 self.addEventListener('notificationclick', (event) => {
@@ -19,7 +35,18 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil((async () => {
     const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
     const existing = clients.find(client => client.url.startsWith(self.location.origin))
-    if (existing) return existing.focus()
+
+    try {
+      const channel = new BroadcastChannel('project_realtime_channel')
+      channel.postMessage({ type: 'NOTIFICATION_CLICKED', url: targetUrl, data: event.notification.data })
+      channel.close()
+    } catch (e) { }
+
+    if (existing) {
+      existing.postMessage({ type: 'NOTIFICATION_CLICKED', url: targetUrl, data: event.notification.data })
+      if ('navigate' in existing && existing.url !== targetUrl) await existing.navigate(targetUrl)
+      return existing.focus()
+    }
     return self.clients.openWindow(targetUrl)
   })())
 })

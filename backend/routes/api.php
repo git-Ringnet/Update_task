@@ -343,9 +343,14 @@ Route::middleware('auth.token')->group(function () {
     // Comments
     Route::get('/comments', [CommentController::class, 'index']);
     Route::post('/comments', [CommentController::class, 'store']);
+    Route::put('/comments/{id}', [CommentController::class, 'update']);
     Route::delete('/comments/{id}', [CommentController::class, 'destroy']);
 
     // Database SQL Export
     Route::get('/database/export', [\App\Http\Controllers\DatabaseController::class, 'exportSql'])
+        ->middleware('system_admin');
+    Route::get('/database/backup', [\App\Http\Controllers\DatabaseController::class, 'exportSystemBackup'])
+        ->middleware('system_admin');
+    Route::post('/database/backup/import', [\App\Http\Controllers\DatabaseController::class, 'importSystemBackup'])
         ->middleware('system_admin');
 });

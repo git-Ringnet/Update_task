@@ -10,7 +10,7 @@
       <div class="view-page-layout" :class="[
         viewMode === 'notes'
           ? 'grid grid-cols-1 lg:grid-cols-[390px_minmax(0,1fr)] gap-15 w-full lg:w-[1280px] mx-auto items-start'
-          : 'view-standard-layout w-full flex justify-center items-start gap-15',
+          : 'view-standard-layout w-full flex justify-center items-start gap-12 sm:gap-14',
         { 'mobile-keyboard-open': isVirtualKeyboardOpen }
       ]">
 
@@ -88,6 +88,12 @@
                   <kbd
                     class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Ctrl
                     + Shift + A</kbd>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-gray-600 font-semibold">Chọn dự án vào chat</span>
+                  <kbd
+                    class="px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-gray-700 font-mono text-[10px]">Alt
+                    + Click</kbd>
                 </div>
                 <div class="flex items-center justify-between">
                   <span class="text-gray-600 font-semibold">Chuyển đổi view</span>
@@ -168,7 +174,7 @@
         <div class="mobile-panels-container">
           <!-- CENTER PANEL: Projects List (Block 2 - Wider Column, expands when notes view) -->
           <section ref="projectListPanelRef" class="project-list-panel"
-            :class="[viewMode === 'notes' ? 'space-y-3.5 select-none w-full' : 'space-y-3.5 select-none w-[420px] flex-shrink-0', viewMode === 'activities' ? 'mobile-activities-active' : '']">
+            :class="[viewMode === 'notes' ? 'space-y-3.5 select-none w-full' : 'space-y-3.5 select-none w-[470px] flex-shrink-0', viewMode === 'activities' ? 'mobile-activities-active' : '']">
 
             <!-- Skeleton Loading State -->
             <div v-if="projectStore.isLoading && displayedProjects.length === 0"
@@ -188,10 +194,10 @@
 
             <!-- Grouped by Customer Mode (Matches Mockup) -->
             <div v-else-if="isGroupedByCustomer" ref="scrollContainerGrouped" @scroll="handleScroll"
-              class="project-scroll-container space-y-6 max-h-[calc(100vh-130px)] overflow-y-auto scrollbar-none md:ml-[-16px] md:mr-[-16px]">
+              class="project-scroll-container space-y-6 max-h-[calc(100vh-130px)] overflow-y-auto scrollbar-none">
               <div v-for="group in projectsByCustomer" :key="group.name" class="space-y-2.5">
                 <!-- Customer Header -->
-                <div class="flex items-center gap-2 pt-1 select-none md:pl-4">
+                <div class="customer-group-header flex items-center gap-2 pt-1 select-none">
                   <h3 class="text-[24px] font-black text-gray-900 tracking-tight font-heading">{{ group.name }}</h3>
                   <button @click.stop="togglePinCustomer(group.name)" type="button"
                     class="p-1 transition-colors hover:opacity-80"
@@ -216,12 +222,12 @@
                     <!-- Same multi-select behavior as the default project view -->
                     <input type="checkbox" :checked="isSelected(project.id)"
                       @click.stop="toggleProjectSelect(project.id, $event)"
-                      class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer transition-opacity duration-200 absolute left-2 md:left-0 top-1/2 -translate-y-1/2"
+                      class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer transition-opacity duration-200 absolute left-2.5 top-1/2 -translate-y-1/2 z-20"
                       :class="showAllCheckboxes ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100'" />
 
                     <!-- Colored Project Rectangular Card (Grouped mode - no redundant customer name) -->
                     <div @click="goToProjectDetail(project.id, $event)"
-                      class="project-card w-full md:w-[380px] ml-auto md:mx-auto rounded-lg p-4 flex items-center justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
+                      class="project-card w-full md:w-[380px] mx-auto rounded-lg p-4 flex items-center justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
                       :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]">
                       <div class="min-w-0 flex-1">
                         <div
@@ -302,7 +308,7 @@
 
             <!-- Default Cards list -->
             <div v-else ref="scrollContainerDefault" @scroll="handleScroll"
-              class="project-scroll-container space-y-3.5 max-h-[calc(100vh-130px)] overflow-y-auto scrollbar-none ml-[-16px] mr-[-16px]">
+              class="project-scroll-container space-y-3.5 max-h-[calc(100vh-130px)] overflow-y-auto scrollbar-none">
               <transition-group enter-active-class="transition duration-300 ease-out"
                 enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0"
                 leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
@@ -319,12 +325,12 @@
                   <!-- Checkbox for multi-select (outside the card, but inside the scroll container) -->
                   <input type="checkbox" :checked="isSelected(project.id)"
                     @click.stop="toggleProjectSelect(project.id, $event)"
-                    class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer transition-opacity duration-200 absolute left-2 md:left-0 top-1/2 -translate-y-1/2"
+                    class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer transition-opacity duration-200 absolute left-2.5 top-1/2 -translate-y-1/2 z-20"
                     :class="showAllCheckboxes ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100'" />
 
                   <!-- Card Container -->
                   <div @click="goToProjectDetail(project.id, $event)"
-                    class="project-card w-full md:w-[380px] ml-auto md:mx-auto rounded-lg p-4 flex items-start justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
+                    class="project-card w-full md:w-[380px] mx-auto rounded-lg p-4 flex items-start justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
                     :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]">
                     <div class="min-w-0 flex-1">
                       <div
@@ -389,8 +395,8 @@
               </div>
 
               <button @click="router.push('/feed')" type="button" title="Mở rộng tất cả hoạt động"
-                class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-700 hover:text-emerald-700 hover:bg-gray-200/60 active:bg-gray-300/60 cursor-pointer transition-colors">
-                <i class="fa-solid fa-up-right-and-down-left-from-center text-[15px]"></i>
+                class="w-9 h-9 rounded-xl flex items-center justify-center text-gray-700 hover:text-emerald-700 hover:bg-emerald-50/80 active:bg-emerald-100 cursor-pointer transition-all active:scale-95">
+                <i class="fa-solid fa-up-right-and-down-left-from-center text-[16px]"></i>
               </button>
             </div>
 
@@ -444,7 +450,7 @@
                         </div>
 
                         <!-- Right: Timestamp normally, 3-dots icon button on hover / when menu open -->
-                        <div class="relative shrink-0 flex items-center justify-end h-6 min-w-[28px]" @click.stop>
+                        <div class="relative shrink-0 flex items-center justify-end min-h-[30px] min-w-[32px]" @click.stop>
                           <!-- Relative Time (shown when not hovered and menu not active) -->
                           <span
                             class="text-[14px] sm:text-[15px] text-gray-400 font-medium whitespace-nowrap leading-none text-right"
@@ -454,20 +460,25 @@
 
                           <!-- 3-dots Menu Button (shown on hover or when menu is active) -->
                           <button type="button" @click.stop="toggleActivityMenu(log.id, $event)" title="Tùy chọn"
-                            class="text-gray-400 hover:text-gray-800 hover:bg-gray-200/70 w-6 h-6 rounded-md flex items-center justify-center cursor-pointer transition-colors p-0"
+                            class="text-gray-400 hover:text-gray-800 hover:bg-gray-200/80 active:bg-gray-300/80 w-8 h-8 -my-1 -mr-1 rounded-lg flex items-center justify-center cursor-pointer transition-all active:scale-95 p-0"
                             :class="(activeLogMenuId === log.id || activeLogIdForMobileActions === log.id) ? 'flex text-gray-800 bg-gray-200/80' : 'hidden group-hover:flex'">
-                            <i class="fa-solid fa-ellipsis-vertical text-sm leading-none"></i>
+                            <i class="fa-solid fa-ellipsis-vertical text-[15px] leading-none"></i>
                           </button>
 
-                          <!-- Dropdown Menu for Delete -->
+                          <!-- Dropdown Menu for Edit & Delete -->
                           <div v-if="activeLogMenuId === log.id"
-                            class="absolute top-full right-0 mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[110px] animate-fade-in-up">
+                            class="absolute top-full right-0 mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[120px] animate-fade-in-up">
+                            <button v-if="canEditComment(log)" type="button" @click.stop="handleStartEditComment(log)"
+                              class="w-full text-left px-3 py-1.5 text-sm font-bold text-gray-700 hover:bg-gray-100 flex items-center gap-2 cursor-pointer transition-colors">
+                              <i class="fa-solid fa-pen-to-square text-xs text-emerald-600"></i>
+                              <span>Chỉnh sửa</span>
+                            </button>
                             <button v-if="canDeleteComment(log)" type="button" @click.stop="handleDeleteComment(log.id)"
                               class="w-full text-left px-3 py-1.5 text-sm font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors">
                               <i class="fa-solid fa-trash-can text-xs"></i>
                               <span>Xóa</span>
                             </button>
-                            <div v-else class="px-3 py-1.5 text-xs font-semibold text-gray-400">
+                            <div v-if="!canEditComment(log) && !canDeleteComment(log)" class="px-3 py-1.5 text-xs font-semibold text-gray-400">
                               Không có thao tác
                             </div>
                           </div>
@@ -481,9 +492,8 @@
                         {{ log.project.title }}
                       </div>
 
-                      <!-- Comment Content (Plain text) -->
-                      <div
-                        class="text-[16px] sm:text-[18px] text-gray-900 leading-relaxed break-words mt-0.5 space-y-1">
+                      <!-- Comment Content (Normal Display) -->
+                      <div class="text-[16px] sm:text-[18px] text-gray-900 leading-relaxed break-words mt-0.5 space-y-1">
                         <!-- Zalo Quote Reply Preview inside list feed -->
                         <div v-if="parseReplyInfo(log.content)"
                           @click.stop="scrollToComment(parseReplyInfo(log.content))"
@@ -504,13 +514,15 @@
                         <!-- Render Attachments -->
                         <div
                           v-if="parseCommentImages(log.content).length > 0 || parseCommentFiles(log.content).length > 0"
-                          class="flex flex-wrap items-end gap-1.5 pt-1">
+                          class="flex flex-wrap items-end gap-1.5 pt-1 pb-1.5">
                           <!-- Images -->
                           <button v-for="(img, imgIdx) in parseCommentImages(log.content)" :key="'img-' + imgIdx"
-                            type="button" @click.stop="openImagePreview(img.url)"
+                            type="button" @click.stop="openImagePreview(img.url, parseCommentImages(log.content), imgIdx)"
                             class="w-11 h-11 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 cursor-pointer hover:ring-2 hover:ring-emerald-400 transition-all flex-shrink-0 shadow-3xs"
                             :title="'Xem ảnh: ' + img.name">
-                            <img :src="img.url" class="w-full h-full object-cover" alt="" loading="lazy" />
+                            <img :src="img.url" class="w-full h-full object-cover" alt=""
+                              :loading="idx < 3 ? 'eager' : 'lazy'" decoding="async"
+                              :fetchpriority="idx < 3 ? 'high' : 'auto'" />
                           </button>
 
                           <!-- Files -->
@@ -528,7 +540,7 @@
                       <!-- Bottom Actions: Reply icon -->
                       <div class="flex items-center gap-3 mt-1.5">
                         <button @click.stop="handleReplyToActivity(log)" type="button" title="Trả lời hoạt động này"
-                          class="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-emerald-700 hover:bg-gray-200/70 active:bg-gray-300/60 cursor-pointer transition-colors -ml-1">
+                          class="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-gray-400 hover:text-emerald-700 hover:bg-emerald-50/80 active:bg-emerald-100 cursor-pointer transition-all active:scale-95 -ml-1.5">
                           <i class="fa-solid fa-reply text-[15px] sm:text-[16px]"></i>
                         </button>
                       </div>
@@ -545,10 +557,12 @@
 
               <!-- Chat Input box: full border attached to bottom of panel -->
               <ActivityComposer ref="activityComposerRef" v-model="chatMessage" v-model:project-id="chatProjectId"
-                class="flex-shrink-0 border-t border-[#4d4d4d]" :projects="followingProjects"
+                class="flex-shrink-0 border-t border-[#4d4d4d]" :projects="composerProjects"
                 :users="projectStore.users" :groups="mentionGroups" :replying-to="replyingToLog"
-                :reply-text="parseCommentText(replyingToLog?.content)" :submitting="isSubmittingChat"
-                @submit="submitChat" @cancel-reply="cancelReply" />
+                :reply-text="replyingToLog?.text || parseCommentText(replyingToLog?.content)"
+                :editing-comment="editingCommentLog"
+                :submitting="isSubmittingChat"
+                @submit="submitChat" @cancel-reply="cancelReply" @cancel-edit="cancelEdit" />
             </div>
           </section>
         </div>
@@ -788,17 +802,63 @@
     </div>
 
     <!-- Image Lightbox Modal -->
-    <div v-if="activePreviewImage"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
-      @click="activePreviewImage = null">
-      <div class="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl shadow-2xl" @click.stop>
-        <img :src="activePreviewImage" class="max-w-full max-h-[85vh] object-contain rounded-2xl" />
-        <button @click="activePreviewImage = null" type="button"
-          class="absolute top-3 right-3 w-9 h-9 bg-slate-900/80 hover:bg-slate-900 text-white rounded-full flex items-center justify-center transition-colors shadow-lg cursor-pointer">
-          <i class="fa-solid fa-xmark text-lg"></i>
-        </button>
+    <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95"
+      enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
+      <div v-if="activePreviewImage"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-slate-950/85 backdrop-blur-md select-none"
+        @click="closeImagePreview">
+        <div class="relative w-[min(92vw,1100px)] h-[min(72vh,720px)] flex flex-col items-center justify-center" @click.stop
+          @touchstart="handleModalTouchStart" @touchend="handleModalTouchEnd">
+          
+          <!-- Top Bar: Image count badge + Close button -->
+          <div class="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-auto">
+            <div v-if="previewModalImages.length > 1"
+              class="px-3 py-1 bg-black/60 backdrop-blur-md text-white/90 text-xs sm:text-sm font-bold rounded-full border border-white/10 shadow-lg">
+              {{ previewModalIndex + 1 }} / {{ previewModalImages.length }}
+            </div>
+            <div v-else></div>
+
+            <button type="button" @click="closeImagePreview"
+              class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/20 hover:bg-rose-600 text-white flex items-center justify-center font-bold text-sm sm:text-base backdrop-blur-md shadow-xl transition-all cursor-pointer border border-white/20"
+              title="Đóng (Esc)">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <!-- Main Image and Prev/Next Navigation -->
+          <div class="relative w-full h-full flex items-center justify-center rounded-2xl overflow-hidden bg-slate-900">
+            <img :src="activePreviewImage"
+              class="w-full h-full object-contain transition-opacity duration-150" />
+
+            <!-- PREV BUTTON (shown when > 1 image) -->
+            <button v-if="previewModalImages.length > 1" type="button" @click="prevPreviewImage"
+              class="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center font-bold text-base sm:text-lg backdrop-blur-md shadow-xl transition-all cursor-pointer border border-white/20 hover:scale-110 active:scale-95"
+              title="Ảnh trước (Phím ←)">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+
+            <!-- NEXT BUTTON (shown when > 1 image) -->
+            <button v-if="previewModalImages.length > 1" type="button" @click="nextPreviewImage"
+              class="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center font-bold text-base sm:text-lg backdrop-blur-md shadow-xl transition-all cursor-pointer border border-white/20 hover:scale-110 active:scale-95"
+              title="Ảnh tiếp theo (Phím →)">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+
+          <!-- Thumbnails / Dots strip at bottom -->
+          <div v-if="previewModalImages.length > 1" class="flex items-center justify-center gap-2 mt-4 max-w-full overflow-x-auto py-1 px-2">
+            <button v-for="(pImg, pIdx) in previewModalImages" :key="'thumb-' + pIdx"
+              type="button" @click="previewModalIndex = pIdx"
+              class="w-10 h-10 rounded-lg overflow-hidden border-2 transition-all cursor-pointer flex-shrink-0"
+              :class="pIdx === previewModalIndex ? 'border-emerald-400 scale-110 shadow-lg ring-2 ring-emerald-400/50' : 'border-white/30 opacity-60 hover:opacity-100'">
+              <img :src="pImg.url || pImg.src || pImg" class="w-full h-full object-cover" />
+            </button>
+          </div>
+
+        </div>
       </div>
-    </div>
+    </transition>
   </div>
 </template>
 
@@ -1056,7 +1116,29 @@ const handleCloseModal = () => {
   editingProject.value = null
 }
 
+const selectProjectForChat = (projectId, event = null) => {
+  const pId = Number(projectId)
+  const proj = projectStore.projects.find(p => Number(p.id) === pId)
+  chatProjectId.value = pId
+
+  nextTick(() => {
+    activityComposerRef.value?.focus()
+  })
+
+  if (proj) {
+    toast.success(`Đã chọn "${proj.title}" vào khung chat`)
+  }
+}
+
 const goToProjectDetail = (projectId, event) => {
+  // Alt + Click: Quick select project into chat bar
+  if (event?.altKey) {
+    event.preventDefault?.()
+    event.stopPropagation?.()
+    selectProjectForChat(projectId, event)
+    return
+  }
+
   // Browsers emit a click after mouseup. When that mouseup completed a drag
   // selection, do not let the card click overwrite the selected range.
   if (suppressNextProjectClick) return
@@ -1104,6 +1186,14 @@ const goToProjectDetail = (projectId, event) => {
 }
 
 const handleActivityProjectClick = (projectId, event) => {
+  // Alt + Click: Quick select project into chat bar
+  if (event?.altKey) {
+    event.preventDefault?.()
+    event.stopPropagation?.()
+    selectProjectForChat(projectId, event)
+    return
+  }
+
   const isCtrlOrMeta = event && (event.ctrlKey || event.metaKey)
 
   if (isCtrlOrMeta) {
@@ -1604,6 +1694,24 @@ const handleCreateProject = async (data) => {
 }
 
 const handleGlobalKeydown = (event) => {
+  if (activePreviewImage.value) {
+    if (event.key === 'ArrowLeft' || event.code === 'ArrowLeft') {
+      prevPreviewImage()
+      event.preventDefault()
+      return
+    }
+    if (event.key === 'ArrowRight' || event.code === 'ArrowRight') {
+      nextPreviewImage()
+      event.preventDefault()
+      return
+    }
+    if (event.key === 'Escape' || event.code === 'Escape') {
+      closeImagePreview()
+      event.preventDefault()
+      return
+    }
+  }
+
   // ESC key - Always handle first for closing modals/popups
   if (event.key === 'Escape') {
     // Close modals first
@@ -1998,10 +2106,65 @@ const toggleSelectAll = () => {
 }
 
 // Comment content attachment parsers
-const activePreviewImage = ref(null)
+const previewModalImages = ref([])
+const previewModalIndex = ref(0)
+const activePreviewImage = computed(() => {
+  if (!previewModalImages.value || previewModalImages.value.length === 0) return null
+  const item = previewModalImages.value[previewModalIndex.value]
+  return typeof item === 'string' ? item : (item?.url || item?.src || null)
+})
 
-const openImagePreview = (url) => {
-  activePreviewImage.value = url
+const openImagePreview = (url, imagesList = [], initialIndex = 0) => {
+  if (imagesList && imagesList.length > 0) {
+    previewModalImages.value = imagesList
+    const foundIdx = initialIndex >= 0 ? initialIndex : imagesList.findIndex(img => (img.url || img.src || img) === url)
+    previewModalIndex.value = Math.max(0, foundIdx)
+  } else if (url) {
+    previewModalImages.value = [{ url, name: 'Ảnh đính kèm' }]
+    previewModalIndex.value = 0
+  }
+}
+
+const closeImagePreview = () => {
+  previewModalImages.value = []
+  previewModalIndex.value = 0
+}
+
+const prevPreviewImage = (e) => {
+  if (e) e.stopPropagation()
+  if (previewModalImages.value.length > 1) {
+    previewModalIndex.value = (previewModalIndex.value - 1 + previewModalImages.value.length) % previewModalImages.value.length
+  }
+}
+
+const nextPreviewImage = (e) => {
+  if (e) e.stopPropagation()
+  if (previewModalImages.value.length > 1) {
+    previewModalIndex.value = (previewModalIndex.value + 1) % previewModalImages.value.length
+  }
+}
+
+let modalTouchStartX = 0
+let modalTouchEndX = 0
+
+const handleModalTouchStart = (e) => {
+  if (e.touches && e.touches[0]) {
+    modalTouchStartX = e.touches[0].clientX
+  }
+}
+
+const handleModalTouchEnd = (e) => {
+  if (e.changedTouches && e.changedTouches[0]) {
+    modalTouchEndX = e.changedTouches[0].clientX
+    const diff = modalTouchEndX - modalTouchStartX
+    if (Math.abs(diff) > 40) {
+      if (diff < 0) {
+        nextPreviewImage()
+      } else {
+        prevPreviewImage()
+      }
+    }
+  }
 }
 
 const parseReplyInfo = (content) => {
@@ -2125,6 +2288,7 @@ const activities = ref([])
 const isActivitiesLoading = ref(true)
 const showMentionedActivities = ref(false)
 let activityRequestId = 0
+let lastAppliedActivityRequestId = 0
 
 // Chat / Reply logic for recent activities panel
 const chatMessage = ref('')
@@ -2147,6 +2311,56 @@ const canDeleteComment = (log) => {
   return String(log.user_id) === String(currentUser.value.id)
 }
 
+const canEditComment = (log) => {
+  if (!log || !currentUser.value) return false
+  if (currentUser.value.is_system_admin || currentUser.value.is_admin) {
+    return true
+  }
+  return String(log.user_id) === String(currentUser.value.id)
+}
+
+const editingCommentLog = ref(null)
+
+const handleStartEditComment = (log) => {
+  activeLogMenuId.value = null
+  activeLogIdForMobileActions.value = null
+  editingCommentLog.value = log
+
+  // 1. Select the project of this activity
+  const pId = Number(log.project_id || log.project?.id)
+  if (pId) {
+    chatProjectId.value = pId
+  }
+
+  // 2. Check if this activity is a reply to another comment
+  const replyInfo = parseReplyInfo(log.content)
+  if (replyInfo) {
+    replyingToLog.value = {
+      id: replyInfo.id,
+      user: { name: replyInfo.user },
+      content: replyInfo.text,
+      text: replyInfo.text
+    }
+  } else {
+    replyingToLog.value = null
+  }
+
+  // 3. Put comment text in chat input
+  chatMessage.value = parseCommentText(log.content)
+
+  // 4. Focus composer
+  nextTick(() => {
+    activityComposerRef.value?.focus()
+  })
+}
+
+const cancelEdit = () => {
+  editingCommentLog.value = null
+  replyingToLog.value = null
+  chatMessage.value = ''
+  activityComposerRef.value?.clearAttachments()
+}
+
 const handleDeleteComment = async (id) => {
   const confirmed = await confirmStore.show({
     title: 'Xóa bình luận',
@@ -2157,6 +2371,9 @@ const handleDeleteComment = async (id) => {
   try {
     await axios.delete(`/api/comments/${id}`)
     activities.value = activities.value.filter(log => log.id !== id)
+    if (editingCommentLog.value?.id === id) {
+      cancelEdit()
+    }
     activeLogMenuId.value = null
     activeLogIdForMobileActions.value = null
     toast.success('Đã xóa bình luận!')
@@ -2210,9 +2427,21 @@ const followingProjects = computed(() => {
   return projectStore.projects.filter(p => p.tracking_status === 'following')
 })
 
+const composerProjects = computed(() => {
+  const list = [...followingProjects.value]
+  if (chatProjectId.value && !list.some(p => p.id === chatProjectId.value)) {
+    const found = projectStore.projects.find(p => p.id === chatProjectId.value)
+    if (found) list.unshift(found)
+  }
+  return list
+})
+
 watch(() => followingProjects.value, (newProjects) => {
   if (newProjects && newProjects.length > 0) {
     if (!chatProjectId.value || !newProjects.some(p => p.id === chatProjectId.value)) {
+      if (chatProjectId.value && projectStore.projects.some(p => p.id === chatProjectId.value)) {
+        return
+      }
       chatProjectId.value = newProjects[0].id
     }
   } else {
@@ -2221,6 +2450,7 @@ watch(() => followingProjects.value, (newProjects) => {
 }, { immediate: true })
 
 const handleReplyToActivity = (log) => {
+  editingCommentLog.value = null
   replyingToLog.value = log
   chatProjectId.value = log.project_id || log.project?.id || followingProjects.value[0]?.id
 
@@ -2237,6 +2467,10 @@ const handleReplyToActivity = (log) => {
 }
 
 const cancelReply = () => {
+  if (editingCommentLog.value) {
+    cancelEdit()
+    return
+  }
   replyingToLog.value = null
   chatMessage.value = ''
 }
@@ -2246,7 +2480,7 @@ const isSubmittingChat = ref(false)
 const submitChat = async () => {
   if (isSubmittingChat.value) return
 
-  const pId = chatProjectId.value || followingProjects.value[0]?.id
+  const pId = chatProjectId.value || composerProjects.value[0]?.id
   if (!pId) {
     toast.error('Vui lòng chọn hoặc tạo dự án để gửi cập nhật.')
     return
@@ -2261,29 +2495,96 @@ const submitChat = async () => {
     let finalContent = chatMessage.value + attachmentHtml
     if (replyingToLog.value) {
       const replyMeta = {
-        id: replyingToLog.value.id,
-        user: replyingToLog.value.user ? replyingToLog.value.user.name : 'Hệ thống',
-        text: parseCommentText(replyingToLog.value.content)
+        id: replyingToLog.value.id || null,
+        user: replyingToLog.value.user ? (replyingToLog.value.user.name || replyingToLog.value.user) : 'Hệ thống',
+        text: replyingToLog.value.text || parseCommentText(replyingToLog.value.content)
       }
       finalContent = `[reply:${JSON.stringify(replyMeta)}]` + finalContent
     }
 
-    await axios.post('/api/comments', {
-      project_id: pId,
-      content: finalContent,
-    })
+    if (editingCommentLog.value) {
+      const editingId = editingCommentLog.value.id
+      const rawContent = editingCommentLog.value.content || ''
+      const htmlAttachments = rawContent.replace(/^\[reply:\{.*?\}\]/, '').match(/(<br\s*\/?>\s*(?:<img[^>]*>|<a\b[^>]*>[\s\S]*?<\/a>)|!\[.*?\]\(.*?\)|📎\s*\[.*?\]\(.*?\))/gi)
+      if (htmlAttachments && htmlAttachments.length > 0 && !attachmentHtml) {
+        finalContent += htmlAttachments.join('')
+      }
 
-    toast.success('Gửi cập nhật hoạt động thành công!')
-    chatMessage.value = ''
-    replyingToLog.value = null
-    activityComposerRef.value?.clearAttachments()
-    fetchActivities()
+      const res = await axios.put(`/api/comments/${editingId}`, {
+        content: finalContent,
+        project_id: pId,
+      })
+
+      // Update in activities list
+      const targetComment = activities.value.find(a => a.id === editingId)
+      if (targetComment) {
+        targetComment.content = res.data?.content || finalContent
+        if (res.data?.project) targetComment.project = res.data.project
+        if (res.data?.project_id) targetComment.project_id = res.data.project_id
+      }
+
+      toast.success('Đã cập nhật hoạt động!')
+      cancelEdit()
+      fetchActivities?.(true)
+      broadcastLocalUpdate({ projectId: pId, commentId: editingId })
+    } else {
+      const res = await axios.post('/api/comments', {
+        project_id: pId,
+        content: finalContent,
+      })
+
+      const createdActivity = res.data
+      if (createdActivity?.id) {
+        activities.value = [createdActivity, ...activities.value.filter(item => item.id !== createdActivity.id)]
+      }
+
+      toast.success('Gửi cập nhật hoạt động thành công!')
+      chatMessage.value = ''
+      replyingToLog.value = null
+      activityComposerRef.value?.clearAttachments()
+      // The POST response is rendered immediately; polling reconciles later.
+      broadcastLocalUpdate({ projectId: pId })
+    }
   } catch (err) {
     console.error('Failed to submit chat:', err)
-    toast.error(err.response?.data?.message || err.message || 'Gửi cập nhật thất bại. Vui lòng thử lại.')
+    toast.error(err.response?.data?.message || err.message || 'Thao tác thất bại. Vui lòng thử lại.')
   } finally {
     isSubmittingChat.value = false
   }
+}
+
+let realtimeBroadcastChannel = null
+const realtimeSourceId = `view-list-${Date.now()}-${Math.random()}`
+
+const handleRealtimeChannelMessage = (event) => {
+  const data = event.data
+  if (!data) return
+  if (data.sourceId === realtimeSourceId) return
+  if (data.type === 'PUSH_RECEIVED' || data.type === 'NOTIFICATION_CLICKED' || data.type === 'PROJECT_UPDATED') {
+    fetchActivities?.()
+    projectStore.fetchProjects(true)
+  }
+}
+
+const handleServiceWorkerMessage = (event) => {
+  const data = event.data
+  if (!data) return
+  if (data.type === 'PUSH_RECEIVED' || data.type === 'NOTIFICATION_CLICKED' || data.type === 'PROJECT_UPDATED') {
+    fetchActivities?.()
+    projectStore.fetchProjects(true)
+  }
+}
+
+const broadcastLocalUpdate = (payload = {}) => {
+  try {
+    const ch = new BroadcastChannel('project_realtime_channel')
+    ch.postMessage({
+      type: 'PROJECT_UPDATED',
+      sourceId: realtimeSourceId,
+      ...payload
+    })
+    ch.close()
+  } catch (e) { }
 }
 
 const mentionGroups = ref([])
@@ -2342,15 +2643,16 @@ async function fetchActivities() {
     // their complete activity window for the last seven days instead.
     const params = selectedProjectIds.value.length > 0
       ? { project_ids: selectedProjectIds.value, days: 7 }
-      : { limit: 15 }
+      : { limit: 30 }
     const res = await axios.get('/api/comments', { params })
     const filtered = (res.data || []).filter(c => {
       return Boolean(c.project_id)
     })
 
-    // Ignore a slower response for an older filter and avoid rebuilding the
+    // Ignore a slower response for an older request and avoid rebuilding the
     // timeline every four seconds when its records have not changed.
-    if (requestId !== activityRequestId) return
+    if (requestId < lastAppliedActivityRequestId) return
+    lastAppliedActivityRequestId = requestId
     const isUnchanged = filtered.length === activities.value.length && filtered.every((activity, index) => {
       const current = activities.value[index]
       return current
@@ -2366,6 +2668,27 @@ async function fetchActivities() {
   } finally {
     isActivitiesLoading.value = false
   }
+}
+
+let latestActivityRequest = null
+const fetchLatestActivities = () => {
+  if (latestActivityRequest || activities.value.length === 0) return latestActivityRequest
+  const afterId = Math.max(...activities.value.map(activity => Number(activity.id) || 0))
+  const params = selectedProjectIds.value.length > 0
+    ? { project_ids: selectedProjectIds.value, days: 7, after_id: afterId, limit: 30 }
+    : { after_id: afterId, limit: 30 }
+
+  latestActivityRequest = axios.get('/api/comments', { params }).then(res => {
+    const incoming = (res.data || []).filter(comment => comment.project_id)
+    if (!incoming.length) return
+    const incomingIds = new Set(incoming.map(comment => comment.id))
+    activities.value = [...incoming, ...activities.value.filter(comment => !incomingIds.has(comment.id))]
+  }).catch(err => {
+    console.error('Failed to poll new activities:', err)
+  }).finally(() => {
+    latestActivityRequest = null
+  })
+  return latestActivityRequest
 }
 
 const formatCommentRelativeTime = (dateStr) => {
@@ -2506,6 +2829,7 @@ const goToBulkUpdate = () => {
 
 let pollTimer = null
 let broadcastRotationTimer = null
+let pollTick = 0
 
 // Infinite scroll handler
 const handleScroll = (event) => {
@@ -2525,7 +2849,7 @@ onMounted(async () => {
   projectStore.activePage = 'home'
   projectStore.activeStatus = null
   loadCustomViews()
-  await Promise.all([
+  await Promise.allSettled([
     projectStore.fetchProjects(),
     projectStore.fetchAuxData(),
     fetchActivities(),
@@ -2549,16 +2873,31 @@ onMounted(async () => {
   window.addEventListener('resize', updateTvPosition)
 
   pollTimer = setInterval(() => {
-    projectStore.fetchProjects(true)
-    fetchActivities()
-    fetchBroadcasts()
-  }, 4000)
+    if (document.visibilityState !== 'visible') return
+    fetchLatestActivities()
+    pollTick += 1
+    if (pollTick % 5 === 0) {
+      projectStore.fetchProjects(true)
+      fetchBroadcasts()
+    }
+  }, 5000)
 
   broadcastRotationTimer = setInterval(() => {
     if (broadcasts.value.length > 1) {
       currentBroadcastIndex.value = (currentBroadcastIndex.value + 1) % broadcasts.value.length
     }
   }, 300000) // 5 minutes
+
+  // 1. Listen on BroadcastChannel for instant cross-tab and SW push sync
+  try {
+    realtimeBroadcastChannel = new BroadcastChannel('project_realtime_channel')
+    realtimeBroadcastChannel.addEventListener('message', handleRealtimeChannelMessage)
+  } catch (e) { }
+
+  // 2. Listen on Service Worker postMessages
+  if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage)
+  }
 })
 
 onUnmounted(() => {
@@ -2581,6 +2920,16 @@ onUnmounted(() => {
   window.removeEventListener('mousedown', startSelection)
   window.removeEventListener('mousemove', updateSelection)
   window.removeEventListener('mouseup', endSelection)
+
+  if (realtimeBroadcastChannel) {
+    realtimeBroadcastChannel.removeEventListener('message', handleRealtimeChannelMessage)
+    realtimeBroadcastChannel.close()
+    realtimeBroadcastChannel = null
+  }
+
+  if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+    navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage)
+  }
 })
 </script>
 
@@ -2595,6 +2944,10 @@ onUnmounted(() => {
 
 .mobile-home-tabs {
   display: none;
+}
+
+.customer-group-header {
+  padding-left: 0;
 }
 
 .activity-feed-scroll {
@@ -2637,7 +2990,8 @@ onUnmounted(() => {
     max-width: 100% !important;
     padding-left: 16px !important;
     padding-right: 16px !important;
-    padding-bottom: 24px !important;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
   }
 
   .view-standard-layout {
@@ -2645,7 +2999,7 @@ onUnmounted(() => {
     flex-direction: column !important;
     align-items: center !important;
     justify-content: flex-start !important;
-    gap: 16px !important;
+    gap: 12px !important;
     width: 100% !important;
   }
 
@@ -2654,7 +3008,7 @@ onUnmounted(() => {
     flex-direction: row !important;
     align-items: flex-start !important;
     justify-content: center !important;
-    gap: 16px !important;
+    gap: 20px !important;
     width: 100% !important;
     max-width: 100% !important;
     order: 1 !important;
@@ -2662,21 +3016,40 @@ onUnmounted(() => {
 
   .project-list-panel {
     width: 380px !important;
-    max-width: calc(50% - 8px) !important;
+    max-width: calc(50% - 10px) !important;
     min-width: 280px !important;
     flex-shrink: 1 !important;
     display: flex !important;
     flex-direction: column !important;
   }
 
+  .customer-group-header {
+    padding-left: 0 !important;
+  }
+
+  .project-scroll-container {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    max-height: calc(var(--vvh, 100dvh) - 190px) !important;
+  }
+
   .project-card {
-    width: 100% !important;
+    width: calc(100% - 32px) !important;
+    max-width: calc(100% - 32px) !important;
+    margin-left: auto !important;
+    margin-right: 0 !important;
+  }
+
+  .project-list-panel input[type="checkbox"] {
+    left: 4px !important;
   }
 
   .recent-activity-panel {
     width: 380px !important;
-    max-width: calc(50% - 8px) !important;
+    max-width: calc(50% - 10px) !important;
     min-width: 280px !important;
+    height: calc(var(--vvh, 100dvh) - 190px) !important;
+    max-height: calc(var(--vvh, 100dvh) - 190px) !important;
     flex-shrink: 1 !important;
     display: flex !important;
     flex-direction: column !important;
@@ -2690,9 +3063,9 @@ onUnmounted(() => {
     flex-direction: row !important;
     justify-content: center !important;
     align-items: center !important;
-    gap: 16px !important;
+    gap: 26px !important;
     margin: 0 !important;
-    margin-top: 10px !important;
+    margin-top: 4px !important;
     z-index: 30 !important;
   }
 
@@ -2936,9 +3309,24 @@ onUnmounted(() => {
     flex-direction: column !important;
   }
 
+  .customer-group-header {
+    padding-left: 0 !important;
+  }
+
+  .project-scroll-container {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
   .project-card {
-    width: 100% !important;
-    max-width: 380px !important;
+    width: calc(100% - 32px) !important;
+    max-width: calc(100% - 32px) !important;
+    margin-left: auto !important;
+    margin-right: 0 !important;
+  }
+
+  .project-list-panel input[type="checkbox"] {
+    left: 4px !important;
   }
 
   .recent-activity-panel {
@@ -3002,7 +3390,7 @@ onUnmounted(() => {
     flex-direction: row !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 20px !important;
+    gap: 26px !important;
     box-shadow: none !important;
   }
 

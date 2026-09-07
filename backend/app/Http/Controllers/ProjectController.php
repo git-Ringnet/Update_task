@@ -15,12 +15,16 @@ class ProjectController extends Controller
         $user = auth()->user();
         $userId = $user->id;
 
-        $query = Project::with(['customer', 'lead', 'creator', 'members', 'milestones' => function ($q) {
+        // List screens only need member IDs and lead/creator names. Some legacy
+        // avatars are base64 strings; returning them for every project inflated
+        // the home payload by more than 1 MB on the local dataset.
+        $query = Project::with(['customer:id,name', 'lead:id,name', 'creator:id,name', 'members:id', 'milestones' => function ($q) {
             $q->withCount('tasks');
         }])->withCount(['tasks', 'comments'])->visibleTo($user);
 
         if ($userId) {
             $query->select('projects.*')
+                ->addSelect('pinned_projects.id as user_pin_id')
                 ->leftJoin('pinned_projects', function ($join) use ($userId) {
                     $join->on('pinned_projects.project_id', '=', 'projects.id')
                          ->where('pinned_projects.user_id', '=', $userId);
@@ -57,7 +61,10 @@ class ProjectController extends Controller
         }
 
         $projects = $query->get()->map(function ($p) use ($user, $userId) {
-            $p->applyPinnedStateForUser($userId);
+            // The left join already contains the per-user pin state. The old
+            // applyPinnedStateForUser call issued one extra query per project.
+            $p->setAttribute('is_pinned', (bool) $p->getAttribute('user_pin_id'));
+            $p->makeHidden('user_pin_id');
             $p->setAttribute('creator_id', $p->created_by);
             $p->setAttribute('can_manage_members', $p->canManageMembers($user));
             return $p;
@@ -79,7 +86,16 @@ class ProjectController extends Controller
     public function show($id)
     {
         $project = Project::visibleTo(auth()->user())
-            ->with(['customer', 'lead', 'creator', 'tasks.assignee', 'tasks.creator', 'tasks.attachments', 'comments.user', 'milestones.creator', 'milestones.tasks.assignee', 'milestones.tasks.creator', 'milestones.tasks.attachments', 'members'])
+            ->with([
+                'customer:id,name',
+                'lead:id,name,avatar',
+                'creator:id,name,avatar',
+                'tasks.assignee:id,name,avatar',
+                'tasks.creator:id,name,avatar',
+                'tasks.attachments',
+                'milestones.creator:id,name,avatar',
+                'members:id,name,avatar',
+            ])
             ->findOrFail($id);
         $project->applyPinnedStateForUser(auth()->id());
 

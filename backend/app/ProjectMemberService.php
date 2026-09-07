@@ -10,6 +10,12 @@ class ProjectMemberService
 {
     public function addMentionedMembers(Project $project, ?string $text, array $explicitUserIds = []): void
     {
+        // Plain updates have nothing to resolve. Avoid even the validation
+        // query in the overwhelmingly common text-only path.
+        if ($explicitUserIds === [] && (!$text || !str_contains($text, '@'))) {
+            return;
+        }
+
         $memberIds = collect($explicitUserIds)->map(fn ($id) => (int) $id)->filter();
 
         if ($text && preg_match('/@all(?=\s|$|[,.;:!?()])/iu', $text)) {

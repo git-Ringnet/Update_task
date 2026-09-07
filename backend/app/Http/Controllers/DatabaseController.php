@@ -4,9 +4,37 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Services\SystemBackupService;
 
 class DatabaseController extends Controller
 {
+    public function exportSystemBackup(SystemBackupService $backups)
+    {
+        try {
+            $path = $backups->create();
+            return response()->download($path, basename($path), ['Content-Type' => 'application/zip'])->deleteFileAfterSend(false);
+        } catch (\Throwable $error) {
+            report($error);
+            return response()->json(['message' => 'Không thể tạo backup hệ thống: ' . $error->getMessage()], 500);
+        }
+    }
+
+    public function importSystemBackup(Request $request, SystemBackupService $backups)
+    {
+        $request->validate([
+            'archive' => 'required|file|mimes:zip|max:5242880',
+            'confirm_restore' => 'required|accepted',
+        ]);
+        $path = $request->file('archive')->getRealPath();
+        try {
+            $backups->restore($path);
+            return response()->json(['message' => 'Đã khôi phục database và file hệ thống. Hãy đăng nhập lại.']);
+        } catch (\Throwable $error) {
+            report($error);
+            return response()->json(['message' => 'Khôi phục thất bại: ' . $error->getMessage()], 422);
+        }
+    }
+
     public function exportSql()
     {
         $connection = DB::connection();

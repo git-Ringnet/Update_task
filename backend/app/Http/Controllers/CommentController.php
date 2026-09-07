@@ -56,6 +56,14 @@ class CommentController extends Controller
             $query->where('task_id', $request->task_id);
         }
 
+        // Fast polling path: only return rows created after the newest comment
+        // already present in the browser. This avoids repeatedly transferring
+        // the full feed (including legacy inline image data).
+        $afterId = $request->integer('after_id');
+        if ($afterId > 0) {
+            $query->where('comments.id', '>', $afterId);
+        }
+
         $days = $request->integer('days');
         if ($days > 0) {
             $query->where('created_at', '>=', Carbon::now()->subDays(min($days, 90)));
@@ -97,15 +105,62 @@ class CommentController extends Controller
         $taggedUserIds = $validated['tagged_user_ids'] ?? [];
         unset($validated['tagged_user_ids']);
         $validated['user_id'] = auth()->id();
+        // The project is already loaded here; supplying its health prevents
+        // Comment's creating hook from querying the same project again.
+        $validated['project_health'] = $project->health;
 
         app(ProjectMemberService::class)->addMentionedMembers($project, $validated['content'], $taggedUserIds);
 
         $comment = Comment::create($validated);
-        $comment->load('user');
+        $comment->load([
+            'user:id,name,avatar',
+            'project:id,customer_id,title',
+            'project.customer:id,name',
+        ]);
+        $comment->setAttribute('project_title', $comment->project?->title);
 
         Project::where('id', $comment->project_id)->update(['last_activity_at' => Carbon::now()]);
 
         return response()->json($comment, 201);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $comment = Comment::findOrFail($id);
+        $user = auth()->user();
+        $canEdit = $user->is_system_admin || $user->is_admin || (int) $comment->user_id === (int) $user->id;
+        abort_unless($canEdit, 403, 'Bạn không có quyền chỉnh sửa bình luận này.');
+
+        $validated = $request->validate([
+            'content' => 'required|string',
+            'project_id' => 'nullable|exists:projects,id',
+            'tagged_user_ids' => 'nullable|array',
+            'tagged_user_ids.*' => Rule::exists('users', 'id')->where('is_admin', 0),
+        ]);
+
+        $projectId = $validated['project_id'] ?? $comment->project_id;
+        $project = Project::findOrFail($projectId);
+        $taggedUserIds = $validated['tagged_user_ids'] ?? [];
+        unset($validated['tagged_user_ids']);
+
+        if (!empty($taggedUserIds)) {
+            app(ProjectMemberService::class)->addMentionedMembers($project, $validated['content'], $taggedUserIds);
+        }
+
+        $updateData = ['content' => $validated['content']];
+        if (!empty($validated['project_id'])) {
+            $updateData['project_id'] = $validated['project_id'];
+        }
+        $comment->update($updateData);
+
+        $comment->load([
+            'user:id,name,avatar',
+            'project:id,customer_id,title',
+            'project.customer:id,name',
+        ]);
+        $comment->setAttribute('project_title', $comment->project?->title);
+
+        return response()->json($comment);
     }
 
     public function destroy($id)

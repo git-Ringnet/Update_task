@@ -121,11 +121,10 @@
               <span>Cài đặt tài khoản</span>
             </button>
 
-            <!-- Export SQL (System Admin only) -->
-            <button v-if="authStore.user?.is_system_admin" @click="exportSql" type="button"
+            <button v-if="authStore.user?.is_system_admin" @click="openDataManagement" type="button"
               class="w-full text-left px-2.5 py-2 hover:bg-emerald-50/60 rounded-lg transition-colors flex items-center gap-2.5 cursor-pointer text-xs font-bold text-gray-700 hover:text-emerald-800">
               <i class="fa-solid fa-database text-sm text-emerald-600"></i>
-              <span>Xuất File SQL</span>
+              <span>Quản lý dữ liệu</span>
             </button>
 
             <!-- Operation History (System Admin only) -->
@@ -325,6 +324,35 @@
       </div>
     </div>
 
+    <!-- Data Management Modal -->
+    <Teleport to="body">
+      <div v-if="isDataManagementModalOpen" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
+        <button type="button" class="absolute inset-0 bg-slate-950/35 backdrop-blur-xs cursor-default" aria-label="Đóng quản lý dữ liệu" @click="closeDataManagement"></button>
+        <section class="relative z-10 w-full max-w-lg rounded-3xl border border-stone-200 bg-[#fffdf9] p-5 shadow-2xl space-y-4">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h3 class="text-base font-black text-gray-900">Quản lý dữ liệu</h3>
+              <p class="mt-1 text-xs text-gray-500">Xuất hoặc khôi phục dữ liệu hệ thống. Chỉ System Admin có quyền thực hiện.</p>
+            </div>
+            <button type="button" @click="closeDataManagement" class="w-8 h-8 rounded-full hover:bg-stone-100 text-gray-500"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+
+          <div class="rounded-2xl border border-stone-200 p-4 space-y-2">
+            <div class="flex items-center justify-between gap-3"><div><p class="text-sm font-bold text-gray-800">Xuất dữ liệu SQL</p><p class="text-[11px] text-gray-500">Chỉ cơ sở dữ liệu.</p></div><button type="button" @click="exportSql" :disabled="isSqlExporting || isSystemBackupExporting || isSystemBackupImporting" class="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">{{ isSqlExporting ? 'Đang xuất…' : 'Xuất SQL' }}</button></div>
+          </div>
+          <div class="rounded-2xl border border-emerald-200 bg-emerald-50/30 p-4 space-y-2">
+            <div class="flex items-center justify-between gap-3"><div><p class="text-sm font-bold text-gray-800">Backup toàn hệ thống</p><p class="text-[11px] text-gray-500">Gồm SQL, ảnh và file tải lên.</p></div><button type="button" @click="exportSystemBackup" :disabled="isSqlExporting || isSystemBackupExporting || isSystemBackupImporting" class="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Tải backup</button></div>
+            <p v-if="isSystemBackupExporting" class="text-xs font-semibold text-emerald-800"><i class="fa-solid fa-spinner fa-spin mr-1"></i>{{ systemBackupStatus }}</p>
+          </div>
+          <div class="rounded-2xl border border-amber-200 bg-amber-50/40 p-4 space-y-2">
+            <div class="flex items-center justify-between gap-3"><div><p class="text-sm font-bold text-gray-800">Khôi phục backup</p><p class="text-[11px] text-gray-500">Thay thế database, ảnh và file hiện có.</p></div><button type="button" @click="backupImportInputRef?.click()" :disabled="isSqlExporting || isSystemBackupExporting || isSystemBackupImporting" class="rounded-xl bg-amber-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Chọn file ZIP</button></div>
+            <div v-if="isSystemBackupImporting" class="space-y-1"><div class="h-2 overflow-hidden rounded-full bg-amber-100"><div class="h-full bg-amber-500 transition-all" :style="{ width: `${systemBackupImportProgress}%` }"></div></div><p class="text-xs font-semibold text-amber-800"><i class="fa-solid fa-spinner fa-spin mr-1"></i>{{ systemBackupImportStatus }}</p></div>
+          </div>
+          <input ref="backupImportInputRef" type="file" accept=".zip,application/zip" class="hidden" @change="importSystemBackup" />
+        </section>
+      </div>
+    </Teleport>
+
     <!-- Install Instructions Modal -->
     <Teleport to="body">
       <div v-if="isInstructionsModalOpen" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
@@ -424,6 +452,11 @@ const dropdownRef = ref(null)
 const deferredPrompt = ref(null)
 const showInstallBtn = ref(false)
 const isInstructionsModalOpen = ref(false)
+const isDataManagementModalOpen = ref(false)
+const isSqlExporting = ref(false)
+const isSystemBackupImporting = ref(false)
+const systemBackupImportProgress = ref(0)
+const systemBackupImportStatus = ref('')
 
 const isIOS = computed(() => {
   if (typeof window === 'undefined' || !navigator) return false
@@ -564,6 +597,19 @@ const avatarOffsetY = ref(0)
 const avatarZoom = ref(1)
 const cropImageSrc = ref(null)
 const avatarFileInputRef = ref(null)
+const backupImportInputRef = ref(null)
+const isSystemBackupExporting = ref(false)
+const systemBackupStatus = ref('Đang đóng gói backup…')
+let systemBackupStartedAt = null
+let systemBackupElapsedTimer = null
+
+const updateSystemBackupStatus = (prefix = 'Đang đóng gói backup') => {
+  if (!systemBackupStartedAt) return
+  const elapsedSeconds = Math.floor((Date.now() - systemBackupStartedAt) / 1000)
+  const minutes = Math.floor(elapsedSeconds / 60)
+  const seconds = String(elapsedSeconds % 60).padStart(2, '0')
+  systemBackupStatus.value = `${prefix} (${minutes}:${seconds})…`
+}
 
 const triggerAvatarFileSelect = () => {
   avatarFileInputRef.value?.click()
@@ -629,8 +675,19 @@ const openEditProfile = () => {
   isProfileModalOpen.value = true
 }
 
-const exportSql = async () => {
+const openDataManagement = () => {
   isDropdownOpen.value = false
+  isDataManagementModalOpen.value = true
+}
+
+const closeDataManagement = () => {
+  if (isSqlExporting.value || isSystemBackupExporting.value || isSystemBackupImporting.value) return
+  isDataManagementModalOpen.value = false
+}
+
+const exportSql = async () => {
+  if (isSqlExporting.value) return
+  isSqlExporting.value = true
   try {
     const response = await axios.get('/api/database/export', {
       responseType: 'blob'
@@ -659,6 +716,91 @@ const exportSql = async () => {
     toastStore.success('Đã xuất file SQL thành công!')
   } catch (error) {
     toastStore.error('Không thể xuất file SQL. Vui lòng thử lại sau.')
+  } finally {
+    isSqlExporting.value = false
+  }
+}
+
+const downloadBlob = (response, fallbackName) => {
+  const url = window.URL.createObjectURL(new Blob([response.data]))
+  const link = document.createElement('a')
+  const match = (response.headers['content-disposition'] || '').match(/filename="(.+)"/)
+  link.href = url
+  link.setAttribute('download', match?.[1] || fallbackName)
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  // Give the browser time to claim the object URL before releasing a large archive.
+  window.setTimeout(() => window.URL.revokeObjectURL(url), 30_000)
+}
+
+const exportSystemBackup = async () => {
+  if (isSystemBackupExporting.value) return
+  isSystemBackupExporting.value = true
+  systemBackupStartedAt = Date.now()
+  updateSystemBackupStatus()
+  systemBackupElapsedTimer = window.setInterval(() => updateSystemBackupStatus(), 1000)
+  try {
+    const response = await axios.get('/api/database/backup', {
+      responseType: 'blob',
+      timeout: 0,
+      onDownloadProgress: (progressEvent) => {
+        if (progressEvent.total) {
+          systemBackupStatus.value = `Đang tải backup… ${Math.round((progressEvent.loaded / progressEvent.total) * 100)}%`
+        } else if (progressEvent.loaded > 0) {
+          updateSystemBackupStatus('Đang tải backup')
+        }
+      }
+    })
+    downloadBlob(response, 'system_backup.zip')
+    isDataManagementModalOpen.value = false
+    toastStore.success(`Đã xuất backup lúc ${new Date().toLocaleString('vi-VN')}.`)
+  } catch (error) {
+    const message = error.response?.data instanceof Blob
+      ? 'Không thể tạo backup hệ thống. Vui lòng kiểm tra dung lượng ổ đĩa và thử lại.'
+      : (error.response?.data?.message || 'Không thể tạo backup hệ thống.')
+    toastStore.error(message)
+  } finally {
+    window.clearInterval(systemBackupElapsedTimer)
+    systemBackupElapsedTimer = null
+    systemBackupStartedAt = null
+    isSystemBackupExporting.value = false
+    systemBackupStatus.value = 'Đang đóng gói backup…'
+  }
+}
+
+const importSystemBackup = async (event) => {
+  const archive = event.target.files?.[0]
+  event.target.value = ''
+  if (!archive) return
+  if (!window.confirm('Khôi phục sẽ thay thế database và toàn bộ ảnh/file hiện có. Bạn chắc chắn muốn tiếp tục?')) return
+  const formData = new FormData()
+  formData.append('archive', archive)
+  formData.append('confirm_restore', '1')
+  isSystemBackupImporting.value = true
+  systemBackupImportProgress.value = 0
+  systemBackupImportStatus.value = 'Đang tải file backup lên máy chủ…'
+  try {
+    await axios.post('/api/database/backup/import', formData, {
+      timeout: 0,
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total) {
+          systemBackupImportProgress.value = Math.round((progressEvent.loaded / progressEvent.total) * 100)
+          systemBackupImportStatus.value = systemBackupImportProgress.value === 100
+            ? 'Đã tải file lên. Đang khôi phục database và file…'
+            : `Đang tải file backup lên máy chủ… ${systemBackupImportProgress.value}%`
+        }
+      }
+    })
+    systemBackupImportProgress.value = 100
+    systemBackupImportStatus.value = 'Đã khôi phục thành công. Đang tải lại trang…'
+    toastStore.success('Đã khôi phục backup. Vui lòng tải lại trang và đăng nhập lại.')
+    window.setTimeout(() => window.location.reload(), 1200)
+  } catch (error) {
+    toastStore.error(error.response?.data?.message || 'Khôi phục backup thất bại.')
+    isSystemBackupImporting.value = false
+    systemBackupImportProgress.value = 0
+    systemBackupImportStatus.value = ''
   }
 }
 
@@ -744,6 +886,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  window.clearInterval(systemBackupElapsedTimer)
   document.removeEventListener('click', handleClickOutside)
   window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
   window.removeEventListener('appinstalled', handleAppInstalled)

@@ -15,6 +15,9 @@ const base64UrlToUint8Array = (value) => {
   return Uint8Array.from(raw, char => char.charCodeAt(0))
 }
 
+const subscriptionVersion = '2026-09-07-v2'
+const subscriptionMaxAge = 30 * 24 * 60 * 60 * 1000
+
 export const useBrowserNotificationStore = defineStore('browserNotifications', () => {
   const permission = ref(getPermission())
   const appEnabled = ref(localStorage.getItem('browser-notifications-enabled') !== 'false')
@@ -33,6 +36,21 @@ export const useBrowserNotificationStore = defineStore('browserNotifications', (
     let subscription = await readyRegistration.pushManager.getSubscription()
 
     const serverKey = base64UrlToUint8Array(data.public_key)
+
+    const savedVersion = localStorage.getItem('push-subscription-version')
+    const refreshedAt = Number(localStorage.getItem('push-subscription-refreshed-at') || 0)
+    const shouldRefresh = savedVersion !== subscriptionVersion
+      || !refreshedAt
+      || Date.now() - refreshedAt > subscriptionMaxAge
+
+    if (subscription && shouldRefresh) {
+      try {
+        await subscription.unsubscribe()
+      } catch (e) {
+        console.error('Failed to refresh stale push subscription:', e)
+      }
+      subscription = null
+    }
 
     if (subscription) {
       const rawKey = subscription.options.applicationServerKey
@@ -72,6 +90,8 @@ export const useBrowserNotificationStore = defineStore('browserNotifications', (
       keys: serialized.keys,
       content_encoding: 'aes128gcm',
     })
+    localStorage.setItem('push-subscription-version', subscriptionVersion)
+    localStorage.setItem('push-subscription-refreshed-at', String(Date.now()))
   }
 
   const requestPermission = async () => {

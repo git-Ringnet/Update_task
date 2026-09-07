@@ -1,16 +1,29 @@
 <template>
   <div class="flex flex-col">
+    <!-- Editing Banner if editing an existing activity -->
+    <div v-if="editingComment"
+      class="flex items-center justify-between bg-amber-50 px-3.5 py-1.5 border-l-3 border-amber-500 text-sm shadow-3xs border-b border-amber-200/80">
+      <div class="flex items-center gap-1.5 min-w-0">
+        <i class="fa-solid fa-pen-to-square text-amber-600 text-xs shrink-0"></i>
+        <span class="text-[13px] font-black text-amber-900 tracking-wide uppercase">Chỉnh sửa hoạt động</span>
+      </div>
+      <button type="button" title="Hủy chỉnh sửa" @click="$emit('cancel-edit')"
+        class="text-amber-600 hover:text-amber-900 p-0.5 rounded-full hover:bg-amber-200/50 cursor-pointer shrink-0 ml-2">
+        <i class="fa-solid fa-xmark text-sm"></i>
+      </button>
+    </div>
+
     <!-- Replying to banner if replying -->
     <div v-if="replyingTo"
       class="flex items-start justify-between bg-[#e1e3ea] px-3.5 py-2 border-l-3 border-[#0068FF] text-sm shadow-3xs border-b border-gray-300">
       <div class="flex-1 min-w-0">
         <div class="text-[14px] font-extrabold text-[#0068FF] uppercase tracking-wider flex items-center gap-1">
           <i class="fa-solid fa-reply text-xs"></i>
-          <span>Trả lời {{ replyingTo.user?.name || 'Hệ thống' }}</span>
+          <span>Trả lời {{ replyingTo.user?.name || (typeof replyingTo.user === 'string' ? replyingTo.user : 'Hệ thống') }}</span>
         </div>
-        <div class="text-[15px] text-gray-600 truncate mt-0.5">{{ replyText }}</div>
+        <div class="text-[15px] text-gray-600 truncate mt-0.5">{{ replyText || replyingTo.content || replyingTo.text }}</div>
       </div>
-      <button type="button" title="Hủy trả lời" @click="$emit('cancel-reply')"
+      <button v-if="!editingComment" type="button" title="Hủy trả lời" @click="$emit('cancel-reply')"
         class="text-gray-400 hover:text-gray-650 p-1 rounded-full hover:bg-gray-200/50 cursor-pointer shrink-0 ml-2">
         <i class="fa-solid fa-xmark text-sm"></i>
       </button>
@@ -57,7 +70,8 @@
       </div>
 
       <!-- Top Toolbar Row: Paperclip, Image, Project Selector Pill -->
-      <div class="flex items-center justify-between px-3.5 py-2 bg-[#F9F4EE] rounded-none border-b border-gray-300/40 select-none">
+      <div class="flex items-center justify-between px-3.5 py-2 bg-[#F9F4EE] border-b border-gray-300/40 select-none"
+        :class="{ 'rounded-t-[14px]': !replyingTo && !editingComment }">
         <div class="flex items-center gap-3 text-gray-700">
           <input ref="fileInputRef" type="file" multiple
             accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar" class="hidden" @change="handleFileSelection" />
@@ -87,60 +101,59 @@
               :class="isProjectPickerOpen ? 'rotate-180' : ''"></i>
           </button>
 
-          <Teleport to="body">
-            <!-- Backdrop overlay -->
-            <div v-if="isProjectPickerOpen"
-              class="fixed inset-0 bg-black/25 z-[9998] backdrop-blur-[1px]"
-              @click="dismissProjectPicker"></div>
+          <!-- Backdrop overlay -->
+          <div v-if="isProjectPickerOpen"
+            class="fixed inset-0 z-40 bg-black/20 md:bg-transparent"
+            @click="dismissProjectPicker"></div>
 
-            <div v-if="isProjectPickerOpen"
-              class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-[min(340px,calc(100vw-32px))] bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[360px]"
-            >
-              <div class="px-3.5 py-2.5 text-sm font-black text-gray-700 uppercase tracking-wider bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                <span>Chọn dự án</span>
-                <button type="button" @click="dismissProjectPicker" class="text-gray-400 hover:text-gray-700 p-1">
-                  <i class="fa-solid fa-xmark text-sm"></i>
-                </button>
-              </div>
+          <!-- Project Picker Dropdown (Anchored directly above the project selector pill on desktop) -->
+          <div v-if="isProjectPickerOpen"
+            class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 md:absolute md:top-auto md:bottom-full md:left-auto md:right-0 md:translate-x-0 md:translate-y-0 md:mb-2 z-50 w-[min(340px,calc(100vw-32px))] md:w-[350px] bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[380px] animate-fade-in-up"
+          >
+            <div class="px-3.5 py-2.5 text-sm font-black text-gray-700 uppercase tracking-wider bg-gray-50 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+              <span>Chọn dự án</span>
+              <button type="button" @click="dismissProjectPicker" class="text-gray-400 hover:text-gray-700 p-1 cursor-pointer">
+                <i class="fa-solid fa-xmark text-sm"></i>
+              </button>
+            </div>
 
-              <div class="p-2 border-b border-gray-100 bg-white flex-shrink-0">
-                <div class="relative">
-                  <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-                  <input 
-                    ref="mobileSearchInputRef"
-                    v-model="projectSearch" 
-                    type="text" 
-                    placeholder="Tìm kiếm dự án..."
-                    class="w-full pl-8 pr-3 py-1.5 text-sm font-bold border border-gray-200 rounded-lg focus:outline-none focus:border-emerald-500 bg-gray-50"
-                    autocomplete="off"
-                    @keydown="handlePickerKeydown"
-                  />
-                </div>
-              </div>
-
-              <div ref="projectPickerListRef" class="max-h-56 overflow-y-auto divide-y divide-gray-100 flex-1">
-                <button v-for="(project, pIdx) in filteredPickerProjects" :key="`picker-${project.id}`" type="button"
-                  @mousedown.prevent="selectProjectFromPicker(project)"
-                  class="w-full px-3.5 py-2.5 flex items-center justify-between gap-3 text-left cursor-pointer transition-colors"
-                  :class="pIdx === pickerSelectedIndex ? 'bg-emerald-50 text-emerald-900' : 'hover:bg-gray-50'">
-                  <span class="min-w-0">
-                    <span class="block text-[16px] font-extrabold text-gray-900 truncate">{{ project.title }}</span>
-                    <span v-if="project.customer?.name" class="block text-[14px] text-gray-400 font-semibold truncate mt-0.5">
-                      {{ project.customer.name }}
-                    </span>
-                  </span>
-                  <span class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0"
-                    :class="String(project.id) === String(projectId) ? 'border-emerald-600' : 'border-gray-300'">
-                    <span v-if="String(project.id) === String(projectId)" class="w-2 h-2 rounded-full bg-emerald-600"></span>
-                  </span>
-                </button>
-                <div v-if="filteredPickerProjects.length === 0"
-                  class="px-3 py-5 text-center text-sm font-semibold text-gray-400">
-                  Không tìm thấy dự án phù hợp.
-                </div>
+            <div class="p-2 border-b border-gray-100 bg-white flex-shrink-0">
+              <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input
+                  ref="mobileSearchInputRef"
+                  v-model="projectSearch"
+                  type="text"
+                  placeholder="Tìm kiếm dự án..."
+                  class="w-full pl-8 pr-3 py-1.5 text-sm font-bold border border-gray-200 rounded-lg focus:outline-none focus:border-emerald-500 bg-gray-50"
+                  autocomplete="off"
+                  @keydown="handlePickerKeydown"
+                />
               </div>
             </div>
-          </Teleport>
+
+            <div ref="projectPickerListRef" class="max-h-60 overflow-y-auto overscroll-contain divide-y divide-gray-100 flex-1">
+              <button v-for="(project, pIdx) in filteredPickerProjects" :key="`picker-${project.id}`" type="button"
+                @mousedown.prevent="selectProjectFromPicker(project)"
+                class="w-full px-3.5 py-2.5 flex items-center justify-between gap-3 text-left cursor-pointer transition-colors"
+                :class="pIdx === pickerSelectedIndex ? 'bg-emerald-50 text-emerald-900' : 'hover:bg-gray-50'">
+                <span class="min-w-0">
+                  <span class="block text-[16px] font-extrabold text-gray-900 truncate">{{ project.title }}</span>
+                  <span v-if="project.customer?.name" class="block text-[14px] text-gray-400 font-semibold truncate mt-0.5">
+                    {{ project.customer.name }}
+                  </span>
+                </span>
+                <span class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0"
+                  :class="String(project.id) === String(projectId) ? 'border-emerald-600' : 'border-gray-300'">
+                  <span v-if="String(project.id) === String(projectId)" class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                </span>
+              </button>
+              <div v-if="filteredPickerProjects.length === 0"
+                class="px-3 py-5 text-center text-sm font-semibold text-gray-400">
+                Không tìm thấy dự án phù hợp.
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -155,6 +168,16 @@
             <i class="fa-solid fa-file text-amber-600"></i>
             <span class="truncate">{{ attachment.name }}</span>
           </div>
+          <span v-if="attachment.uploadStatus === 'uploading'"
+            class="absolute inset-0 rounded-lg bg-black/35 text-white flex items-center justify-center"
+            title="Äang táº£i lÃªn">
+            <i class="fa-solid fa-spinner fa-spin text-xs"></i>
+          </span>
+          <span v-else-if="attachment.uploadStatus === 'error'"
+            class="absolute inset-0 rounded-lg bg-rose-600/75 text-white flex items-center justify-center"
+            title="Táº£i lÃªn lá»—i, sáº½ tá»± thá»­ láº¡i khi gá»­i">
+            <i class="fa-solid fa-rotate-right text-xs"></i>
+          </span>
           <button type="button" title="Bỏ tệp" @click="removeAttachment(index)"
             class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-gray-700 hover:bg-rose-600 text-white flex items-center justify-center text-[9px] cursor-pointer">
             <i class="fa-solid fa-xmark"></i>
@@ -163,7 +186,7 @@
       </div>
 
       <!-- Textarea Input Area: inline with submit button for instant visibility on all devices -->
-      <div class="flex items-end gap-2 px-3.5 py-2 bg-[#ebe6df] rounded-none">
+      <div class="flex items-end gap-2 px-3.5 py-2 bg-[#ebe6df] rounded-b-[14px]">
         <textarea ref="textareaRef"
           :value="messageModel"
           @input="syncInputState"
@@ -180,7 +203,7 @@
           rows="1"
           name="chat_activity_message"
           id="activity-composer-textarea"
-          placeholder="Báo thông tin cho đồng đội"
+          :placeholder="editingComment ? 'Chỉnh sửa nội dung hoạt động...' : 'Báo thông tin cho đồng đội'"
           :disabled="!projects.length"
           class="flex-1 min-h-[36px] max-h-[140px] overflow-y-auto bg-transparent border-0 focus:ring-0 focus:outline-none text-[16px] sm:text-[18px] font-normal text-gray-900 resize-none p-0 placeholder-gray-500 leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed"
           autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
@@ -188,7 +211,7 @@
         
         <div class="flex-shrink-0 flex items-center mb-0.5">
           <button @click="handleSubmit" :disabled="submitting || !canSend" type="button"
-            title="Gửi cập nhật (Hú hú)"
+            :title="editingComment ? 'Lưu thay đổi' : 'Gửi cập nhật (Hú hú)'"
             class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-white shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
             :class="canSend && !submitting ? 'bg-[#45A246] hover:bg-[#3a903b] opacity-100 shadow-sm' : 'bg-gray-300/80 opacity-40 cursor-not-allowed'">
             <i class="fa-solid fa-dove text-sm"></i>
@@ -209,11 +232,12 @@ const props = defineProps({
   users: { type: Array, default: () => [] },
   groups: { type: Array, default: () => [] },
   replyingTo: { type: Object, default: null },
+  editingComment: { type: Object, default: null },
   submitting: { type: Boolean, default: false },
   replyText: { type: String, default: '' },
 })
 
-const emit = defineEmits(['update:modelValue', 'update:projectId', 'submit', 'cancel-reply'])
+const emit = defineEmits(['update:modelValue', 'update:projectId', 'submit', 'cancel-reply', 'cancel-edit'])
 const messageModel = defineModel({ type: String, default: '' })
 const projectModel = defineModel('projectId', { default: null })
 const message = messageModel
@@ -256,7 +280,11 @@ const resizeTextarea = () => {
   textarea.style.height = `${Math.min(140, Math.max(36, contentHeight))}px`
 }
 
-const compressImage = file => new Promise(resolve => {
+const compressImage = file => {
+  if (!/^image\/(jpeg|png|webp)$/i.test(file.type) || file.size <= 350 * 1024) {
+    return Promise.resolve(file)
+  }
+  return new Promise(resolve => {
   const reader = new FileReader()
   reader.onload = event => {
     const image = new Image()
@@ -286,20 +314,59 @@ const compressImage = file => new Promise(resolve => {
   }
   reader.onerror = () => resolve(file)
   reader.readAsDataURL(file)
-})
-
-const addAttachment = async file => {
-  if (!file) return
-  const isImage = file.type.startsWith('image/')
-  const processedFile = isImage ? await compressImage(file) : file
-  attachments.value.push({
-    key: `${Date.now()}-${Math.random()}`,
-    file: processedFile,
-    name: file.name,
-    isImage,
-    preview: isImage ? URL.createObjectURL(processedFile) : null,
-    uploaded: null,
   })
+}
+
+const uploadAttachmentBatch = async items => {
+  if (!items.length) return
+  items.forEach(item => {
+    item.uploadStatus = 'uploading'
+    item.uploadError = null
+  })
+  const formData = new FormData()
+  items.forEach(item => formData.append('files[]', item.file))
+  const request = axios.post('/api/attachments', formData)
+    .then(response => {
+      const uploadedFiles = response.data || []
+      if (uploadedFiles.length !== items.length) throw new Error('Incomplete attachment upload response')
+      items.forEach((item, index) => {
+        item.uploaded = uploadedFiles[index]
+        item.uploadStatus = 'done'
+      })
+    })
+    .catch(error => {
+      items.forEach(item => {
+        if (!item.uploaded) {
+          item.uploadStatus = 'error'
+          item.uploadError = error
+        }
+      })
+      throw error
+    })
+  items.forEach(item => { item.uploadPromise = request })
+  return request
+}
+
+const addAttachments = async files => {
+  const validFiles = Array.from(files || []).filter(Boolean)
+  if (!validFiles.length) return
+  const newItems = await Promise.all(validFiles.map(async file => {
+    const isImage = file.type.startsWith('image/')
+    const processedFile = isImage ? await compressImage(file) : file
+    return {
+      key: `${Date.now()}-${Math.random()}`,
+      file: processedFile,
+      name: file.name,
+      isImage,
+      preview: isImage ? URL.createObjectURL(processedFile) : null,
+      uploaded: null,
+      uploadStatus: 'pending',
+      uploadPromise: null,
+      uploadError: null,
+    }
+  }))
+  attachments.value.push(...newItems)
+  uploadAttachmentBatch(newItems).catch(() => {})
 }
 
 const isDragging = ref(false)
@@ -331,13 +398,11 @@ const handleDrop = async (e) => {
   dragCounter = 0
   isDragging.value = false
   const files = Array.from(e.dataTransfer?.files || [])
-  for (const file of files) {
-    await addAttachment(file)
-  }
+  await addAttachments(files)
 }
 
 const handleFileSelection = async event => {
-  for (const file of Array.from(event.target.files || [])) await addAttachment(file)
+  await addAttachments(event.target.files)
   event.target.value = ''
 }
 
@@ -346,14 +411,12 @@ const handlePaste = async event => {
   const files = items.map(item => item.getAsFile()).filter(Boolean)
   if (!files.length) return
   event.preventDefault()
-  for (const [index, file] of files.entries()) {
-    if (file.type.startsWith('image/')) {
-      const extension = file.type.split('/')[1] || 'png'
-      await addAttachment(new File([file], file.name || `pasted_image_${Date.now()}_${index + 1}.${extension}`, { type: file.type }))
-    } else {
-      await addAttachment(file)
-    }
-  }
+  const namedFiles = files.map((file, index) => {
+    if (!file.type.startsWith('image/')) return file
+    const extension = file.type.split('/')[1] || 'png'
+    return new File([file], file.name || `pasted_image_${Date.now()}_${index + 1}.${extension}`, { type: file.type })
+  })
+  await addAttachments(namedFiles)
 }
 
 const removeAttachment = index => {
@@ -366,6 +429,12 @@ const escapeHtml = value => String(value || '')
   .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
 
 const buildAttachmentHtml = async () => {
+  const inFlight = [...new Set(attachments.value
+    .filter(attachment => !attachment.uploaded && attachment.uploadStatus === 'uploading')
+    .map(attachment => attachment.uploadPromise)
+    .filter(Boolean))]
+  if (inFlight.length) await Promise.allSettled(inFlight)
+
   const pendingAttachments = attachments.value.filter(attachment => !attachment.uploaded)
   if (pendingAttachments.length) {
     const formData = new FormData()
@@ -377,6 +446,7 @@ const buildAttachmentHtml = async () => {
     }
     pendingAttachments.forEach((attachment, index) => {
       attachment.uploaded = uploadedFiles[index]
+      attachment.uploadStatus = 'done'
     })
   }
 
@@ -676,6 +746,15 @@ onUnmounted(() => {
   }
 })
 
-const focus = () => nextTick(() => textareaRef.value?.focus())
+const focus = () => {
+  nextTick(() => {
+    const el = textareaRef.value
+    if (!el) return
+    el.focus()
+    const len = el.value.length
+    el.setSelectionRange(len, len)
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  })
+}
 defineExpose({ focus, buildAttachmentHtml, clearAttachments })
 </script>

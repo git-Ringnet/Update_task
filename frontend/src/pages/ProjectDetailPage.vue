@@ -684,7 +684,8 @@
                 <!-- Attachments -->
                 <div v-if="getTaskAttachments(t).length > 0" class="flex flex-wrap items-end gap-1.5 mt-2">
                   <template v-for="(att, attIdx) in getTaskAttachments(t)" :key="`${t.id}-att-${attIdx}`">
-                    <button v-if="att.type === 'image'" type="button" @click.stop="openImageModal(att.src)"
+                    <button v-if="att.type === 'image'" type="button"
+                      @click.stop="openImageModal(att.src, getTaskOnlyImages(t), getTaskOnlyImages(t).findIndex(img => img.src === att.src))"
                       class="w-10 h-10 rounded border border-gray-200 overflow-hidden bg-gray-50 cursor-pointer hover:ring-2 hover:ring-emerald-300 transition-all flex-shrink-0"
                       :title="'Xem ảnh: ' + att.name">
                       <img :src="att.src" class="w-full h-full object-cover" alt="" loading="lazy" />
@@ -1148,8 +1149,8 @@
     <div v-if="activePreviewImage"
       class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
       @click="activePreviewImage = null">
-      <div class="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl shadow-2xl" @click.stop>
-        <img :src="activePreviewImage" class="max-w-full max-h-[85vh] object-contain rounded-2xl" />
+      <div class="relative w-[min(92vw,1100px)] h-[min(72vh,720px)] overflow-hidden rounded-2xl bg-slate-900 shadow-2xl" @click.stop>
+        <img :src="activePreviewImage" class="w-full h-full object-contain" />
         <button @click="activePreviewImage = null" type="button"
           class="absolute top-3 right-3 w-9 h-9 bg-slate-900/80 text-white rounded-full flex items-center justify-center cursor-pointer">
           <i class="fa-solid fa-xmark text-lg"></i>
@@ -1162,14 +1163,55 @@
       enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in"
       leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
       <div v-if="previewModalImageUrl" @click="closeImageModal"
-        class="fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 cursor-zoom-out">
-        <div class="relative max-w-5xl max-h-[90vh] flex items-center justify-center" @click.stop>
-          <img :src="previewModalImageUrl"
-            class="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-white/20" />
-          <button type="button" @click="closeImageModal"
-            class="absolute -top-4 -right-4 w-9 h-9 rounded-full bg-white text-gray-800 hover:bg-rose-600 hover:text-white flex items-center justify-center font-bold text-base shadow-xl transition-all cursor-pointer">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
+        class="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 select-none">
+        <div class="relative w-[min(92vw,1100px)] h-[min(72vh,720px)] flex flex-col items-center justify-center" @click.stop
+          @touchstart="handleModalTouchStart" @touchend="handleModalTouchEnd">
+          
+          <!-- Top Bar: Image count badge + Close button -->
+          <div class="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-auto">
+            <div v-if="previewModalImages.length > 1"
+              class="px-3 py-1 bg-black/60 backdrop-blur-md text-white/90 text-xs sm:text-sm font-bold rounded-full border border-white/10 shadow-lg">
+              {{ previewModalIndex + 1 }} / {{ previewModalImages.length }}
+            </div>
+            <div v-else></div>
+
+            <button type="button" @click="closeImageModal"
+              class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/20 hover:bg-rose-600 text-white flex items-center justify-center font-bold text-sm sm:text-base backdrop-blur-md shadow-xl transition-all cursor-pointer border border-white/20"
+              title="Đóng (Esc)">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <!-- Main Image and Prev/Next Navigation -->
+          <div class="relative w-full h-full flex items-center justify-center rounded-2xl overflow-hidden bg-slate-900">
+            <img :src="previewModalImageUrl"
+              class="w-full h-full object-contain transition-opacity duration-150" />
+
+            <!-- PREV BUTTON (shown when > 1 image) -->
+            <button v-if="previewModalImages.length > 1" type="button" @click="prevPreviewImage"
+              class="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center font-bold text-base sm:text-lg backdrop-blur-md shadow-xl transition-all cursor-pointer border border-white/20 hover:scale-110 active:scale-95"
+              title="Ảnh trước (Phím ←)">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+
+            <!-- NEXT BUTTON (shown when > 1 image) -->
+            <button v-if="previewModalImages.length > 1" type="button" @click="nextPreviewImage"
+              class="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center font-bold text-base sm:text-lg backdrop-blur-md shadow-xl transition-all cursor-pointer border border-white/20 hover:scale-110 active:scale-95"
+              title="Ảnh tiếp theo (Phím →)">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+
+          <!-- Thumbnails / Dots strip at bottom -->
+          <div v-if="previewModalImages.length > 1" class="flex items-center justify-center gap-2 mt-4 max-w-full overflow-x-auto py-1 px-2">
+            <button v-for="(pImg, pIdx) in previewModalImages" :key="'thumb-' + pIdx"
+              type="button" @click="previewModalIndex = pIdx"
+              class="w-10 h-10 rounded-lg overflow-hidden border-2 transition-all cursor-pointer flex-shrink-0"
+              :class="pIdx === previewModalIndex ? 'border-emerald-400 scale-110 shadow-lg ring-2 ring-emerald-400/50' : 'border-white/30 opacity-60 hover:opacity-100'">
+              <img :src="pImg.src || pImg.url || pImg" class="w-full h-full object-cover" />
+            </button>
+          </div>
+
         </div>
       </div>
     </transition>
@@ -1555,13 +1597,11 @@ const cancelReply = () => {
 }
 const handleReplyToTask = (task) => {
   replyingToLog.value = task
-  // A reply belongs to the same stage as the activity being replied to.
-  // Set it explicitly so an earlier form selection cannot redirect the update
-  // into another (including completed) stage.
+  // Keep the current activity view intact while replying. The target milestone
+  // is remembered only for saving the reply; changing the selected stage here
+  // hides comment cards because stage lists contain tasks only.
   const replyMilestoneId = task?.milestone_id ?? null
   newStageTaskMilestoneId.value = replyMilestoneId
-  selectedTargetMilestoneId.value = replyMilestoneId
-  isStartStageSelected.value = replyMilestoneId === null
   isInlineFormOpen.value = true
   nextTick(() => {
     stageTaskTitleInputRef.value?.focus()
@@ -1657,9 +1697,7 @@ const addFileToAttachments = async (file) => {
 const onFileSelected = async (e) => {
   const files = e.target.files
   if (!files || files.length === 0) return
-  for (const f of Array.from(files)) {
-    await addFileToAttachments(f)
-  }
+  await Promise.all(Array.from(files).map(addFileToAttachments))
   e.target.value = ''
 }
 
@@ -1686,7 +1724,11 @@ const readFileAsDataUrl = (file) => new Promise((resolve) => {
   reader.readAsDataURL(file)
 })
 
-const compressImageFile = (file) => new Promise((resolve) => {
+const compressImageFile = (file) => {
+  if (!/^image\/(jpeg|png|webp)$/i.test(file.type) || file.size <= 350 * 1024) {
+    return Promise.resolve(file)
+  }
+  return new Promise((resolve) => {
   const reader = new FileReader()
   reader.onload = (e) => {
     const img = new Image()
@@ -1720,7 +1762,8 @@ const compressImageFile = (file) => new Promise((resolve) => {
     img.src = e.target.result
   }
   reader.readAsDataURL(file)
-})
+  })
+}
 
 const readAttachmentDataUrl = async (att) => {
   if (att.dataUrl) return att.dataUrl
@@ -1876,14 +1919,69 @@ const onTextareaPaste = async (e) => {
 }
 
 // IMAGE LIGHTBOX PREVIEW MODAL STATE & HANDLERS
-const previewModalImageUrl = ref(null)
+const previewModalImages = ref([])
+const previewModalIndex = ref(0)
+const previewModalImageUrl = computed(() => {
+  if (!previewModalImages.value || previewModalImages.value.length === 0) return null
+  const item = previewModalImages.value[previewModalIndex.value]
+  return typeof item === 'string' ? item : (item?.src || item?.url || null)
+})
 
-const openImageModal = (url) => {
-  if (url) previewModalImageUrl.value = url
+const openImageModal = (url, imagesList = [], initialIndex = 0) => {
+  if (imagesList && imagesList.length > 0) {
+    previewModalImages.value = imagesList
+    const foundIdx = initialIndex >= 0 ? initialIndex : imagesList.findIndex(img => (img.src || img.url || img) === url)
+    previewModalIndex.value = Math.max(0, foundIdx)
+  } else if (url) {
+    previewModalImages.value = [{ src: url, name: 'Ảnh đính kèm' }]
+    previewModalIndex.value = 0
+  }
 }
 
 const closeImageModal = () => {
-  previewModalImageUrl.value = null
+  previewModalImages.value = []
+  previewModalIndex.value = 0
+}
+
+const prevPreviewImage = (e) => {
+  if (e) e.stopPropagation()
+  if (previewModalImages.value.length > 1) {
+    previewModalIndex.value = (previewModalIndex.value - 1 + previewModalImages.value.length) % previewModalImages.value.length
+  }
+}
+
+const nextPreviewImage = (e) => {
+  if (e) e.stopPropagation()
+  if (previewModalImages.value.length > 1) {
+    previewModalIndex.value = (previewModalIndex.value + 1) % previewModalImages.value.length
+  }
+}
+
+let modalTouchStartX = 0
+let modalTouchEndX = 0
+
+const handleModalTouchStart = (e) => {
+  if (e.touches && e.touches[0]) {
+    modalTouchStartX = e.touches[0].clientX
+  }
+}
+
+const handleModalTouchEnd = (e) => {
+  if (e.changedTouches && e.changedTouches[0]) {
+    modalTouchEndX = e.changedTouches[0].clientX
+    const diff = modalTouchEndX - modalTouchStartX
+    if (Math.abs(diff) > 40) {
+      if (diff < 0) {
+        nextPreviewImage()
+      } else {
+        prevPreviewImage()
+      }
+    }
+  }
+}
+
+const getTaskOnlyImages = (task) => {
+  return getTaskAttachments(task).filter(a => a.type === 'image')
 }
 
 const handleActivityContainerClick = (e) => {
@@ -2584,13 +2682,30 @@ const openEditStageTaskForm = (task) => {
   clearAttachedFiles()
   editingTaskId.value = task.id
   attachedFiles.value = parseAttachmentsFromTitle(task.title)
-  newStageTaskTitle.value = stripAttachmentsFromTitle(task.title)
+
+  // 1. Check if the task/comment has reply info
+  const replyInfo = parseReplyInfo(task.title)
+  if (replyInfo) {
+    replyingToLog.value = {
+      id: replyInfo.id,
+      creator: { name: replyInfo.user },
+      user: { name: replyInfo.user },
+      title: replyInfo.text,
+      milestone_id: task.milestone_id
+    }
+  } else {
+    replyingToLog.value = null
+  }
+
+  // 2. Strip reply info and attachment HTML so only clean text goes into textarea
+  newStageTaskTitle.value = parseCommentText(task.title)
   newStageTaskAssignee.value = task.assignee_id ? String(task.assignee_id) : ''
   newStageTaskTaggedUsers.value = []
   if (task.assignee_id) {
     newStageTaskTaggedUsers.value.push(String(task.assignee_id))
   }
-  const matches = [...(task.title || '').matchAll(/@([^\s@,.:;!?()\n]+)/g)]
+  const cleanTitle = parseCommentText(task.title)
+  const matches = [...(cleanTitle || '').matchAll(/@([^\s@,.:;!?()\n]+)/g)]
   matches.forEach(m => {
     const term = m[1]
     const u = users.value.find(user => removeVietnameseAccents(user.name) === removeVietnameseAccents(term))
@@ -2781,7 +2896,7 @@ const getTaggedUsers = (task) => {
     taggedList.push({ id, name })
   }
 
-  // Preserve the assigned person
+  // 1. Preserve explicit assigned person
   if (task.assignee?.id) {
     addTarget(`user-${task.assignee.id}`, task.assignee.name)
   } else if (task.assignee_id && users.value) {
@@ -2789,28 +2904,56 @@ const getTaggedUsers = (task) => {
     if (u) addTarget(`user-${u.id}`, u.name)
   }
 
-  if (task.title) {
-    const titleLower = task.title.toLowerCase()
+  // 2. Extract mentions from title / content (excluding reply quote block)
+  const rawText = task.title || task.content || ''
+  if (rawText) {
+    // Strip reply quotes to avoid tagging quoted author
+    const cleanContent = String(rawText).replace(/^\[reply:\{.*?\}\]\s*/i, '')
+    const cleanLower = cleanContent.toLowerCase()
 
-    // 1. Check @all
-    if (titleLower.includes('@all')) {
+    // 2.1 Check @all
+    if (cleanLower.includes('@all')) {
       addTarget('all', 'all')
     }
 
-    // 2. Check group mentions
-    if (mentionGroups.value) {
+    // 2.2 Check group mentions
+    if (mentionGroups.value && mentionGroups.value.length > 0) {
       mentionGroups.value.forEach(g => {
-        if (g.name && titleLower.includes(`@${g.name.toLowerCase()}`)) {
-          addTarget(`group-${g.id}`, g.name)
+        if (g.name) {
+          const gNameLower = g.name.toLowerCase().replace(/^@/, '')
+          if (cleanLower.includes(`@${gNameLower}`)) {
+            addTarget(`group-${g.id}`, g.name.replace(/^@/, ''))
+          }
         }
       })
     }
 
-    // 3. Check user mentions
-    if (users.value) {
+    // 2.3 Check user mentions
+    if (users.value && users.value.length > 0) {
       users.value.forEach(u => {
-        if (u.name && titleLower.includes(`@${u.name.toLowerCase()}`)) {
-          addTarget(`user-${u.id}`, u.name)
+        if (u.name) {
+          const uNameLower = u.name.toLowerCase()
+          if (cleanLower.includes(`@${uNameLower}`)) {
+            addTarget(`user-${u.id}`, u.name)
+          }
+        }
+      })
+    }
+
+    // 2.4 Fallback regex match for any other @mentions in text (e.g. @Ân, @Hiếu, @Công)
+    const mentionMatches = cleanContent.match(/@([^\s@,.:;!?()<>"'/]+)/g)
+    if (mentionMatches && users.value && users.value.length > 0) {
+      mentionMatches.forEach(m => {
+        const term = m.substring(1).trim().toLowerCase()
+        if (term && term !== 'all') {
+          const matchedUser = users.value.find(user => {
+            if (!user.name) return false
+            const userNorm = user.name.toLowerCase()
+            return userNorm === term || removeVietnameseAccents(userNorm) === removeVietnameseAccents(term)
+          })
+          if (matchedUser) {
+            addTarget(`user-${matchedUser.id}`, matchedUser.name)
+          }
         }
       })
     }
@@ -3707,24 +3850,38 @@ const handleAddStageTaskSubmit = async () => {
 
   if (editingTaskId.value) {
     try {
-      if (!isServerTaskId(editingTaskId.value)) {
-        toast.error('Không thể lưu hoạt động này. Vui lòng tải lại trang.')
-        return
+      const isCommentCard = String(editingTaskId.value).startsWith('comment-')
+      const rawId = isCommentCard ? String(editingTaskId.value).replace('comment-', '') : editingTaskId.value
+
+      if (isCommentCard) {
+        await axios.put(`/api/comments/${rawId}`, {
+          content: titleText || ' '
+        })
+        toast.success('Đã cập nhật thông tin hoạt động!')
+        refreshAllData()
+        broadcastLocalUpdate({ projectId: projectId.value, commentId: rawId })
+        clearAttachedFiles()
+      } else {
+        if (!isServerTaskId(editingTaskId.value)) {
+          toast.error('Không thể lưu hoạt động này. Vui lòng tải lại trang.')
+          return
+        }
+        await axios.put(`/api/tasks/${editingTaskId.value}`, {
+          milestone_id: typeof msId === 'number' ? msId : null,
+          assignee_id: assignedUserId,
+          title: titleText || ' ',
+          status: 'todo',
+          priority: 'medium',
+          due_date: selectedDueDate,
+          health: newStageTaskHealth.value,
+          tagged_user_ids: finalTaggedUserIds.map(Number),
+          attachment_ids: uploadedAttachmentIds
+        })
+        toast.success('Đã cập nhật thông tin hoạt động!')
+        refreshAllData()
+        broadcastLocalUpdate({ projectId: projectId.value, taskId: editingTaskId.value })
+        clearAttachedFiles()
       }
-      await axios.put(`/api/tasks/${editingTaskId.value}`, {
-        milestone_id: typeof msId === 'number' ? msId : null,
-        assignee_id: assignedUserId,
-        title: titleText || ' ',
-        status: 'todo',
-        priority: 'medium',
-        due_date: selectedDueDate,
-        health: newStageTaskHealth.value,
-        tagged_user_ids: finalTaggedUserIds.map(Number),
-        attachment_ids: uploadedAttachmentIds
-      })
-      toast.success('Đã cập nhật thông tin hoạt động!')
-      refreshAllData()
-      clearAttachedFiles()
     } catch (err) {
       console.error('Failed to update task:', err)
       toast.error('Cập nhật hoạt động thất bại!')
@@ -3786,6 +3943,7 @@ const handleAddStageTaskSubmit = async () => {
 
     toast.success('Đã cập nhật hoạt động mới!')
     refreshAllData()
+    broadcastLocalUpdate({ projectId: projectId.value, taskId: created.id })
     clearAttachedFiles()
   } catch (err) {
     if (!project.value.tasks) project.value.tasks = []
@@ -3799,6 +3957,7 @@ const handleAddStageTaskSubmit = async () => {
     }
 
     toast.success('Đã cập nhật hoạt động!')
+    broadcastLocalUpdate({ projectId: projectId.value })
   } finally {
     editingTaskId.value = null
     newStageTaskTitle.value = ''
@@ -3820,7 +3979,15 @@ const fetchProjectDetail = async () => {
   if (!pId) return
   const res = await axios.get(`/api/projects/${pId}`)
   if (res.data) {
-    project.value = res.data
+    const nextProject = res.data
+    const tasks = Array.isArray(nextProject.tasks) ? nextProject.tasks : []
+    // Tasks are transferred once by the API, then referenced under their
+    // milestone locally. Previously the response serialized every task twice.
+    nextProject.milestones = (nextProject.milestones || []).map(milestone => ({
+      ...milestone,
+      tasks: tasks.filter(task => String(task.milestone_id) === String(milestone.id)),
+    }))
+    project.value = nextProject
     if (effectiveMilestones.value.length > 0 && !selectedTargetMilestoneId.value) {
       selectedTargetMilestoneId.value = effectiveMilestones.value[0].id
     }
@@ -3848,9 +4015,32 @@ const fetchComments = async () => {
   const pId = projectId.value
   if (!pId) return
   try {
-    const res = await axios.get('/api/comments', { params: { project_id: pId } })
+    const res = await axios.get('/api/comments', { params: { project_id: pId, limit: 100 } })
     activityLogs.value = res.data
   } catch (err) { }
+}
+
+let latestCommentsRequest = null
+const fetchLatestComments = () => {
+  if (latestCommentsRequest || !projectId.value) return latestCommentsRequest
+  if (activityLogs.value.length === 0) {
+    latestCommentsRequest = fetchComments().finally(() => {
+      latestCommentsRequest = null
+    })
+    return latestCommentsRequest
+  }
+  const afterId = Math.max(...activityLogs.value.map(comment => Number(comment.id) || 0))
+  latestCommentsRequest = axios.get('/api/comments', {
+    params: { project_id: projectId.value, after_id: afterId, limit: 30 }
+  }).then(res => {
+    const incoming = res.data || []
+    if (!incoming.length) return
+    const incomingIds = new Set(incoming.map(comment => comment.id))
+    activityLogs.value = [...incoming, ...activityLogs.value.filter(comment => !incomingIds.has(comment.id))]
+  }).catch(() => { }).finally(() => {
+    latestCommentsRequest = null
+  })
+  return latestCommentsRequest
 }
 
 const refreshAllData = async () => {
@@ -3879,6 +4069,7 @@ const loadAllData = async () => {
   try {
     await Promise.all([
       fetchProjectDetail(),
+      fetchUsers(),
       fetchMentionGroups(),
       fetchComments()
     ])
@@ -3941,6 +4132,7 @@ const handleAddMilestone = async () => {
     isAddMilestoneOpen.value = false
 
     await refreshAllData()
+    broadcastLocalUpdate({ projectId: projectId.value })
 
     // Find newly created milestone and automatically SELECT it!
     const allMs = effectiveMilestones.value
@@ -3970,6 +4162,7 @@ const handleAddMilestone = async () => {
       selectedMilestone.value = createdMs
       selectedTargetMilestoneId.value = createdMs.id
       toast.success('Đã thêm chặng mới!')
+      broadcastLocalUpdate({ projectId: projectId.value })
     }
     isAddMilestoneOpen.value = false
 
@@ -4010,6 +4203,7 @@ const handleDeleteTask = async (id) => {
       }
     }
     toast.success('Đã xóa hoạt động!')
+    broadcastLocalUpdate({ projectId: projectId.value, deletedId: id })
   } catch (err) {
     toast.error(err.response?.data?.message || err.message || 'Xóa hoạt động thất bại.')
   }
@@ -4030,6 +4224,7 @@ const handleDeleteProject = async () => {
   try {
     await axios.delete(`/api/projects/${projectId.value}`)
     toast.success('Xóa dự án thành công!')
+    broadcastLocalUpdate({ projectId: projectId.value, deletedProject: true })
     router.push('/projects')
   } catch (err) {
     toast.error('Không thể xóa dự án.')
@@ -4041,6 +4236,7 @@ const handleUpdateProjectSubmit = async (data) => {
     await axios.put(`/api/projects/${projectId.value}`, data)
     toast.success('Cập nhật dự án thành công!')
     await refreshAllData()
+    broadcastLocalUpdate({ projectId: projectId.value })
     isModalOpen.value = false
   } catch (err) {
     toast.error('Cập nhật dự án thất bại!')
@@ -4105,11 +4301,22 @@ const formatTimeOnly = (dateStr) => {
 
 
 const handleKeydown = (e) => {
-  if (e.key === 'Escape' || e.code === 'Escape') {
-    if (previewModalImageUrl.value) {
-      previewModalImageUrl.value = null
+  if (previewModalImageUrl.value) {
+    if (e.key === 'ArrowLeft' || e.code === 'ArrowLeft') {
+      prevPreviewImage()
       return
     }
+    if (e.key === 'ArrowRight' || e.code === 'ArrowRight') {
+      nextPreviewImage()
+      return
+    }
+    if (e.key === 'Escape' || e.code === 'Escape') {
+      closeImageModal()
+      return
+    }
+  }
+
+  if (e.key === 'Escape' || e.code === 'Escape') {
     if (isInlineFormOpen.value) {
       isInlineFormOpen.value = false
       editingTaskId.value = null
@@ -4129,6 +4336,45 @@ const handleVisibilityOrFocus = () => {
   }
 }
 
+let realtimeBroadcastChannel = null
+const realtimeSourceId = `project-detail-${Date.now()}-${Math.random()}`
+
+const handleRealtimeChannelMessage = (event) => {
+  const data = event.data
+  if (!data) return
+  if (data.sourceId === realtimeSourceId) return
+  if (data.type === 'PUSH_RECEIVED' || data.type === 'NOTIFICATION_CLICKED' || data.type === 'PROJECT_UPDATED') {
+    const targetProjectId = data.payload?.project_id || data.payload?.projectId || data.data?.projectId || data.projectId
+    if (!targetProjectId || String(targetProjectId) === String(projectId.value)) {
+      refreshAllData()
+    }
+  }
+}
+
+const handleServiceWorkerMessage = (event) => {
+  const data = event.data
+  if (!data) return
+  if (data.type === 'PUSH_RECEIVED' || data.type === 'NOTIFICATION_CLICKED' || data.type === 'PROJECT_UPDATED') {
+    const targetProjectId = data.payload?.project_id || data.payload?.projectId || data.data?.projectId || data.projectId
+    if (!targetProjectId || String(targetProjectId) === String(projectId.value)) {
+      refreshAllData()
+    }
+  }
+}
+
+const broadcastLocalUpdate = (payload = {}) => {
+  try {
+    const ch = new BroadcastChannel('project_realtime_channel')
+    ch.postMessage({
+      type: 'PROJECT_UPDATED',
+      sourceId: realtimeSourceId,
+      projectId: projectId.value,
+      ...payload
+    })
+    ch.close()
+  } catch (e) { }
+}
+
 onMounted(() => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
@@ -4137,12 +4383,26 @@ onMounted(() => {
   window.addEventListener('scroll', handleDetailScroll, { passive: true })
   accessCheckInterval = window.setInterval(verifyProjectAccess, 15000)
 
-  // Realtime polling matching ViewListPage (every 4s)
+  // A project update can be either a comment or a task. Poll both while this
+  // detail view is visible so updates from another account do not wait for a
+  // focus/click event (push remains an immediate fast path).
   pollTimer = window.setInterval(() => {
-    if (projectId.value && !isDetailLoading.value && !isSubmittingStageTask.value && !isRenamingSaving.value) {
-      refreshAllData()
+    if (document.visibilityState === 'visible' && projectId.value && !isDetailLoading.value && !isSubmittingStageTask.value && !isRenamingSaving.value) {
+      fetchLatestComments()
+      fetchProjectDetail()
     }
-  }, 4000)
+  }, 5000)
+
+  // 1. Listen on BroadcastChannel for instant cross-tab and SW push sync
+  try {
+    realtimeBroadcastChannel = new BroadcastChannel('project_realtime_channel')
+    realtimeBroadcastChannel.addEventListener('message', handleRealtimeChannelMessage)
+  } catch (e) { }
+
+  // 2. Listen on Service Worker postMessages
+  if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage)
+  }
 
   document.addEventListener('visibilitychange', handleVisibilityOrFocus)
   window.addEventListener('focus', handleVisibilityOrFocus)
@@ -4155,6 +4415,17 @@ onUnmounted(() => {
   window.removeEventListener('scroll', handleDetailScroll)
   if (accessCheckInterval) window.clearInterval(accessCheckInterval)
   if (pollTimer) window.clearInterval(pollTimer)
+
+  if (realtimeBroadcastChannel) {
+    realtimeBroadcastChannel.removeEventListener('message', handleRealtimeChannelMessage)
+    realtimeBroadcastChannel.close()
+    realtimeBroadcastChannel = null
+  }
+
+  if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+    navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage)
+  }
+
   document.removeEventListener('visibilitychange', handleVisibilityOrFocus)
   window.removeEventListener('focus', handleVisibilityOrFocus)
 })

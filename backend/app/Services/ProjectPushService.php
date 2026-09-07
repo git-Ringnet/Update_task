@@ -138,6 +138,8 @@ class ProjectPushService
             'body' => $body,
             'icon' => $icon,
             'url' => '/projects/'.$project->id,
+            'project_id' => $project->id,
+            'comment_id' => $comment->id,
             'tag' => 'project-'.$project->id,
         ], JSON_UNESCAPED_UNICODE);
 
@@ -171,7 +173,10 @@ class ProjectPushService
 
             foreach ($webPush->flush() as $report) {
                 $statusCode = $report->getResponse()?->getStatusCode();
-                if ($report->isSubscriptionExpired() || in_array($statusCode, [400, 403, 404, 410])) {
+                // WNS can report an invalid/expired browser subscription as
+                // 401 rather than 410. Keeping it makes every later update pay
+                // for another request that can never succeed.
+                if ($report->isSubscriptionExpired() || in_array($statusCode, [400, 401, 403, 404, 410])) {
                     PushSubscription::where('endpoint', $report->getEndpoint())->delete();
                 }
                 if (!$report->isSuccess()) {

@@ -16,6 +16,7 @@ export const useProjectStore = defineStore('project', {
     users: [],
     pinningProjectIds: {},
     lastRequestId: 0,
+    lastAppliedRequestId: 0,
     listSearchQuery: '',
     activePage: 'home',
     participantUserId: null,
@@ -32,15 +33,15 @@ export const useProjectStore = defineStore('project', {
       this.searchQuery = ''
       this.isLoading = false
       this.pinningProjectIds = {}
+      this.lastAppliedRequestId = 0
     },
 
     async fetchProjects(isSilent = false) {
       this.lastRequestId = (this.lastRequestId || 0) + 1
       const currentId = this.lastRequestId
 
-      if (!isSilent) {
+      if (!isSilent && this.projects.length === 0) {
         this.isLoading = true
-        this.projects = []
       }
       try {
         const queryToUse = this.activePage === 'list' ? this.listSearchQuery : this.searchQuery
@@ -54,9 +55,10 @@ export const useProjectStore = defineStore('project', {
           params.participant_id = this.participantUserId
         }
         const res = await axios.get('/api/projects', { params })
-        if (currentId !== this.lastRequestId) {
+        if (currentId < (this.lastAppliedRequestId || 0)) {
           return
         }
+        this.lastAppliedRequestId = currentId
         const rawProjects = res.data.projects || []
         const incoming = rawProjects.map(p => ({
           ...p,

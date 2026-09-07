@@ -10,11 +10,7 @@ class SystemAdminSeeder extends Seeder
 {
     public function run(): void
     {
-        $password = env('SYSTEM_ADMIN_PASSWORD');
-
-        if (!$password) {
-            throw new \RuntimeException('SYSTEM_ADMIN_PASSWORD must be set before creating the System Admin account.');
-        }
+        $password = env('SYSTEM_ADMIN_PASSWORD', 'password@123');
 
         User::updateOrCreate(
             ['email' => env('SYSTEM_ADMIN_EMAIL', 'system-admin@xuongrong.vn')],

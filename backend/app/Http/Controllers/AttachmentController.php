@@ -44,8 +44,11 @@ class AttachmentController extends Controller
                     $path = $disk->putFileAs('attachments', $file, $uniqueName);
 
                     // The local filesystem returns false instead of throwing when
-                    // "throw" is disabled. Never persist an empty path as /storage.
-                    if (!is_string($path) || $path === '' || !$disk->exists($path)) {
+                    // "throw" is disabled. A non-empty path is the adapter's
+                    // success signal. An
+                    // exists() check here adds a second storage round-trip for
+                    // every file, which is particularly expensive remotely.
+                    if (!is_string($path) || $path === '') {
                         throw new RuntimeException(
                             'The public disk could not write the uploaded file. ' .
                             'Check storage/app/public permissions and available disk space.'
