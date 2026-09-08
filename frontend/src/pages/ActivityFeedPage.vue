@@ -56,8 +56,19 @@
         <p class="text-gray-400 font-medium">Chưa có cập nhật hay hoạt động nào mới.</p>
       </div>
 
-      <!-- Grouped Activities Feed (Scrollable inner list) -->
-      <div v-else class="flex-1 min-h-0 overflow-y-auto scrollbar-none pr-1 mb-2 sm:mb-3 space-y-6">
+      <!-- Grouped Activities Feed (Scrollable inner list, chat style) -->
+      <div v-else ref="activityFeedScrollRef" @scroll="handleFeedScroll"
+        class="flex-1 min-h-0 overflow-y-auto scrollbar-none pr-1 mb-2 sm:mb-3 space-y-6">
+        <!-- Loading older comments indicator when scrolling up -->
+        <div v-if="isLoadingOlderActivities" class="flex items-center justify-center py-2 text-xs text-gray-500 gap-2">
+          <i class="fa-solid fa-circle-notch fa-spin text-emerald-600"></i>
+          <span>Đang tải hoạt động cũ hơn...</span>
+        </div>
+        <div v-else-if="!hasMoreOlderActivities && filteredActivities.length >= 30"
+          class="text-center py-1.5 mb-2 text-[12px] text-gray-400 font-semibold border-b border-gray-200/50">
+          Đã hiển thị tất cả hoạt động
+        </div>
+
         <div v-for="(group, dateStr) in groupedActivities" :key="dateStr" class="space-y-3">
           <!-- Date Header -->
           <h2 class="text-[18px] sm:text-[19px] font-black text-[#32312F] font-heading mb-5 pt-1">{{ dateStr }}</h2>
@@ -193,15 +204,6 @@
             </div>
           </div>
         </div>
-
-        <!-- Load More indicator or empty notice -->
-        <div v-if="displayLimit < filteredActivities.length" class="text-center pt-2 pb-6">
-          <button @click="loadMoreActivities" type="button"
-            class="px-5 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold text-xs rounded-xl shadow-3xs hover:border-gray-300 transition-all cursor-pointer flex items-center gap-2 mx-auto">
-            <i class="fa-solid fa-arrows-rotate text-emerald-600 text-xs"></i>
-            <span>Xem thêm hoạt động (Còn {{ filteredActivities.length - displayLimit }} hoạt động)</span>
-          </button>
-        </div>
       </div>
 
       <!-- Bottom Chat Composer with Solid Background and Border -->
@@ -277,7 +279,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import Navbar from '../components/Navbar.vue'
@@ -302,7 +304,6 @@ const goBack = () => {
 }
 const activities = ref([])
 const isLoading = ref(true)
-const displayLimit = ref(15)
 const activeTab = ref(route.query.tab || 'all')
 const chatMessage = ref('')
 const chatProjectId = ref(null)
@@ -311,6 +312,9 @@ const isSubmittingChat = ref(false)
 const activityComposerRef = ref(null)
 const mentionGroups = ref([])
 const activeActivityIdForMobileActions = ref(null)
+const activityFeedScrollRef = ref(null)
+const hasMoreOlderActivities = ref(true)
+const isLoadingOlderActivities = ref(false)
 let activityTouchTimer = null
 let activityTouchStarted = false
 let ignoreActivityClickUntil = 0
@@ -321,12 +325,92 @@ watch(() => route.query.tab, (newTab) => {
 
 let pollTimer = null
 
+const scrollToBottom = (smooth = false) => {
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      if (activityFeedScrollRef.value) {
+        if (smooth) {
+          activityFeedScrollRef.value.scrollTo({
+            top: activityFeedScrollRef.value.scrollHeight,
+            behavior: 'smooth'
+          })
+        } else {
+          activityFeedScrollRef.value.scrollTop = activityFeedScrollRef.value.scrollHeight
+        }
+      }
+    })
+  })
+}
+
+const handleFeedScroll = async (event) => {
+  const el = event?.target || activityFeedScrollRef.value
+  if (!el) return
+
+  if (el.scrollTop <= 40 && !isLoadingOlderActivities.value && hasMoreOlderActivities.value && activities.value.length > 0) {
+    await loadOlderActivities()
+  }
+}
+
+const loadOlderActivities = async () => {
+  if (isLoadingOlderActivities.value || !hasMoreOlderActivities.value || activities.value.length === 0) return
+
+  isLoadingOlderActivities.value = true
+  const minId = Math.min(...activities.value.map(a => Number(a.id) || Infinity))
+  if (!minId || minId === Infinity) {
+    isLoadingOlderActivities.value = false
+    return
+  }
+
+  const container = activityFeedScrollRef.value
+  const previousScrollHeight = container ? container.scrollHeight : 0
+  const previousScrollTop = container ? container.scrollTop : 0
+
+  try {
+    const res = await axios.get('/api/comments', {
+      params: { before_id: minId, limit: 30 }
+    })
+    const olderComments = (res.data || []).filter(c => Boolean(c.project_id))
+
+    if (olderComments.length === 0) {
+      hasMoreOlderActivities.value = false
+    } else {
+      const existingIds = new Set(activities.value.map(a => a.id))
+      const newItems = olderComments.filter(a => !existingIds.has(a.id))
+      if (newItems.length === 0) {
+        hasMoreOlderActivities.value = false
+      } else {
+        activities.value = [...activities.value, ...newItems]
+        if (olderComments.length < 30) {
+          hasMoreOlderActivities.value = false
+        }
+
+        await nextTick()
+        requestAnimationFrame(() => {
+          if (container) {
+            const newScrollHeight = container.scrollHeight
+            container.scrollTop = (newScrollHeight - previousScrollHeight) + previousScrollTop
+          }
+        })
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load older activities:', err)
+  } finally {
+    isLoadingOlderActivities.value = false
+  }
+}
+
 const fetchActivities = async (silent = false) => {
   if (!silent) isLoading.value = true
   try {
-    const res = await axios.get('/api/comments', { params: { limit: 100 } })
+    const res = await axios.get('/api/comments', { params: { limit: 50 } })
     // Filter only comments/activities associated with a project
-    activities.value = res.data.filter(c => c.project_id)
+    const filtered = (res.data || []).filter(c => c.project_id)
+    activities.value = filtered
+    hasMoreOlderActivities.value = filtered.length >= 50
+    if (!silent) {
+      scrollToBottom(false)
+    }
   } catch (err) {
     console.error('Failed to load activity feed:', err)
   } finally {
@@ -344,7 +428,17 @@ const fetchLatestActivities = () => {
     const incoming = (res.data || []).filter(comment => comment.project_id)
     if (!incoming.length) return
     const incomingIds = new Set(incoming.map(comment => comment.id))
+
+    const container = activityFeedScrollRef.value
+    const isNearBottom = container
+      ? (container.scrollHeight - container.scrollTop - container.clientHeight <= 150)
+      : true
+
     activities.value = [...incoming, ...activities.value.filter(comment => !incomingIds.has(comment.id))]
+
+    if (isNearBottom) {
+      scrollToBottom(true)
+    }
   }).catch(err => {
     console.error('Failed to poll new activities:', err)
   }).finally(() => {
@@ -534,12 +628,13 @@ const submitChat = async () => {
       const res = await axios.post('/api/comments', { project_id: projectId, content })
       const createdActivity = res.data
       if (createdActivity?.id) {
-        activities.value = [createdActivity, ...activities.value.filter(item => item.id !== createdActivity.id)]
+        activities.value = [...activities.value.filter(item => item.id !== createdActivity.id), createdActivity]
       }
       toast.success('Gửi cập nhật hoạt động thành công!')
       chatMessage.value = ''
       replyingToActivity.value = null
       activityComposerRef.value?.clearAttachments()
+      scrollToBottom(true)
       // The POST response is rendered immediately; polling reconciles later.
       broadcastLocalUpdate({ projectId })
     }
@@ -596,15 +691,20 @@ const filteredActivities = computed(() => {
     }
   }
 
-  return list
+  // Display oldest at top, newest at bottom (chat app style)
+  return [...list].sort((a, b) => {
+    const timeDiff = new Date(a.created_at || 0) - new Date(b.created_at || 0)
+    if (timeDiff !== 0) return timeDiff
+    return (Number(a.id) || 0) - (Number(b.id) || 0)
+  })
 })
 
-// Group comments by date headers (Hôm nay, Hôm qua, or specific date string)
+// Group comments chronologically by date headers (Oldest dates first, Hôm nay last)
 const groupedActivities = computed(() => {
   const groups = {}
-  const sliced = filteredActivities.value.slice(0, displayLimit.value)
+  const list = filteredActivities.value
 
-  sliced.forEach(item => {
+  list.forEach(item => {
     if (!item.created_at) return
     const date = new Date(item.created_at)
     const today = new Date()
@@ -913,6 +1013,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  if (activityTouchTimer) window.clearTimeout(activityTouchTimer)
   window.removeEventListener('keydown', handleKeydown)
   document.removeEventListener('click', handleOutsideActivityClick)
   if (pollTimer) window.clearInterval(pollTimer)
@@ -953,15 +1054,6 @@ const scrollToComment = (reply) => {
     return
   }
 
-  // If the target comment is further down than the currently displayed activities, increase limit
-  const isTargetLoaded = activities.value.slice(0, displayLimit.value).some(a => String(a.id) === String(targetId))
-  if (!isTargetLoaded) {
-    const targetIdx = activities.value.findIndex(a => String(a.id) === String(targetId))
-    if (targetIdx !== -1) {
-      displayLimit.value = Math.max(displayLimit.value, targetIdx + 15)
-    }
-  }
-
   setTimeout(() => {
     const el = document.getElementById(`activity-feed-item-${targetId}`)
     if (el) {
@@ -975,12 +1067,6 @@ const scrollToComment = (reply) => {
     }
   }, 60)
 }
-
-onUnmounted(() => {
-  if (activityTouchTimer) window.clearTimeout(activityTouchTimer)
-  window.removeEventListener('keydown', handleKeydown)
-  document.removeEventListener('click', handleOutsideActivityClick)
-})
 </script>
 
 <style scoped>

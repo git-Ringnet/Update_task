@@ -30,7 +30,7 @@
     </div>
 
     <!-- Main Composer Box (Integrated seamlessly into bottom of panel) -->
-    <div class="flex flex-col bg-transparent relative transition-all overflow-visible"
+    <div class="flex flex-col bg-transparent relative transition-all overflow-visible activity-composer"
       :class="{ 'ring-2 ring-emerald-500': isDragging }"
       @dragenter.prevent="handleDragEnter"
       @dragover.prevent="handleDragOver"
@@ -190,7 +190,8 @@
       </div>
 
       <!-- Textarea Input Area: inline with submit button for instant visibility on all devices -->
-      <div class="flex items-end gap-2 px-3.5 py-2 bg-[#ebe6df] rounded-b-[14px]">
+      <div class="flex items-end gap-2 px-3.5 py-2 bg-[#ebe6df] rounded-b-[14px] cursor-text"
+        @click="focusTextarea">
         <textarea ref="textareaRef"
           :value="messageModel"
           @input="syncInputState"
@@ -208,8 +209,7 @@
           name="chat_activity_message"
           id="activity-composer-textarea"
           :placeholder="editingComment ? 'Chỉnh sửa nội dung hoạt động...' : 'Báo thông tin cho đồng đội'"
-          :disabled="!projects.length"
-          class="flex-1 min-h-[36px] max-h-[140px] overflow-y-auto bg-transparent border-0 focus:ring-0 focus:outline-none text-[16px] sm:text-[18px] font-normal text-gray-900 resize-none p-0 placeholder-gray-500 leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed"
+          class="flex-1 min-h-[36px] max-h-[140px] overflow-y-auto bg-transparent border-0 focus:ring-0 focus:outline-none text-[16px] sm:text-[18px] font-normal text-gray-900 resize-none p-0 placeholder-gray-500 leading-relaxed"
           autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
           data-lpignore="true" data-1p-ignore="true" data-form-type="other" aria-autocomplete="none"></textarea>
         
@@ -756,6 +756,12 @@ onUnmounted(() => {
   clearAttachments()
 })
 
+const focusTextarea = (e) => {
+  if (e?.target !== textareaRef.value) {
+    textareaRef.value?.focus()
+  }
+}
+
 const focus = () => {
   nextTick(() => {
     const el = textareaRef.value
@@ -766,5 +772,5 @@ const focus = () => {
     el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   })
 }
-defineExpose({ focus, buildAttachmentHtml, clearAttachments })
+defineExpose({ focus, focusTextarea, buildAttachmentHtml, clearAttachments })
 </script>

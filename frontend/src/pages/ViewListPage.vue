@@ -1865,16 +1865,6 @@ const closeAllDropdowns = (e) => {
     isShortcutHintsOpen.value = false
   }
 
-  // Dismiss keyboard when tapping outside inputs on mobile
-  if (typeof window !== 'undefined' && window.innerWidth < 768 && e?.target) {
-    const activeEl = document.activeElement
-    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
-      if (!activeEl.contains(e.target) && !e.target.closest('input, textarea, [contenteditable="true"], .activity-composer, #activity-composer-textarea, button')) {
-        activeEl.blur()
-      }
-    }
-  }
-
   // A selection is only kept while the user is working in the project list or
   // its command bar. Clicking elsewhere cancels the selection and closes it.
   if (
@@ -2531,7 +2521,8 @@ const followingProjects = computed(() => {
 })
 
 const composerProjects = computed(() => {
-  const list = [...followingProjects.value]
+  const baseList = followingProjects.value.length > 0 ? followingProjects.value : projectStore.projects
+  const list = [...baseList]
   if (chatProjectId.value && !list.some(p => p.id === chatProjectId.value)) {
     const found = projectStore.projects.find(p => p.id === chatProjectId.value)
     if (found) list.unshift(found)
@@ -2539,13 +2530,11 @@ const composerProjects = computed(() => {
   return list
 })
 
-watch(() => followingProjects.value, (newProjects) => {
-  if (newProjects && newProjects.length > 0) {
-    if (!chatProjectId.value || !newProjects.some(p => p.id === chatProjectId.value)) {
-      if (chatProjectId.value && projectStore.projects.some(p => p.id === chatProjectId.value)) {
-        return
-      }
-      chatProjectId.value = newProjects[0].id
+watch(() => [followingProjects.value, projectStore.projects], ([newFollowing, allProjects]) => {
+  const available = (newFollowing && newFollowing.length > 0) ? newFollowing : allProjects
+  if (available && available.length > 0) {
+    if (!chatProjectId.value || !projectStore.projects.some(p => p.id === chatProjectId.value)) {
+      chatProjectId.value = available[0].id
     }
   } else {
     chatProjectId.value = null
