@@ -932,7 +932,7 @@ const onInputText = (projectId, event) => {
   // 2. Mention dropdown trigger
   const cursorPos = el?.selectionStart || text.length
   const textBeforeCursor = text.substring(0, cursorPos)
-  const match = textBeforeCursor.match(/@([^\s@]*)$/)
+  const match = textBeforeCursor.match(/@([^@\n]{0,30})$/)
 
   if (match) {
     activeMentionProjectId.value = projectId
@@ -995,7 +995,7 @@ const selectMentionUser = (projectId, user) => {
     const cursorPos = el?.selectionStart || text.length
     const textBeforeCursor = text.substring(0, cursorPos)
     const textAfterCursor = text.substring(cursorPos)
-    const match = textBeforeCursor.match(/@([^\s@]*)$/)
+    const match = textBeforeCursor.match(/@([^@\n]{0,30})$/)
     const newBefore = match ? textBeforeCursor.substring(0, match.index) + `@${user.mentionName} ` : `${textBeforeCursor}@${user.mentionName} `
     updateTexts[projectId] = newBefore + textAfterCursor
     showMentionDropdown.value = false
@@ -1018,7 +1018,7 @@ const selectMentionUser = (projectId, user) => {
   const textAfterCursor = text.substring(cursorPos)
 
   let newPos = cursorPos
-  const match = textBeforeCursor.match(/@([^\s@]*)$/)
+  const match = textBeforeCursor.match(/@([^@\n]{0,30})$/)
   if (match) {
     const startIndex = match.index
     const newBefore = textBeforeCursor.substring(0, startIndex) + `@${user.name} `

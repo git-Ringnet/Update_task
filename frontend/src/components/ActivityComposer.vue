@@ -48,6 +48,7 @@
 
       <!-- Mention / Project Autocomplete Suggestions -->
       <div v-if="showSuggestions && suggestions.length"
+        ref="suggestionsListRef"
         class="absolute z-50 bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-[220px] overflow-y-auto divide-y divide-gray-100"
         @touchstart.stop @mousedown.stop>
         <div class="px-3 py-1.5 bg-gray-50 text-[13px] font-extrabold text-gray-400 uppercase tracking-wider sticky top-0 z-10">
@@ -126,7 +127,10 @@
                 <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
                 <input
                   ref="mobileSearchInputRef"
-                  v-model="projectSearch"
+                  :value="projectSearch"
+                  @input="projectSearch = $event.target.value"
+                  @compositionupdate="projectSearch = $event.target.value"
+                  @compositionend="projectSearch = $event.target.value"
                   type="text"
                   placeholder="Tìm kiếm dự án..."
                   class="w-full pl-8 pr-3 py-1.5 text-sm font-bold border border-gray-200 rounded-lg focus:outline-none focus:border-emerald-500 bg-gray-50"
@@ -174,12 +178,12 @@
           </div>
           <span v-if="attachment.uploadStatus === 'uploading'"
             class="absolute inset-0 rounded-lg bg-black/35 text-white flex items-center justify-center"
-            title="Äang táº£i lÃªn">
+            title="Đang tải lên">
             <i class="fa-solid fa-spinner fa-spin text-xs"></i>
           </span>
           <span v-else-if="attachment.uploadStatus === 'error'"
             class="absolute inset-0 rounded-lg bg-rose-600/75 text-white flex items-center justify-center"
-            title="Táº£i lÃªn lá»—i, sáº½ tá»± thá»­ láº¡i khi gá»­i">
+            title="Tải lên lỗi, sẽ tự thử lại khi gửi">
             <i class="fa-solid fa-rotate-right text-xs"></i>
           </span>
           <button type="button" title="Bỏ tệp" @click="removeAttachment(index)"
@@ -199,7 +203,7 @@
           @compositionstart="syncInputState"
           @compositionupdate="syncInputState"
           @compositionend="syncInputState"
-          @keyup="syncInputState"
+          @keyup="handleKeyup"
           @keydown="handleKeydown"
           @change="syncInputState"
           @focus="syncInputState"
@@ -254,6 +258,7 @@ const isExpanded = ref(false)
 const isAutoExpanded = ref(false)
 const isProjectPickerOpen = ref(false)
 const projectSearch = ref('')
+const suggestionsListRef = ref(null)
 const showSuggestions = ref(false)
 const trigger = ref('')
 const query = ref('')
@@ -645,19 +650,31 @@ const syncInputState = (event) => {
   lastCursorPosition.value = cursor
 
   const beforeCursor = text.substring(0, cursor)
-  // Match @ or # preceded by start of line or whitespace
-  const match = beforeCursor.match(/(?:^|\s)([@#])([^\s@#]*)$/)
+  // Match @ or # preceded by start of line or whitespace, allowing spaces within query
+  const match = beforeCursor.match(/(?:^|\s)([@#])([^@#\n]{0,30})$/)
   if (!match) {
     showSuggestions.value = false
+    suggestionIndex.value = 0
     return
   }
-  trigger.value = match[1]
-  query.value = match[2]
-  suggestionIndex.value = 0
+  const newTrigger = match[1]
+  const newQuery = match[2]
+  if (trigger.value !== newTrigger || query.value !== newQuery) {
+    trigger.value = newTrigger
+    query.value = newQuery
+    suggestionIndex.value = 0
+  }
   showSuggestions.value = true
 }
 
 const handleInput = syncInputState
+
+const handleKeyup = (event) => {
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Enter' || event.key === 'Tab' || event.key === 'Escape') {
+    return
+  }
+  syncInputState(event)
+}
 
 const handleBlur = () => {
   // Grace period so touches on suggestion items register before dismissing
@@ -676,6 +693,17 @@ const handleSubmit = () => {
   emit('submit')
 }
 
+const scrollSelectedSuggestionIntoView = () => {
+  nextTick(() => {
+    if (!suggestionsListRef.value) return
+    const buttons = suggestionsListRef.value.querySelectorAll('button')
+    const activeBtn = buttons[suggestionIndex.value]
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ block: 'nearest' })
+    }
+  })
+}
+
 const selectSuggestion = item => {
   const textarea = textareaRef.value
   if (!textarea) return
@@ -686,7 +714,7 @@ const selectSuggestion = item => {
   const after = text.substring(cursor)
   
   // Find where the trigger (@ or #) starts in before
-  const tokenMatch = before.match(/(?:^|\s)([@#])([^\s@#]*)$/)
+  const tokenMatch = before.match(/(?:^|\s)([@#])([^@#\n]{0,30})$/)
   let prefix = before
   if (tokenMatch) {
     const triggerIndex = before.lastIndexOf(tokenMatch[1])
@@ -717,17 +745,20 @@ const selectSuggestion = item => {
 }
 
 const handleKeydown = event => {
-  syncInputState(event)
   if (showSuggestions.value && suggestions.value.length) {
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault()
       const direction = event.key === 'ArrowDown' ? 1 : -1
       suggestionIndex.value = (suggestionIndex.value + direction + suggestions.value.length) % suggestions.value.length
+      scrollSelectedSuggestionIntoView()
       return
     }
     if (event.key === 'Enter' || event.key === 'Tab') {
       event.preventDefault()
-      selectSuggestion(suggestions.value[suggestionIndex.value])
+      const selected = suggestions.value[suggestionIndex.value]
+      if (selected) {
+        selectSuggestion(selected)
+      }
       return
     }
     if (event.key === 'Escape') {

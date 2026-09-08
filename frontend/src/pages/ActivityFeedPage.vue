@@ -2,7 +2,8 @@
   <div class="h-[100dvh] flex flex-col bg-[#F9F4EE] overflow-hidden">
     <Navbar />
 
-    <main class="max-w-[800px] w-full mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-2 sm:pb-3 flex-1 flex flex-col min-h-0 overflow-hidden">
+    <main
+      class="max-w-[800px] w-full mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-2 sm:pb-3 flex-1 flex flex-col min-h-0 overflow-hidden">
       <!-- Header Row: Back Button & Vertically Centered Title "Hoạt động của đội" -->
       <div class="relative flex items-center justify-center mb-3 sm:mb-4 min-h-[40px] flex-shrink-0">
         <button @click="goBack" type="button" title="Quay lại"
@@ -53,7 +54,7 @@
       <!-- Empty State -->
       <div v-else-if="filteredActivities.length === 0"
         class="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-2xs flex-1 flex items-center justify-center">
-        <p class="text-gray-400 font-medium">Chưa có cập nhật hay hoạt động nào mới.</p>
+        <p class="text-gray-400 font-medium">Trong 7 ngày qua, chưa có hoạt động mới</p>
       </div>
 
       <!-- Grouped Activities Feed (Scrollable inner list, chat style) -->
@@ -76,9 +77,8 @@
           <!-- Timeline list, matching the recent-activity panel -->
           <div class="space-y-0">
             <div v-for="(act, idx) in group" :key="act.id" :id="'activity-feed-item-' + act.id"
-              @click="handleActivityClick(act)"
-              @touchstart="handleActivityTouchStart(act)" @touchend="handleActivityTouchEnd"
-              @touchmove="handleActivityTouchMove" @contextmenu.prevent
+              @click="handleActivityClick(act)" @touchstart="handleActivityTouchStart(act)"
+              @touchend="handleActivityTouchEnd" @touchmove="handleActivityTouchMove" @contextmenu.prevent
               class="feed-activity-item relative flex gap-3 select-none pb-5 cursor-pointer group">
               <div v-if="idx < group.length - 1" class="absolute top-10 bottom-0 left-[15px] w-[1.5px] bg-gray-300 z-0">
               </div>
@@ -134,7 +134,8 @@
                         <i class="fa-solid fa-trash-can text-xs"></i>
                         <span>Xóa</span>
                       </button>
-                      <div v-if="!canEditComment(act) && !canDeleteComment(act)" class="px-3 py-1.5 text-xs font-semibold text-gray-400">
+                      <div v-if="!canEditComment(act) && !canDeleteComment(act)"
+                        class="px-3 py-1.5 text-xs font-semibold text-gray-400">
                         Không có thao tác
                       </div>
                     </div>
@@ -142,8 +143,7 @@
                 </div>
 
                 <!-- Project title -->
-                <div v-if="act.project"
-                  @click="handleActivityProjectClick(act.project.id, $event)"
+                <div v-if="act.project" @click="handleActivityProjectClick(act.project.id, $event)"
                   class="text-[#1A7A56] hover:underline font-extrabold text-[18px] sm:text-[19px] cursor-pointer mt-0.5 mb-1 max-w-full truncate block leading-snug"
                   :title="act.project.title">
                   {{ act.project.title }}
@@ -152,8 +152,7 @@
                 <!-- Comment content (Normal Display) -->
                 <div class="text-[16px] sm:text-[18px] text-gray-900 leading-relaxed break-words mt-0.5 space-y-1">
                   <!-- Zalo Quote Reply Preview inside activity feed page -->
-                  <div v-if="parseReplyInfo(act.content)"
-                    @click.stop="scrollToComment(parseReplyInfo(act.content))"
+                  <div v-if="parseReplyInfo(act.content)" @click.stop="scrollToComment(parseReplyInfo(act.content))"
                     class="bg-[#e1e3ea] px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1 select-none max-w-full cursor-pointer hover:bg-[#d5d7de] transition-colors">
                     <div class="text-[14px] font-bold text-gray-500 flex items-center gap-1">
                       <i class="fa-solid fa-reply text-xs"></i>
@@ -211,9 +210,10 @@
         class="bg-[#F9F4EE] border-2 border-[#4d4d4d] rounded-2xl shadow-3xs overflow-visible flex-shrink-0">
         <ActivityComposer ref="activityComposerRef" v-model="chatMessage" v-model:project-id="chatProjectId"
           :projects="projectStore.projects" :users="projectStore.users" :groups="mentionGroups"
-          :replying-to="replyingToActivity" :reply-text="replyingToActivity?.text || parseCommentText(replyingToActivity?.content)"
-          :editing-comment="editingCommentLog"
-          :submitting="isSubmittingChat" @submit="submitChat" @cancel-reply="cancelReply" @cancel-edit="cancelEdit" />
+          :replying-to="replyingToActivity"
+          :reply-text="replyingToActivity?.text || parseCommentText(replyingToActivity?.content)"
+          :editing-comment="editingCommentLog" :submitting="isSubmittingChat" @submit="submitChat"
+          @cancel-reply="cancelReply" @cancel-edit="cancelEdit" />
       </div>
     </main>
 
@@ -224,9 +224,9 @@
       <div v-if="activePreviewImage"
         class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-slate-950/85 backdrop-blur-md select-none"
         @click="closeImagePreview">
-        <div class="relative w-[min(92vw,1100px)] h-[min(72vh,720px)] flex flex-col items-center justify-center" @click.stop
-          @touchstart="handleModalTouchStart" @touchend="handleModalTouchEnd">
-          
+        <div class="relative w-[min(92vw,1100px)] h-[min(72vh,720px)] flex flex-col items-center justify-center"
+          @click.stop @touchstart="handleModalTouchStart" @touchend="handleModalTouchEnd">
+
           <!-- Top Bar: Image count badge + Close button -->
           <div class="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-auto">
             <div v-if="previewModalImages.length > 1"
@@ -244,8 +244,7 @@
 
           <!-- Main Image and Prev/Next Navigation -->
           <div class="relative w-full h-full flex items-center justify-center rounded-2xl overflow-hidden bg-slate-900">
-            <img :src="activePreviewImage"
-              class="w-full h-full object-contain transition-opacity duration-150" />
+            <img :src="activePreviewImage" class="w-full h-full object-contain transition-opacity duration-150" />
 
             <!-- PREV BUTTON (shown when > 1 image) -->
             <button v-if="previewModalImages.length > 1" type="button" @click="prevPreviewImage"
@@ -263,9 +262,10 @@
           </div>
 
           <!-- Thumbnails / Dots strip at bottom -->
-          <div v-if="previewModalImages.length > 1" class="flex items-center justify-center gap-2 mt-4 max-w-full overflow-x-auto py-1 px-2">
-            <button v-for="(pImg, pIdx) in previewModalImages" :key="'thumb-' + pIdx"
-              type="button" @click="previewModalIndex = pIdx"
+          <div v-if="previewModalImages.length > 1"
+            class="flex items-center justify-center gap-2 mt-4 max-w-full overflow-x-auto py-1 px-2">
+            <button v-for="(pImg, pIdx) in previewModalImages" :key="'thumb-' + pIdx" type="button"
+              @click="previewModalIndex = pIdx"
               class="w-10 h-10 rounded-lg overflow-hidden border-2 transition-all cursor-pointer flex-shrink-0"
               :class="pIdx === previewModalIndex ? 'border-emerald-400 scale-110 shadow-lg ring-2 ring-emerald-400/50' : 'border-white/30 opacity-60 hover:opacity-100'">
               <img :src="pImg.url || pImg.src || pImg" class="w-full h-full object-cover" />
@@ -1071,6 +1071,7 @@ const scrollToComment = (reply) => {
 
 <style scoped>
 @keyframes activity-card-flash {
+
   0%,
   100% {
     background-color: transparent;

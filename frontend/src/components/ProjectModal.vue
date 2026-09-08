@@ -44,6 +44,8 @@
                 :value="searchQuery"
                 @focus="handleInputFocus"
                 @input="searchQuery = $event.target.value; isOpenDropdown = true; highlightedIndex = 0"
+                @compositionupdate="searchQuery = $event.target.value; isOpenDropdown = true; highlightedIndex = 0"
+                @compositionend="searchQuery = $event.target.value; isOpenDropdown = true; highlightedIndex = 0"
                 @keydown="handleCustomerKeydown"
                 type="text"
                 placeholder="-- Gõ để tìm kiếm khách hàng (Enter để tạo mới) --"

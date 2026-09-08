@@ -10,7 +10,10 @@
         </span>
         <input
           ref="inputRef"
-          v-model="query"
+          :value="query"
+          @input="query = $event.target.value; openSuggestions()"
+          @compositionupdate="query = $event.target.value; openSuggestions()"
+          @compositionend="query = $event.target.value; openSuggestions()"
           type="text"
           :placeholder="placeholder"
           autocomplete="off"
@@ -19,7 +22,6 @@
           spellcheck="false"
           class="w-full bg-transparent text-sm font-semibold text-gray-800 placeholder-gray-400 outline-none border-0 p-0"
           @focus="openSuggestions"
-          @input="openSuggestions"
           @keydown.stop="handleKeydown"
         />
         <span class="text-[10px] font-black text-gray-400 whitespace-nowrap">{{ selectedUsers.length }} đã chọn</span>

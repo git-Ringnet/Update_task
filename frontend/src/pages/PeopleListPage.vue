@@ -25,7 +25,10 @@
           <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
             <div class="relative w-full sm:w-64">
               <input
-                v-model="searchQuery"
+                :value="searchQuery"
+                @input="searchQuery = $event.target.value"
+                @compositionupdate="searchQuery = $event.target.value"
+                @compositionend="searchQuery = $event.target.value"
                 type="text"
                 placeholder="Tìm kiếm thành viên..."
                 class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-white shadow-3xs font-semibold"

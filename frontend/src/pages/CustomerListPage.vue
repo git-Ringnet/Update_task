@@ -45,8 +45,10 @@
             <div class="relative max-w-md">
               <input
                 ref="searchInputRef"
-                v-model="searchQueryLocal"
-                @input="handleSearchLocal"
+                :value="searchQueryLocal"
+                @input="searchQueryLocal = $event.target.value; handleSearchLocal($event)"
+                @compositionupdate="searchQueryLocal = $event.target.value; handleSearchLocal($event)"
+                @compositionend="searchQueryLocal = $event.target.value; handleSearchLocal($event)"
                 type="text"
                 placeholder="Tìm kiếm mối quan hệ theo tên hoặc mã..."
                 class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#45A246] focus:ring-1 focus:ring-[#45A246] bg-white"

@@ -17,7 +17,10 @@
         <!-- LEFT PANEL: Actions, Switcher & Search (Block 1) -->
         <aside ref="viewActionsRef" class="view-actions" :class="[
           viewMode === 'notes' ? 'space-y-3.5 select-none flex flex-col items-end w-full lg:-translate-x-[42px]' : 'space-y-3.5 select-none flex flex-col items-end w-[390px] flex-shrink-0',
-          { 'mobile-keyboard-open': isVirtualKeyboardOpen }
+          {
+            'mobile-keyboard-open': isVirtualKeyboardOpen && !isMobileSearchOpen,
+            'has-mobile-search-open': isMobileSearchOpen
+          }
         ]">
           <!-- Button Tạo dự án -->
           <button @click="isModalOpen = true" type="button"
@@ -43,7 +46,9 @@
             <i
               class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4d4d4d] text-[18px]"></i>
             <input ref="searchInputRef" :value="projectStore.searchQuery"
-              @input="projectStore.searchQuery = $event.target.value" type="text" placeholder="Tìm kiếm"
+              @input="projectStore.searchQuery = $event.target.value"
+              @compositionupdate="projectStore.searchQuery = $event.target.value"
+              @compositionend="projectStore.searchQuery = $event.target.value" type="text" placeholder="Tìm kiếm"
               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="project_search_query"
               class="w-full bg-white sm:bg-transparent border-[2.5px] border-[#4d4d4d] rounded-md pl-11 pr-4 py-2.5 text-[18px] font-extrabold text-[#32312F] focus:outline-none placeholder-gray-400" />
           </div>
@@ -210,14 +215,7 @@
                 <!-- Customer Projects List -->
                 <div class="space-y-3.5">
                   <div v-for="(project, pIdx) in group.projects" :key="project.id" :data-project-id="project.id"
-                    draggable="true" @dragstart="onGroupedDragStart($event, project, group, pIdx)"
-                    @dragover.prevent="onGroupedDragOver($event, pIdx)" @dragleave="onGroupedDragLeave"
-                    @drop="onGroupedDrop($event, group, pIdx)" @dragend="onGroupedDragEnd"
-                    class="flex items-center transition-all duration-150 rounded-2xl group/project-row relative w-full"
-                    :class="{
-                      'opacity-40 scale-[0.98]': draggedGroupedIndex === pIdx && draggedGroupId === group.name,
-                      'ring-2 ring-emerald-500 bg-emerald-50/50 p-1': dragOverGroupedIndex === pIdx && dragOverGroupId === group.name && (draggedGroupedIndex !== pIdx || draggedGroupId !== group.name)
-                    }">
+                    class="flex items-center transition-all duration-150 rounded-2xl group/project-row relative w-full">
 
                     <!-- Same multi-select behavior as the default project view -->
                     <input type="checkbox" :checked="isSelected(project.id)"
@@ -314,14 +312,7 @@
                 leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
                 leave-to-class="opacity-0 -translate-y-2">
                 <div v-for="(project, index) in displayedProjects" :key="project.id" :data-project-id="project.id"
-                  draggable="true" @dragstart="onDragStart($event, project, index)"
-                  @dragover.prevent="onDragOver($event, index)" @dragleave="onDragLeave($event)"
-                  @drop="onDrop($event, index)" @dragend="onDragEnd($event)"
-                  class="flex items-center transition-all duration-150 rounded-2xl group/project-row relative w-full"
-                  :class="{
-                    'opacity-40 scale-[0.98]': draggedProjectIndex === index,
-                    'ring-2 ring-emerald-500 bg-emerald-50/50 p-1': dragOverIndex === index && draggedProjectIndex !== index
-                  }">
+                  class="flex items-center transition-all duration-150 rounded-2xl group/project-row relative w-full">
                   <!-- Checkbox for multi-select (outside the card, but inside the scroll container) -->
                   <input type="checkbox" :checked="isSelected(project.id)"
                     @click.stop="toggleProjectSelect(project.id, $event)"
@@ -379,7 +370,7 @@
 
           <!-- RIGHT PANEL: Hoạt động gần đây (Block 3 - Hidden in notes view) -->
           <section v-if="viewMode !== 'notes'"
-            class="recent-activity-panel bg-[#F9F4EE] border-[2.5px] border-[#4d4d4d] rounded-lg p-0 flex flex-col h-[calc(100vh-130px)] select-none w-[390px] flex-shrink-0 shadow-3xs overflow-hidden"
+            class="recent-activity-panel bg-[#F9F4EE] border-[2.5px] border-[#4d4d4d] rounded-lg p-0 flex flex-col h-[calc(100vh-130px)] w-[390px] flex-shrink-0 shadow-3xs overflow-hidden"
             :class="{ 'mobile-activities-active': viewMode === 'activities' }">
 
             <!-- Header: "Hoạt động của đội" & Expand Button (Full width edge-to-edge border) -->
@@ -417,7 +408,8 @@
               <div ref="activityScrollContainer" @scroll="handleActivityScroll"
                 class="activity-feed-scroll space-y-0 overflow-y-auto scrollbar-none flex-1 px-4 pt-3.5 pr-3">
                 <!-- Loading older comments indicator when scrolling up -->
-                <div v-if="isLoadingOlderActivities" class="flex items-center justify-center py-2 text-xs text-gray-500 gap-2">
+                <div v-if="isLoadingOlderActivities"
+                  class="flex items-center justify-center py-2 text-xs text-gray-500 gap-2">
                   <i class="fa-solid fa-circle-notch fa-spin text-emerald-600"></i>
                   <span>Đang tải hoạt động cũ hơn...</span>
                 </div>
@@ -431,7 +423,7 @@
                   leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
                   leave-to-class="opacity-0 -translate-y-2">
                   <div v-for="(log, idx) in displayedActivities" :key="log.id" :id="'activity-log-item-' + log.id"
-                    class="activity-log-item relative flex gap-3 select-none pb-5 group cursor-pointer"
+                    class="activity-log-item relative flex gap-3 pb-5 group"
                     @touchstart="handleTouchStart(log, $event)" @touchend="handleTouchEnd" @touchmove="handleTouchMove">
 
                     <!-- Absolute Timeline Line connecting avatars across padding boundaries -->
@@ -461,7 +453,8 @@
                         </div>
 
                         <!-- Right: Timestamp normally, 3-dots icon button on hover / when menu open -->
-                        <div class="relative shrink-0 flex items-center justify-end min-h-[30px] min-w-[32px]" @click.stop>
+                        <div class="relative shrink-0 flex items-center justify-end min-h-[30px] min-w-[32px]"
+                          @click.stop>
                           <!-- Relative Time (shown when not hovered and menu not active) -->
                           <span
                             class="text-[14px] sm:text-[15px] text-gray-400 font-medium whitespace-nowrap leading-none text-right"
@@ -489,7 +482,8 @@
                               <i class="fa-solid fa-trash-can text-xs"></i>
                               <span>Xóa</span>
                             </button>
-                            <div v-if="!canEditComment(log) && !canDeleteComment(log)" class="px-3 py-1.5 text-xs font-semibold text-gray-400">
+                            <div v-if="!canEditComment(log) && !canDeleteComment(log)"
+                              class="px-3 py-1.5 text-xs font-semibold text-gray-400">
                               Không có thao tác
                             </div>
                           </div>
@@ -504,11 +498,12 @@
                       </div>
 
                       <!-- Comment Content (Normal Display) -->
-                      <div class="text-[16px] sm:text-[18px] text-gray-900 leading-relaxed break-words mt-0.5 space-y-1">
+                      <div
+                        class="text-[16px] sm:text-[18px] text-gray-900 leading-relaxed break-words mt-0.5 space-y-1">
                         <!-- Zalo Quote Reply Preview inside list feed -->
                         <div v-if="parseReplyInfo(log.content)"
                           @click.stop="scrollToComment(parseReplyInfo(log.content))"
-                          class="bg-[#e1e3ea] px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1 select-none max-w-full cursor-pointer hover:bg-[#d5d7de] transition-colors">
+                          class="bg-[#e1e3ea] px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1 max-w-full cursor-pointer hover:bg-[#d5d7de] transition-colors">
                           <div class="text-[14px] font-bold text-gray-500 flex items-center gap-1">
                             <i class="fa-solid fa-reply text-xs"></i>
                             <span>{{ parseReplyInfo(log.content).user }}</span>
@@ -518,7 +513,7 @@
                           </div>
                         </div>
 
-                        <div v-if="parseCommentText(log.content)" class="whitespace-pre-line font-normal text-gray-900">
+                        <div v-if="parseCommentText(log.content)" class="whitespace-pre-line font-normal text-gray-900 select-text cursor-text">
                           {{ parseCommentText(log.content) }}
                         </div>
 
@@ -528,7 +523,8 @@
                           class="flex flex-wrap items-end gap-1.5 pt-1 pb-1.5">
                           <!-- Images -->
                           <button v-for="(img, imgIdx) in parseCommentImages(log.content)" :key="'img-' + imgIdx"
-                            type="button" @click.stop="openImagePreview(img.url, parseCommentImages(log.content), imgIdx)"
+                            type="button"
+                            @click.stop="openImagePreview(img.url, parseCommentImages(log.content), imgIdx)"
                             class="w-11 h-11 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 cursor-pointer hover:ring-2 hover:ring-emerald-400 transition-all flex-shrink-0 shadow-3xs"
                             :title="'Xem ảnh: ' + img.name">
                             <img :src="img.url" class="w-full h-full object-cover" alt=""
@@ -562,18 +558,17 @@
                 <!-- Empty activities state -->
                 <div v-if="displayedActivities.length === 0"
                   class="py-12 text-center text-gray-450 text-xs font-semibold">
-                  Chưa có cập nhật hoạt động nào mới.
+                  Trong 7 ngày qua, chưa có hoạt động mới
                 </div>
               </div>
 
               <!-- Chat Input box: full border attached to bottom of panel -->
               <ActivityComposer ref="activityComposerRef" v-model="chatMessage" v-model:project-id="chatProjectId"
-                class="flex-shrink-0 border-t border-[#4d4d4d]" :projects="composerProjects"
-                :users="projectStore.users" :groups="mentionGroups" :replying-to="replyingToLog"
+                class="flex-shrink-0 border-t border-[#4d4d4d]" :projects="composerProjects" :users="projectStore.users"
+                :groups="mentionGroups" :replying-to="replyingToLog"
                 :reply-text="replyingToLog?.text || parseCommentText(replyingToLog?.content)"
-                :editing-comment="editingCommentLog"
-                :submitting="isSubmittingChat"
-                @submit="submitChat" @cancel-reply="cancelReply" @cancel-edit="cancelEdit" />
+                :editing-comment="editingCommentLog" :submitting="isSubmittingChat" @submit="submitChat"
+                @cancel-reply="cancelReply" @cancel-edit="cancelEdit" />
             </div>
           </section>
         </div>
@@ -769,7 +764,10 @@
               <div class="relative mb-3">
                 <i
                   class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-                <input v-model="modalProjectSearchQuery" type="text" placeholder="Tìm nhanh tên dự án..."
+                <input :value="modalProjectSearchQuery" @input="modalProjectSearchQuery = $event.target.value"
+                  @compositionupdate="modalProjectSearchQuery = $event.target.value"
+                  @compositionend="modalProjectSearchQuery = $event.target.value" type="text"
+                  placeholder="Tìm nhanh tên dự án..."
                   class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-emerald-500 bg-gray-50/50" />
               </div>
 
@@ -819,9 +817,9 @@
       <div v-if="activePreviewImage"
         class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-slate-950/85 backdrop-blur-md select-none"
         @click="closeImagePreview">
-        <div class="relative w-[min(92vw,1100px)] h-[min(72vh,720px)] flex flex-col items-center justify-center" @click.stop
-          @touchstart="handleModalTouchStart" @touchend="handleModalTouchEnd">
-          
+        <div class="relative w-[min(92vw,1100px)] h-[min(72vh,720px)] flex flex-col items-center justify-center"
+          @click.stop @touchstart="handleModalTouchStart" @touchend="handleModalTouchEnd">
+
           <!-- Top Bar: Image count badge + Close button -->
           <div class="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-auto">
             <div v-if="previewModalImages.length > 1"
@@ -839,8 +837,7 @@
 
           <!-- Main Image and Prev/Next Navigation -->
           <div class="relative w-full h-full flex items-center justify-center rounded-2xl overflow-hidden bg-slate-900">
-            <img :src="activePreviewImage"
-              class="w-full h-full object-contain transition-opacity duration-150" />
+            <img :src="activePreviewImage" class="w-full h-full object-contain transition-opacity duration-150" />
 
             <!-- PREV BUTTON (shown when > 1 image) -->
             <button v-if="previewModalImages.length > 1" type="button" @click="prevPreviewImage"
@@ -858,9 +855,10 @@
           </div>
 
           <!-- Thumbnails / Dots strip at bottom -->
-          <div v-if="previewModalImages.length > 1" class="flex items-center justify-center gap-2 mt-4 max-w-full overflow-x-auto py-1 px-2">
-            <button v-for="(pImg, pIdx) in previewModalImages" :key="'thumb-' + pIdx"
-              type="button" @click="previewModalIndex = pIdx"
+          <div v-if="previewModalImages.length > 1"
+            class="flex items-center justify-center gap-2 mt-4 max-w-full overflow-x-auto py-1 px-2">
+            <button v-for="(pImg, pIdx) in previewModalImages" :key="'thumb-' + pIdx" type="button"
+              @click="previewModalIndex = pIdx"
               class="w-10 h-10 rounded-lg overflow-hidden border-2 transition-all cursor-pointer flex-shrink-0"
               :class="pIdx === previewModalIndex ? 'border-emerald-400 scale-110 shadow-lg ring-2 ring-emerald-400/50' : 'border-white/30 opacity-60 hover:opacity-100'">
               <img :src="pImg.url || pImg.src || pImg" class="w-full h-full object-cover" />
@@ -1589,7 +1587,7 @@ const getStickyNotePinStyle = (project) => {
   return 'pin-grey'
 }
 
-const isSelected = (id) => selectedProjectIds.value.includes(id)
+const isSelected = (id) => selectedProjectIds.value && (selectedProjectIds.value.includes(Number(id)) || selectedProjectIds.value.includes(id))
 
 // Counts
 const pinnedCount = computed(() => {
@@ -1890,12 +1888,22 @@ const selectionFocusId = ref(null)
 let suppressNextOutsideSelectionClear = false
 let suppressNextProjectClick = false
 
+let fetchActivitiesTimeout = null
 watch(selectedProjectIds, (ids) => {
   if (ids.length === 0) {
     lastSelectionAnchorId.value = null
     selectionFocusId.value = null
+    if (defaultActivities.value.length > 0) {
+      activities.value = [...defaultActivities.value]
+      hasMoreOlderActivities.value = defaultActivities.value.length >= 30
+      scrollToBottom(false)
+    }
   }
-  fetchActivities()
+  hasMoreOlderActivities.value = true
+  if (fetchActivitiesTimeout) clearTimeout(fetchActivitiesTimeout)
+  fetchActivitiesTimeout = setTimeout(() => {
+    fetchActivities(true)
+  }, 100)
 }, { deep: true })
 
 // Drag selection box functionality (Windows-style)
@@ -1936,8 +1944,14 @@ const startSelection = (event) => {
   if (event.button !== 0) return
 
   const target = event.target
-  // Don't start selection if clicking on interactive elements
-  if (target.closest('input, textarea, select, button, a, [contenteditable="true"], .cursor-pointer, [draggable="true"]')) {
+
+  // NEVER start drag selection inside activity feed, TV widget, search modal, navbar, or floating bulk action bar
+  if (target.closest('.recent-activity-panel, .tv-broadcast-panel, .tv-broadcast-frame, .mobile-search-backdrop, nav, .bulk-actions-wrapper, .shortcut-hints-popover')) {
+    return
+  }
+
+  // Don't start selection if clicking on buttons, checkboxes, inputs, links
+  if (target.closest('input, textarea, select, button, a, [contenteditable="true"]')) {
     return
   }
 
@@ -1951,7 +1965,7 @@ const startSelection = (event) => {
     visible: true
   }
 
-  // Prevent text selection
+  // Prevent text selection inside project list
   event.preventDefault()
 }
 
@@ -2296,6 +2310,7 @@ const parseCommentFiles = (content) => {
 
 // Activities feed fetching and styling
 const activities = ref([])
+const defaultActivities = ref([])
 const isActivitiesLoading = ref(true)
 const showMentionedActivities = ref(false)
 const activityScrollContainer = ref(null)
@@ -2735,11 +2750,12 @@ const displayedActivities = computed(() => {
 })
 
 async function fetchActivities(isManualRefresh = false) {
+  const isFiltered = selectedProjectIds.value.length > 0
   const requestId = ++activityRequestId
   try {
     // The unfiltered dashboard stays compact. Once projects are selected, show
     // their complete activity window for the last seven days instead.
-    const params = selectedProjectIds.value.length > 0
+    const params = isFiltered
       ? { project_ids: selectedProjectIds.value, days: 7 }
       : { limit: 30 }
     const res = await axios.get('/api/comments', { params })
@@ -2751,7 +2767,12 @@ async function fetchActivities(isManualRefresh = false) {
     // timeline every four seconds when its records have not changed.
     if (requestId < lastAppliedActivityRequestId) return
     lastAppliedActivityRequestId = requestId
-    const isUnchanged = filtered.length === activities.value.length && filtered.every((activity, index) => {
+
+    if (!isFiltered) {
+      defaultActivities.value = filtered
+    }
+
+    const isUnchanged = !isManualRefresh && filtered.length === activities.value.length && filtered.every((activity, index) => {
       const current = activities.value[index]
       return current
         && activity.id === current.id
@@ -2773,8 +2794,9 @@ async function fetchActivities(isManualRefresh = false) {
 let latestActivityRequest = null
 const fetchLatestActivities = () => {
   if (latestActivityRequest || activities.value.length === 0) return latestActivityRequest
+  const isFiltered = selectedProjectIds.value.length > 0
   const afterId = Math.max(...activities.value.map(activity => Number(activity.id) || 0))
-  const params = selectedProjectIds.value.length > 0
+  const params = isFiltered
     ? { project_ids: selectedProjectIds.value, days: 7, after_id: afterId, limit: 30 }
     : { after_id: afterId, limit: 30 }
 
@@ -2788,7 +2810,11 @@ const fetchLatestActivities = () => {
       ? (container.scrollHeight - container.scrollTop - container.clientHeight <= 150)
       : true
 
-    activities.value = [...incoming, ...activities.value.filter(comment => !incomingIds.has(comment.id))]
+    const updated = [...incoming, ...activities.value.filter(comment => !incomingIds.has(comment.id))]
+    activities.value = updated
+    if (!isFiltered) {
+      defaultActivities.value = [...incoming, ...defaultActivities.value.filter(comment => !incomingIds.has(comment.id))]
+    }
 
     if (isNearBottom) {
       scrollToBottom(true)
@@ -3180,7 +3206,7 @@ onUnmounted(() => {
     z-index: 30 !important;
   }
 
-  .view-actions > * {
+  .view-actions>* {
     margin: 0 !important;
   }
 
@@ -3197,11 +3223,11 @@ onUnmounted(() => {
     background: transparent !important;
   }
 
-  .create-project-action > span:last-child {
+  .create-project-action>span:last-child {
     display: none !important;
   }
 
-  .create-project-action > span:first-child {
+  .create-project-action>span:first-child {
     font-size: 26px !important;
     margin-right: 0 !important;
     line-height: 1 !important;
@@ -3306,7 +3332,7 @@ onUnmounted(() => {
     z-index: 30 !important;
   }
 
-  .view-actions > * {
+  .view-actions>* {
     margin: 0 !important;
     margin-bottom: 14px !important;
   }
@@ -3324,11 +3350,11 @@ onUnmounted(() => {
     background: transparent !important;
   }
 
-  .create-project-action > span:last-child {
+  .create-project-action>span:last-child {
     display: none !important;
   }
 
-  .create-project-action > span:first-child {
+  .create-project-action>span:first-child {
     font-size: 26px !important;
     margin-right: 0 !important;
     line-height: 1 !important;
@@ -3505,7 +3531,14 @@ onUnmounted(() => {
     box-shadow: none !important;
   }
 
-  .view-actions.mobile-keyboard-open {
+  .view-actions.has-mobile-search-open {
+    height: auto !important;
+    flex-wrap: wrap !important;
+    gap: 8px 20px !important;
+    padding-top: 8px !important;
+  }
+
+  .view-actions.mobile-keyboard-open:not(.has-mobile-search-open) {
     display: none !important;
     visibility: hidden !important;
     pointer-events: none !important;
@@ -3650,7 +3683,7 @@ onUnmounted(() => {
     box-shadow: none !important;
   }
 
-  .recent-activity-panel > .flex-1 {
+  .recent-activity-panel>.flex-1 {
     display: flex !important;
     flex-direction: column !important;
     height: 100% !important;
@@ -4352,6 +4385,7 @@ onUnmounted(() => {
 }
 
 @keyframes activity-card-flash {
+
   0%,
   100% {
     background-color: transparent;
