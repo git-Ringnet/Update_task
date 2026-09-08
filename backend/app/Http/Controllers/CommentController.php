@@ -64,6 +64,12 @@ class CommentController extends Controller
             $query->where('comments.id', '>', $afterId);
         }
 
+        // Backward pagination path: load older comments when scrolling up
+        $beforeId = $request->integer('before_id');
+        if ($beforeId > 0) {
+            $query->where('comments.id', '<', $beforeId);
+        }
+
         $days = $request->integer('days');
         if ($days > 0) {
             $query->where('created_at', '>=', Carbon::now()->subDays(min($days, 90)));

@@ -414,7 +414,18 @@
 
             <!-- Activity Feed List -->
             <div v-else class="flex-1 flex flex-col justify-between min-h-0">
-              <div class="activity-feed-scroll space-y-0 overflow-y-auto scrollbar-none flex-1 px-4 pt-3.5 pr-3">
+              <div ref="activityScrollContainer" @scroll="handleActivityScroll"
+                class="activity-feed-scroll space-y-0 overflow-y-auto scrollbar-none flex-1 px-4 pt-3.5 pr-3">
+                <!-- Loading older comments indicator when scrolling up -->
+                <div v-if="isLoadingOlderActivities" class="flex items-center justify-center py-2 text-xs text-gray-500 gap-2">
+                  <i class="fa-solid fa-circle-notch fa-spin text-emerald-600"></i>
+                  <span>Đang tải hoạt động cũ hơn...</span>
+                </div>
+                <div v-else-if="!hasMoreOlderActivities && displayedActivities.length >= 20"
+                  class="text-center py-1.5 mb-2 text-[12px] text-gray-400 font-semibold border-b border-gray-100/80">
+                  Đã hiển thị tất cả hoạt động
+                </div>
+
                 <transition-group enter-active-class="transition duration-300 ease-out"
                   enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0"
                   leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
@@ -902,16 +913,7 @@ const updateKeyboardState = () => {
     const currentVVH = window.visualViewport.height
     document.documentElement.style.setProperty('--vvh', `${currentVVH}px`)
     const heightDiff = window.innerHeight - currentVVH
-    if (heightDiff > 100) {
-      isVirtualKeyboardOpen.value = true
-    } else {
-      // Height restored -> Virtual keyboard closed (e.g. swiped down, back button pressed)
-      isVirtualKeyboardOpen.value = false
-      const activeEl = document.activeElement
-      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
-        activeEl.blur()
-      }
-    }
+    isVirtualKeyboardOpen.value = heightDiff > 120
   } else {
     const activeEl = document.activeElement
     const isInputFocused = activeEl && (
@@ -1315,7 +1317,13 @@ const viewModeTitle = computed(() => {
   return 'Chế độ xem: Dự án (Ctrl + B để đổi)'
 })
 
-watch(viewMode, async () => {
+watch(viewMode, async (newVal) => {
+  if (typeof window !== 'undefined' && window.innerWidth < 768) {
+    const activeEl = document.activeElement
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
+      activeEl.blur()
+    }
+  }
   // Each view has a different actions-column position. Recalculate the TV
   // after Vue has applied the new layout so it never keeps the old view's
   // coordinates and overlaps project notes.
@@ -1323,6 +1331,9 @@ watch(viewMode, async () => {
   tvPanelScale.value = 1
   await nextTick()
   requestAnimationFrame(updateTvPosition)
+  if (newVal === 'activities') {
+    scrollToBottom(false)
+  }
 })
 
 watch(() => authStore.user?.view_mode, (newVal) => {
@@ -1854,6 +1865,16 @@ const closeAllDropdowns = (e) => {
     isShortcutHintsOpen.value = false
   }
 
+  // Dismiss keyboard when tapping outside inputs on mobile
+  if (typeof window !== 'undefined' && window.innerWidth < 768 && e?.target) {
+    const activeEl = document.activeElement
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
+      if (!activeEl.contains(e.target) && !e.target.closest('input, textarea, [contenteditable="true"], .activity-composer, #activity-composer-textarea, button')) {
+        activeEl.blur()
+      }
+    }
+  }
+
   // A selection is only kept while the user is working in the project list or
   // its command bar. Clicking elsewhere cancels the selection and closes it.
   if (
@@ -2287,8 +2308,90 @@ const parseCommentFiles = (content) => {
 const activities = ref([])
 const isActivitiesLoading = ref(true)
 const showMentionedActivities = ref(false)
+const activityScrollContainer = ref(null)
+const hasMoreOlderActivities = ref(true)
+const isLoadingOlderActivities = ref(false)
 let activityRequestId = 0
 let lastAppliedActivityRequestId = 0
+
+const scrollToBottom = (smooth = false) => {
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      if (activityScrollContainer.value) {
+        if (smooth) {
+          activityScrollContainer.value.scrollTo({
+            top: activityScrollContainer.value.scrollHeight,
+            behavior: 'smooth'
+          })
+        } else {
+          activityScrollContainer.value.scrollTop = activityScrollContainer.value.scrollHeight
+        }
+      }
+    })
+  })
+}
+
+const handleActivityScroll = async (event) => {
+  const el = event?.target || activityScrollContainer.value
+  if (!el) return
+
+  // When user scrolls close to top (scrollTop <= 40px), load older activities
+  if (el.scrollTop <= 40 && !isLoadingOlderActivities.value && hasMoreOlderActivities.value && activities.value.length > 0) {
+    await loadOlderActivities()
+  }
+}
+
+const loadOlderActivities = async () => {
+  if (isLoadingOlderActivities.value || !hasMoreOlderActivities.value || activities.value.length === 0) return
+
+  isLoadingOlderActivities.value = true
+  const minId = Math.min(...activities.value.map(a => Number(a.id) || Infinity))
+  if (!minId || minId === Infinity) {
+    isLoadingOlderActivities.value = false
+    return
+  }
+
+  const container = activityScrollContainer.value
+  const previousScrollHeight = container ? container.scrollHeight : 0
+  const previousScrollTop = container ? container.scrollTop : 0
+
+  try {
+    const params = selectedProjectIds.value.length > 0
+      ? { project_ids: selectedProjectIds.value, days: 7, before_id: minId, limit: 30 }
+      : { before_id: minId, limit: 30 }
+
+    const res = await axios.get('/api/comments', { params })
+    const olderComments = (res.data || []).filter(c => Boolean(c.project_id))
+
+    if (olderComments.length === 0) {
+      hasMoreOlderActivities.value = false
+    } else {
+      const existingIds = new Set(activities.value.map(a => a.id))
+      const newItems = olderComments.filter(a => !existingIds.has(a.id))
+      if (newItems.length === 0) {
+        hasMoreOlderActivities.value = false
+      } else {
+        activities.value = [...activities.value, ...newItems]
+        if (olderComments.length < 30) {
+          hasMoreOlderActivities.value = false
+        }
+
+        // Maintain visual scroll position so content prepended above does not cause a visual jump
+        await nextTick()
+        requestAnimationFrame(() => {
+          if (container) {
+            const newScrollHeight = container.scrollHeight
+            container.scrollTop = (newScrollHeight - previousScrollHeight) + previousScrollTop
+          }
+        })
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load older activities:', err)
+  } finally {
+    isLoadingOlderActivities.value = false
+  }
+}
 
 // Chat / Reply logic for recent activities panel
 const chatMessage = ref('')
@@ -2535,13 +2638,14 @@ const submitChat = async () => {
 
       const createdActivity = res.data
       if (createdActivity?.id) {
-        activities.value = [createdActivity, ...activities.value.filter(item => item.id !== createdActivity.id)]
+        activities.value = [...activities.value.filter(item => item.id !== createdActivity.id), createdActivity]
       }
 
       toast.success('Gửi cập nhật hoạt động thành công!')
       chatMessage.value = ''
       replyingToLog.value = null
       activityComposerRef.value?.clearAttachments()
+      scrollToBottom(true)
       // The POST response is rendered immediately; polling reconciles later.
       broadcastLocalUpdate({ projectId: pId })
     }
@@ -2633,10 +2737,15 @@ const displayedActivities = computed(() => {
     list = list.filter(log => String(log.content || '').toLocaleLowerCase('vi-VN').includes(mention))
   }
 
-  return list
+  // Display oldest at top, newest at bottom (chat app style)
+  return [...list].sort((a, b) => {
+    const timeDiff = new Date(a.created_at || 0) - new Date(b.created_at || 0)
+    if (timeDiff !== 0) return timeDiff
+    return (Number(a.id) || 0) - (Number(b.id) || 0)
+  })
 })
 
-async function fetchActivities() {
+async function fetchActivities(isManualRefresh = false) {
   const requestId = ++activityRequestId
   try {
     // The unfiltered dashboard stays compact. Once projects are selected, show
@@ -2660,8 +2769,10 @@ async function fetchActivities() {
         && activity.updated_at === current.updated_at
         && activity.content === current.content
     })
-    if (!isUnchanged) {
+    if (!isUnchanged || isManualRefresh) {
       activities.value = filtered
+      hasMoreOlderActivities.value = filtered.length >= (params.limit || 30)
+      scrollToBottom(false)
     }
   } catch (err) {
     console.error('Failed to load activities:', err)
@@ -2682,7 +2793,17 @@ const fetchLatestActivities = () => {
     const incoming = (res.data || []).filter(comment => comment.project_id)
     if (!incoming.length) return
     const incomingIds = new Set(incoming.map(comment => comment.id))
+
+    const container = activityScrollContainer.value
+    const isNearBottom = container
+      ? (container.scrollHeight - container.scrollTop - container.clientHeight <= 150)
+      : true
+
     activities.value = [...incoming, ...activities.value.filter(comment => !incomingIds.has(comment.id))]
+
+    if (isNearBottom) {
+      scrollToBottom(true)
+    }
   }).catch(err => {
     console.error('Failed to poll new activities:', err)
   }).finally(() => {
@@ -2856,6 +2977,7 @@ onMounted(async () => {
     fetchBroadcasts(),
     axios.get('/api/mention-groups').then(res => { mentionGroups.value = res.data || [] }).catch(() => { }),
   ])
+  scrollToBottom(false)
   requestAnimationFrame(updateTvPosition)
 
   window.addEventListener('keydown', handleGlobalKeydown)

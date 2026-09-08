@@ -48,13 +48,17 @@
 
       <!-- Mention / Project Autocomplete Suggestions -->
       <div v-if="showSuggestions && suggestions.length"
-        class="absolute z-50 bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-[220px] overflow-y-auto divide-y divide-gray-100">
-        <div class="px-3 py-1.5 bg-gray-50 text-[13px] font-extrabold text-gray-400 uppercase tracking-wider">
+        class="absolute z-50 bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-[220px] overflow-y-auto divide-y divide-gray-100"
+        @touchstart.stop @mousedown.stop>
+        <div class="px-3 py-1.5 bg-gray-50 text-[13px] font-extrabold text-gray-400 uppercase tracking-wider sticky top-0 z-10">
           {{ trigger === '#' ? 'Chọn dự án' : 'Gắn thẻ thành viên hoặc nhóm' }}
         </div>
         <button v-for="(item, index) in suggestions" :key="`${item.type}-${item.id}`" type="button"
-          @mousedown.prevent @click="selectSuggestion(item)"
-          class="w-full text-left px-3.5 py-2 text-[16px] font-bold flex justify-between items-center cursor-pointer hover:bg-emerald-50 hover:text-emerald-800"
+          @pointerdown.prevent="selectSuggestion(item)"
+          @touchstart.prevent="selectSuggestion(item)"
+          @mousedown.prevent="selectSuggestion(item)"
+          @click.prevent="selectSuggestion(item)"
+          class="w-full text-left px-3.5 py-2.5 text-[16px] font-bold flex justify-between items-center cursor-pointer hover:bg-emerald-50 hover:text-emerald-800 active:bg-emerald-100 touch-manipulation"
           :class="index === suggestionIndex ? 'bg-emerald-50 text-emerald-800' : 'text-gray-700'">
           <span class="truncate flex-1 flex items-center gap-1.5">
             <i v-if="item.type === 'project'" class="fa-solid fa-folder text-emerald-600 text-xs"></i>
@@ -198,7 +202,7 @@
           @keydown="handleKeydown"
           @change="syncInputState"
           @focus="syncInputState"
-          @blur="syncInputState"
+          @blur="handleBlur"
           @paste="handlePaste"
           rows="1"
           name="chat_activity_message"
@@ -468,15 +472,20 @@ const clearAttachments = () => {
   attachments.value = []
 }
 
-const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+const normalize = value => String(value || '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/đ/g, 'd')
+  .replace(/Đ/g, 'd')
+  .toLowerCase()
+  .trim()
+
 const matches = (value) => {
   const normalizedQuery = normalize(query.value)
   if (!normalizedQuery) return true
   const normalizedValue = normalize(value)
 
-  if (normalizedQuery.includes(' ')) {
-    return normalizedValue.includes(normalizedQuery)
-  }
+  if (normalizedValue.includes(normalizedQuery)) return true
 
   const words = normalizedValue.split(/\s+/).filter(Boolean)
   const startsWithWord = words.some(word => word.startsWith(normalizedQuery))
@@ -582,13 +591,13 @@ const suggestions = computed(() => {
   if (trigger.value !== '@') return []
   const items = []
   const currentUserId = String(authStore.user?.id || '')
-  const otherUsers = props.users.filter(user => String(user.id) !== currentUserId)
+  const otherUsers = (props.users || []).filter(user => String(user.id) !== currentUserId)
 
-  if (matches('all')) items.push({ type: 'all', id: 'all', title: '@all', token: 'all', subtitle: `Tất cả ${otherUsers.length} thành viên` })
+  if (matches('all') || matches('@all')) items.push({ type: 'all', id: 'all', title: '@all', token: 'all', subtitle: `Tất cả ${otherUsers.length} thành viên` })
   otherUsers.filter(user => matches(user.name) || matches(String(user.email || '').split('@')[0])).forEach(user => {
     items.push({ type: 'member', id: user.id, title: user.name, subtitle: 'Thành viên' })
   })
-  props.groups.filter(group => matches(group.name) || matches(group.description)).forEach(group => {
+  ;(props.groups || []).filter(group => matches(group.name) || matches(group.description)).forEach(group => {
     items.push({ type: 'group', id: group.id, title: group.name, subtitle: group.description || 'Nhóm nhắc tên' })
   })
   return items.slice(0, 10)
@@ -629,11 +638,15 @@ const syncInputState = (event) => {
 
   nextTick(resizeTextarea)
 
-  const cursor = (event?.target?.selectionStart !== undefined && event?.target?.selectionStart !== null)
-    ? event.target.selectionStart
-    : (textareaRef.value?.selectionStart ?? text.length)
+  const textarea = textareaRef.value || event?.target
+  const cursor = (textarea && typeof textarea.selectionStart === 'number')
+    ? textarea.selectionStart
+    : text.length
   lastCursorPosition.value = cursor
-  const match = text.substring(0, cursor).match(/([@#])([^@#]{0,30})$/)
+
+  const beforeCursor = text.substring(0, cursor)
+  // Match @ or # preceded by start of line or whitespace
+  const match = beforeCursor.match(/(?:^|\s)([@#])([^\s@#]*)$/)
   if (!match) {
     showSuggestions.value = false
     return
@@ -645,6 +658,13 @@ const syncInputState = (event) => {
 }
 
 const handleInput = syncInputState
+
+const handleBlur = () => {
+  // Grace period so touches on suggestion items register before dismissing
+  setTimeout(() => {
+    showSuggestions.value = false
+  }, 250)
+}
 
 const handleSubmit = () => {
   if (textareaRef.value && typeof textareaRef.value.value === 'string') {
@@ -664,10 +684,16 @@ const selectSuggestion = item => {
   const cursor = lastCursorPosition.value ?? textarea.selectionStart ?? text.length
   const before = text.substring(0, cursor)
   const after = text.substring(cursor)
-  const tokenMatch = before.match(/([@#])([^@#]{0,30})$/)
-  const prefix = tokenMatch ? before.substring(0, tokenMatch.index) : before
-  let replacement = ''
+  
+  // Find where the trigger (@ or #) starts in before
+  const tokenMatch = before.match(/(?:^|\s)([@#])([^\s@#]*)$/)
+  let prefix = before
+  if (tokenMatch) {
+    const triggerIndex = before.lastIndexOf(tokenMatch[1])
+    prefix = before.substring(0, triggerIndex)
+  }
 
+  let replacement = ''
   if (item.type === 'project') {
     projectId.value = item.id
     replacement = prefix
@@ -678,11 +704,13 @@ const selectSuggestion = item => {
   const finalValue = replacement + after
 
   textarea.value = finalValue
-  syncInputState({ target: textarea })
-
+  rawInputText.value = finalValue
+  messageModel.value = finalValue
   showSuggestions.value = false
-  lastCursorPosition.value = null
+  lastCursorPosition.value = replacement.length
+
   nextTick(() => {
+    resizeTextarea()
     textarea.focus()
     textarea.setSelectionRange(replacement.length, replacement.length)
   })
@@ -720,30 +748,12 @@ const handleKeydown = event => {
 }
 
 onMounted(() => {
-  const el = textareaRef.value
-  if (el) {
-    el.addEventListener('compositionstart', syncInputState)
-    el.addEventListener('compositionupdate', syncInputState)
-    el.addEventListener('compositionend', syncInputState)
-    el.addEventListener('input', syncInputState)
-    el.addEventListener('beforeinput', syncInputState)
-    el.addEventListener('keyup', syncInputState)
-    el.addEventListener('change', syncInputState)
-  }
+  // Initial size check
+  nextTick(resizeTextarea)
 })
 
 onUnmounted(() => {
   clearAttachments()
-  const el = textareaRef.value
-  if (el) {
-    el.removeEventListener('compositionstart', syncInputState)
-    el.removeEventListener('compositionupdate', syncInputState)
-    el.removeEventListener('compositionend', syncInputState)
-    el.removeEventListener('input', syncInputState)
-    el.removeEventListener('beforeinput', syncInputState)
-    el.removeEventListener('keyup', syncInputState)
-    el.removeEventListener('change', syncInputState)
-  }
 })
 
 const focus = () => {
