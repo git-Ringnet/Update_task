@@ -1,10 +1,9 @@
 <template>
-  <div class="h-full flex flex-col bg-[#F9F4EE] overflow-hidden">
+  <div class="h-screen max-h-screen flex flex-col bg-[#F9F4EE] overflow-hidden">
     <Navbar />
 
     <main
-      class="max-w-[800px] w-full mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-2 sm:pb-3 flex-1 flex flex-col min-h-0 overflow-hidden"
-      :style="{ height: 'calc(var(--vvh, 100dvh) - 64px)' }">
+      class="max-w-[800px] w-full mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-2 sm:pb-3 flex-1 flex flex-col min-h-0 overflow-hidden">
       <!-- Header Row: Back Button & Vertically Centered Title "Hoạt động của đội" -->
       <div class="relative flex items-center justify-center mb-3 sm:mb-4 min-h-[40px] flex-shrink-0">
         <button @click="goBack" type="button" title="Quay lại"

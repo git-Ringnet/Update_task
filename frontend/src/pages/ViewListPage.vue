@@ -441,7 +441,7 @@
             </div>
 
             <!-- Activity Feed List -->
-            <div v-else class="flex-1 flex flex-col justify-between min-h-0">
+            <div v-else class="flex-1 flex flex-col min-h-0 overflow-hidden">
               <div ref="activityScrollContainer" @scroll="handleActivityScroll"
                 class="activity-feed-scroll space-y-0 overflow-y-auto scrollbar-none flex-1 px-4 pt-3.5 pr-3">
                 <!-- Loading older comments indicator when scrolling up -->
