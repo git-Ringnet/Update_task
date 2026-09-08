@@ -133,7 +133,7 @@
                   @compositionend="projectSearch = $event.target.value"
                   type="text"
                   placeholder="Tìm kiếm dự án..."
-                  class="w-full pl-8 pr-3 py-1.5 text-sm font-bold border border-gray-200 rounded-lg focus:outline-none focus:border-emerald-500 bg-gray-50"
+                  class="w-full pl-8 pr-3 py-1.5 text-[16px] sm:text-sm font-bold border border-gray-200 rounded-lg focus:outline-none focus:border-emerald-500 bg-gray-50"
                   autocomplete="off"
                   @keydown="handlePickerKeydown"
                 />
@@ -206,7 +206,7 @@
           @keyup="handleKeyup"
           @keydown="handleKeydown"
           @change="syncInputState"
-          @focus="syncInputState"
+          @focus="handleFocus"
           @blur="handleBlur"
           @paste="handlePaste"
           rows="1"
@@ -674,6 +674,16 @@ const handleKeyup = (event) => {
     return
   }
   syncInputState(event)
+}
+
+const handleFocus = (event) => {
+  syncInputState(event)
+  if (typeof window !== 'undefined' && window.innerWidth < 768) {
+    setTimeout(() => {
+      window.scrollTo(0, 0)
+      document.body.scrollTop = 0
+    }, 50)
+  }
 }
 
 const handleBlur = () => {

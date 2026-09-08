@@ -181,6 +181,43 @@
           <section ref="projectListPanelRef" class="project-list-panel"
             :class="[viewMode === 'notes' ? 'space-y-3.5 select-none w-full' : 'space-y-3.5 select-none w-[470px] flex-shrink-0', viewMode === 'activities' ? 'mobile-activities-active' : '']">
 
+            <!-- Mobile Top Search Header Bar (Sticky above project list on mobile when search is active) -->
+            <transition
+              enter-active-class="transition duration-200 ease-out"
+              enter-from-class="opacity-0 -translate-y-2"
+              enter-to-class="opacity-100 translate-y-0"
+              leave-active-class="transition duration-150 ease-in"
+              leave-from-class="opacity-100 translate-y-0"
+              leave-to-class="opacity-0 -translate-y-2">
+              <div v-if="isMobileSearchOpen" class="mobile-top-search-bar md:hidden px-3 pt-2 pb-2 bg-[#F9F4EE] border-b border-gray-300/60 sticky top-0 z-30 flex items-center gap-2">
+                <div class="relative flex-1">
+                  <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4d4d4d] text-[16px]"></i>
+                  <input
+                    ref="mobileSearchInputRef"
+                    :value="projectStore.searchQuery"
+                    @input="projectStore.searchQuery = $event.target.value"
+                    @compositionupdate="projectStore.searchQuery = $event.target.value"
+                    @compositionend="projectStore.searchQuery = $event.target.value"
+                    type="text"
+                    placeholder="Tìm kiếm dự án..."
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    class="w-full bg-white border-[2px] border-[#4d4d4d] rounded-xl pl-10 pr-9 py-2 text-[16px] font-bold text-[#32312F] focus:outline-none placeholder-gray-400 shadow-3xs"
+                  />
+                  <button v-if="projectStore.searchQuery" @click="projectStore.searchQuery = ''" type="button"
+                    class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 p-1 cursor-pointer">
+                    <i class="fa-solid fa-circle-xmark text-sm"></i>
+                  </button>
+                </div>
+                <button @click="toggleMobileSearch" type="button"
+                  class="text-sm font-extrabold text-gray-700 hover:text-gray-900 px-2.5 py-1.5 rounded-xl bg-gray-200/70 cursor-pointer shrink-0">
+                  Đóng
+                </button>
+              </div>
+            </transition>
+
             <!-- Skeleton Loading State -->
             <div v-if="projectStore.isLoading && displayedProjects.length === 0"
               class="space-y-3 max-h-[calc(100vh-130px)]">
@@ -907,19 +944,19 @@ const updateKeyboardState = () => {
     document.documentElement.style.removeProperty('--vvh')
     return
   }
+  const activeEl = document.activeElement
+  const isInputFocused = activeEl && (
+    activeEl.tagName === 'INPUT' ||
+    activeEl.tagName === 'TEXTAREA' ||
+    activeEl.isContentEditable
+  )
   if (window.visualViewport) {
     const currentVVH = window.visualViewport.height
     document.documentElement.style.setProperty('--vvh', `${currentVVH}px`)
-    const heightDiff = window.innerHeight - currentVVH
-    isVirtualKeyboardOpen.value = heightDiff > 120
+    const isSmaller = currentVVH < (window.screen.availHeight || window.screen.height || 600) * 0.8
+    isVirtualKeyboardOpen.value = Boolean(isInputFocused || isSmaller)
   } else {
-    const activeEl = document.activeElement
-    const isInputFocused = activeEl && (
-      activeEl.tagName === 'INPUT' ||
-      activeEl.tagName === 'TEXTAREA' ||
-      activeEl.isContentEditable
-    )
-    isVirtualKeyboardOpen.value = !!isInputFocused
+    isVirtualKeyboardOpen.value = Boolean(isInputFocused)
   }
 }
 
@@ -932,6 +969,17 @@ const handleVirtualKeyboardFocusIn = (e) => {
       keyboardBlurTimeout = null
     }
     isVirtualKeyboardOpen.value = true
+    if (window.visualViewport) {
+      document.documentElement.style.setProperty('--vvh', `${window.visualViewport.height}px`)
+    }
+    // Prevent iOS window scroll jumping
+    setTimeout(() => {
+      window.scrollTo(0, 0)
+      document.body.scrollTop = 0
+      if (viewMode.value === 'activities') {
+        scrollToBottom(false)
+      }
+    }, 50)
   }
 }
 
@@ -940,7 +988,9 @@ const handleVirtualKeyboardFocusOut = () => {
   if (keyboardBlurTimeout) clearTimeout(keyboardBlurTimeout)
   keyboardBlurTimeout = setTimeout(() => {
     updateKeyboardState()
-  }, 100)
+    window.scrollTo(0, 0)
+    document.body.scrollTop = 0
+  }, 120)
 }
 
 const handleVisualViewportResize = () => {
@@ -1052,12 +1102,21 @@ const isModalOpen = ref(false)
 
 // Search input ref for keyboard shortcuts
 const searchInputRef = ref(null)
+const mobileSearchInputRef = ref(null)
 const isMobileSearchOpen = ref(false)
 const toggleMobileSearch = async () => {
+  if (viewMode.value === 'activities') {
+    viewMode.value = 'list'
+  }
   isMobileSearchOpen.value = !isMobileSearchOpen.value
   if (isMobileSearchOpen.value) {
     await nextTick()
-    searchInputRef.value?.focus()
+    mobileSearchInputRef.value?.focus()
+    if (scrollContainerDefault.value) scrollContainerDefault.value.scrollTop = 0
+    if (scrollContainerGrouped.value) scrollContainerGrouped.value.scrollTop = 0
+    if (scrollContainerNotes.value) scrollContainerNotes.value.scrollTop = 0
+  } else {
+    projectStore.searchQuery = ''
   }
 }
 const scrollContainerDefault = ref(null)
@@ -3531,14 +3590,7 @@ onUnmounted(() => {
     box-shadow: none !important;
   }
 
-  .view-actions.has-mobile-search-open {
-    height: auto !important;
-    flex-wrap: wrap !important;
-    gap: 8px 20px !important;
-    padding-top: 8px !important;
-  }
-
-  .view-actions.mobile-keyboard-open:not(.has-mobile-search-open) {
+  .view-actions.mobile-keyboard-open {
     display: none !important;
     visibility: hidden !important;
     pointer-events: none !important;
@@ -3579,22 +3631,12 @@ onUnmounted(() => {
   }
 
   .search-input-wrapper {
-    display: none;
-    order: -1;
-    flex-basis: 100%;
-    max-width: none !important;
+    display: none !important;
+  }
+
+  .mobile-top-search-bar {
     width: 100% !important;
-    margin-bottom: 6px !important;
-  }
-
-  .search-input-wrapper.mobile-search-open {
-    display: block !important;
-  }
-
-  .search-input-wrapper input {
-    background: #ffffff !important;
-    border: 2.5px solid #4d4d4d !important;
-    border-radius: 12px !important;
+    box-sizing: border-box !important;
   }
 
   .mobile-search-toggle {
