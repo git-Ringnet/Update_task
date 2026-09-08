@@ -1,9 +1,10 @@
 <template>
-  <div class="h-[100dvh] flex flex-col bg-[#F9F4EE] overflow-hidden">
+  <div class="h-full flex flex-col bg-[#F9F4EE] overflow-hidden">
     <Navbar />
 
     <main
-      class="max-w-[800px] w-full mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-2 sm:pb-3 flex-1 flex flex-col min-h-0 overflow-hidden">
+      class="max-w-[800px] w-full mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-2 sm:pb-3 flex-1 flex flex-col min-h-0 overflow-hidden"
+      :style="{ height: 'calc(var(--vvh, 100dvh) - 64px)' }">
       <!-- Header Row: Back Button & Vertically Centered Title "Hoạt động của đội" -->
       <div class="relative flex items-center justify-center mb-3 sm:mb-4 min-h-[40px] flex-shrink-0">
         <button @click="goBack" type="button" title="Quay lại"
@@ -59,7 +60,8 @@
 
       <!-- Grouped Activities Feed (Scrollable inner list, chat style) -->
       <div v-else ref="activityFeedScrollRef" @scroll="handleFeedScroll"
-        class="flex-1 min-h-0 overflow-y-auto scrollbar-none pr-1 mb-2 sm:mb-3 space-y-6">
+        class="activity-feed-scroll flex-1 min-h-0 overflow-y-auto scrollbar-none pr-1 mb-2 sm:mb-3 space-y-6"
+        style="-webkit-overflow-scrolling: touch; touch-action: pan-y; overscroll-behavior-y: contain;">
         <!-- Loading older comments indicator when scrolling up -->
         <div v-if="isLoadingOlderActivities" class="flex items-center justify-center py-2 text-xs text-gray-500 gap-2">
           <i class="fa-solid fa-circle-notch fa-spin text-emerald-600"></i>
@@ -77,9 +79,8 @@
           <!-- Timeline list, matching the recent-activity panel -->
           <div class="space-y-0">
             <div v-for="(act, idx) in group" :key="act.id" :id="'activity-feed-item-' + act.id"
-              @click="handleActivityClick(act)" @touchstart="handleActivityTouchStart(act)"
-              @touchend="handleActivityTouchEnd" @touchmove="handleActivityTouchMove" @contextmenu.prevent
-              class="feed-activity-item relative flex gap-3 select-none pb-5 cursor-pointer group">
+              @click="handleActivityClick(act)"
+              class="feed-activity-item relative flex gap-3 pb-5 cursor-pointer group">
               <div v-if="idx < group.length - 1" class="absolute top-10 bottom-0 left-[15px] w-[1.5px] bg-gray-300 z-0">
               </div>
 
@@ -977,6 +978,66 @@ const handleVisibilityOrFocus = () => {
   }
 }
 
+const isVirtualKeyboardOpen = ref(false)
+let keyboardBlurTimeout = null
+
+const updateKeyboardState = () => {
+  if (typeof window === 'undefined') return
+  if (window.innerWidth >= 768) {
+    isVirtualKeyboardOpen.value = false
+    document.documentElement.style.removeProperty('--vvh')
+    return
+  }
+  const activeEl = document.activeElement
+  const isInputFocused = activeEl && (
+    activeEl.tagName === 'INPUT' ||
+    activeEl.tagName === 'TEXTAREA' ||
+    activeEl.isContentEditable
+  )
+  if (window.visualViewport) {
+    const currentVVH = window.visualViewport.height
+    document.documentElement.style.setProperty('--vvh', `${currentVVH}px`)
+    const isSmaller = currentVVH < (window.screen.availHeight || window.screen.height || 600) * 0.8
+    isVirtualKeyboardOpen.value = Boolean(isInputFocused || isSmaller)
+  } else {
+    isVirtualKeyboardOpen.value = Boolean(isInputFocused)
+  }
+}
+
+const handleVirtualKeyboardFocusIn = (e) => {
+  if (typeof window === 'undefined' || window.innerWidth >= 768) return
+  const target = e.target
+  if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+    if (keyboardBlurTimeout) {
+      clearTimeout(keyboardBlurTimeout)
+      keyboardBlurTimeout = null
+    }
+    isVirtualKeyboardOpen.value = true
+    if (window.visualViewport) {
+      document.documentElement.style.setProperty('--vvh', `${window.visualViewport.height}px`)
+    }
+    setTimeout(() => {
+      window.scrollTo(0, 0)
+      document.body.scrollTop = 0
+      scrollToBottom(false)
+    }, 50)
+  }
+}
+
+const handleVirtualKeyboardFocusOut = () => {
+  if (typeof window === 'undefined' || window.innerWidth >= 768) return
+  if (keyboardBlurTimeout) clearTimeout(keyboardBlurTimeout)
+  keyboardBlurTimeout = setTimeout(() => {
+    updateKeyboardState()
+    window.scrollTo(0, 0)
+    document.body.scrollTop = 0
+  }, 120)
+}
+
+const handleVisualViewportResize = () => {
+  updateKeyboardState()
+}
+
 onMounted(async () => {
   projectStore.activePage = 'home'
   projectStore.activeStatus = null
@@ -988,6 +1049,11 @@ onMounted(async () => {
   ])
   window.addEventListener('keydown', handleKeydown)
   document.addEventListener('click', handleOutsideActivityClick)
+  document.addEventListener('focusin', handleVirtualKeyboardFocusIn)
+  document.addEventListener('focusout', handleVirtualKeyboardFocusOut)
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', handleVisualViewportResize)
+  }
 
   // Lightweight incremental polling keeps the delay low without downloading
   // the complete activity history over and over.
@@ -1014,8 +1080,14 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (activityTouchTimer) window.clearTimeout(activityTouchTimer)
+  if (keyboardBlurTimeout) clearTimeout(keyboardBlurTimeout)
   window.removeEventListener('keydown', handleKeydown)
   document.removeEventListener('click', handleOutsideActivityClick)
+  document.removeEventListener('focusin', handleVirtualKeyboardFocusIn)
+  document.removeEventListener('focusout', handleVirtualKeyboardFocusOut)
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', handleVisualViewportResize)
+  }
   if (pollTimer) window.clearInterval(pollTimer)
   document.removeEventListener('visibilitychange', handleVisibilityOrFocus)
   window.removeEventListener('focus', handleVisibilityOrFocus)

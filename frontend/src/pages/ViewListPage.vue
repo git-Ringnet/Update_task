@@ -3725,9 +3725,10 @@ onUnmounted(() => {
     box-shadow: none !important;
   }
 
-  .recent-activity-panel>.flex-1 {
+  .recent-activity-panel.mobile-activities-active > div.flex-1 {
     display: flex !important;
     flex-direction: column !important;
+    flex: 1 1 0% !important;
     height: 100% !important;
     min-height: 0 !important;
     overflow: hidden !important;
@@ -3738,6 +3739,9 @@ onUnmounted(() => {
     min-height: 0 !important;
     overflow-y: auto !important;
     padding: 8px 14px 8px 14px !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    overscroll-behavior-y: contain !important;
   }
 
   .project-scroll-container {
