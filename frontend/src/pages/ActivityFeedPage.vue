@@ -1,5 +1,6 @@
 <template>
-  <div class="h-screen max-h-screen flex flex-col bg-[#F9F4EE] overflow-hidden">
+  <div class="activity-feed-page flex flex-col bg-[#F9F4EE] overflow-hidden"
+    :style="{ height: 'var(--vvh, 100dvh)', maxHeight: 'var(--vvh, 100dvh)' }">
     <Navbar />
 
     <main
@@ -980,7 +981,16 @@ const handleVisibilityOrFocus = () => {
 const isVirtualKeyboardOpen = ref(false)
 let keyboardBlurTimeout = null
 
-const updateKeyboardState = () => {
+const resetWindowScroll = () => {
+  if (typeof window === 'undefined') return
+  if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0 || document.body.scrollTop !== 0) {
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+  }
+}
+
+const updateKeyboardState = (fromFocus = false) => {
   if (typeof window === 'undefined') return
   if (window.innerWidth >= 768) {
     isVirtualKeyboardOpen.value = false
@@ -988,19 +998,25 @@ const updateKeyboardState = () => {
     return
   }
   const activeEl = document.activeElement
-  const isInputFocused = activeEl && (
+  const isInputFocused = Boolean(activeEl && (
     activeEl.tagName === 'INPUT' ||
     activeEl.tagName === 'TEXTAREA' ||
     activeEl.isContentEditable
-  )
+  ))
   if (window.visualViewport) {
     const currentVVH = window.visualViewport.height
     document.documentElement.style.setProperty('--vvh', `${currentVVH}px`)
-    const isSmaller = currentVVH < (window.screen.availHeight || window.screen.height || 600) * 0.8
-    isVirtualKeyboardOpen.value = Boolean(isInputFocused || isSmaller)
+    const screenHeight = Math.max(window.innerHeight, window.screen?.height || 0, 600)
+    const isHeightReduced = currentVVH < screenHeight * 0.82
+    if (fromFocus || isInputFocused) {
+      isVirtualKeyboardOpen.value = true
+    } else {
+      isVirtualKeyboardOpen.value = Boolean(isHeightReduced)
+    }
   } else {
-    isVirtualKeyboardOpen.value = Boolean(isInputFocused)
+    isVirtualKeyboardOpen.value = isInputFocused
   }
+  resetWindowScroll()
 }
 
 const handleVirtualKeyboardFocusIn = (e) => {
@@ -1012,14 +1028,22 @@ const handleVirtualKeyboardFocusIn = (e) => {
       keyboardBlurTimeout = null
     }
     isVirtualKeyboardOpen.value = true
-    if (window.visualViewport) {
-      document.documentElement.style.setProperty('--vvh', `${window.visualViewport.height}px`)
-    }
+    updateKeyboardState(true)
+    
+    // Smooth multi-pass scroll reset as iOS virtual keyboard animates
+    resetWindowScroll()
     setTimeout(() => {
-      window.scrollTo(0, 0)
-      document.body.scrollTop = 0
+      resetWindowScroll()
       scrollToBottom(false)
     }, 50)
+    setTimeout(() => {
+      resetWindowScroll()
+      scrollToBottom(false)
+    }, 150)
+    setTimeout(() => {
+      resetWindowScroll()
+      scrollToBottom(false)
+    }, 300)
   }
 }
 
@@ -1028,16 +1052,35 @@ const handleVirtualKeyboardFocusOut = () => {
   if (keyboardBlurTimeout) clearTimeout(keyboardBlurTimeout)
   keyboardBlurTimeout = setTimeout(() => {
     updateKeyboardState()
-    window.scrollTo(0, 0)
-    document.body.scrollTop = 0
+    resetWindowScroll()
   }, 120)
 }
 
-const handleVisualViewportResize = () => {
-  updateKeyboardState()
+const handleVisualViewportChange = () => {
+  if (typeof window === 'undefined' || window.innerWidth >= 768) return
+  const activeEl = document.activeElement
+  const isInputFocused = Boolean(activeEl && (
+    activeEl.tagName === 'INPUT' ||
+    activeEl.tagName === 'TEXTAREA' ||
+    activeEl.isContentEditable
+  ))
+  if (window.visualViewport) {
+    const currentVVH = window.visualViewport.height
+    document.documentElement.style.setProperty('--vvh', `${currentVVH}px`)
+    const screenHeight = Math.max(window.innerHeight, window.screen?.height || 0, 600)
+    const isHeightReduced = currentVVH < screenHeight * 0.82
+    if (!isHeightReduced) {
+      isVirtualKeyboardOpen.value = false
+    } else if (isInputFocused) {
+      isVirtualKeyboardOpen.value = true
+    }
+  }
+  resetWindowScroll()
 }
 
 onMounted(async () => {
+  updateKeyboardState()
+  resetWindowScroll()
   projectStore.activePage = 'home'
   projectStore.activeStatus = null
   await Promise.all([
@@ -1051,7 +1094,8 @@ onMounted(async () => {
   document.addEventListener('focusin', handleVirtualKeyboardFocusIn)
   document.addEventListener('focusout', handleVirtualKeyboardFocusOut)
   if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', handleVisualViewportResize)
+    window.visualViewport.addEventListener('resize', handleVisualViewportChange)
+    window.visualViewport.addEventListener('scroll', handleVisualViewportChange)
   }
 
   // Lightweight incremental polling keeps the delay low without downloading
@@ -1085,7 +1129,8 @@ onUnmounted(() => {
   document.removeEventListener('focusin', handleVirtualKeyboardFocusIn)
   document.removeEventListener('focusout', handleVirtualKeyboardFocusOut)
   if (window.visualViewport) {
-    window.visualViewport.removeEventListener('resize', handleVisualViewportResize)
+    window.visualViewport.removeEventListener('resize', handleVisualViewportChange)
+    window.visualViewport.removeEventListener('scroll', handleVisualViewportChange)
   }
   if (pollTimer) window.clearInterval(pollTimer)
   document.removeEventListener('visibilitychange', handleVisibilityOrFocus)
@@ -1141,6 +1186,24 @@ const scrollToComment = (reply) => {
 </script>
 
 <style scoped>
+.activity-feed-page {
+  height: 100vh;
+  height: 100dvh;
+  height: var(--vvh, 100dvh);
+  max-height: var(--vvh, 100dvh);
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+@media (max-width: 767px) {
+  .activity-feed-page {
+    height: var(--vvh, 100dvh) !important;
+    max-height: var(--vvh, 100dvh) !important;
+    min-height: 0 !important;
+  }
+}
+
 @keyframes activity-card-flash {
 
   0%,

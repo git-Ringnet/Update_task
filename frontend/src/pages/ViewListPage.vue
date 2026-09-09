@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex flex-col pb-2 transition-colors duration-200"
+  <div class="view-list-page min-h-screen flex flex-col pb-2 transition-colors duration-200"
     :class="viewMode === 'notes' ? 'sticky-board-bg pb-12' : 'bg-[#F9F4EE]'">
     <!-- Navbar Component -->
     <Navbar @search="handleSearch" />
@@ -938,26 +938,42 @@ const isShortcutHintsOpen = ref(false)
 const isVirtualKeyboardOpen = ref(false)
 let keyboardBlurTimeout = null
 
-const updateKeyboardState = () => {
+const resetWindowScroll = () => {
+  if (typeof window === 'undefined') return
+  if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0 || document.body.scrollTop !== 0) {
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+  }
+}
+
+const updateKeyboardState = (fromFocus = false) => {
+  if (typeof window === 'undefined') return
   if (window.innerWidth >= 768) {
     isVirtualKeyboardOpen.value = false
     document.documentElement.style.removeProperty('--vvh')
     return
   }
   const activeEl = document.activeElement
-  const isInputFocused = activeEl && (
+  const isInputFocused = Boolean(activeEl && (
     activeEl.tagName === 'INPUT' ||
     activeEl.tagName === 'TEXTAREA' ||
     activeEl.isContentEditable
-  )
+  ))
   if (window.visualViewport) {
     const currentVVH = window.visualViewport.height
     document.documentElement.style.setProperty('--vvh', `${currentVVH}px`)
-    const isSmaller = currentVVH < (window.screen.availHeight || window.screen.height || 600) * 0.8
-    isVirtualKeyboardOpen.value = Boolean(isInputFocused || isSmaller)
+    const screenHeight = Math.max(window.innerHeight, window.screen?.height || 0, 600)
+    const isHeightReduced = currentVVH < screenHeight * 0.82
+    if (fromFocus || isInputFocused) {
+      isVirtualKeyboardOpen.value = true
+    } else {
+      isVirtualKeyboardOpen.value = Boolean(isHeightReduced)
+    }
   } else {
-    isVirtualKeyboardOpen.value = Boolean(isInputFocused)
+    isVirtualKeyboardOpen.value = isInputFocused
   }
+  resetWindowScroll()
 }
 
 const handleVirtualKeyboardFocusIn = (e) => {
@@ -969,17 +985,28 @@ const handleVirtualKeyboardFocusIn = (e) => {
       keyboardBlurTimeout = null
     }
     isVirtualKeyboardOpen.value = true
-    if (window.visualViewport) {
-      document.documentElement.style.setProperty('--vvh', `${window.visualViewport.height}px`)
-    }
-    // Prevent iOS window scroll jumping
+    updateKeyboardState(true)
+    
+    // Multi-pass scroll reset as iOS keyboard opens
+    resetWindowScroll()
     setTimeout(() => {
-      window.scrollTo(0, 0)
-      document.body.scrollTop = 0
+      resetWindowScroll()
       if (viewMode.value === 'activities') {
         scrollToBottom(false)
       }
     }, 50)
+    setTimeout(() => {
+      resetWindowScroll()
+      if (viewMode.value === 'activities') {
+        scrollToBottom(false)
+      }
+    }, 150)
+    setTimeout(() => {
+      resetWindowScroll()
+      if (viewMode.value === 'activities') {
+        scrollToBottom(false)
+      }
+    }, 300)
   }
 }
 
@@ -988,13 +1015,30 @@ const handleVirtualKeyboardFocusOut = () => {
   if (keyboardBlurTimeout) clearTimeout(keyboardBlurTimeout)
   keyboardBlurTimeout = setTimeout(() => {
     updateKeyboardState()
-    window.scrollTo(0, 0)
-    document.body.scrollTop = 0
+    resetWindowScroll()
   }, 120)
 }
 
 const handleVisualViewportResize = () => {
-  updateKeyboardState()
+  if (typeof window === 'undefined' || window.innerWidth >= 768) return
+  const activeEl = document.activeElement
+  const isInputFocused = Boolean(activeEl && (
+    activeEl.tagName === 'INPUT' ||
+    activeEl.tagName === 'TEXTAREA' ||
+    activeEl.isContentEditable
+  ))
+  if (window.visualViewport) {
+    const currentVVH = window.visualViewport.height
+    document.documentElement.style.setProperty('--vvh', `${currentVVH}px`)
+    const screenHeight = Math.max(window.innerHeight, window.screen?.height || 0, 600)
+    const isHeightReduced = currentVVH < screenHeight * 0.82
+    if (!isHeightReduced) {
+      isVirtualKeyboardOpen.value = false
+    } else if (isInputFocused) {
+      isVirtualKeyboardOpen.value = true
+    }
+  }
+  resetWindowScroll()
 }
 
 const updateTvPosition = () => {
@@ -3041,6 +3085,8 @@ const handleScroll = (event) => {
 }
 
 onMounted(async () => {
+  updateKeyboardState()
+  resetWindowScroll()
   projectStore.activePage = 'home'
   projectStore.activeStatus = null
   loadCustomViews()
@@ -3060,6 +3106,7 @@ onMounted(async () => {
   document.addEventListener('focusout', handleVirtualKeyboardFocusOut)
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', handleVisualViewportResize)
+    window.visualViewport.addEventListener('scroll', handleVisualViewportResize)
   }
 
   // Drag selection events
@@ -3110,6 +3157,7 @@ onUnmounted(() => {
   document.removeEventListener('focusout', handleVirtualKeyboardFocusOut)
   if (window.visualViewport) {
     window.visualViewport.removeEventListener('resize', handleVisualViewportResize)
+    window.visualViewport.removeEventListener('scroll', handleVisualViewportResize)
   }
 
   // Clean up drag selection events
@@ -3542,11 +3590,24 @@ onUnmounted(() => {
 }
 
 @media (max-width: 767px) {
+  .view-list-page {
+    height: 100dvh !important;
+    height: var(--vvh, 100dvh) !important;
+    max-height: var(--vvh, 100dvh) !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding-bottom: 0 !important;
+    position: relative !important;
+    width: 100% !important;
+  }
+
   main {
     padding: 0 !important;
     max-width: 100% !important;
-    height: calc(var(--vvh, 100dvh) - 64px) !important;
-    max-height: calc(var(--vvh, 100dvh) - 64px) !important;
+    flex: 1 1 0% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
     overflow: hidden !important;
   }
 
@@ -3557,8 +3618,9 @@ onUnmounted(() => {
     gap: 0 !important;
     height: 100% !important;
     max-height: 100% !important;
+    min-height: 0 !important;
     overflow: hidden !important;
-    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)) !important;
     box-sizing: border-box !important;
   }
 
@@ -3720,9 +3782,13 @@ onUnmounted(() => {
     height: 100% !important;
     max-height: 100% !important;
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 0 0 6px 0 !important;
     box-sizing: border-box !important;
     box-shadow: none !important;
+  }
+
+  .view-page-layout.mobile-keyboard-open .recent-activity-panel.mobile-activities-active {
+    padding-bottom: 0 !important;
   }
 
   .recent-activity-panel.mobile-activities-active > div.flex-1 {

@@ -109,7 +109,7 @@
 
 <script setup>
 import { onMounted, onUnmounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useToastStore } from './stores/toast'
 import { useConfirmStore } from './stores/confirm'
 import { useAuthStore } from './stores/auth'
@@ -118,8 +118,20 @@ import { useBrowserNotificationStore } from './stores/browserNotifications'
 const toastStore = useToastStore()
 const confirmStore = useConfirmStore()
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const browserNotifications = useBrowserNotificationStore()
+
+watch(() => route.path, () => {
+  if (typeof window !== 'undefined') {
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+    if (window.visualViewport) {
+      document.documentElement.style.setProperty('--vvh', `${window.visualViewport.height}px`)
+    }
+  }
+})
 
 const requestBrowserNotificationPermission = () => {
   // Existing users may already have granted the old foreground-notification

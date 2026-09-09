@@ -679,10 +679,20 @@ const handleKeyup = (event) => {
 const handleFocus = (event) => {
   syncInputState(event)
   if (typeof window !== 'undefined' && window.innerWidth < 768) {
-    setTimeout(() => {
-      window.scrollTo(0, 0)
-      document.body.scrollTop = 0
-    }, 50)
+    if (window.visualViewport) {
+      document.documentElement.style.setProperty('--vvh', `${window.visualViewport.height}px`)
+    }
+    const resetScroll = () => {
+      if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0 || document.body.scrollTop !== 0) {
+        window.scrollTo(0, 0)
+        document.documentElement.scrollTop = 0
+        document.body.scrollTop = 0
+      }
+    }
+    resetScroll()
+    setTimeout(resetScroll, 50)
+    setTimeout(resetScroll, 150)
+    setTimeout(resetScroll, 300)
   }
 }
 
