@@ -58,6 +58,11 @@
             <i class="fa-solid fa-magnifying-glass text-[18px]"></i>
           </button>
 
+          <!-- Brand Logo Ringnet -->
+          <div class="brand-logo-container select-none flex justify-end w-full max-w-[270px] pt-1 pr-0.5">
+            <img src="/xuong-rong-ringnet-logo.png" alt="Xương Rồng được phát triển bởi RINGNET" class="h-12 w-auto object-contain pointer-events-none" />
+          </div>
+
           <!-- Keyboard shortcuts are collapsed by default to leave room for TV. -->
           <div class="keyboard-hints relative w-full max-w-[270px] flex justify-end">
             <button type="button" @click="toggleShortcutHints" class="shortcut-hints-toggle" title="Phím tắt">
@@ -3480,6 +3485,10 @@ onUnmounted(() => {
     display: none !important;
   }
 
+  .brand-logo-container {
+    display: none !important;
+  }
+
   .tv-broadcast-panel {
     display: none !important;
   }
@@ -3602,6 +3611,10 @@ onUnmounted(() => {
   }
 
   .keyboard-hints {
+    display: none !important;
+  }
+
+  .brand-logo-container {
     display: none !important;
   }
 
@@ -3802,6 +3815,10 @@ onUnmounted(() => {
   }
 
   .keyboard-hints {
+    display: none !important;
+  }
+
+  .brand-logo-container {
     display: none !important;
   }
 
