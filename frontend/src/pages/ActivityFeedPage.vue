@@ -158,10 +158,12 @@
                 </div>
 
                 <!-- Project title -->
-                <div v-if="act.project" @click="handleActivityProjectClick(act.project.id, $event)"
-                  class="text-[#1A7A56] hover:underline font-extrabold text-[18px] sm:text-[19px] cursor-pointer mt-0.5 mb-1 max-w-full truncate block leading-snug"
-                  :title="act.project.title">
-                  {{ act.project.title }}
+                <div v-if="act.project" class="leading-snug mt-0.5 mb-1 max-w-full">
+                  <span @click="handleActivityProjectClick(act.project.id, $event)"
+                    class="activity-project-link text-[#1A7A56] hover:underline font-extrabold text-[18px] sm:text-[19px] cursor-pointer max-w-full truncate inline-block w-fit align-middle"
+                    :title="act.project.title">
+                    {{ act.project.title }}
+                  </span>
                 </div>
 
                 <!-- Comment content (Normal Display) -->
