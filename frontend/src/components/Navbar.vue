@@ -1,17 +1,22 @@
 <template>
-  <header class="bg-[#F9F4EE] sticky top-0 z-50 py-2">
-    <!-- Navbar Container: Centered workspace dropdown -->
-    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-center relative"
-      ref="dropdownRef">
-      <!-- Left Slot Content (Dynamic Back / Actions or Brand Logo) -->
-      <div class="absolute left-4 sm:left-6 lg:left-8 top-1/2 -translate-y-1/2 flex items-center">
-        <slot name="left">
-          <router-link to="/views" class="flex items-center select-none hover:opacity-85 transition-opacity" title="RINGNET">
-            <img src="/ringnet-logo.png" alt="RINGNET" class="h-11 sm:h-13 md:h-14 w-auto object-contain max-h-[58px]" />
-          </router-link>
-        </slot>
-      </div>
+  <header class="bg-[#F9F4EE] sticky top-0 z-50 py-2 px-2.5 sm:px-3 relative">
+    <!-- Left Slot Content (Dynamic Back / Actions or Brand Logo) -->
+    <div class="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 flex items-center z-10">
+      <slot name="left">
+        <router-link to="/views" class="flex items-center select-none hover:opacity-85 transition-opacity" title="RINGNET">
+          <img src="/ringnet-logo.png" alt="RINGNET" class="h-11 sm:h-13 md:h-14 w-auto object-contain max-h-[58px]" />
+        </router-link>
+      </slot>
+    </div>
 
+    <!-- Right Slot Content (Dynamic Options/Menu) -->
+    <div class="absolute right-2.5 sm:right-4 top-1/2 -translate-y-1/2 flex items-center z-10">
+      <slot name="right"></slot>
+    </div>
+
+    <!-- Navbar Container: Centered workspace dropdown -->
+    <div class="max-w-[1440px] mx-auto h-12 flex items-center justify-center relative"
+      ref="dropdownRef">
       <!-- Top Center Dropdown Trigger -->
       <button @click="toggleDropdown" type="button"
         class="bg-transparent px-5 py-2 rounded-full border border-gray-300 hover:border-emerald-350 shadow-3xs hover:shadow-2xs flex items-center gap-2 transition-all duration-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:ring-offset-1 text-sm font-bold text-gray-900">
@@ -147,11 +152,6 @@
           </div>
         </div>
       </transition>
-
-      <!-- Right Slot Content (Dynamic Options/Menu) -->
-      <div class="absolute right-4 sm:right-6 lg:right-8 top-1/2 -translate-y-1/2 flex items-center">
-        <slot name="right"></slot>
-      </div>
     </div>
 
     <!-- Broadcast modal: teleport out of the sticky navbar stacking context. -->
