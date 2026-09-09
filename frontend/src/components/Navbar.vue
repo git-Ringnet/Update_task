@@ -3,9 +3,13 @@
     <!-- Navbar Container: Centered workspace dropdown -->
     <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-center relative"
       ref="dropdownRef">
-      <!-- Left Slot Content (Dynamic Back / Actions) -->
+      <!-- Left Slot Content (Dynamic Back / Actions or Brand Logo) -->
       <div class="absolute left-4 sm:left-6 lg:left-8 top-1/2 -translate-y-1/2 flex items-center">
-        <slot name="left"></slot>
+        <slot name="left">
+          <router-link to="/views" class="flex items-center select-none hover:opacity-85 transition-opacity" title="RINGNET">
+            <img src="/ringnet-logo.png" alt="RINGNET" class="h-11 sm:h-13 md:h-14 w-auto object-contain max-h-[58px]" />
+          </router-link>
+        </slot>
       </div>
 
       <!-- Top Center Dropdown Trigger -->
