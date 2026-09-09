@@ -156,7 +156,7 @@ class ProjectPushService
                     'publicKey' => config('webpush.public_key'),
                     'privateKey' => config('webpush.private_key'),
                 ],
-            ], ['TTL' => 300, 'urgency' => 'high'], 10, $clientOptions);
+            ], ['TTL' => 86400, 'urgency' => 'high'], 10, $clientOptions);
 
             foreach ($subscriptions as $subscription) {
                 $webPush->queueNotification(

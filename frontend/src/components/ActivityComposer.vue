@@ -74,32 +74,57 @@
         </button>
       </div>
 
-      <!-- Top Toolbar Row: Paperclip, Image, Project Selector Pill -->
-      <div class="flex items-center justify-between px-3.5 py-2 bg-[#F9F4EE] border-b border-gray-300/40 select-none"
+      <!-- Top Toolbar Row: Paperclip (File & Image), Emoji, Project Selector Pill -->
+      <div class="flex items-center justify-between px-3.5 py-2.5 sm:py-2 bg-[#F9F4EE] border-b border-gray-300/40 select-none"
         :class="{ 'rounded-t-[14px]': !replyingTo && !editingComment }">
-        <div class="flex items-center gap-3 text-gray-700">
+        <div class="flex items-center gap-2.5 sm:gap-3 text-gray-700 relative">
           <input ref="fileInputRef" type="file" multiple
-            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar" class="hidden" @change="handleFileSelection" />
-          <input ref="imageFileInputRef" type="file" multiple
-            accept="image/*" class="hidden" @change="handleFileSelection" />
+            accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.7z,.csv,*/*" class="hidden" @change="handleFileSelection" />
 
-          <!-- Paperclip button -->
-          <button type="button" title="Đính kèm tệp" @click="fileInputRef?.click()"
-            class="text-gray-700 hover:text-[#1A7A56] cursor-pointer transition-colors p-0.5">
-            <i class="fa-solid fa-paperclip text-lg"></i>
+          <!-- Paperclip button (Tệp & Ảnh) -->
+          <button type="button" title="Đính kèm tệp hoặc ảnh" @click="fileInputRef?.click()"
+            class="w-11 h-11 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-gray-700 hover:text-[#1A7A56] hover:bg-stone-200/60 active:bg-stone-300 transition-all cursor-pointer active:scale-95">
+            <i class="fa-solid fa-paperclip text-[23px] sm:text-[21px]"></i>
           </button>
 
-          <!-- Image button -->
-          <button type="button" title="Đính kèm ảnh" @click="imageFileInputRef?.click()"
-            class="text-gray-700 hover:text-[#1A7A56] cursor-pointer transition-colors p-0.5">
-            <i class="fa-solid fa-image text-lg"></i>
+          <!-- Emoji Picker button -->
+          <button type="button" title="Biểu tượng cảm xúc" @click="toggleEmojiPicker"
+            class="w-11 h-11 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-gray-700 hover:text-[#1A7A56] hover:bg-stone-200/60 active:bg-stone-300 transition-all cursor-pointer active:scale-95"
+            :class="{ 'text-[#1A7A56] bg-stone-200/60': isEmojiPickerOpen }">
+            <i class="fa-regular fa-face-smile text-[24px] sm:text-[22px]"></i>
           </button>
+
+          <!-- Emoji Picker Popover -->
+          <div v-show="isEmojiPickerOpen"
+            class="fixed inset-0 z-40 bg-black/10 sm:bg-transparent"
+            @click="dismissEmojiPicker"></div>
+
+          <div v-if="hasOpenedEmojiPicker"
+            v-show="isEmojiPickerOpen"
+            class="absolute bottom-full left-0 mb-2 z-50 rounded-2xl shadow-2xl overflow-hidden flex flex-col w-[min(340px,calc(100vw-24px))] sm:w-[330px] animate-fade-in-up border border-gray-200 bg-white"
+            @click.stop>
+            <div class="px-3 py-1.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+              <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Biểu tượng cảm xúc</span>
+              <button type="button" @click="dismissEmojiPicker" class="text-gray-400 hover:text-gray-700 p-1 cursor-pointer">
+                <i class="fa-solid fa-xmark text-sm"></i>
+              </button>
+            </div>
+            <EmojiPicker
+              :native="true"
+              :display-recent="true"
+              :disable-skin-tones="true"
+              :disable-sticky-group-names="true"
+              :static-texts="{ placeholder: 'Tìm kiếm biểu tượng...' }"
+              class="v3-emoji-picker--custom !w-full !border-0 !shadow-none"
+              @select="onSelectEmoji"
+            />
+          </div>
         </div>
 
         <!-- Project Selector Pill (Green pill matching image) -->
         <div class="relative min-w-0 max-w-[210px]">
           <button type="button" @click="toggleProjectPicker"
-            class="px-3 py-1 bg-[#e6f4ea] hover:bg-[#d8edd9] border border-emerald-300/80 rounded-full flex items-center gap-1.5 cursor-pointer text-[#1A7A56] font-extrabold text-[16px] transition-colors max-w-full truncate shadow-3xs"
+            class="px-3.5 py-1.5 sm:py-1 bg-[#e6f4ea] hover:bg-[#d8edd9] border border-emerald-300/80 rounded-full flex items-center gap-1.5 cursor-pointer text-[#1A7A56] font-extrabold text-[15px] sm:text-[14px] transition-colors max-w-full truncate shadow-3xs"
             :title="selectedProject ? selectedProject.title : 'Chọn dự án'">
             <span class="truncate">{{ selectedProject ? selectedProject.title : 'Chọn dự án...' }}</span>
             <i class="fa-solid fa-chevron-down text-xs shrink-0 transition-transform"
@@ -166,7 +191,7 @@
       </div>
 
       <!-- Attachment list preview -->
-      <div v-if="attachments.length" class="flex flex-wrap gap-2 px-3.5 pt-2 pb-1 bg-white">
+      <div v-if="attachments.length" class="flex flex-wrap gap-2 px-3.5 pt-2 pb-1.5 bg-white max-h-[85px] overflow-y-auto overscroll-contain border-b border-gray-100">
         <div v-for="(attachment, index) in attachments" :key="attachment.key"
           class="relative flex-shrink-0">
           <img v-if="attachment.isImage" :src="attachment.preview" :alt="attachment.name"
@@ -205,7 +230,9 @@
           @compositionend="syncInputState"
           @keyup="handleKeyup"
           @keydown="handleKeydown"
-          @change="syncInputState"
+          @click="updateCursorPos"
+          @pointerup="updateCursorPos"
+          @touchend="updateCursorPos"
           @focus="handleFocus"
           @blur="handleBlur"
           @paste="handlePaste"
@@ -220,9 +247,9 @@
         <div class="flex-shrink-0 flex items-center mb-0.5">
           <button @click="handleSubmit" :disabled="submitting || !canSend" type="button"
             :title="editingComment ? 'Lưu thay đổi' : 'Gửi cập nhật (Hú hú)'"
-            class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-white shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
+            class="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
             :class="canSend && !submitting ? 'bg-[#45A246] hover:bg-[#3a903b] opacity-100 shadow-sm' : 'bg-gray-300/80 opacity-40 cursor-not-allowed'">
-            <i class="fa-solid fa-dove text-sm"></i>
+            <i class="fa-solid fa-dove text-[15px]"></i>
           </button>
         </div>
       </div>
@@ -233,6 +260,8 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import axios from 'axios'
+import EmojiPicker from 'vue3-emoji-picker'
+import 'vue3-emoji-picker/css'
 import { useAuthStore } from '../stores/auth'
 
 const props = defineProps({
@@ -264,8 +293,77 @@ const trigger = ref('')
 const query = ref('')
 const suggestionIndex = ref(0)
 const fileInputRef = ref(null)
-const imageFileInputRef = ref(null)
 const attachments = ref([])
+
+const isEmojiPickerOpen = ref(false)
+const hasOpenedEmojiPicker = ref(true)
+
+const updateCursorPos = (event) => {
+  const textarea = textareaRef.value || event?.target
+  if (textarea && document.activeElement === textarea && typeof textarea.selectionStart === 'number') {
+    lastCursorPosition.value = textarea.selectionStart
+  }
+}
+
+const toggleEmojiPicker = () => {
+  const textarea = textareaRef.value
+  if (textarea && document.activeElement === textarea && typeof textarea.selectionStart === 'number') {
+    lastCursorPosition.value = textarea.selectionStart
+  }
+  if (!isEmojiPickerOpen.value) {
+    hasOpenedEmojiPicker.value = true
+    isEmojiPickerOpen.value = true
+    isProjectPickerOpen.value = false
+    showSuggestions.value = false
+  } else {
+    isEmojiPickerOpen.value = false
+  }
+}
+
+const dismissEmojiPicker = () => {
+  isEmojiPickerOpen.value = false
+}
+
+const onSelectEmoji = (emoji) => {
+  const char = emoji?.i || emoji?.r || (typeof emoji === 'string' ? emoji : '')
+  if (char) {
+    insertEmoji(char)
+  }
+}
+
+const insertEmoji = (emoji) => {
+  const textarea = textareaRef.value
+  const text = (rawInputText.value || messageModel.value || textarea?.value || '')
+  
+  let cursor = text.length
+  if (typeof lastCursorPosition.value === 'number' && lastCursorPosition.value >= 0 && lastCursorPosition.value <= text.length) {
+    cursor = lastCursorPosition.value
+  } else if (textarea && document.activeElement === textarea && typeof textarea.selectionStart === 'number') {
+    cursor = textarea.selectionStart
+  }
+  
+  if (cursor < 0 || cursor > text.length) {
+    cursor = text.length
+  }
+
+  const before = text.substring(0, cursor)
+  const after = text.substring(cursor)
+  const finalValue = before + emoji + after
+  
+  const newPos = cursor + emoji.length
+  lastCursorPosition.value = newPos
+
+  if (textarea) textarea.value = finalValue
+  rawInputText.value = finalValue
+  messageModel.value = finalValue
+  
+  resizeTextarea()
+  if (textarea && document.activeElement === textarea) {
+    try {
+      textarea.setSelectionRange(newPos, newPos)
+    } catch {}
+  }
+}
 
 const mobileSearchInputRef = ref(null)
 
@@ -485,20 +583,55 @@ const normalize = value => String(value || '')
   .toLowerCase()
   .trim()
 
-const matches = (value) => {
-  const normalizedQuery = normalize(query.value)
+const matches = (value, q = query.value) => {
+  const normalizedQuery = normalize(q)
   if (!normalizedQuery) return true
   const normalizedValue = normalize(value)
+  if (!normalizedValue) return false
 
-  if (normalizedValue.includes(normalizedQuery)) return true
+  if (normalizedValue.startsWith(normalizedQuery)) return true
 
   const words = normalizedValue.split(/\s+/).filter(Boolean)
-  const startsWithWord = words.some(word => word.startsWith(normalizedQuery))
+  if (words.some(word => word.startsWith(normalizedQuery))) return true
+
   const initials = words.map(word => word[0]).join('')
-  return startsWithWord || initials.includes(normalizedQuery)
+  if (initials.includes(normalizedQuery)) return true
+
+  return normalizedValue.includes(normalizedQuery)
+}
+
+const getMatchScore = (name, q = query.value) => {
+  const normQuery = normalize(q)
+  if (!normQuery) return 0
+  const normName = normalize(name)
+  if (normName.startsWith(normQuery)) return 100
+  const words = normName.split(/\s+/).filter(Boolean)
+  if (words.some(w => w.startsWith(normQuery))) return 80
+  const initials = words.map(w => w[0]).join('')
+  if (initials.startsWith(normQuery)) return 60
+  if (normName.includes(normQuery)) return 40
+  return 0
 }
 
 const selectedProject = computed(() => props.projects.find(project => String(project.id) === String(projectId.value)) || null)
+
+const projectMemberIdSet = computed(() => {
+  const set = new Set()
+  const proj = selectedProject.value
+  if (!proj) return set
+  if (Array.isArray(proj.members)) {
+    proj.members.forEach(m => {
+      const id = typeof m === 'object' ? m?.id : m
+      if (id) set.add(Number(id))
+    })
+  }
+  if (proj.lead_id) set.add(Number(proj.lead_id))
+  if (proj.lead?.id) set.add(Number(proj.lead.id))
+  if (proj.created_by) set.add(Number(proj.created_by))
+  if (proj.creator?.id) set.add(Number(proj.creator.id))
+  return set
+})
+
 const filteredPickerProjects = computed(() => {
   const rawQuery = projectSearch.value.trim()
   if (!rawQuery) return props.projects
@@ -522,6 +655,7 @@ const dismissProjectPicker = () => {
 const toggleProjectPicker = () => {
   isProjectPickerOpen.value = !isProjectPickerOpen.value
   if (isProjectPickerOpen.value) {
+    isEmojiPickerOpen.value = false
     projectSearch.value = ''
     nextTick(() => {
       mobileSearchInputRef.value?.focus()
@@ -597,14 +731,61 @@ const suggestions = computed(() => {
   const items = []
   const currentUserId = String(authStore.user?.id || '')
   const otherUsers = (props.users || []).filter(user => String(user.id) !== currentUserId)
+  const q = query.value.trim()
+  const isQueryEmpty = !q
 
-  if (matches('all') || matches('@all')) items.push({ type: 'all', id: 'all', title: '@all', token: 'all', subtitle: `Tất cả ${otherUsers.length} thành viên` })
-  otherUsers.filter(user => matches(user.name) || matches(String(user.email || '').split('@')[0])).forEach(user => {
-    items.push({ type: 'member', id: user.id, title: user.name, subtitle: 'Thành viên' })
+  // 1. Initial State (@ typed without search letters):
+  // Show only members belonging to this project (or all if none defined), plus @all
+  if (isQueryEmpty) {
+    items.push({ type: 'all', id: 'all', title: '@all', token: 'all', subtitle: `Tất cả ${otherUsers.length} thành viên` })
+    
+    const projectMembers = otherUsers.filter(user => projectMemberIdSet.value.has(Number(user.id)))
+    const usersToShow = projectMembers.length > 0 ? projectMembers : otherUsers
+    
+    usersToShow.forEach(user => {
+      items.push({
+        type: 'member',
+        id: user.id,
+        title: user.name,
+        subtitle: 'Thành viên'
+      })
+    })
+
+    ;(props.groups || []).forEach(group => {
+      items.push({ type: 'group', id: group.id, title: group.name, subtitle: group.description || 'Nhóm nhắc tên' })
+    })
+
+    return items.slice(0, 10)
+  }
+
+  // 2. Search State (User typed letters after @, e.g. @H):
+  // Match across all members in system, prioritizing words starting with query
+  if (matches('all') || matches('@all')) {
+    items.push({ type: 'all', id: 'all', title: '@all', token: 'all', subtitle: `Tất cả ${otherUsers.length} thành viên` })
+  }
+
+  const matchingUsers = otherUsers
+    .filter(user => matches(user.name) || matches(String(user.email || '').split('@')[0]))
+    .map(user => {
+      const isProjectMember = projectMemberIdSet.value.has(Number(user.id))
+      const score = getMatchScore(user.name) + (isProjectMember ? 10 : 0)
+      return { user, isProjectMember, score }
+    })
+    .sort((a, b) => b.score - a.score)
+
+  matchingUsers.forEach(({ user, isProjectMember }) => {
+    items.push({
+      type: 'member',
+      id: user.id,
+      title: user.name,
+      subtitle: isProjectMember ? 'Thành viên' : '+ Thêm vào dự án'
+    })
   })
+
   ;(props.groups || []).filter(group => matches(group.name) || matches(group.description)).forEach(group => {
     items.push({ type: 'group', id: group.id, title: group.name, subtitle: group.description || 'Nhóm nhắc tên' })
   })
+
   return items.slice(0, 10)
 })
 
@@ -627,11 +808,12 @@ watch(messageModel, value => {
 })
 
 const syncInputState = (event) => {
+  const textarea = textareaRef.value
   let text = ''
-  if (event && event.target && typeof event.target.value === 'string') {
+  if (event?.target && typeof event.target.value === 'string') {
     text = event.target.value
-  } else if (textareaRef.value && typeof textareaRef.value.value === 'string') {
-    text = textareaRef.value.value
+  } else if (textarea && typeof textarea.value === 'string') {
+    text = textarea.value
   } else {
     text = messageModel.value || ''
   }
@@ -643,10 +825,14 @@ const syncInputState = (event) => {
 
   nextTick(resizeTextarea)
 
-  const textarea = textareaRef.value || event?.target
-  const cursor = (textarea && typeof textarea.selectionStart === 'number')
-    ? textarea.selectionStart
-    : text.length
+  let cursor = text.length
+  if (event?.target && typeof event.target.selectionStart === 'number') {
+    cursor = event.target.selectionStart
+  } else if (textarea && typeof textarea.selectionStart === 'number') {
+    cursor = textarea.selectionStart
+  } else if (typeof lastCursorPosition.value === 'number') {
+    cursor = lastCursorPosition.value
+  }
   lastCursorPosition.value = cursor
 
   const beforeCursor = text.substring(0, cursor)
@@ -825,3 +1011,30 @@ const focus = () => {
 }
 defineExpose({ focus, focusTextarea, buildAttachmentHtml, clearAttachments })
 </script>
+
+<style scoped>
+:deep(.v3-emoji-picker) {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 275px !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  border: none !important;
+}
+
+:deep(.v3-emoji-picker .v3-search input) {
+  font-size: 14px !important;
+  height: 34px !important;
+  border-radius: 8px !important;
+  border-color: #e5e7eb !important;
+  background-color: #f9fafb !important;
+}
+
+:deep(.v3-emoji-picker .v3-search input:focus) {
+  border-color: #10b981 !important;
+}
+
+:deep(.v3-emoji-picker .v3-footer) {
+  display: none !important;
+}
+</style>

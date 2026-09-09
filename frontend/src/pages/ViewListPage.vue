@@ -182,30 +182,22 @@
             :class="[viewMode === 'notes' ? 'space-y-3.5 select-none w-full' : 'space-y-3.5 select-none w-[470px] flex-shrink-0', viewMode === 'activities' ? 'mobile-activities-active' : '']">
 
             <!-- Mobile Top Search Header Bar (Sticky above project list on mobile when search is active) -->
-            <transition
-              enter-active-class="transition duration-200 ease-out"
-              enter-from-class="opacity-0 -translate-y-2"
-              enter-to-class="opacity-100 translate-y-0"
-              leave-active-class="transition duration-150 ease-in"
-              leave-from-class="opacity-100 translate-y-0"
+            <transition enter-active-class="transition duration-200 ease-out"
+              enter-from-class="opacity-0 -translate-y-2" enter-to-class="opacity-100 translate-y-0"
+              leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 translate-y-0"
               leave-to-class="opacity-0 -translate-y-2">
-              <div v-if="isMobileSearchOpen" class="mobile-top-search-bar md:hidden px-3 pt-2 pb-2 bg-[#F9F4EE] border-b border-gray-300/60 sticky top-0 z-30 flex items-center gap-2">
+              <div v-if="isMobileSearchOpen"
+                class="mobile-top-search-bar md:hidden px-3 pt-2 pb-2 bg-[#F9F4EE] border-b border-gray-300/60 sticky top-0 z-30 flex items-center gap-2">
                 <div class="relative flex-1">
-                  <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4d4d4d] text-[16px]"></i>
-                  <input
-                    ref="mobileSearchInputRef"
-                    :value="projectStore.searchQuery"
+                  <i
+                    class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4d4d4d] text-[16px]"></i>
+                  <input ref="mobileSearchInputRef" :value="projectStore.searchQuery"
                     @input="projectStore.searchQuery = $event.target.value"
                     @compositionupdate="projectStore.searchQuery = $event.target.value"
-                    @compositionend="projectStore.searchQuery = $event.target.value"
-                    type="text"
-                    placeholder="Tìm kiếm dự án..."
-                    autocomplete="off"
-                    autocorrect="off"
-                    autocapitalize="off"
+                    @compositionend="projectStore.searchQuery = $event.target.value" type="text"
+                    placeholder="Tìm kiếm dự án..." autocomplete="off" autocorrect="off" autocapitalize="off"
                     spellcheck="false"
-                    class="w-full bg-white border-[2px] border-[#4d4d4d] rounded-xl pl-10 pr-9 py-2 text-[16px] font-bold text-[#32312F] focus:outline-none placeholder-gray-400 shadow-3xs"
-                  />
+                    class="w-full bg-white border-[2px] border-[#4d4d4d] rounded-xl pl-10 pr-9 py-2 text-[16px] font-bold text-[#32312F] focus:outline-none placeholder-gray-400 shadow-3xs" />
                   <button v-if="projectStore.searchQuery" @click="projectStore.searchQuery = ''" type="button"
                     class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 p-1 cursor-pointer">
                     <i class="fa-solid fa-circle-xmark text-sm"></i>
@@ -416,15 +408,15 @@
                 <h2 class="text-[20px] sm:text-[22px] font-black text-[#32312F] font-heading">Hoạt động của đội</h2>
                 <button @click="showMentionedActivities = !showMentionedActivities" type="button"
                   :title="showMentionedActivities ? 'Hiện tất cả hoạt động' : 'Chỉ hiện hoạt động có nhắc đến bạn'"
-                  class="w-5 h-5 rounded-full flex items-center justify-center text-xs transition-colors cursor-pointer hidden"
+                  class="w-5 h-5 rounded-full flex items-center justify-center text-xs transition-colors cursor-pointer"
                   :class="showMentionedActivities ? 'bg-emerald-600 text-white' : 'text-gray-400 hover:text-emerald-700 hover:bg-emerald-50'">
                   <i class="fa-solid fa-at"></i>
                 </button>
               </div>
 
               <button @click="router.push('/feed')" type="button" title="Mở rộng tất cả hoạt động"
-                class="w-9 h-9 rounded-xl flex items-center justify-center text-gray-700 hover:text-emerald-700 hover:bg-emerald-50/80 active:bg-emerald-100 cursor-pointer transition-all active:scale-95">
-                <i class="fa-solid fa-up-right-and-down-left-from-center text-[16px]"></i>
+                class="w-10 h-10 sm:w-9.5 sm:h-9.5 rounded-xl flex items-center justify-center text-gray-700 hover:text-emerald-700 hover:bg-emerald-50/80 active:bg-emerald-100 cursor-pointer transition-all active:scale-95">
+                <i class="fa-solid fa-up-right-and-down-left-from-center text-[18px] sm:text-[17px]"></i>
               </button>
             </div>
 
@@ -441,162 +433,199 @@
             </div>
 
             <!-- Activity Feed List -->
-            <div v-else class="flex-1 flex flex-col min-h-0 overflow-hidden">
-              <div ref="activityScrollContainer" @scroll="handleActivityScroll"
-                class="activity-feed-scroll space-y-0 overflow-y-auto scrollbar-none flex-1 px-4 pt-3.5 pr-3">
-                <!-- Loading older comments indicator when scrolling up -->
-                <div v-if="isLoadingOlderActivities"
-                  class="flex items-center justify-center py-2 text-xs text-gray-500 gap-2">
-                  <i class="fa-solid fa-circle-notch fa-spin text-emerald-600"></i>
-                  <span>Đang tải hoạt động cũ hơn...</span>
-                </div>
-                <div v-else-if="!hasMoreOlderActivities && displayedActivities.length >= 20"
-                  class="text-center py-1.5 mb-2 text-[12px] text-gray-400 font-semibold border-b border-gray-100/80">
-                  Đã hiển thị tất cả hoạt động
-                </div>
-
-                <transition-group enter-active-class="transition duration-300 ease-out"
-                  enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0"
-                  leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
+            <div v-else class="flex-1 flex flex-col min-h-0 overflow-visible">
+              <div class="relative flex-1 min-h-0 flex flex-col">
+                <!-- Loading banner when locating quoted older message -->
+                <transition enter-active-class="transition duration-200 ease-out"
+                  enter-from-class="opacity-0 -translate-y-2" enter-to-class="opacity-100 translate-y-0"
+                  leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 translate-y-0"
                   leave-to-class="opacity-0 -translate-y-2">
-                  <div v-for="(log, idx) in displayedActivities" :key="log.id" :id="'activity-log-item-' + log.id"
-                    class="activity-log-item relative flex gap-3 pb-5 group"
-                    @touchstart="handleTouchStart(log, $event)" @touchend="handleTouchEnd" @touchmove="handleTouchMove">
+                  <div v-if="isLoadingQuotedComment"
+                    class="absolute top-2 left-1/2 -translate-x-1/2 z-40 px-3 py-1 rounded-full bg-emerald-800/90 text-white text-[11px] font-bold shadow-lg flex items-center gap-1.5 backdrop-blur-sm pointer-events-none">
+                    <i class="fa-solid fa-circle-notch fa-spin text-[10px] text-emerald-300"></i>
+                    <span>Đang tải tin nhắn cũ...</span>
+                  </div>
+                </transition>
 
-                    <!-- Absolute Timeline Line connecting avatars across padding boundaries -->
-                    <div v-if="idx < displayedActivities.length - 1"
-                      class="absolute top-10 bottom-0 left-[15px] w-[1.5px] bg-gray-300 z-0"></div>
+                <div ref="activityScrollContainer" @scroll="handleActivityScroll"
+                  class="activity-feed-scroll space-y-0 overflow-y-auto scrollbar-none flex-1 px-4 pt-3.5 pr-3">
+                  <!-- Loading older comments indicator when scrolling up -->
+                  <div v-if="isLoadingOlderActivities"
+                    class="flex items-center justify-center py-2 text-xs text-gray-500 gap-2">
+                    <i class="fa-solid fa-circle-notch fa-spin text-emerald-600"></i>
+                    <span>Đang tải hoạt động cũ hơn...</span>
+                  </div>
+                  <div v-else-if="!hasMoreOlderActivities && displayedActivities.length >= 20"
+                    class="text-center py-1.5 mb-2 text-[12px] text-gray-400 font-semibold border-b border-gray-100/80">
+                    Đã hiển thị tất cả hoạt động
+                  </div>
 
-                    <!-- Left Timeline column: Avatar -->
-                    <div class="flex-shrink-0 w-8 z-10">
-                      <img :src="log.user?.avatar || defaultAvatar"
-                        class="w-8 h-8 rounded-full object-cover border border-gray-200 relative z-10 shadow-3xs" />
-                    </div>
+                  <transition-group enter-active-class="transition duration-300 ease-out"
+                    enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0"
+                    leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
+                    leave-to-class="opacity-0 -translate-y-2">
+                    <div v-for="(log, idx) in displayedActivities" :key="log.id" :id="'activity-log-item-' + log.id"
+                      class="activity-log-item relative flex gap-3 pb-5 group"
+                      @touchstart="handleTouchStart(log, $event)" @touchend="handleTouchEnd"
+                      @touchmove="handleTouchMove">
 
-                    <!-- Right content column -->
-                    <div class="flex-1 min-w-0 pt-0 z-10">
-                      <!-- Top Row: User Name + hỗ trợ Customer & Timestamp / 3-dots menu -->
-                      <div class="flex items-center justify-between gap-2 relative min-h-[26px]">
-                        <div
-                          class="font-extrabold text-[18px] sm:text-[19px] text-[#32312F] truncate flex-1 min-w-0 leading-tight">
-                          <span>{{ log.user ? log.user.name : 'Hệ thống' }}</span>
-                          <template v-if="log.project?.customer">
-                            <span class="font-bold text-[#32312F]">&nbsp;hỗ trợ&nbsp;</span>
-                            <span class="text-[#1A7A56] font-extrabold cursor-pointer hover:underline"
-                              @click.stop="$router.push(`/customers/${log.project.customer.id}`)">
-                              {{ log.project.customer.name }}
+                      <!-- Absolute Timeline Line connecting avatars across padding boundaries -->
+                      <div class="absolute top-10 bottom-0 left-[15px] w-[1.5px] bg-gray-300 z-0"></div>
+
+                      <!-- Left Timeline column: Avatar -->
+                      <div class="flex-shrink-0 w-8 z-10">
+                        <img :src="log.user?.avatar || defaultAvatar"
+                          class="w-8 h-8 rounded-full object-cover border border-gray-200 relative z-10 shadow-3xs"
+                          loading="lazy" decoding="async" />
+                      </div>
+
+                      <!-- Right content column -->
+                      <div class="flex-1 min-w-0 pt-0 z-10">
+                        <!-- Top Row: User Name + hỗ trợ Customer & Timestamp / 3-dots menu -->
+                        <div class="flex items-center justify-between gap-2 relative min-h-[26px]">
+                          <div
+                            class="font-extrabold text-[18px] sm:text-[19px] text-[#32312F] truncate flex-1 min-w-0 leading-tight">
+                            <span>{{ log.user ? log.user.name : 'Hệ thống' }}</span>
+                            <template v-if="log.project?.customer">
+                              <span class="font-bold text-[#32312F]">&nbsp;hỗ trợ&nbsp;</span>
+                              <span class="text-[#1A7A56] font-extrabold cursor-pointer hover:underline"
+                                @click.stop="$router.push(`/customers/${log.project.customer.id}`)">
+                                {{ log.project.customer.name }}
+                              </span>
+                            </template>
+                          </div>
+
+                          <!-- Right: Timestamp normally, 3-dots icon button on hover / when menu open -->
+                          <div class="relative shrink-0 flex items-center justify-end min-h-[30px] min-w-[32px]"
+                            @click.stop>
+                            <!-- Relative Time (shown when not hovered and menu not active) -->
+                            <span
+                              class="text-[14px] sm:text-[15px] text-gray-400 font-medium whitespace-nowrap leading-none text-right"
+                              :class="(activeLogMenuId === log.id || activeLogIdForMobileActions === log.id) ? 'hidden' : 'group-hover:hidden'">
+                              {{ formatCommentRelativeTime(log.created_at) }}
                             </span>
-                          </template>
-                        </div>
 
-                        <!-- Right: Timestamp normally, 3-dots icon button on hover / when menu open -->
-                        <div class="relative shrink-0 flex items-center justify-end min-h-[30px] min-w-[32px]"
-                          @click.stop>
-                          <!-- Relative Time (shown when not hovered and menu not active) -->
-                          <span
-                            class="text-[14px] sm:text-[15px] text-gray-400 font-medium whitespace-nowrap leading-none text-right"
-                            :class="(activeLogMenuId === log.id || activeLogIdForMobileActions === log.id) ? 'hidden' : 'group-hover:hidden'">
-                            {{ formatCommentRelativeTime(log.created_at) }}
-                          </span>
-
-                          <!-- 3-dots Menu Button (shown on hover or when menu is active) -->
-                          <button type="button" @click.stop="toggleActivityMenu(log.id, $event)" title="Tùy chọn"
-                            class="text-gray-400 hover:text-gray-800 hover:bg-gray-200/80 active:bg-gray-300/80 w-8 h-8 -my-1 -mr-1 rounded-lg flex items-center justify-center cursor-pointer transition-all active:scale-95 p-0"
-                            :class="(activeLogMenuId === log.id || activeLogIdForMobileActions === log.id) ? 'flex text-gray-800 bg-gray-200/80' : 'hidden group-hover:flex'">
-                            <i class="fa-solid fa-ellipsis-vertical text-[15px] leading-none"></i>
-                          </button>
-
-                          <!-- Dropdown Menu for Edit & Delete -->
-                          <div v-if="activeLogMenuId === log.id"
-                            class="absolute top-full right-0 mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[120px] animate-fade-in-up">
-                            <button v-if="canEditComment(log)" type="button" @click.stop="handleStartEditComment(log)"
-                              class="w-full text-left px-3 py-1.5 text-sm font-bold text-gray-700 hover:bg-gray-100 flex items-center gap-2 cursor-pointer transition-colors">
-                              <i class="fa-solid fa-pen-to-square text-xs text-emerald-600"></i>
-                              <span>Chỉnh sửa</span>
+                            <!-- 3-dots Menu Button (shown on hover or when menu is active) -->
+                            <button type="button" @click.stop="toggleActivityMenu(log.id, $event)" title="Tùy chọn"
+                              class="text-gray-400 hover:text-gray-800 hover:bg-gray-200/80 active:bg-gray-300/80 w-8 h-8 -my-1 -mr-1 rounded-lg flex items-center justify-center cursor-pointer transition-all active:scale-95 p-0"
+                              :class="(activeLogMenuId === log.id || activeLogIdForMobileActions === log.id) ? 'flex text-gray-800 bg-gray-200/80' : 'hidden group-hover:flex'">
+                              <i class="fa-solid fa-ellipsis-vertical text-[15px] leading-none"></i>
                             </button>
-                            <button v-if="canDeleteComment(log)" type="button" @click.stop="handleDeleteComment(log.id)"
-                              class="w-full text-left px-3 py-1.5 text-sm font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors">
-                              <i class="fa-solid fa-trash-can text-xs"></i>
-                              <span>Xóa</span>
-                            </button>
-                            <div v-if="!canEditComment(log) && !canDeleteComment(log)"
-                              class="px-3 py-1.5 text-xs font-semibold text-gray-400">
-                              Không có thao tác
+
+                            <!-- Dropdown Menu for Edit & Delete -->
+                            <div v-if="activeLogMenuId === log.id"
+                              class="absolute top-full right-0 mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[120px] animate-fade-in-up">
+                              <button v-if="canEditComment(log)" type="button" @click.stop="handleStartEditComment(log)"
+                                class="w-full text-left px-3 py-1.5 text-sm font-bold text-gray-700 hover:bg-gray-100 flex items-center gap-2 cursor-pointer transition-colors">
+                                <i class="fa-solid fa-pen-to-square text-xs text-emerald-600"></i>
+                                <span>Chỉnh sửa</span>
+                              </button>
+                              <button v-if="canDeleteComment(log)" type="button"
+                                @click.stop="handleDeleteComment(log.id)"
+                                class="w-full text-left px-3 py-1.5 text-sm font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                                <span>Xóa</span>
+                              </button>
+                              <div v-if="!canEditComment(log) && !canDeleteComment(log)"
+                                class="px-3 py-1.5 text-xs font-semibold text-gray-400">
+                                Không có thao tác
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
 
-                      <!-- Project Link/Title (Bold Green text matching mockup) -->
-                      <div v-if="log.project" @click="handleActivityProjectClick(log.project.id, $event)"
-                        class="activity-project-link text-[#1A7A56] hover:underline font-extrabold text-[18px] sm:text-[19px] cursor-pointer mt-0.5 mb-1 max-w-full truncate block leading-snug"
-                        :title="log.project.title">
-                        {{ log.project.title }}
-                      </div>
-
-                      <!-- Comment Content (Normal Display) -->
-                      <div
-                        class="text-[16px] sm:text-[18px] text-gray-900 leading-relaxed break-words mt-0.5 space-y-1">
-                        <!-- Zalo Quote Reply Preview inside list feed -->
-                        <div v-if="parseReplyInfo(log.content)"
-                          @click.stop="scrollToComment(parseReplyInfo(log.content))"
-                          class="bg-[#e1e3ea] px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1 max-w-full cursor-pointer hover:bg-[#d5d7de] transition-colors">
-                          <div class="text-[14px] font-bold text-gray-500 flex items-center gap-1">
-                            <i class="fa-solid fa-reply text-xs"></i>
-                            <span>{{ parseReplyInfo(log.content).user }}</span>
-                          </div>
-                          <div class="text-[14px] text-gray-450 truncate mt-0.5 max-w-[280px]">
-                            {{ parseReplyInfo(log.content).text }}
-                          </div>
+                        <!-- Project Link/Title (Bold Green text matching mockup) -->
+                        <div v-if="log.project" @click="handleActivityProjectClick(log.project.id, $event)"
+                          class="activity-project-link text-[#1A7A56] hover:underline font-extrabold text-[18px] sm:text-[19px] cursor-pointer mt-0.5 mb-1 max-w-full truncate block leading-snug"
+                          :title="log.project.title">
+                          {{ log.project.title }}
                         </div>
 
-                        <div v-if="parseCommentText(log.content)" class="whitespace-pre-line font-normal text-gray-900 select-text cursor-text">
-                          {{ parseCommentText(log.content) }}
-                        </div>
-
-                        <!-- Render Attachments -->
+                        <!-- Comment Content (Normal Display) -->
                         <div
-                          v-if="parseCommentImages(log.content).length > 0 || parseCommentFiles(log.content).length > 0"
-                          class="flex flex-wrap items-end gap-1.5 pt-1 pb-1.5">
-                          <!-- Images -->
-                          <button v-for="(img, imgIdx) in parseCommentImages(log.content)" :key="'img-' + imgIdx"
-                            type="button"
-                            @click.stop="openImagePreview(img.url, parseCommentImages(log.content), imgIdx)"
-                            class="w-11 h-11 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 cursor-pointer hover:ring-2 hover:ring-emerald-400 transition-all flex-shrink-0 shadow-3xs"
-                            :title="'Xem ảnh: ' + img.name">
-                            <img :src="img.url" class="w-full h-full object-cover" alt=""
-                              :loading="idx < 3 ? 'eager' : 'lazy'" decoding="async"
-                              :fetchpriority="idx < 3 ? 'high' : 'auto'" />
-                          </button>
+                          class="text-[16px] sm:text-[18px] text-gray-900 leading-relaxed break-words mt-0.5 space-y-1">
+                          <!-- Zalo Quote Reply Preview inside list feed -->
+                          <div v-if="parseReplyInfo(log.content)"
+                            @click.stop="scrollToComment(parseReplyInfo(log.content))"
+                            class="bg-[#e1e3ea] px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1 max-w-full cursor-pointer hover:bg-[#d5d7de] transition-colors">
+                            <div class="text-[14px] font-bold text-gray-500 flex items-center gap-1">
+                              <i class="fa-solid fa-reply text-xs"></i>
+                              <span>{{ parseReplyInfo(log.content).user }}</span>
+                            </div>
+                            <div class="text-[14px] text-gray-450 truncate mt-0.5 max-w-[280px]">
+                              {{ parseReplyInfo(log.content).text }}
+                            </div>
+                          </div>
 
-                          <!-- Files -->
-                          <a v-for="(file, fIdx) in parseCommentFiles(log.content)" :key="'file-' + fIdx"
-                            :href="file.url" :download="file.name" target="_blank" @click.stop
-                            class="w-8 h-10 rounded border border-[#d4a574] bg-[#f5e6d0] hover:bg-[#edd9bc] flex flex-col items-center justify-end overflow-hidden cursor-pointer transition-colors flex-shrink-0"
-                            :title="'Tải xuống: ' + file.name">
-                            <i class="fa-solid fa-file text-[#c87828] text-xs mb-0.5"></i>
-                            <span
-                              class="text-[8px] font-bold text-[#8b5a2b] bg-[#e8c99a] w-full text-center py-0.5 leading-none">FILE</span>
-                          </a>
+                          <div v-if="parseCommentText(log.content)"
+                            class="whitespace-pre-line font-normal text-gray-900 select-text cursor-text">
+                            {{ parseCommentText(log.content) }}
+                          </div>
+
+                          <!-- Render Attachments -->
+                          <div
+                            v-if="parseCommentImages(log.content).length > 0 || parseCommentFiles(log.content).length > 0"
+                            class="flex flex-wrap items-end gap-1.5 pt-1 pb-1.5">
+                            <!-- Images -->
+                            <button v-for="(img, imgIdx) in parseCommentImages(log.content)" :key="'img-' + imgIdx"
+                              type="button"
+                              @click.stop="openImagePreview(img.url, parseCommentImages(log.content), imgIdx)"
+                              class="w-11 h-11 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 cursor-pointer hover:ring-2 hover:ring-emerald-400 transition-all flex-shrink-0 shadow-3xs"
+                              :title="'Xem ảnh: ' + img.name">
+                              <img :src="img.url" class="w-full h-full object-cover" alt=""
+                                :loading="idx < 3 ? 'eager' : 'lazy'" decoding="async"
+                                :fetchpriority="idx < 3 ? 'high' : 'auto'" />
+                            </button>
+
+                            <!-- Files -->
+                            <a v-for="(file, fIdx) in parseCommentFiles(log.content)" :key="'file-' + fIdx"
+                              :href="file.url" :download="file.name" target="_blank" @click.stop
+                              class="w-8 h-10 rounded border border-[#d4a574] bg-[#f5e6d0] hover:bg-[#edd9bc] flex flex-col items-center justify-end overflow-hidden cursor-pointer transition-colors flex-shrink-0"
+                              :title="'Tải xuống: ' + file.name">
+                              <i class="fa-solid fa-file text-[#c87828] text-xs mb-0.5"></i>
+                              <span
+                                class="text-[8px] font-bold text-[#8b5a2b] bg-[#e8c99a] w-full text-center py-0.5 leading-none">FILE</span>
+                            </a>
+                          </div>
                         </div>
-                      </div>
 
-                      <!-- Bottom Actions: Reply icon -->
-                      <div class="flex items-center gap-3 mt-1.5">
-                        <button @click.stop="handleReplyToActivity(log)" type="button" title="Trả lời hoạt động này"
-                          class="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-gray-400 hover:text-emerald-700 hover:bg-emerald-50/80 active:bg-emerald-100 cursor-pointer transition-all active:scale-95 -ml-1.5">
-                          <i class="fa-solid fa-reply text-[15px] sm:text-[16px]"></i>
-                        </button>
+                        <!-- Bottom Actions: Reply button with text -->
+                        <div class="flex items-center gap-3 mt-3 sm:mt-3.5">
+                          <button @click.stop="handleReplyToActivity(log)" type="button"
+                            :title="'Trả lời ' + (log.user?.name || 'thành viên')"
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-gray-500 hover:text-emerald-700 hover:bg-stone-200/60 active:bg-stone-300/80 cursor-pointer transition-all active:scale-95 -ml-1.5 select-none font-bold">
+                            <i class="fa-solid fa-reply text-[18px] sm:text-[19px]"></i>
+                            <span class="text-[13px] sm:text-[14px] leading-none">
+                              <span class="sm:hidden">Trả lời</span>
+                              <span class="hidden sm:inline">Trả lời {{ log.user ? log.user.name : 'thành viên'
+                                }}</span>
+                            </span>
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </transition-group>
+                  </transition-group>
 
-                <!-- Empty activities state -->
-                <div v-if="displayedActivities.length === 0"
-                  class="py-12 text-center text-gray-450 text-xs font-semibold">
-                  Trong 7 ngày qua, chưa có hoạt động mới
+                  <!-- Empty activities state -->
+                  <div v-if="displayedActivities.length === 0"
+                    class="py-12 text-center text-gray-450 text-xs font-semibold">
+                    Trong 7 ngày qua, chưa có hoạt động mới
+                  </div>
                 </div>
+
+                <!-- Floating Scroll to Bottom Button -->
+                <transition enter-active-class="transition duration-200 ease-out"
+                  enter-from-class="opacity-0 scale-90 translate-y-2"
+                  enter-to-class="opacity-100 scale-100 translate-y-0"
+                  leave-active-class="transition duration-150 ease-in"
+                  leave-from-class="opacity-100 scale-100 translate-y-0"
+                  leave-to-class="opacity-0 scale-90 translate-y-2">
+                  <button v-if="showScrollToBottom" @click="scrollToBottom(true)" type="button"
+                    title="Cuộn xuống tin nhắn mới nhất"
+                    class="absolute bottom-3 right-3 z-30 w-9 h-9 rounded-full bg-white/95 hover:bg-white text-gray-700 hover:text-emerald-700 shadow-xl border border-gray-200/80 flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 backdrop-blur-xs">
+                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                  </button>
+                </transition>
               </div>
 
               <!-- Chat Input box: full border attached to bottom of panel -->
@@ -986,7 +1015,7 @@ const handleVirtualKeyboardFocusIn = (e) => {
     }
     isVirtualKeyboardOpen.value = true
     updateKeyboardState(true)
-    
+
     // Multi-pass scroll reset as iOS keyboard opens
     resetWindowScroll()
     setTimeout(() => {
@@ -1221,16 +1250,11 @@ const handleCloseModal = () => {
 
 const selectProjectForChat = (projectId, event = null) => {
   const pId = Number(projectId)
-  const proj = projectStore.projects.find(p => Number(p.id) === pId)
   chatProjectId.value = pId
 
   nextTick(() => {
     activityComposerRef.value?.focus()
   })
-
-  if (proj) {
-    toast.success(`Đã chọn "${proj.title}" vào khung chat`)
-  }
 }
 
 const goToProjectDetail = (projectId, event) => {
@@ -2308,7 +2332,7 @@ const parseReplyInfo = (content) => {
   return null
 }
 
-const scrollToComment = (reply) => {
+const scrollToComment = async (reply) => {
   if (!reply) return
 
   let targetId = reply.id
@@ -2327,19 +2351,66 @@ const scrollToComment = (reply) => {
   }
 
   if (!targetId) {
-    toast.warning('Không tìm thấy bình luận gốc.')
+    toast.warning('Không tìm thấy thông tin bình luận gốc.')
     return
   }
 
-  const el = document.getElementById(`activity-log-item-${targetId}`)
+  // 1. Try to find in current DOM
+  let el = document.getElementById(`activity-log-item-${targetId}`)
   if (el) {
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     el.classList.add('activity-card-highlight')
     setTimeout(() => {
       el.classList.remove('activity-card-highlight')
-    }, 2000)
-  } else {
-    toast.warning('Không tìm thấy bình luận gốc trong danh sách hiển thị hiện tại.')
+    }, 2500)
+    return
+  }
+
+  // 2. If not currently loaded in DOM, automatically fetch older comments until found
+  isLoadingQuotedComment.value = true
+  try {
+    let attempts = 0
+    while (attempts < 8) {
+      attempts++
+      const minId = Math.min(...activities.value.map(a => Number(a.id) || Infinity))
+      if (!minId || minId === Infinity || (Number(targetId) > 0 && minId <= Number(targetId) - 1)) {
+        break
+      }
+
+      const params = selectedProjectIds.value.length > 0
+        ? { project_ids: selectedProjectIds.value, days: 30, before_id: minId, limit: 40 }
+        : { before_id: minId, limit: 40 }
+
+      const res = await axios.get('/api/comments', { params })
+      const older = (res.data || []).filter(c => Boolean(c.project_id))
+      if (!older.length) break
+
+      const existingIds = new Set(activities.value.map(a => a.id))
+      const newItems = older.filter(a => !existingIds.has(a.id))
+      if (!newItems.length) break
+
+      activities.value = [...activities.value, ...newItems]
+      if (activities.value.some(a => Number(a.id) === Number(targetId))) {
+        break
+      }
+    }
+
+    await nextTick()
+    el = document.getElementById(`activity-log-item-${targetId}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      el.classList.add('activity-card-highlight')
+      setTimeout(() => {
+        el.classList.remove('activity-card-highlight')
+      }, 2500)
+    } else {
+      toast.warning('Bình luận gốc có thể đã bị xóa hoặc không còn tồn tại.')
+    }
+  } catch (err) {
+    console.error('Failed to load target comment:', err)
+    toast.warning('Không thể tải bình luận gốc.')
+  } finally {
+    isLoadingQuotedComment.value = false
   }
 }
 
@@ -2419,6 +2490,8 @@ const showMentionedActivities = ref(false)
 const activityScrollContainer = ref(null)
 const hasMoreOlderActivities = ref(true)
 const isLoadingOlderActivities = ref(false)
+const showScrollToBottom = ref(false)
+const isLoadingQuotedComment = ref(false)
 let activityRequestId = 0
 let lastAppliedActivityRequestId = 0
 
@@ -2442,6 +2515,9 @@ const scrollToBottom = (smooth = false) => {
 const handleActivityScroll = async (event) => {
   const el = event?.target || activityScrollContainer.value
   if (!el) return
+
+  const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+  showScrollToBottom.value = distanceFromBottom > 160
 
   // When user scrolls close to top (scrollTop <= 40px), load older activities
   if (el.scrollTop <= 40 && !isLoadingOlderActivities.value && hasMoreOlderActivities.value && activities.value.length > 0) {
@@ -3620,7 +3696,7 @@ onUnmounted(() => {
     max-height: 100% !important;
     min-height: 0 !important;
     overflow: hidden !important;
-    padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
     box-sizing: border-box !important;
   }
 
@@ -3640,15 +3716,15 @@ onUnmounted(() => {
     background: #F9F4EE !important;
     border: none !important;
     border-top: none !important;
-    padding: 6px 16px calc(8px + env(safe-area-inset-bottom, 0px)) 16px !important;
+    padding: 6px 20px calc(6px + env(safe-area-inset-bottom, 0px)) 20px !important;
     width: 100% !important;
-    height: calc(62px + env(safe-area-inset-bottom, 0px)) !important;
+    height: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
     box-sizing: border-box !important;
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 26px !important;
+    gap: 48px !important;
     box-shadow: none !important;
   }
 
@@ -3667,12 +3743,12 @@ onUnmounted(() => {
   }
 
   .mobile-icon-button {
-    width: 48px !important;
-    height: 48px !important;
-    min-width: 48px !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
     padding: 0 !important;
     border-radius: 12px !important;
-    border: 2.5px solid #4d4d4d !important;
+    border: 2px solid #4d4d4d !important;
     background: transparent !important;
     display: inline-flex !important;
     align-items: center !important;
@@ -3685,6 +3761,17 @@ onUnmounted(() => {
   .create-project-action {
     font-size: 24px !important;
     color: #111827 !important;
+    line-height: 1 !important;
+  }
+
+  .create-project-action>span:first-child {
+    font-size: 25px !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+  }
+
+  .view-switch-action i {
+    font-size: 18px !important;
   }
 
   .create-project-action>span:last-child,
@@ -3703,11 +3790,15 @@ onUnmounted(() => {
 
   .mobile-search-toggle {
     display: inline-flex !important;
-    border: 2.5px solid #4d4d4d !important;
+    border: 2px solid #4d4d4d !important;
     background: transparent !important;
     color: #4d4d4d !important;
     align-items: center !important;
     justify-content: center !important;
+  }
+
+  .mobile-search-toggle i {
+    font-size: 17px !important;
   }
 
   .keyboard-hints {
@@ -3782,7 +3873,7 @@ onUnmounted(() => {
     height: 100% !important;
     max-height: 100% !important;
     margin: 0 !important;
-    padding: 0 0 6px 0 !important;
+    padding: 0 0 2px 0 !important;
     box-sizing: border-box !important;
     box-shadow: none !important;
   }
@@ -3791,7 +3882,7 @@ onUnmounted(() => {
     padding-bottom: 0 !important;
   }
 
-  .recent-activity-panel.mobile-activities-active > div.flex-1 {
+  .recent-activity-panel.mobile-activities-active>div.flex-1 {
     display: flex !important;
     flex-direction: column !important;
     flex: 1 1 0% !important;

@@ -154,10 +154,20 @@ const preventGlobalDrop = (e) => {
   }
 }
 
+const handleVisibilityChange = () => {
+  if (document.visibilityState === 'visible' && authStore.user?.id) {
+    browserNotifications.refreshPermission()
+    if (browserNotifications.permission === 'granted') {
+      browserNotifications.syncSubscription()
+    }
+  }
+}
+
 onMounted(() => {
   window.addEventListener('keydown', handleGlobalKeydown)
   window.addEventListener('dragover', preventGlobalDrop)
   window.addEventListener('drop', preventGlobalDrop)
+  document.addEventListener('visibilitychange', handleVisibilityChange)
   browserNotifications.refreshPermission()
   requestBrowserNotificationPermission()
 })
@@ -171,5 +181,6 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleGlobalKeydown)
   window.removeEventListener('dragover', preventGlobalDrop)
   window.removeEventListener('drop', preventGlobalDrop)
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>

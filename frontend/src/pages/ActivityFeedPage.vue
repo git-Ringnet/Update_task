@@ -4,12 +4,12 @@
     <Navbar />
 
     <main
-      class="max-w-[800px] w-full mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-2 sm:pb-3 flex-1 flex flex-col min-h-0 overflow-hidden">
+      class="max-w-[800px] w-full mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-2 sm:pb-3 flex-1 flex flex-col min-h-0 overflow-visible relative">
       <!-- Header Row: Back Button & Vertically Centered Title "Hoạt động của đội" -->
       <div class="relative flex items-center justify-center mb-3 sm:mb-4 min-h-[40px] flex-shrink-0">
         <button @click="goBack" type="button" title="Quay lại"
-          class="absolute left-0 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-auto sm:h-auto rounded-full sm:rounded-none flex items-center justify-center sm:gap-2 text-[15px] text-gray-700 hover:text-emerald-700 font-extrabold transition-colors cursor-pointer focus:outline-none hover:bg-stone-200/60 sm:hover:bg-transparent">
-          <i class="fa-solid fa-arrow-left text-base sm:text-sm"></i>
+          class="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-auto sm:h-auto rounded-xl sm:rounded-none flex items-center justify-center sm:gap-2 text-[16px] sm:text-[15px] text-gray-700 hover:text-emerald-700 font-extrabold transition-colors cursor-pointer focus:outline-none hover:bg-stone-200/60 sm:hover:bg-transparent">
+          <i class="fa-solid fa-arrow-left text-[18px] sm:text-sm"></i>
           <span class="hidden sm:inline">Quay lại</span>
         </button>
 
@@ -59,20 +59,33 @@
       </div>
 
       <!-- Grouped Activities Feed (Scrollable inner list, chat style) -->
-      <div v-else ref="activityFeedScrollRef" @scroll="handleFeedScroll"
-        class="activity-feed-scroll flex-1 min-h-0 overflow-y-auto scrollbar-none pr-1 mb-2 sm:mb-3 space-y-6"
-        style="-webkit-overflow-scrolling: touch; touch-action: pan-y; overscroll-behavior-y: contain;">
-        <!-- Loading older comments indicator when scrolling up -->
-        <div v-if="isLoadingOlderActivities" class="flex items-center justify-center py-2 text-xs text-gray-500 gap-2">
-          <i class="fa-solid fa-circle-notch fa-spin text-emerald-600"></i>
-          <span>Đang tải hoạt động cũ hơn...</span>
-        </div>
-        <div v-else-if="!hasMoreOlderActivities && filteredActivities.length >= 30"
-          class="text-center py-1.5 mb-2 text-[12px] text-gray-400 font-semibold border-b border-gray-200/50">
-          Đã hiển thị tất cả hoạt động
-        </div>
+      <div v-else class="relative flex-1 min-h-0 flex flex-col mb-2 sm:mb-3">
+        <!-- Loading banner when locating quoted older message -->
+        <transition enter-active-class="transition duration-200 ease-out"
+          enter-from-class="opacity-0 -translate-y-2" enter-to-class="opacity-100 translate-y-0"
+          leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 translate-y-0"
+          leave-to-class="opacity-0 -translate-y-2">
+          <div v-if="isLoadingQuotedComment"
+            class="absolute top-2 left-1/2 -translate-x-1/2 z-40 px-3.5 py-1.5 rounded-full bg-emerald-800/90 text-white text-xs font-bold shadow-lg flex items-center gap-2 backdrop-blur-sm pointer-events-none">
+            <i class="fa-solid fa-circle-notch fa-spin text-xs text-emerald-300"></i>
+            <span>Đang tải tin nhắn cũ...</span>
+          </div>
+        </transition>
 
-        <div v-for="(group, dateStr) in groupedActivities" :key="dateStr" class="space-y-3">
+        <div ref="activityFeedScrollRef" @scroll="handleFeedScroll"
+          class="activity-feed-scroll flex-1 min-h-0 overflow-y-auto scrollbar-none pr-1 space-y-6"
+          style="-webkit-overflow-scrolling: touch; touch-action: pan-y; overscroll-behavior-y: contain;">
+          <!-- Loading older comments indicator when scrolling up -->
+          <div v-if="isLoadingOlderActivities" class="flex items-center justify-center py-2 text-xs text-gray-500 gap-2">
+            <i class="fa-solid fa-circle-notch fa-spin text-emerald-600"></i>
+            <span>Đang tải hoạt động cũ hơn...</span>
+          </div>
+          <div v-else-if="!hasMoreOlderActivities && filteredActivities.length >= 30"
+            class="text-center py-1.5 mb-2 text-[12px] text-gray-400 font-semibold border-b border-gray-200/50">
+            Đã hiển thị tất cả hoạt động
+          </div>
+
+          <div v-for="(group, dateStr) in groupedActivities" :key="dateStr" class="space-y-3">
           <!-- Date Header -->
           <h2 class="text-[18px] sm:text-[19px] font-black text-[#32312F] font-heading mb-5 pt-1">{{ dateStr }}</h2>
 
@@ -81,13 +94,14 @@
             <div v-for="(act, idx) in group" :key="act.id" :id="'activity-feed-item-' + act.id"
               @click="handleActivityClick(act)"
               class="feed-activity-item relative flex gap-3 pb-5 cursor-pointer group">
-              <div v-if="idx < group.length - 1" class="absolute top-10 bottom-0 left-[15px] w-[1.5px] bg-gray-300 z-0">
-              </div>
+              <!-- Timeline vertical line (always displayed for all messages) -->
+              <div class="absolute top-10 bottom-0 left-[15px] w-[1.5px] bg-gray-300 z-0"></div>
 
               <div class="flex-shrink-0 w-8 z-10">
                 <img
                   :src="act.user?.avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=120'"
-                  :alt="act.user?.name" class="w-8 h-8 rounded-full object-cover border border-gray-200 shadow-3xs" />
+                  :alt="act.user?.name" class="w-8 h-8 rounded-full object-cover border border-gray-200 shadow-3xs"
+                  loading="lazy" decoding="async" />
               </div>
 
               <div class="flex-1 min-w-0 z-10">
@@ -193,17 +207,37 @@
                   </div>
                 </div>
 
-                <!-- Bottom Actions: Reply icon -->
-                <div class="flex items-center gap-3 mt-1.5">
-                  <button @click.stop="handleReplyToActivity(act)" type="button" title="Trả lời hoạt động này"
-                    class="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-gray-400 hover:text-emerald-700 hover:bg-emerald-50/80 active:bg-emerald-100 cursor-pointer transition-all active:scale-95 -ml-1.5">
-                    <i class="fa-solid fa-reply text-[15px] sm:text-[16px]"></i>
+                <!-- Bottom Actions: Reply button with text -->
+                <div class="flex items-center gap-3 mt-3 sm:mt-3.5">
+                  <button @click.stop="handleReplyToActivity(act)" type="button"
+                    :title="'Trả lời ' + (act.user?.name || 'thành viên')"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-gray-500 hover:text-emerald-700 hover:bg-stone-200/60 active:bg-stone-300/80 cursor-pointer transition-all active:scale-95 -ml-1.5 select-none font-bold">
+                    <i class="fa-solid fa-reply text-[18px] sm:text-[19px]"></i>
+                    <span class="text-[13px] sm:text-[14px] leading-none">
+                      <span class="sm:hidden">Trả lời</span>
+                      <span class="hidden sm:inline">Trả lời {{ act.user ? act.user.name : 'thành viên' }}</span>
+                    </span>
                   </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Floating Scroll to Bottom Button -->
+        <transition enter-active-class="transition duration-200 ease-out"
+          enter-from-class="opacity-0 scale-90 translate-y-2"
+          enter-to-class="opacity-100 scale-100 translate-y-0"
+          leave-active-class="transition duration-150 ease-in"
+          leave-from-class="opacity-100 scale-100 translate-y-0"
+          leave-to-class="opacity-0 scale-90 translate-y-2">
+          <button v-if="showScrollToBottom" @click="scrollToBottom(true)" type="button"
+            title="Cuộn xuống tin nhắn mới nhất"
+            class="absolute bottom-3 right-3 z-30 w-10 h-10 rounded-full bg-white/95 hover:bg-white text-gray-700 hover:text-emerald-700 shadow-xl border border-gray-200/80 flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 backdrop-blur-xs">
+            <i class="fa-solid fa-chevron-down text-sm"></i>
+          </button>
+        </transition>
       </div>
 
       <!-- Bottom Chat Composer with Solid Background and Border -->
@@ -316,6 +350,8 @@ const activeActivityIdForMobileActions = ref(null)
 const activityFeedScrollRef = ref(null)
 const hasMoreOlderActivities = ref(true)
 const isLoadingOlderActivities = ref(false)
+const showScrollToBottom = ref(false)
+const isLoadingQuotedComment = ref(false)
 let activityTouchTimer = null
 let activityTouchStarted = false
 let ignoreActivityClickUntil = 0
@@ -346,6 +382,9 @@ const scrollToBottom = (smooth = false) => {
 const handleFeedScroll = async (event) => {
   const el = event?.target || activityFeedScrollRef.value
   if (!el) return
+
+  const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+  showScrollToBottom.value = distanceFromBottom > 160
 
   if (el.scrollTop <= 40 && !isLoadingOlderActivities.value && hasMoreOlderActivities.value && activities.value.length > 0) {
     await loadOlderActivities()
@@ -914,16 +953,11 @@ const parseCommentFiles = (content) => {
 
 const selectProjectForChat = (projectId, event = null) => {
   const pId = Number(projectId)
-  const proj = projectStore.projects.find(p => Number(p.id) === pId)
   chatProjectId.value = pId
 
   nextTick(() => {
     activityComposerRef.value?.focus()
   })
-
-  if (proj) {
-    toast.success(`Đã chọn "${proj.title}" vào khung chat`)
-  }
 }
 
 const handleActivityProjectClick = (projectId, event) => {
@@ -1078,17 +1112,23 @@ const handleVisualViewportChange = () => {
   resetWindowScroll()
 }
 
-onMounted(async () => {
+onMounted(() => {
   updateKeyboardState()
   resetWindowScroll()
   projectStore.activePage = 'home'
   projectStore.activeStatus = null
-  await Promise.all([
-    fetchActivities(),
-    projectStore.fetchProjects(),
-    projectStore.fetchAuxData(),
-    axios.get('/api/mention-groups').then(res => { mentionGroups.value = res.data || [] }).catch(() => { }),
-  ])
+
+  // 1. Fetch activities immediately so the feed renders instantly without waiting for other APIs
+  fetchActivities()
+
+  // 2. Load auxiliary and project data in background without blocking the feed
+  if (projectStore.projects.length === 0) {
+    projectStore.fetchProjects(true).catch(() => {})
+  }
+  if (projectStore.users.length === 0 || projectStore.customers.length === 0) {
+    projectStore.fetchAuxData().catch(() => {})
+  }
+  axios.get('/api/mention-groups').then(res => { mentionGroups.value = res.data || [] }).catch(() => { })
   window.addEventListener('keydown', handleKeydown)
   document.addEventListener('click', handleOutsideActivityClick)
   document.addEventListener('focusin', handleVirtualKeyboardFocusIn)
@@ -1147,7 +1187,7 @@ onUnmounted(() => {
   }
 })
 
-const scrollToComment = (reply) => {
+const scrollToComment = async (reply) => {
   if (!reply) return
 
   let targetId = reply.id
@@ -1166,12 +1206,50 @@ const scrollToComment = (reply) => {
   }
 
   if (!targetId) {
-    toast.warning('Không tìm thấy bình luận gốc.')
+    toast.warning('Không tìm thấy thông tin tin nhắn gốc.')
     return
   }
 
-  setTimeout(() => {
-    const el = document.getElementById(`activity-feed-item-${targetId}`)
+  // 1. Try to find in current DOM
+  let el = document.getElementById(`activity-feed-item-${targetId}`)
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el.classList.add('activity-card-highlight')
+    setTimeout(() => {
+      el.classList.remove('activity-card-highlight')
+    }, 2500)
+    return
+  }
+
+  // 2. If not currently loaded in DOM, automatically fetch older comments until found
+  isLoadingQuotedComment.value = true
+  try {
+    let attempts = 0
+    while (attempts < 8) {
+      attempts++
+      const minId = Math.min(...activities.value.map(a => Number(a.id) || Infinity))
+      if (!minId || minId === Infinity || (Number(targetId) > 0 && minId <= Number(targetId) - 1)) {
+        break
+      }
+
+      const res = await axios.get('/api/comments', {
+        params: { before_id: minId, limit: 40 }
+      })
+      const older = (res.data || []).filter(c => Boolean(c.project_id))
+      if (!older.length) break
+
+      const existingIds = new Set(activities.value.map(a => a.id))
+      const newItems = older.filter(a => !existingIds.has(a.id))
+      if (!newItems.length) break
+
+      activities.value = [...activities.value, ...newItems]
+      if (activities.value.some(a => Number(a.id) === Number(targetId))) {
+        break
+      }
+    }
+
+    await nextTick()
+    el = document.getElementById(`activity-feed-item-${targetId}`)
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' })
       el.classList.add('activity-card-highlight')
@@ -1179,9 +1257,14 @@ const scrollToComment = (reply) => {
         el.classList.remove('activity-card-highlight')
       }, 2500)
     } else {
-      toast.warning('Không tìm thấy bình luận gốc trong danh sách hiển thị hiện tại.')
+      toast.warning('Tin nhắn gốc có thể đã bị xóa hoặc không còn tồn tại.')
     }
-  }, 60)
+  } catch (err) {
+    console.error('Failed to load target comment:', err)
+    toast.warning('Không thể tải tin nhắn gốc.')
+  } finally {
+    isLoadingQuotedComment.value = false
+  }
 }
 </script>
 
