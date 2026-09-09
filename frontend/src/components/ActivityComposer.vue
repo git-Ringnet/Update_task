@@ -807,6 +807,15 @@ watch(messageModel, value => {
   nextTick(resizeTextarea)
 })
 
+const suppressSuggestions = ref(false)
+
+watch(() => props.replyingTo, (val) => {
+  if (val) {
+    suppressSuggestions.value = true
+    showSuggestions.value = false
+  }
+})
+
 const syncInputState = (event) => {
   const textarea = textareaRef.value
   let text = ''
@@ -835,6 +844,12 @@ const syncInputState = (event) => {
   }
   lastCursorPosition.value = cursor
 
+  if (suppressSuggestions.value) {
+    suppressSuggestions.value = false
+    showSuggestions.value = false
+    return
+  }
+
   const beforeCursor = text.substring(0, cursor)
   // Match @ or # preceded by start of line or whitespace, allowing spaces within query
   const match = beforeCursor.match(/(?:^|\s)([@#])([^@#\n]{0,30})$/)
@@ -845,6 +860,22 @@ const syncInputState = (event) => {
   }
   const newTrigger = match[1]
   const newQuery = match[2]
+
+  // If query ends with a space and already matches an exact member/group/all, mention is complete
+  if (newQuery.endsWith(' ')) {
+    const trimmed = newQuery.trim()
+    const allUsers = props.users || []
+    const allGroups = props.groups || []
+    const isExact = normalize(trimmed) === 'all'
+      || allUsers.some(u => normalize(u.name) === normalize(trimmed))
+      || allGroups.some(g => normalize(g.name) === normalize(trimmed))
+    if (isExact || trimmed.length === 0) {
+      showSuggestions.value = false
+      suggestionIndex.value = 0
+      return
+    }
+  }
+
   if (trigger.value !== newTrigger || query.value !== newQuery) {
     trigger.value = newTrigger
     query.value = newQuery
@@ -937,10 +968,11 @@ const selectSuggestion = item => {
 
   const finalValue = replacement + after
 
+  suppressSuggestions.value = true
+  showSuggestions.value = false
   textarea.value = finalValue
   rawInputText.value = finalValue
   messageModel.value = finalValue
-  showSuggestions.value = false
   lastCursorPosition.value = replacement.length
 
   nextTick(() => {
@@ -999,7 +1031,11 @@ const focusTextarea = (e) => {
   }
 }
 
-const focus = () => {
+const focus = (skipSuggestions = true) => {
+  if (skipSuggestions) {
+    suppressSuggestions.value = true
+    showSuggestions.value = false
+  }
   nextTick(() => {
     const el = textareaRef.value
     if (!el) return
