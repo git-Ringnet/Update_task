@@ -1005,10 +1005,15 @@ const handleKeydown = event => {
       return
     }
   }
-  const isMobileDevice = typeof window !== 'undefined' && (window.innerWidth < 768 || ('ontouchstart' in window) || navigator.maxTouchPoints > 0)
+  const isMobileOrTablet = typeof window !== 'undefined' && (
+    window.innerWidth < 1140 ||
+    ('ontouchstart' in window) ||
+    (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) ||
+    /iPad|iPhone|iPod|Android/i.test(navigator.userAgent || '')
+  )
   if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
-    if (isMobileDevice) {
-      // On mobile / virtual keyboards, Enter should insert a newline, only pressing the submit button sends
+    if (isMobileOrTablet) {
+      // On iPad / tablet / mobile, Enter should insert a newline, only pressing the submit button sends
       return
     }
     event.preventDefault()

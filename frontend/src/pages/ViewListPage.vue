@@ -5,18 +5,18 @@
     <Navbar @search="handleSearch" />
 
     <!-- Main Container -->
-    <main class="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
+    <main class="max-w-[1440px] mx-auto px-3 sm:px-4 lg:px-6 py-6 w-full">
       <!-- Main Layout Container -->
       <div class="view-page-layout" :class="[
         viewMode === 'notes'
-          ? 'grid grid-cols-1 lg:grid-cols-[390px_minmax(0,1fr)] gap-15 w-full lg:w-[1280px] mx-auto items-start'
-          : 'view-standard-layout w-full flex justify-center items-start gap-12 sm:gap-14',
+          ? 'grid grid-cols-1 lg:grid-cols-[360px_minmax(0,1fr)] gap-10 xl:gap-14 2xl:gap-15 w-full lg:w-[1280px] mx-auto items-start'
+          : 'view-standard-layout w-full flex justify-center items-start gap-6 min-[1240px]:gap-8 min-[1330px]:gap-[52px] min-[1440px]:gap-[60px]',
         { 'mobile-keyboard-open': isVirtualKeyboardOpen }
       ]">
 
         <!-- LEFT PANEL: Actions, Switcher & Search (Block 1) -->
         <aside ref="viewActionsRef" class="view-actions" :class="[
-          viewMode === 'notes' ? 'space-y-3.5 select-none flex flex-col items-end w-full lg:-translate-x-[42px]' : 'space-y-3.5 select-none flex flex-col items-end w-[390px] flex-shrink-0',
+          viewMode === 'notes' ? 'space-y-3.5 select-none flex flex-col items-end w-full lg:-translate-x-[42px]' : 'space-y-3.5 select-none flex flex-col items-end md:pr-4 w-[360px] flex-shrink-0',
           {
             'mobile-keyboard-open': isVirtualKeyboardOpen && !isMobileSearchOpen,
             'has-mobile-search-open': isMobileSearchOpen
@@ -24,33 +24,33 @@
         ]">
           <!-- Button Tạo dự án -->
           <button @click="isModalOpen = true" type="button"
-            class="mobile-icon-button create-project-action w-fit bg-transparent hover:bg-gray-200/40 border-[2.5px] border-[#4d4d4d] text-[#32312F] font-extrabold text-[18px] rounded-md px-4.5 py-2.5 flex items-center justify-center gap-1.5 transition-colors cursor-pointer focus:outline-none select-none"
+            class="mobile-icon-button create-project-action w-fit bg-transparent hover:bg-gray-200/40 border-[2.5px] border-[#4d4d4d] text-[#32312F] font-extrabold text-[16px] sm:text-[17px] rounded-lg px-4 py-2 flex items-center justify-center gap-1.5 transition-colors cursor-pointer focus:outline-none select-none"
             title="Tạo dự án mới (Ctrl + K)">
-            <span class="text-[20px] font-normal mr-0.5 leading-none">+</span>
+            <span class="text-[19px] font-normal mr-0.5 leading-none">+</span>
             <span>Tạo dự án mới</span>
           </button>
 
           <!-- Project / Customer / Activities Switcher (Simple Button) -->
           <button @click="toggleCustomerGroup" type="button"
-            class="mobile-icon-button view-switch-action w-fit bg-transparent hover:bg-gray-200/40 border-[2.5px] border-[#4d4d4d] text-[#32312F] font-extrabold text-[18px] rounded-md px-4.5 py-2.5 flex items-center justify-center transition-colors cursor-pointer focus:outline-none select-none"
+            class="mobile-icon-button view-switch-action w-fit bg-transparent hover:bg-gray-200/40 border-[2.5px] border-[#4d4d4d] text-[#32312F] font-extrabold text-[16px] sm:text-[17px] rounded-lg px-4 py-2 flex items-center justify-center transition-colors cursor-pointer focus:outline-none select-none"
             :class="isGroupedByCustomer || viewMode === 'activities' ? 'bg-emerald-50/10' : ''" :title="viewModeTitle">
             <div class="flex items-center gap-2 pointer-events-none">
-              <i class="fa-solid fa-list-ol text-[18px] text-[#4d4d4d]"></i>
+              <i class="fa-solid fa-list-ol text-[17px] text-[#4d4d4d]"></i>
               <span>Đổi kiểu xem</span>
             </div>
           </button>
 
           <!-- Tìm kiếm gì đó -->
-          <div class="search-input-wrapper relative w-full max-w-[270px]"
+          <div class="search-input-wrapper relative w-full max-w-[240px] sm:max-w-[250px]"
             :class="{ 'mobile-search-open': isMobileSearchOpen }">
             <i
-              class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4d4d4d] text-[18px]"></i>
+              class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4d4d4d] text-[17px]"></i>
             <input ref="searchInputRef" :value="projectStore.searchQuery"
               @input="projectStore.searchQuery = $event.target.value"
               @compositionupdate="projectStore.searchQuery = $event.target.value"
               @compositionend="projectStore.searchQuery = $event.target.value" type="text" placeholder="Tìm kiếm"
               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="project_search_query"
-              class="w-full bg-white sm:bg-transparent border-[2.5px] border-[#4d4d4d] rounded-md pl-11 pr-4 py-2.5 text-[18px] font-extrabold text-[#32312F] focus:outline-none placeholder-gray-400" />
+              class="w-full bg-white sm:bg-transparent border-[2.5px] border-[#4d4d4d] rounded-lg pl-10 pr-3.5 py-2 text-[16px] sm:text-[17px] font-extrabold text-[#32312F] focus:outline-none placeholder-gray-400" />
           </div>
           <button type="button" class="mobile-search-toggle mobile-icon-button"
             :class="{ 'bg-emerald-50 border-emerald-600 text-emerald-700': isMobileSearchOpen || projectStore.searchQuery }"
@@ -59,7 +59,7 @@
           </button>
 
           <!-- Keyboard shortcuts are collapsed by default to leave room for TV. -->
-          <div class="keyboard-hints relative w-full max-w-[270px] flex justify-end">
+          <div class="keyboard-hints relative w-full max-w-[240px] sm:max-w-[250px] flex justify-end">
             <button type="button" @click="toggleShortcutHints" class="shortcut-hints-toggle" title="Phím tắt">
               <i class="fa-solid fa-keyboard"></i>
             </button>
@@ -176,10 +176,10 @@
         </aside>
 
         <!-- Dynamic/Faded Wrapper for panels on mobile -->
-        <div class="mobile-panels-container">
+        <div class="mobile-panels-container flex items-start gap-6 min-[1240px]:gap-8 min-[1330px]:gap-[52px] min-[1440px]:gap-[60px]">
           <!-- CENTER PANEL: Projects List (Block 2 - Wider Column, expands when notes view) -->
           <section ref="projectListPanelRef" class="project-list-panel"
-            :class="[viewMode === 'notes' ? 'space-y-3.5 select-none w-full' : 'space-y-3.5 select-none w-[470px] flex-shrink-0', viewMode === 'activities' ? 'mobile-activities-active' : '']">
+            :class="[viewMode === 'notes' ? 'space-y-3.5 select-none w-full' : 'space-y-3.5 select-none w-[360px] flex-shrink-0', viewMode === 'activities' ? 'mobile-activities-active' : '']">
 
             <!-- Mobile Top Search Header Bar (Sticky above project list on mobile when search is active) -->
             <transition enter-active-class="transition duration-200 ease-out"
@@ -228,10 +228,10 @@
 
             <!-- Grouped by Customer Mode (Matches Mockup) -->
             <div v-else-if="isGroupedByCustomer" ref="scrollContainerGrouped" @scroll="handleScroll"
-              class="project-scroll-container space-y-6 max-h-[calc(100vh-130px)] overflow-y-auto scrollbar-none">
+              class="project-scroll-container space-y-6 max-h-[calc(100vh-130px)] overflow-y-auto scrollbar-none md:pl-8 md:-ml-8 md:pr-8 md:-mr-8">
               <div v-for="group in projectsByCustomer" :key="group.name" class="space-y-2.5">
                 <!-- Customer Header -->
-                <div class="customer-group-header flex items-center gap-2 pt-1 select-none">
+                <div class="customer-group-header flex items-center gap-2 pt-1 select-none w-full min-[1140px]:max-w-[360px] mx-auto min-[1140px]:-translate-x-7">
                   <h3 class="text-[24px] font-black text-gray-900 tracking-tight font-heading">{{ group.name }}</h3>
                   <button @click.stop="togglePinCustomer(group.name)" type="button"
                     class="p-1 transition-colors hover:opacity-80"
@@ -244,17 +244,17 @@
                 <!-- Customer Projects List -->
                 <div class="space-y-3.5">
                   <div v-for="(project, pIdx) in group.projects" :key="project.id" :data-project-id="project.id"
-                    class="flex items-center transition-all duration-150 rounded-2xl group/project-row relative w-full">
+                    class="flex items-center transition-all duration-150 rounded-2xl group/project-row relative w-full min-[1140px]:max-w-[360px] mx-auto">
 
-                    <!-- Same multi-select behavior as the default project view -->
+                    <!-- Multi-select checkbox outside card on the left -->
                     <input type="checkbox" :checked="isSelected(project.id)"
                       @click.stop="toggleProjectSelect(project.id, $event)"
-                      class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer transition-opacity duration-200 absolute left-2.5 top-1/2 -translate-y-1/2 z-20"
-                      :class="showAllCheckboxes ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100'" />
+                      class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer transition-opacity duration-200 absolute left-2.5 md:-left-7 top-1/2 -translate-y-1/2 z-20"
+                      :class="selectedProjectIds.length > 0 ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100'" />
 
                     <!-- Colored Project Rectangular Card (Grouped mode - no redundant customer name) -->
                     <div @click="goToProjectDetail(project.id, $event)"
-                      class="project-card w-full md:w-[380px] mx-auto rounded-lg p-4 flex items-center justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
+                      class="project-card w-full min-[1140px]:max-w-[360px] mx-auto rounded-lg p-4 flex items-center justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
                       :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]">
                       <div class="min-w-0 flex-1">
                         <div
@@ -335,22 +335,22 @@
 
             <!-- Default Cards list -->
             <div v-else ref="scrollContainerDefault" @scroll="handleScroll"
-              class="project-scroll-container space-y-3.5 max-h-[calc(100vh-130px)] overflow-y-auto scrollbar-none">
+              class="project-scroll-container space-y-3.5 max-h-[calc(100vh-130px)] overflow-y-auto scrollbar-none md:pl-8 md:-ml-8 md:pr-8 md:-mr-8">
               <transition-group enter-active-class="transition duration-300 ease-out"
                 enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0"
                 leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
                 leave-to-class="opacity-0 -translate-y-2">
                 <div v-for="(project, index) in displayedProjects" :key="project.id" :data-project-id="project.id"
-                  class="flex items-center transition-all duration-150 rounded-2xl group/project-row relative w-full">
-                  <!-- Checkbox for multi-select (outside the card, but inside the scroll container) -->
+                  class="flex items-center transition-all duration-150 rounded-2xl group/project-row relative w-full min-[1140px]:max-w-[360px] mx-auto">
+                  <!-- Checkbox for multi-select (outside the card on the left) -->
                   <input type="checkbox" :checked="isSelected(project.id)"
                     @click.stop="toggleProjectSelect(project.id, $event)"
-                    class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer transition-opacity duration-200 absolute left-2.5 top-1/2 -translate-y-1/2 z-20"
-                    :class="showAllCheckboxes ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100'" />
+                    class="w-4.5 h-4.5 rounded text-emerald-600 accent-emerald-600 border-gray-300 cursor-pointer transition-opacity duration-200 absolute left-2.5 md:-left-7 top-1/2 -translate-y-1/2 z-20"
+                    :class="selectedProjectIds.length > 0 ? 'opacity-100' : 'opacity-0 group-hover/project-row:opacity-100'" />
 
                   <!-- Card Container -->
                   <div @click="goToProjectDetail(project.id, $event)"
-                    class="project-card w-full md:w-[380px] mx-auto rounded-lg p-4 flex items-start justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
+                    class="project-card w-full min-[1140px]:max-w-[360px] mx-auto rounded-lg p-4 flex items-start justify-between gap-1 cursor-pointer shadow-3xs transition-shadow hover:shadow-2xs select-none relative overflow-hidden min-w-0"
                     :class="[getProjectStatusStyle(project).cardBg, getProjectStatusStyle(project).borderClass]">
                     <div class="min-w-0 flex-1">
                       <div
@@ -399,7 +399,7 @@
 
           <!-- RIGHT PANEL: Hoạt động gần đây (Block 3 - Hidden in notes view) -->
           <section v-if="viewMode !== 'notes'"
-            class="recent-activity-panel bg-[#F9F4EE] border-[2.5px] border-[#4d4d4d] rounded-lg p-0 flex flex-col h-[calc(100vh-130px)] w-[390px] flex-shrink-0 shadow-3xs overflow-hidden"
+            class="recent-activity-panel bg-[#F9F4EE] border-[2.5px] border-[#4d4d4d] rounded-lg p-0 flex flex-col h-[calc(100vh-130px)] w-[360px] flex-shrink-0 shadow-3xs overflow-hidden"
             :class="{ 'mobile-activities-active': viewMode === 'activities' }">
 
             <!-- Header: "Hoạt động của đội" & Expand Button (Full width edge-to-edge border) -->
@@ -1308,7 +1308,7 @@ const goToProjectDetail = (projectId, event) => {
   } else {
     // Normal Click: Select only this project
     selectedProjectIds.value = [projectId]
-    showAllCheckboxes.value = true
+    showAllCheckboxes.value = false
     lastSelectionAnchorId.value = projectId
     selectionFocusId.value = projectId
   }
@@ -2020,6 +2020,7 @@ let suppressNextProjectClick = false
 let fetchActivitiesTimeout = null
 watch(selectedProjectIds, (ids) => {
   if (ids.length === 0) {
+    showAllCheckboxes.value = false
     lastSelectionAnchorId.value = null
     selectionFocusId.value = null
     if (defaultActivities.value.length > 0) {
@@ -2027,6 +2028,8 @@ watch(selectedProjectIds, (ids) => {
       hasMoreOlderActivities.value = defaultActivities.value.length >= 30
       scrollToBottom(false)
     }
+  } else if (ids.length <= 1 && !isSelecting.value) {
+    showAllCheckboxes.value = false
   }
   hasMoreOlderActivities.value = true
   if (fetchActivitiesTimeout) clearTimeout(fetchActivitiesTimeout)
@@ -3306,22 +3309,23 @@ onUnmounted(() => {
   display: none;
 }
 
-/* Tablet / iPad / Narrow desktop (768px - 1023px) - Bottom centered buttons matching Image 1 */
-@media (min-width: 768px) and (max-width: 1023px) {
+/* Tablet / iPad / Narrow Screens (768px - 1139px) - Bottom centered buttons matching iPad */
+/* Tablet / iPad / Narrow Screens (768px - 1139px) - Buttons on the left, full height columns */
+@media (min-width: 768px) and (max-width: 1139px) {
   main {
     max-width: 100% !important;
-    padding-left: 16px !important;
-    padding-right: 16px !important;
-    padding-top: 12px !important;
-    padding-bottom: 12px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    padding-top: 16px !important;
+    padding-bottom: 16px !important;
   }
 
   .view-standard-layout {
     display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    gap: 12px !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    gap: 16px !important;
     width: 100% !important;
   }
 
@@ -3330,68 +3334,27 @@ onUnmounted(() => {
     flex-direction: row !important;
     align-items: flex-start !important;
     justify-content: center !important;
-    gap: 20px !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    order: 1 !important;
-  }
-
-  .project-list-panel {
-    width: 380px !important;
-    max-width: calc(50% - 10px) !important;
-    min-width: 280px !important;
-    flex-shrink: 1 !important;
-    display: flex !important;
-    flex-direction: column !important;
-  }
-
-  .customer-group-header {
-    padding-left: 0 !important;
-  }
-
-  .project-scroll-container {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    max-height: calc(var(--vvh, 100dvh) - 190px) !important;
-  }
-
-  .project-card {
-    width: calc(100% - 32px) !important;
-    max-width: calc(100% - 32px) !important;
-    margin-left: auto !important;
-    margin-right: 0 !important;
-  }
-
-  .project-list-panel input[type="checkbox"] {
-    left: 4px !important;
-  }
-
-  .recent-activity-panel {
-    width: 380px !important;
-    max-width: calc(50% - 10px) !important;
-    min-width: 280px !important;
-    height: calc(var(--vvh, 100dvh) - 190px) !important;
-    max-height: calc(var(--vvh, 100dvh) - 190px) !important;
-    flex-shrink: 1 !important;
-    display: flex !important;
-    flex-direction: column !important;
+    gap: 16px !important;
+    flex: 1 1 auto !important;
+    max-width: calc(100% - 64px) !important;
   }
 
   .view-actions {
     position: relative !important;
-    order: 2 !important;
-    width: 100% !important;
+    order: 0 !important;
+    width: auto !important;
     display: flex !important;
-    flex-direction: row !important;
-    justify-content: center !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
     align-items: center !important;
-    gap: 26px !important;
+    gap: 14px !important;
     margin: 0 !important;
-    margin-top: 4px !important;
+    padding: 0 !important;
     z-index: 30 !important;
+    flex-shrink: 0 !important;
   }
 
-  .view-actions>* {
+  .view-actions > * {
     margin: 0 !important;
   }
 
@@ -3408,11 +3371,11 @@ onUnmounted(() => {
     background: transparent !important;
   }
 
-  .create-project-action>span:last-child {
+  .create-project-action > span:last-child {
     display: none !important;
   }
 
-  .create-project-action>span:first-child {
+  .create-project-action > span:first-child {
     font-size: 26px !important;
     margin-right: 0 !important;
     line-height: 1 !important;
@@ -3447,10 +3410,8 @@ onUnmounted(() => {
   .search-input-wrapper.mobile-search-open {
     display: block !important;
     position: absolute !important;
-    bottom: 64px !important;
-    top: auto !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
+    top: 130px !important;
+    left: 0 !important;
     width: 280px !important;
     z-index: 50 !important;
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15) !important;
@@ -3485,177 +3446,51 @@ onUnmounted(() => {
   .tv-broadcast-panel {
     display: none !important;
   }
-}
-
-/* Medium Desktop (1024px - 1399px) - Left column with 3 icon buttons */
-@media (min-width: 1024px) and (max-width: 1399px) {
-  main {
-    max-width: 100% !important;
-    padding-left: 20px !important;
-    padding-right: 20px !important;
-  }
-
-  .view-standard-layout {
-    display: flex !important;
-    position: relative !important;
-    flex-direction: row !important;
-    justify-content: center !important;
-    align-items: flex-start !important;
-    width: 100% !important;
-  }
-
-  .view-actions {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 48px !important;
-    min-width: 48px !important;
-    flex-shrink: 0 !important;
-    align-items: flex-start !important;
-    gap: 14px !important;
-    margin: 0 !important;
-    z-index: 30 !important;
-  }
-
-  .view-actions>* {
-    margin: 0 !important;
-    margin-bottom: 14px !important;
-  }
-
-  .create-project-action {
-    width: 48px !important;
-    height: 48px !important;
-    min-width: 48px !important;
-    padding: 0 !important;
-    border-radius: 10px !important;
-    border: 2.5px solid #4d4d4d !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    background: transparent !important;
-  }
-
-  .create-project-action>span:last-child {
-    display: none !important;
-  }
-
-  .create-project-action>span:first-child {
-    font-size: 26px !important;
-    margin-right: 0 !important;
-    line-height: 1 !important;
-  }
-
-  .view-switch-action {
-    width: 48px !important;
-    height: 48px !important;
-    min-width: 48px !important;
-    padding: 0 !important;
-    border-radius: 10px !important;
-    border: 2.5px solid #4d4d4d !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    background: transparent !important;
-  }
-
-  .view-switch-action span {
-    display: none !important;
-  }
-
-  .view-switch-action i {
-    font-size: 18px !important;
-    margin: 0 !important;
-  }
-
-  .search-input-wrapper {
-    display: none !important;
-  }
-
-  .search-input-wrapper.mobile-search-open {
-    display: block !important;
-    position: absolute !important;
-    left: 62px !important;
-    top: 124px !important;
-    width: 270px !important;
-    z-index: 50 !important;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15) !important;
-    background: #ffffff !important;
-    border-radius: 12px !important;
-  }
-
-  .mobile-search-toggle {
-    display: inline-flex !important;
-    width: 48px !important;
-    height: 48px !important;
-    min-width: 48px !important;
-    padding: 0 !important;
-    border-radius: 10px !important;
-    border: 2.5px solid #4d4d4d !important;
-    background: transparent !important;
-    color: #4d4d4d !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer !important;
-  }
-
-  .mobile-search-toggle i {
-    font-size: 18px !important;
-    color: #4d4d4d !important;
-  }
-
-  .keyboard-hints {
-    display: none !important;
-  }
-
-  .tv-broadcast-panel {
-    display: none !important;
-  }
-
-  .mobile-panels-container {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: flex-start !important;
-    justify-content: center !important;
-    gap: 24px !important;
-    width: fit-content !important;
-    max-width: 100% !important;
-    margin: 0 auto !important;
-  }
 
   .project-list-panel {
-    width: 380px !important;
-    max-width: 380px !important;
-    min-width: 300px !important;
-    flex-shrink: 0 !important;
+    width: 360px !important;
+    max-width: calc(50% - 8px) !important;
+    min-width: 260px !important;
+    flex-shrink: 1 !important;
     display: flex !important;
     flex-direction: column !important;
   }
 
   .customer-group-header {
     padding-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   .project-scroll-container {
     margin-left: 0 !important;
     margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 4px !important;
+    max-height: calc(100vh - 130px) !important;
+    box-sizing: border-box !important;
+  }
+
+  .project-list-panel .group\/project-row {
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   .project-card {
-    width: calc(100% - 32px) !important;
-    max-width: calc(100% - 32px) !important;
+    width: 100% !important;
+    max-width: 100% !important;
     margin-left: auto !important;
-    margin-right: 0 !important;
-  }
-
-  .project-list-panel input[type="checkbox"] {
-    left: 4px !important;
+    margin-right: auto !important;
+    box-sizing: border-box !important;
   }
 
   .recent-activity-panel {
-    width: 380px !important;
-    max-width: 380px !important;
-    min-width: 300px !important;
-    flex-shrink: 0 !important;
+    width: 360px !important;
+    max-width: calc(50% - 8px) !important;
+    min-width: 260px !important;
+    height: calc(100vh - 130px) !important;
+    max-height: calc(100vh - 130px) !important;
+    flex-shrink: 1 !important;
     display: flex !important;
     flex-direction: column !important;
   }
@@ -3913,6 +3748,7 @@ onUnmounted(() => {
 
   .project-card {
     width: calc(100% - 38px) !important;
+    max-width: calc(100% - 38px) !important;
     margin-left: auto !important;
     margin-right: 0 !important;
     padding: 12px 14px !important;
@@ -3936,6 +3772,7 @@ onUnmounted(() => {
     opacity: 1 !important;
     width: 22px !important;
     height: 22px !important;
+    position: absolute !important;
     left: 2px !important;
     cursor: pointer !important;
     accent-color: #10b981 !important;

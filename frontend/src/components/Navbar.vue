@@ -1,22 +1,30 @@
 <template>
-  <header class="bg-[#F9F4EE] sticky top-0 z-50 py-2 px-2.5 sm:px-3 relative">
-    <!-- Left Slot Content (Dynamic Back / Actions or Brand Logo) -->
-    <div class="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 flex items-center z-10">
-      <slot name="left">
-        <router-link to="/views" class="flex items-center select-none hover:opacity-85 transition-opacity" title="RINGNET">
-          <img src="/ringnet-logo.png" alt="RINGNET" class="h-11 sm:h-13 md:h-14 w-auto object-contain max-h-[58px]" />
-        </router-link>
-      </slot>
-    </div>
+  <header class="bg-[#F9F4EE] sticky top-0 z-50 py-2 relative">
+    <!-- Brand Logo (Sát ngoài rìa trái màn hình - Chỉ hiển thị ở trang chủ) -->
+    <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0"
+      enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="shouldShowLogo" class="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 flex items-center z-10">
+        <slot name="logo">
+          <router-link to="/views" class="flex items-center select-none hover:opacity-85 transition-opacity" title="RINGNET">
+            <img src="/ringnet-logo.png" alt="RINGNET" class="h-11 sm:h-13 md:h-14 w-auto object-contain max-h-[58px]" />
+          </router-link>
+        </slot>
+      </div>
+    </transition>
 
-    <!-- Right Slot Content (Dynamic Options/Menu) -->
-    <div class="absolute right-2.5 sm:right-4 top-1/2 -translate-y-1/2 flex items-center z-10">
-      <slot name="right"></slot>
-    </div>
-
-    <!-- Navbar Container: Centered workspace dropdown -->
-    <div class="max-w-[1440px] mx-auto h-12 flex items-center justify-center relative"
+    <!-- Navbar Container: Centered workspace dropdown with Left & Right slots aligned to max-w-[1440px] container -->
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-center relative"
       ref="dropdownRef">
+      <!-- Left Slot Content (Dynamic Back / Actions, e.g. Sticky Home/Back button) -->
+      <div v-if="$slots.left" class="absolute left-4 sm:left-6 lg:left-8 top-1/2 -translate-y-1/2 flex items-center z-10">
+        <slot name="left"></slot>
+      </div>
+
+      <!-- Right Slot Content (Dynamic Options/Menu) -->
+      <div v-if="$slots.right" class="absolute right-4 sm:right-6 lg:right-8 top-1/2 -translate-y-1/2 flex items-center z-10">
+        <slot name="right"></slot>
+      </div>
       <!-- Top Center Dropdown Trigger -->
       <button @click="toggleDropdown" type="button"
         class="bg-transparent px-5 py-2 rounded-full border border-gray-300 hover:border-emerald-350 shadow-3xs hover:shadow-2xs flex items-center gap-2 transition-all duration-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:ring-offset-1 text-sm font-bold text-gray-900">
@@ -432,9 +440,32 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import axios from 'axios'
+
+const props = defineProps({
+  hideLogo: {
+    type: Boolean,
+    default: false
+  },
+  showLogo: {
+    type: Boolean,
+    default: undefined
+  }
+})
+
+const route = useRoute()
+
+const isHomePage = computed(() => {
+  return route.path === '/' || route.path === '/views' || route.name === 'views'
+})
+
+const shouldShowLogo = computed(() => {
+  if (props.hideLogo) return false
+  if (typeof props.showLogo === 'boolean') return props.showLogo
+  return isHomePage.value
+})
 
 const defaultAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'
 

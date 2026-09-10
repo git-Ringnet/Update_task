@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-[#F9F4EE] flex flex-col justify-between pb-24 font-sans">
     <div>
       <!-- Navbar Component matching standard app header -->
-      <Navbar>
+      <Navbar :hide-logo="showStickyBar">
         <template #left>
           <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 -translate-y-2"
             enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-150 ease-in"
@@ -981,7 +981,16 @@ const onTextareaKeydown = (projectId, event) => {
     }
   }
 
+  const isMobileOrTablet = typeof window !== 'undefined' && (
+    window.innerWidth < 1140 ||
+    ('ontouchstart' in window) ||
+    (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) ||
+    /iPad|iPhone|iPod|Android/i.test(navigator.userAgent || '')
+  )
   if (event.key === 'Enter' && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+    if (isMobileOrTablet) {
+      return
+    }
     event.preventDefault()
     saveUpdate(projectId)
   }

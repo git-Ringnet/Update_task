@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-[#F9F4EE] text-gray-800 pb-24 font-sans">
     <!-- Navbar Component with slots for back and options buttons on scroll -->
-    <Navbar>
+    <Navbar :hide-logo="showDetailStickyBar">
       <template #left>
         <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 translate-y-4"
           enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-150 ease-in"
@@ -218,7 +218,7 @@
           class="roadmap-desktop relative bg-[#F9F4EE] rounded-3xl pt-1.5 pb-2 px-4 sm:pt-2 sm:pb-3 sm:px-6 select-none overflow-hidden min-h-[250px]">
 
           <!-- Mountain graphic container -->
-          <div class="relative min-w-[980px] h-[240px] mx-auto px-4 sm:px-6">
+          <div class="mountain-graphic-container relative min-w-[980px] h-[240px] mx-auto px-4 sm:px-6">
 
             <!-- SVG Dynamic Mountain Hills Fill -->
             <svg class="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none"
