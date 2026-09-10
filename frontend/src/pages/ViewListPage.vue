@@ -3460,13 +3460,14 @@ onUnmounted(() => {
     padding-left: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    transform: translateX(-28px) !important;
   }
 
   .project-scroll-container {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    padding-left: 0 !important;
-    padding-right: 4px !important;
+    margin-left: -32px !important;
+    padding-left: 32px !important;
+    margin-right: -8px !important;
+    padding-right: 8px !important;
     max-height: calc(100vh - 130px) !important;
     box-sizing: border-box !important;
   }
@@ -3479,8 +3480,6 @@ onUnmounted(() => {
   .project-card {
     width: 100% !important;
     max-width: 100% !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
     box-sizing: border-box !important;
   }
 
