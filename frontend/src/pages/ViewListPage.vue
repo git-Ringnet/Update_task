@@ -3450,7 +3450,8 @@ const submitChat = async (payload = null) => {
     const attachmentHtml = await activityComposerRef.value?.buildAttachmentHtml() || ''
     if (!chatMessage.value.trim() && !attachmentHtml) return
 
-    const dueDate = payload?.dueDate || activityComposerRef.value?.selectedDueDate || null
+    const rawDueDate = payload?.dueDate ?? activityComposerRef.value?.selectedDueDate?.value ?? (typeof activityComposerRef.value?.selectedDueDate === 'string' ? activityComposerRef.value?.selectedDueDate : null)
+    const dueDate = typeof rawDueDate === 'string' && rawDueDate.trim() ? rawDueDate.trim() : null
 
     let finalContent = chatMessage.value + attachmentHtml
     if (replyingToLog.value) {

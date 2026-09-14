@@ -1062,17 +1062,7 @@ const onInputText = (projectId, event) => {
     el.style.height = '128px'
   }
 
-  // 1. Parse Vietnamese natural language date & time
-  const parsedDate = parseVietnameseDateFromText(text)
-  if (parsedDate) {
-    dueDateMap[projectId] = parsedDate
-  }
-  const parsedTime = parseTimeFromText(text)
-  if (parsedTime) {
-    dueTimeMap[projectId] = parsedTime
-  }
-
-  // 2. Mention dropdown trigger
+  // Mention dropdown trigger
   const cursorPos = el?.selectionStart || text.length
   const textBeforeCursor = text.substring(0, cursorPos)
   const match = textBeforeCursor.match(/@([^@\n]{0,30})$/)

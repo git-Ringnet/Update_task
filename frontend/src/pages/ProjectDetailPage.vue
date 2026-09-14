@@ -2639,17 +2639,7 @@ const onTitleInput = (e) => {
     el.style.height = '128px'
   }
 
-  // 1. Parse Vietnamese date & time
-  const parsedDate = parseVietnameseDateFromText(text)
-  if (parsedDate) {
-    newStageTaskDueDate.value = parsedDate
-  }
-  const parsedTime = parseTimeFromText(text)
-  if (parsedTime) {
-    newStageTaskDueTime.value = parsedTime
-  }
-
-  // 2. Mention dropdown trigger
+  // Mention dropdown trigger
   const cursorPos = e.target.selectionStart || text.length
   const textBeforeCursor = text.substring(0, cursorPos)
   const match = textBeforeCursor.match(/@([^@]{0,30})$/)
