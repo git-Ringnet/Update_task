@@ -44,7 +44,7 @@ export const useProjectStore = defineStore('project', {
         this.isLoading = true
       }
       try {
-        const queryToUse = this.activePage === 'list' ? this.listSearchQuery : this.searchQuery
+        const queryToUse = this.activePage === 'list' ? this.listSearchQuery : ''
         const params = {
           search: queryToUse || '',
         }

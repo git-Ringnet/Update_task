@@ -1,5 +1,9 @@
 <template>
-  <div class="flex flex-col">
+  <div class="flex flex-col relative"
+    @dragenter.prevent="handleDragEnter"
+    @dragover.prevent="handleDragOver"
+    @dragleave.prevent="handleDragLeave"
+    @drop.prevent="handleDrop">
     <!-- Editing Banner if editing an existing activity -->
     <div v-if="editingComment"
       class="flex items-center justify-between bg-amber-50 px-3.5 py-1.5 border-l-3 border-amber-500 text-sm shadow-3xs border-b border-amber-200/80">
@@ -119,6 +123,72 @@
               @select="onSelectEmoji"
             />
           </div>
+
+          <!-- Date Picker Button (Hành động tiếp theo) -->
+          <button type="button" title="Đặt ngày hành động tiếp theo" @click="toggleDatePicker"
+            class="w-11 h-11 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-gray-700 hover:text-[#1A7A56] hover:bg-stone-200/60 active:bg-stone-300 transition-all cursor-pointer active:scale-95"
+            :class="{ 'text-[#1A7A56] bg-emerald-50/90 ring-1.5 ring-emerald-500 font-black': isDatePickerOpen || selectedDueDate }">
+            <i class="fa-regular fa-calendar-days text-[22px] sm:text-[20px]"></i>
+          </button>
+
+          <!-- Date Picker Popover -->
+          <div v-show="isDatePickerOpen"
+            class="fixed inset-0 z-40 bg-black/10 sm:bg-transparent"
+            @click="dismissDatePicker"></div>
+
+          <div v-if="isDatePickerOpen"
+            class="absolute bottom-full left-0 mb-2 z-50 rounded-2xl shadow-2xl overflow-hidden flex flex-col w-[min(320px,calc(100vw-24px))] sm:w-[310px] animate-fade-in-up border border-gray-200 bg-white"
+            @click.stop>
+            <div class="px-3.5 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+              <span class="text-xs font-black text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
+                <i class="fa-regular fa-calendar-days text-emerald-600 text-sm"></i>
+                <span>Hành động tiếp theo</span>
+              </span>
+              <button type="button" @click="dismissDatePicker" class="text-gray-400 hover:text-gray-700 p-1 cursor-pointer">
+                <i class="fa-solid fa-xmark text-sm"></i>
+              </button>
+            </div>
+
+            <div class="p-3 space-y-3">
+              <div class="grid grid-cols-2 gap-2 text-xs font-bold">
+                <button type="button" @click="setQuickDate(0)"
+                  class="px-2.5 py-2 rounded-xl border border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-800 transition-colors text-left flex items-center justify-between cursor-pointer">
+                  <span>Hôm nay</span>
+                  <span class="text-[11px] text-gray-400 font-medium">{{ getQuickDateLabel(0) }}</span>
+                </button>
+                <button type="button" @click="setQuickDate(1)"
+                  class="px-2.5 py-2 rounded-xl border border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-800 transition-colors text-left flex items-center justify-between cursor-pointer">
+                  <span>Ngày mai</span>
+                  <span class="text-[11px] text-gray-400 font-medium">{{ getQuickDateLabel(1) }}</span>
+                </button>
+                <button type="button" @click="setQuickDate(2)"
+                  class="px-2.5 py-2 rounded-xl border border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-800 transition-colors text-left flex items-center justify-between cursor-pointer">
+                  <span>Ngày mốt</span>
+                  <span class="text-[11px] text-gray-400 font-medium">{{ getQuickDateLabel(2) }}</span>
+                </button>
+                <button type="button" @click="setQuickDate(7)"
+                  class="px-2.5 py-2 rounded-xl border border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-800 transition-colors text-left flex items-center justify-between cursor-pointer">
+                  <span>1 tuần nữa</span>
+                  <span class="text-[11px] text-gray-400 font-medium">{{ getQuickDateLabel(7) }}</span>
+                </button>
+              </div>
+
+              <div class="border-t border-gray-100 pt-2.5">
+                <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Hoặc chọn ngày cụ thể:</label>
+                <input type="date" v-model="selectedDueDate"
+                  class="w-full px-3 py-1.5 border border-gray-200 rounded-xl text-sm font-bold text-gray-800 focus:outline-none focus:border-emerald-500 bg-gray-50 cursor-pointer" />
+              </div>
+
+              <div v-if="selectedDueDate" class="pt-1 flex items-center justify-between">
+                <span class="text-xs font-bold text-emerald-700 truncate max-w-[190px]">
+                  ✓ {{ formatDueDateDisplay(selectedDueDate) }}
+                </span>
+                <button type="button" @click="clearDueDate" class="text-xs text-rose-600 hover:text-rose-800 font-bold cursor-pointer">
+                  Xóa ngày
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Project Selector Pill (Green pill matching image) -->
@@ -218,9 +288,48 @@
         </div>
       </div>
 
+      <!-- Selected Due Date Banner Indicator -->
+      <div v-if="selectedDueDate"
+        class="flex items-center justify-between px-3.5 py-1.5 bg-[#e6f4ea] border-b border-emerald-300/80 text-xs font-black text-[#1A7A56] select-none">
+        <div class="flex items-center gap-1.5 min-w-0">
+          <i class="fa-solid fa-calendar-day text-[#1A7A56] shrink-0"></i>
+          <span class="truncate">Hành động tiếp theo: {{ formatDueDateDisplay(selectedDueDate) }}</span>
+        </div>
+        <button type="button" @click="clearDueDate" class="text-emerald-700 hover:text-rose-600 p-0.5 rounded cursor-pointer shrink-0 ml-2" title="Bỏ ngày">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <!-- Smart NLP Date Suggestion Pill (Prompt to quickly convert to action) -->
+      <div v-else-if="detectedDate"
+        class="flex items-center justify-between px-3.5 py-1.5 bg-emerald-50 border-b border-emerald-200 text-xs font-bold text-emerald-800 animate-fade-in-up select-none cursor-pointer hover:bg-emerald-100/80 transition-colors"
+        @click="acceptDetectedDate">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] shrink-0 shadow-3xs">
+            <i class="fa-solid fa-bolt"></i>
+          </span>
+          <span class="truncate">
+            Tạo hành động: <strong class="text-emerald-900 font-extrabold">{{ detectedDate.label }}</strong>
+          </span>
+        </div>
+        <div class="flex items-center gap-2 shrink-0 ml-2">
+          <span class="hidden sm:inline text-[11px] text-emerald-700 bg-emerald-200/60 px-2 py-0.5 rounded-md font-semibold">
+            Nhấn Enter / Tab để chọn
+          </span>
+          <button type="button" @click.stop="dismissDetectedDate" title="Bỏ qua"
+            class="text-emerald-600 hover:text-rose-600 p-1 rounded-full hover:bg-emerald-200/50 cursor-pointer">
+            <i class="fa-solid fa-xmark text-xs"></i>
+          </button>
+        </div>
+      </div>
+
       <!-- Textarea Input Area: inline with submit button for instant visibility on all devices -->
       <div class="flex items-end gap-2 px-3.5 py-2 bg-[#ebe6df] rounded-b-[14px] cursor-text"
-        @click="focusTextarea">
+        @click="focusTextarea"
+        @dragenter.prevent="handleDragEnter"
+        @dragover.prevent="handleDragOver"
+        @dragleave.prevent="handleDragLeave"
+        @drop.prevent="handleDrop">
         <textarea ref="textareaRef"
           :value="messageModel"
           @input="syncInputState"
@@ -236,6 +345,10 @@
           @focus="handleFocus"
           @blur="handleBlur"
           @paste="handlePaste"
+          @dragenter.prevent="handleDragEnter"
+          @dragover.prevent="handleDragOver"
+          @dragleave.prevent="handleDragLeave"
+          @drop.prevent="handleDrop"
           rows="1"
           name="chat_activity_message"
           id="activity-composer-textarea"
@@ -297,6 +410,200 @@ const attachments = ref([])
 
 const isEmojiPickerOpen = ref(false)
 const hasOpenedEmojiPicker = ref(true)
+
+const isDatePickerOpen = ref(false)
+const selectedDueDate = ref(null)
+
+const toggleDatePicker = () => {
+  const textarea = textareaRef.value
+  if (textarea && document.activeElement === textarea && typeof textarea.selectionStart === 'number') {
+    lastCursorPosition.value = textarea.selectionStart
+  }
+  if (!isDatePickerOpen.value) {
+    isDatePickerOpen.value = true
+    isEmojiPickerOpen.value = false
+    isProjectPickerOpen.value = false
+    showSuggestions.value = false
+  } else {
+    isDatePickerOpen.value = false
+  }
+}
+
+const dismissDatePicker = () => {
+  isDatePickerOpen.value = false
+}
+
+const clearDueDate = () => {
+  selectedDueDate.value = null
+}
+
+const formatDateToISO = (date) => {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+const setQuickDate = (offsetDays) => {
+  const d = new Date()
+  d.setDate(d.getDate() + offsetDays)
+  selectedDueDate.value = formatDateToISO(d)
+  dismissDatePicker()
+}
+
+const getQuickDateLabel = (offsetDays) => {
+  const d = new Date()
+  d.setDate(d.getDate() + offsetDays)
+  return `${d.getDate()}/${d.getMonth() + 1}`
+}
+
+const formatDueDateDisplay = (dateStr) => {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return dateStr
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const target = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  const diffDays = Math.round((target - today) / (1000 * 60 * 60 * 24))
+  const day = d.getDate()
+  const month = d.getMonth() + 1
+  const year = d.getFullYear()
+  const formatted = `${day} tháng ${month}, ${year}`
+
+  if (diffDays === 0) return `Hôm nay - ${formatted}`
+  if (diffDays === 1) return `Mai - ${formatted}`
+  if (diffDays === 2) return `Mốt - ${formatted}`
+  const daysArr = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy']
+  return `${daysArr[d.getDay()]} - ${formatted}`
+}
+
+const normalizeString = value => String(value || '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/đ/g, 'd')
+  .replace(/Đ/g, 'd')
+  .toLowerCase()
+  .trim()
+
+const isDismissedDetectedDate = ref(false)
+
+const parseNaturalLanguageDate = (text) => {
+  if (!text || typeof text !== 'string') return null
+  const clean = text.trim()
+  if (!clean) return null
+
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+  // 1. Check explicit date format: DD/MM/YYYY or DD/MM or DD-MM or ngày DD tháng MM
+  const dayMonthRegex = /(?:ngày\s+)?(\b\d{1,2})\s*(?:[\/\-\.]|\s*tháng\s*)(\d{1,2})(?:\s*(?:[\/\-\.]|\s*năm\s*)(\d{4}))?/i
+  const dmMatch = clean.match(dayMonthRegex)
+  if (dmMatch) {
+    const d = parseInt(dmMatch[1], 10)
+    const m = parseInt(dmMatch[2], 10) - 1
+    const y = dmMatch[3] ? parseInt(dmMatch[3], 10) : now.getFullYear()
+    if (m >= 0 && m <= 11 && d >= 1 && d <= 31) {
+      const targetDate = new Date(y, m, d)
+      return {
+        dateStr: formatDateToISO(targetDate),
+        label: formatDueDateDisplay(formatDateToISO(targetDate)),
+        matchText: dmMatch[0]
+      }
+    }
+  }
+
+  const norm = normalizeString(clean)
+
+  // 2. Hôm nay
+  if (/\b(hom nay|today)\b/i.test(norm)) {
+    return {
+      dateStr: formatDateToISO(today),
+      label: formatDueDateDisplay(formatDateToISO(today)),
+      matchText: 'Hôm nay'
+    }
+  }
+
+  // 3. Mai / Ngày mai
+  if (/\b(ngay mai|mai|tomorrow)\b/i.test(norm)) {
+    const d = new Date(today)
+    d.setDate(d.getDate() + 1)
+    return {
+      dateStr: formatDateToISO(d),
+      label: formatDueDateDisplay(formatDateToISO(d)),
+      matchText: 'Ngày mai'
+    }
+  }
+
+  // 4. Mốt / Ngày mốt
+  if (/\b(ngay mot|mot)\b/i.test(norm)) {
+    const d = new Date(today)
+    d.setDate(d.getDate() + 2)
+    return {
+      dateStr: formatDateToISO(d),
+      label: formatDueDateDisplay(formatDateToISO(d)),
+      matchText: 'Ngày mốt'
+    }
+  }
+
+  // 5. Tuần sau / 1 tuần nữa
+  if (/\b(tuan sau|1 tuan nua|next week)\b/i.test(norm)) {
+    const d = new Date(today)
+    d.setDate(d.getDate() + 7)
+    return {
+      dateStr: formatDateToISO(d),
+      label: formatDueDateDisplay(formatDateToISO(d)),
+      matchText: '1 tuần nữa'
+    }
+  }
+
+  // 6. Day of week: Thứ 2 -> Thứ 7, Chủ nhật (t2 -> t7, cn)
+  const dowMap = [
+    { regex: /\b(chu nhat|cn|sunday)\b/i, targetDay: 0, name: 'Chủ nhật' },
+    { regex: /\b(thu 2|thu hai|t2|monday)\b/i, targetDay: 1, name: 'Thứ hai' },
+    { regex: /\b(thu 3|thu ba|t3|tuesday)\b/i, targetDay: 2, name: 'Thứ ba' },
+    { regex: /\b(thu 4|thu tu|t4|wednesday)\b/i, targetDay: 3, name: 'Thứ tư' },
+    { regex: /\b(thu 5|thu nam|t5|thursday)\b/i, targetDay: 4, name: 'Thứ năm' },
+    { regex: /\b(thu 6|thu sau|t6|friday)\b/i, targetDay: 5, name: 'Thứ sáu' },
+    { regex: /\b(thu 7|thu bay|t7|saturday)\b/i, targetDay: 6, name: 'Thứ bảy' },
+  ]
+
+  for (const { regex, targetDay, name } of dowMap) {
+    if (regex.test(norm)) {
+      const curDay = today.getDay()
+      let diff = targetDay - curDay
+      if (diff <= 0) diff += 7 // next occurrence
+      const d = new Date(today)
+      d.setDate(d.getDate() + diff)
+      return {
+        dateStr: formatDateToISO(d),
+        label: formatDueDateDisplay(formatDateToISO(d)),
+        matchText: name
+      }
+    }
+  }
+
+  return null
+}
+
+const detectedDate = computed(() => {
+  if (selectedDueDate.value || isDismissedDetectedDate.value) return null
+  const currentText = rawInputText.value || messageModel.value || ''
+  return parseNaturalLanguageDate(currentText)
+})
+
+const acceptDetectedDate = () => {
+  if (detectedDate.value) {
+    selectedDueDate.value = detectedDate.value.dateStr
+    isDismissedDetectedDate.value = false
+    nextTick(() => {
+      textareaRef.value?.focus()
+    })
+  }
+}
+
+const dismissDetectedDate = () => {
+  isDismissedDetectedDate.value = true
+}
 
 const updateCursorPos = (event) => {
   const textarea = textareaRef.value || event?.target
@@ -388,7 +695,7 @@ const resizeTextarea = () => {
 }
 
 const compressImage = file => {
-  if (!/^image\/(jpeg|png|webp)$/i.test(file.type) || file.size <= 350 * 1024) {
+  if (!file || !file.type || !/^image\/(jpeg|png|webp)$/i.test(file.type) || (file.size && file.size <= 350 * 1024)) {
     return Promise.resolve(file)
   }
   return new Promise(resolve => {
@@ -413,8 +720,8 @@ const compressImage = file => {
       canvas.height = height
       canvas.getContext('2d').drawImage(image, 0, 0, width, height)
       canvas.toBlob(blob => resolve(blob
-        ? new File([blob], file.name, { type: file.type || 'image/jpeg' })
-        : file), file.type.includes('png') ? 'image/png' : 'image/jpeg', 0.75)
+        ? new File([blob], file.name || 'compressed_image.jpg', { type: file.type || 'image/jpeg' })
+        : file), (file.type && file.type.includes('png')) ? 'image/png' : 'image/jpeg', 0.75)
     }
     image.onerror = () => resolve(file)
     image.src = event.target.result
@@ -458,12 +765,12 @@ const addAttachments = async files => {
   const validFiles = Array.from(files || []).filter(Boolean)
   if (!validFiles.length) return
   const newItems = await Promise.all(validFiles.map(async file => {
-    const isImage = file.type.startsWith('image/')
+    const isImage = Boolean(file && file.type && typeof file.type === 'string' && file.type.startsWith('image/'))
     const processedFile = isImage ? await compressImage(file) : file
     return {
       key: `${Date.now()}-${Math.random()}`,
       file: processedFile,
-      name: file.name,
+      name: file.name || 'file',
       isImage,
       preview: isImage ? URL.createObjectURL(processedFile) : null,
       uploaded: null,
@@ -480,32 +787,51 @@ const isDragging = ref(false)
 let dragCounter = 0
 
 const handleDragEnter = (e) => {
-  if (e.dataTransfer?.types?.includes('Files')) {
-    dragCounter++
-    isDragging.value = true
+  e.preventDefault()
+  dragCounter++
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'copy'
   }
+  isDragging.value = true
 }
 
 const handleDragOver = (e) => {
-  if (e.dataTransfer?.types?.includes('Files')) {
+  e.preventDefault()
+  if (e.dataTransfer) {
     e.dataTransfer.dropEffect = 'copy'
   }
+  isDragging.value = true
 }
 
 const handleDragLeave = (e) => {
-  if (e.dataTransfer?.types?.includes('Files')) {
-    dragCounter = Math.max(0, dragCounter - 1)
-    if (dragCounter === 0) {
-      isDragging.value = false
-    }
+  e.preventDefault()
+  dragCounter = Math.max(0, dragCounter - 1)
+  if (dragCounter === 0) {
+    isDragging.value = false
   }
 }
 
 const handleDrop = async (e) => {
+  e.preventDefault()
+  e.stopPropagation()
   dragCounter = 0
   isDragging.value = false
-  const files = Array.from(e.dataTransfer?.files || [])
-  await addAttachments(files)
+
+  const droppedFiles = []
+  if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+    droppedFiles.push(...Array.from(e.dataTransfer.files))
+  } else if (e.dataTransfer?.items && e.dataTransfer.items.length > 0) {
+    for (const item of Array.from(e.dataTransfer.items)) {
+      if (item.kind === 'file') {
+        const file = item.getAsFile()
+        if (file) droppedFiles.push(file)
+      }
+    }
+  }
+
+  if (droppedFiles.length > 0) {
+    await addAttachments(droppedFiles)
+  }
 }
 
 const handleFileSelection = async event => {
@@ -927,7 +1253,9 @@ const handleSubmit = () => {
     messageModel.value = directVal
   }
   if (!canSend.value) return
-  emit('submit')
+  emit('submit', {
+    dueDate: selectedDueDate.value
+  })
 }
 
 const scrollSelectedSuggestionIntoView = () => {
@@ -1005,6 +1333,18 @@ const handleKeydown = event => {
       return
     }
   }
+  if (detectedDate.value && !showSuggestions.value) {
+    if (event.key === 'Enter' || event.key === 'Tab') {
+      event.preventDefault()
+      acceptDetectedDate()
+      return
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      dismissDetectedDate()
+      return
+    }
+  }
   const isMobileOrTablet = typeof window !== 'undefined' && (
     window.innerWidth < 1140 ||
     ('ontouchstart' in window) ||
@@ -1050,7 +1390,7 @@ const focus = (skipSuggestions = true) => {
     el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   })
 }
-defineExpose({ focus, focusTextarea, buildAttachmentHtml, clearAttachments })
+defineExpose({ focus, focusTextarea, buildAttachmentHtml, clearAttachments, clearDueDate, selectedDueDate, addAttachments })
 </script>
 
 <style scoped>

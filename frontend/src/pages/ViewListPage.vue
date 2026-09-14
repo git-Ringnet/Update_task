@@ -178,7 +178,7 @@
         <!-- Dynamic/Faded Wrapper for panels on mobile -->
         <div class="mobile-panels-container flex items-start gap-6 min-[1240px]:gap-8 min-[1330px]:gap-[52px] min-[1440px]:gap-[60px]">
           <!-- CENTER PANEL: Projects List (Block 2 - Wider Column, expands when notes view) -->
-          <section ref="projectListPanelRef" class="project-list-panel"
+          <section v-if="viewMode !== 'actions'" ref="projectListPanelRef" class="project-list-panel"
             :class="[viewMode === 'notes' ? 'space-y-3.5 select-none w-full' : 'space-y-3.5 select-none w-[360px] flex-shrink-0', viewMode === 'activities' ? 'mobile-activities-active' : '']">
 
             <!-- Mobile Top Search Header Bar (Sticky above project list on mobile when search is active) -->
@@ -400,7 +400,39 @@
           <!-- RIGHT PANEL: Hoạt động gần đây (Block 3 - Hidden in notes view) -->
           <section v-if="viewMode !== 'notes'"
             class="recent-activity-panel bg-[#F9F4EE] border-[2.5px] border-[#4d4d4d] rounded-lg p-0 flex flex-col h-[calc(100vh-130px)] w-[360px] flex-shrink-0 shadow-3xs overflow-hidden"
-            :class="{ 'mobile-activities-active': viewMode === 'activities' }">
+            :class="{ 'mobile-activities-active': viewMode === 'activities' }"
+            @dragenter.prevent="handleActivityPanelDragOver"
+            @dragover.prevent="handleActivityPanelDragOver"
+            @drop.prevent="handleActivityPanelDrop">
+
+            <!-- Mobile Top Search Header Bar in activities mode -->
+            <transition enter-active-class="transition duration-200 ease-out"
+              enter-from-class="opacity-0 -translate-y-2" enter-to-class="opacity-100 translate-y-0"
+              leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 translate-y-0"
+              leave-to-class="opacity-0 -translate-y-2">
+              <div v-if="isMobileSearchOpen"
+                class="mobile-top-search-bar md:hidden px-3 pt-2 pb-2 bg-[#F9F4EE] border-b border-gray-300/60 sticky top-0 z-30 flex items-center gap-2">
+                <div class="relative flex-1">
+                  <i
+                    class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4d4d4d] text-[16px]"></i>
+                  <input ref="mobileActivitySearchInputRef" :value="projectStore.searchQuery"
+                    @input="projectStore.searchQuery = $event.target.value"
+                    @compositionupdate="projectStore.searchQuery = $event.target.value"
+                    @compositionend="projectStore.searchQuery = $event.target.value" type="text"
+                    placeholder="Tìm kiếm hoạt động..." autocomplete="off" autocorrect="off" autocapitalize="off"
+                    spellcheck="false"
+                    class="w-full bg-white border-[2px] border-[#4d4d4d] rounded-xl pl-10 pr-9 py-2 text-[16px] font-bold text-[#32312F] focus:outline-none placeholder-gray-400 shadow-3xs" />
+                  <button v-if="projectStore.searchQuery" @click="projectStore.searchQuery = ''" type="button"
+                    class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 p-1 cursor-pointer">
+                    <i class="fa-solid fa-circle-xmark text-sm"></i>
+                  </button>
+                </div>
+                <button @click="toggleMobileSearch" type="button"
+                  class="text-sm font-extrabold text-gray-700 hover:text-gray-900 px-2.5 py-1.5 rounded-xl bg-gray-200/70 cursor-pointer shrink-0">
+                  Đóng
+                </button>
+              </div>
+            </transition>
 
             <!-- Header: "Hoạt động của đội" & Expand Button (Full width edge-to-edge border) -->
             <div class="flex items-center justify-between px-4 py-2.5 border-b border-[#4d4d4d] flex-shrink-0">
@@ -475,6 +507,7 @@
                       <!-- Left Timeline column: Avatar -->
                       <div class="flex-shrink-0 w-8 z-10">
                         <img :src="log.user?.avatar || defaultAvatar"
+                          @error="$event.target.src = defaultAvatar"
                           class="w-8 h-8 rounded-full object-cover border border-gray-200 relative z-10 shadow-3xs"
                           loading="lazy" decoding="async" />
                       </div>
@@ -505,16 +538,22 @@
                               {{ formatCommentRelativeTime(log.created_at) }}
                             </span>
 
-                            <!-- 3-dots Menu Button (shown on hover or when menu is active) -->
-                            <button type="button" @click.stop="toggleActivityMenu(log.id, $event)" title="Tùy chọn"
+                            <!-- 3-dots Menu Button (shown on hover or when menu is active, only if user has permission) -->
+                            <button v-if="canEditComment(log) || canDeleteComment(log)" type="button"
+                              @click.stop="toggleActivityMenu(log.id, $event)" title="Tùy chọn"
                               class="text-gray-400 hover:text-gray-800 hover:bg-gray-200/80 active:bg-gray-300/80 w-8 h-8 -my-1 -mr-1 rounded-lg flex items-center justify-center cursor-pointer transition-all active:scale-95 p-0"
                               :class="(activeLogMenuId === log.id || activeLogIdForMobileActions === log.id) ? 'flex text-gray-800 bg-gray-200/80' : 'hidden group-hover:flex'">
                               <i class="fa-solid fa-ellipsis-vertical text-[15px] leading-none"></i>
                             </button>
 
-                            <!-- Dropdown Menu for Edit & Delete -->
-                            <div v-if="activeLogMenuId === log.id"
-                              class="absolute top-full right-0 mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[120px] animate-fade-in-up">
+                            <!-- Dropdown Menu for Action, Edit & Delete -->
+                            <div v-if="activeLogMenuId === log.id && (canEditComment(log) || canDeleteComment(log))"
+                              class="absolute top-full right-0 mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[145px] animate-fade-in-up">
+                              <button v-if="canEditComment(log)" type="button" @click.stop="openCreateActionFromComment(log)"
+                                class="w-full text-left px-3 py-1.5 text-sm font-bold text-gray-700 hover:bg-emerald-50 hover:text-emerald-800 flex items-center gap-2 cursor-pointer transition-colors">
+                                <i class="fa-regular fa-calendar-plus text-xs text-emerald-600"></i>
+                                <span>Tạo hành động</span>
+                              </button>
                               <button v-if="canEditComment(log)" type="button" @click.stop="handleStartEditComment(log)"
                                 class="w-full text-left px-3 py-1.5 text-sm font-bold text-gray-700 hover:bg-gray-100 flex items-center gap-2 cursor-pointer transition-colors">
                                 <i class="fa-solid fa-pen-to-square text-xs text-emerald-600"></i>
@@ -526,10 +565,6 @@
                                 <i class="fa-solid fa-trash-can text-xs"></i>
                                 <span>Xóa</span>
                               </button>
-                              <div v-if="!canEditComment(log) && !canDeleteComment(log)"
-                                class="px-3 py-1.5 text-xs font-semibold text-gray-400">
-                                Không có thao tác
-                              </div>
                             </div>
                           </div>
                         </div>
@@ -561,7 +596,15 @@
 
                           <div v-if="parseCommentText(log.content)"
                             class="whitespace-pre-line font-normal text-gray-900 select-text cursor-text">
-                            {{ parseCommentText(log.content) }}
+                            <div :class="!isTaskExpanded(log.id) && isLongContent(parseCommentText(log.content)) ? 'line-clamp-4' : ''">
+                              {{ parseCommentText(log.content) }}
+                            </div>
+                            <button v-if="isLongContent(parseCommentText(log.content))"
+                              @click.stop="toggleExpandTask(log.id)"
+                              type="button"
+                              class="inline-block text-[13px] font-bold text-[#1A7A56] hover:text-emerald-800 hover:underline mt-0.5 cursor-pointer select-none">
+                              {{ isTaskExpanded(log.id) ? 'Thu gọn' : '... Xem thêm' }}
+                            </button>
                           </div>
 
                           <!-- Render Attachments -->
@@ -611,7 +654,7 @@
                   <!-- Empty activities state -->
                   <div v-if="displayedActivities.length === 0"
                     class="py-12 text-center text-gray-450 text-xs font-semibold">
-                    Trong 7 ngày qua, chưa có hoạt động mới
+                    {{ projectStore.searchQuery ? 'Không tìm thấy hoạt động phù hợp' : 'Trong 7 ngày qua, chưa có hoạt động mới' }}
                   </div>
                 </div>
 
@@ -637,6 +680,142 @@
                 :reply-text="replyingToLog?.text || parseCommentText(replyingToLog?.content)"
                 :editing-comment="editingCommentLog" :submitting="isSubmittingChat" @submit="submitChat"
                 @cancel-reply="cancelReply" @cancel-edit="cancelEdit" />
+            </div>
+          </section>
+
+          <!-- RIGHT PANEL: Hành động tiếp theo (Block 3 in 'actions' view) -->
+          <section v-if="viewMode === 'actions'"
+            class="schedule-actions-panel bg-[#F9F4EE] border-[2.5px] border-[#4d4d4d] rounded-lg p-0 flex flex-col h-[calc(100vh-130px)] w-[360px] flex-shrink-0 shadow-3xs overflow-hidden select-none"
+            :class="{ 'mobile-schedule-active': viewMode === 'actions' }">
+
+            <!-- Mobile Top Search Header Bar in schedule/actions mode -->
+            <transition enter-active-class="transition duration-200 ease-out"
+              enter-from-class="opacity-0 -translate-y-2" enter-to-class="opacity-100 translate-y-0"
+              leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 translate-y-0"
+              leave-to-class="opacity-0 -translate-y-2">
+              <div v-if="isMobileSearchOpen"
+                class="mobile-top-search-bar md:hidden px-3 pt-2 pb-2 bg-[#F9F4EE] border-b border-gray-300/60 sticky top-0 z-30 flex items-center gap-2">
+                <div class="relative flex-1">
+                  <i
+                    class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4d4d4d] text-[16px]"></i>
+                  <input ref="mobileScheduleSearchInputRef" :value="projectStore.searchQuery"
+                    @input="projectStore.searchQuery = $event.target.value"
+                    @compositionupdate="projectStore.searchQuery = $event.target.value"
+                    @compositionend="projectStore.searchQuery = $event.target.value" type="text"
+                    placeholder="Tìm kiếm hành động, dự án..." autocomplete="off" autocorrect="off" autocapitalize="off"
+                    spellcheck="false"
+                    class="w-full bg-white border-[2px] border-[#4d4d4d] rounded-xl pl-10 pr-9 py-2 text-[16px] font-bold text-[#32312F] focus:outline-none placeholder-gray-400 shadow-3xs" />
+                  <button v-if="projectStore.searchQuery" @click="projectStore.searchQuery = ''" type="button"
+                    class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 p-1 cursor-pointer">
+                    <i class="fa-solid fa-circle-xmark text-sm"></i>
+                  </button>
+                </div>
+                <button @click="toggleMobileSearch" type="button"
+                  class="text-sm font-extrabold text-gray-700 hover:text-gray-900 px-2.5 py-1.5 rounded-xl bg-gray-200/70 cursor-pointer shrink-0">
+                  Đóng
+                </button>
+              </div>
+            </transition>
+
+            <!-- Header: "Hành động tiếp theo" & Expand Button -->
+            <div class="flex items-center justify-between px-4 py-2.5 border-b border-[#4d4d4d] flex-shrink-0">
+              <h2 class="text-[20px] sm:text-[22px] font-black text-[#32312F] font-heading">Hành động tiếp theo</h2>
+              <button @click="router.push('/feed?tab=actions')" type="button" title="Mở rộng tất cả hành động tiếp theo"
+                class="w-10 h-10 sm:w-9.5 sm:h-9.5 rounded-xl flex items-center justify-center text-gray-700 hover:text-emerald-700 hover:bg-emerald-50/80 active:bg-emerald-100 cursor-pointer transition-all active:scale-95">
+                <i class="fa-solid fa-up-right-and-down-left-from-center text-[18px] sm:text-[17px]"></i>
+              </button>
+            </div>
+
+            <!-- Content Area: List grouped by date matching user screenshot -->
+            <div ref="scheduleScrollContainer" class="flex-1 overflow-y-auto overscroll-contain p-4 space-y-6 scrollbar-none">
+              <!-- Loading Skeleton -->
+              <div v-if="isScheduleLoading && groupedScheduleTasks.length === 0" class="space-y-4">
+                <div v-for="i in 3" :key="'sk-sched-' + i" class="animate-pulse space-y-2">
+                  <div class="h-4 bg-gray-200 rounded w-1/3"></div>
+                  <div class="h-16 bg-white/70 rounded-xl border border-gray-200"></div>
+                </div>
+              </div>
+
+              <!-- Empty State -->
+              <div v-else-if="groupedScheduleTasks.length === 0"
+                class="py-16 text-center text-gray-450 text-sm font-semibold flex flex-col items-center gap-2">
+                <i class="fa-regular fa-calendar-check text-3xl text-gray-350"></i>
+                <span>{{ projectStore.searchQuery ? 'Không tìm thấy hành động phù hợp' : 'Chưa có lịch trình hành động nào' }}</span>
+                <span v-if="!projectStore.searchQuery" class="text-xs text-gray-400 font-normal">Hãy chọn ngày khi chat để tạo hành động tiếp theo</span>
+              </div>
+
+              <!-- Grouped Tasks by Date -->
+              <div v-for="group in groupedScheduleTasks" :key="group.dateKey" class="space-y-3">
+                <!-- Group Date Header (Deep green bold header matching screenshot) -->
+                <h3 class="text-[17px] sm:text-[18px] font-black text-[#1A7A56] tracking-tight">
+                  {{ group.dateLabel }}
+                </h3>
+
+                <!-- Task Items in this Date Group -->
+                <div class="space-y-0 pl-1">
+                  <div v-for="task in group.tasks" :key="task.id"
+                    class="schedule-task-item relative flex items-start gap-3 pb-4.5 bg-transparent select-text group">
+                    
+                    <!-- Absolute Timeline Line connecting avatars -->
+                    <div class="absolute top-9 bottom-0 left-[15px] w-[1.5px] bg-gray-300 z-0"></div>
+
+                    <!-- Chatter Avatar -->
+                    <div class="flex-shrink-0 w-8 z-10">
+                      <img :src="task.creator?.avatar || task.assignee?.avatar || defaultAvatar"
+                        :alt="task.creator?.name || 'Thành viên'"
+                        @error="$event.target.src = defaultAvatar"
+                        class="w-8 h-8 rounded-full object-cover border border-gray-200 relative z-10 shadow-3xs bg-[#F9F4EE]" />
+                    </div>
+
+                    <!-- Details: Project Name & Content & Attachments -->
+                    <div class="min-w-0 flex-1 pt-0 z-10">
+                      <!-- Project Name: e.g. Ringnet - Thi công 5 node mạng -->
+                      <div class="font-extrabold text-[#32312F] text-[15px] sm:text-[16px] leading-snug break-words">
+                        {{ task.project ? ((task.project.customer?.name ? task.project.customer.name + ' - ' : '') + task.project.title) : 'Dự án' }}
+                      </div>
+                      <!-- Content: clean text with Xem thêm / Thu gọn -->
+                      <div v-if="parseCommentText(task.title || task.content)"
+                        class="text-[14px] sm:text-[15px] text-[#32312F] font-medium mt-1 leading-snug break-words">
+                        <div :class="!isTaskExpanded(task.id) && isLongContent(parseCommentText(task.title || task.content)) ? 'line-clamp-3' : ''"
+                          class="whitespace-pre-wrap">
+                          {{ parseCommentText(task.title || task.content) }}
+                        </div>
+                        <button v-if="isLongContent(parseCommentText(task.title || task.content))"
+                          @click.stop="toggleExpandTask(task.id)"
+                          type="button"
+                          class="inline-block text-[13px] font-bold text-[#1A7A56] hover:text-emerald-800 hover:underline mt-1 cursor-pointer select-none">
+                          {{ isTaskExpanded(task.id) ? 'Thu gọn' : '... Xem thêm' }}
+                        </button>
+                      </div>
+
+                      <!-- Render Attachments for Task (Images & Files) -->
+                      <div
+                        v-if="parseCommentImages(task.title || task.content).length > 0 || parseCommentFiles(task.title || task.content).length > 0"
+                        class="flex flex-wrap items-end gap-1.5 pt-1.5 pb-1">
+                        <!-- Images -->
+                        <button v-for="(img, imgIdx) in parseCommentImages(task.title || task.content)" :key="'sched-img-' + imgIdx"
+                          type="button"
+                          @click.stop="openImagePreview(img.url, parseCommentImages(task.title || task.content), imgIdx)"
+                          class="w-11 h-11 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 cursor-pointer hover:ring-2 hover:ring-emerald-400 transition-all flex-shrink-0 shadow-3xs"
+                          :title="'Xem ảnh: ' + img.name">
+                          <img :src="img.url" class="w-full h-full object-cover" alt=""
+                            loading="lazy" decoding="async" />
+                        </button>
+
+                        <!-- Files -->
+                        <a v-for="(file, fIdx) in parseCommentFiles(task.title || task.content)" :key="'sched-file-' + fIdx"
+                          :href="file.url" :download="file.name" target="_blank" @click.stop
+                          class="w-8 h-10 rounded border border-[#d4a574] bg-[#f5e6d0] hover:bg-[#edd9bc] flex flex-col items-center justify-end overflow-hidden cursor-pointer transition-colors flex-shrink-0"
+                          :title="'Tải xuống: ' + file.name">
+                          <i class="fa-solid fa-file text-[#c87828] text-xs mb-0.5"></i>
+                          <span
+                            class="text-[8px] font-bold text-[#8b5a2b] bg-[#e8c99a] w-full text-center py-0.5 leading-none">FILE</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
         </div>
@@ -878,61 +1057,186 @@
       </div>
     </div>
 
-    <!-- Image Lightbox Modal -->
+    <!-- Image Lightbox Modal with Zoom & Pan -->
     <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95"
       enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in"
       leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
       <div v-if="activePreviewImage"
         class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-slate-950/85 backdrop-blur-md select-none"
-        @click="closeImagePreview">
+        @mousedown.stop @mousemove.stop @mouseup.stop @click="closeImagePreview">
         <div class="relative w-[min(92vw,1100px)] h-[min(72vh,720px)] flex flex-col items-center justify-center"
           @click.stop @touchstart="handleModalTouchStart" @touchend="handleModalTouchEnd">
 
-          <!-- Top Bar: Image count badge + Close button -->
-          <div class="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-auto">
-            <div v-if="previewModalImages.length > 1"
-              class="px-3 py-1 bg-black/60 backdrop-blur-md text-white/90 text-xs sm:text-sm font-bold rounded-full border border-white/10 shadow-lg">
-              {{ previewModalIndex + 1 }} / {{ previewModalImages.length }}
+          <!-- Top Bar: Image count badge + Zoom controls + Close button -->
+          <div class="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-auto">
+            <div class="flex items-center gap-2">
+              <div v-if="previewModalImages.length > 1"
+                class="px-3 py-1 bg-black/60 backdrop-blur-md text-white/90 text-xs sm:text-sm font-bold rounded-full border border-white/10 shadow-lg">
+                {{ previewModalIndex + 1 }} / {{ previewModalImages.length }}
+              </div>
             </div>
-            <div v-else></div>
 
-            <button type="button" @click="closeImagePreview"
-              class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/20 hover:bg-rose-600 text-white flex items-center justify-center font-bold text-sm sm:text-base backdrop-blur-md shadow-xl transition-all cursor-pointer border border-white/20"
-              title="Đóng (Esc)">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
+            <!-- Zoom controls & Close -->
+            <div class="flex items-center gap-2">
+              <div class="flex items-center bg-black/60 backdrop-blur-md rounded-full border border-white/15 px-1 py-0.5 shadow-xl text-white">
+                <button type="button" @click.stop="zoomOutPreview" :disabled="previewZoomScale <= 1"
+                  class="w-8 h-8 rounded-full flex items-center justify-center text-xs hover:bg-white/20 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Thu nhỏ (-)">
+                  <i class="fa-solid fa-magnifying-glass-minus"></i>
+                </button>
+                <button type="button" @click.stop="resetPreviewZoom"
+                  class="px-2 py-0.5 text-xs font-bold hover:bg-white/20 rounded-full transition-all cursor-pointer"
+                  title="Đặt lại kích thước (100%)">
+                  {{ Math.round(previewZoomScale * 100) }}%
+                </button>
+                <button type="button" @click.stop="zoomInPreview" :disabled="previewZoomScale >= 5"
+                  class="w-8 h-8 rounded-full flex items-center justify-center text-xs hover:bg-white/20 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Phóng to (+)">
+                  <i class="fa-solid fa-magnifying-glass-plus"></i>
+                </button>
+              </div>
+
+              <button type="button" @click="closeImagePreview"
+                class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/20 hover:bg-rose-600 text-white flex items-center justify-center font-bold text-sm sm:text-base backdrop-blur-md shadow-xl transition-all cursor-pointer border border-white/20"
+                title="Đóng (Esc)">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
           </div>
 
           <!-- Main Image and Prev/Next Navigation -->
-          <div class="relative w-full h-full flex items-center justify-center rounded-2xl overflow-hidden bg-slate-900">
-            <img :src="activePreviewImage" class="w-full h-full object-contain transition-opacity duration-150" />
+          <div class="relative w-full h-full flex items-center justify-center rounded-2xl overflow-hidden bg-slate-900 select-none"
+            @wheel.prevent="handlePreviewWheel"
+            @mousemove="doPreviewPan"
+            @mouseup="endPreviewPan"
+            @mouseleave="endPreviewPan">
+            <img :src="activePreviewImage"
+              @mousedown="startPreviewPan"
+              @click="handlePreviewImageClick"
+              @dblclick="togglePreviewZoom"
+              :style="{
+                transform: `scale(${previewZoomScale}) translate(${previewPanX / previewZoomScale}px, ${previewPanY / previewZoomScale}px)`,
+                transition: isPreviewPanning ? 'none' : 'transform 0.18s ease-out',
+                cursor: previewZoomScale > 1 ? (isPreviewPanning ? 'grabbing' : 'grab') : 'zoom-in'
+              }"
+              class="w-full h-full object-contain pointer-events-auto"
+              draggable="false" />
 
-            <!-- PREV BUTTON (shown when > 1 image) -->
-            <button v-if="previewModalImages.length > 1" type="button" @click="prevPreviewImage"
+            <!-- PREV BUTTON (shown when > 1 image and not zoomed in) -->
+            <button v-if="previewModalImages.length > 1 && previewZoomScale <= 1" type="button" @click="prevPreviewImage"
               class="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center font-bold text-base sm:text-lg backdrop-blur-md shadow-xl transition-all cursor-pointer border border-white/20 hover:scale-110 active:scale-95"
               title="Ảnh trước (Phím ←)">
               <i class="fa-solid fa-chevron-left"></i>
             </button>
 
-            <!-- NEXT BUTTON (shown when > 1 image) -->
-            <button v-if="previewModalImages.length > 1" type="button" @click="nextPreviewImage"
+            <!-- NEXT BUTTON (shown when > 1 image and not zoomed in) -->
+            <button v-if="previewModalImages.length > 1 && previewZoomScale <= 1" type="button" @click="nextPreviewImage"
               class="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center font-bold text-base sm:text-lg backdrop-blur-md shadow-xl transition-all cursor-pointer border border-white/20 hover:scale-110 active:scale-95"
               title="Ảnh tiếp theo (Phím →)">
               <i class="fa-solid fa-chevron-right"></i>
             </button>
           </div>
 
-          <!-- Thumbnails / Dots strip at bottom -->
+          <!-- Thumbnails / Dots strip at bottom (scrollbar-none hidden scrollbar) -->
           <div v-if="previewModalImages.length > 1"
-            class="flex items-center justify-center gap-2 mt-4 max-w-full overflow-x-auto py-1 px-2">
+            class="flex items-center justify-center gap-2 mt-4 max-w-full overflow-x-auto py-1 px-2 scrollbar-none">
             <button v-for="(pImg, pIdx) in previewModalImages" :key="'thumb-' + pIdx" type="button"
-              @click="previewModalIndex = pIdx"
+              @click="previewModalIndex = pIdx; resetPreviewZoom()"
               class="w-10 h-10 rounded-lg overflow-hidden border-2 transition-all cursor-pointer flex-shrink-0"
               :class="pIdx === previewModalIndex ? 'border-emerald-400 scale-110 shadow-lg ring-2 ring-emerald-400/50' : 'border-white/30 opacity-60 hover:opacity-100'">
               <img :src="pImg.url || pImg.src || pImg" class="w-full h-full object-cover" />
             </button>
           </div>
 
+        </div>
+      </div>
+    </transition>
+    <!-- Modal Tạo hành động tiếp theo từ tin nhắn / hoạt động -->
+    <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0"
+      enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="isActionModalOpen"
+        class="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4"
+        @click="isActionModalOpen = false">
+        <div
+          class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-md overflow-hidden animate-fade-in-up"
+          @click.stop>
+          <!-- Modal Header -->
+          <div class="px-5 py-3.5 bg-stone-100/70 border-b border-gray-200/80 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-emerald-800 font-extrabold text-[17px]">
+              <i class="fa-regular fa-calendar-plus text-emerald-600"></i>
+              <span>Tạo hành động tiếp theo</span>
+            </div>
+            <button type="button" @click="isActionModalOpen = false"
+              class="text-gray-400 hover:text-gray-700 p-1 rounded-full cursor-pointer">
+              <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+          </div>
+
+          <!-- Modal Body -->
+          <div class="p-5 space-y-4">
+            <!-- Preview of original comment -->
+            <div v-if="actionModalComment" class="bg-stone-50 p-3 rounded-xl border border-stone-200/80 text-xs">
+              <div class="font-extrabold text-[#1A7A56] mb-1 truncate">
+                {{ actionModalComment.project ? ((actionModalComment.project.customer?.name ? actionModalComment.project.customer.name + ' - ' : '') + actionModalComment.project.title) : 'Dự án' }}
+              </div>
+              <div class="text-gray-700 line-clamp-3 leading-relaxed">
+                {{ parseCommentText(actionModalComment.content) || actionModalComment.text }}
+              </div>
+            </div>
+
+            <!-- Date Selection -->
+            <div class="space-y-2">
+              <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                Chọn thời gian thực hiện:
+              </label>
+              <div class="grid grid-cols-2 gap-2 text-xs font-bold">
+                <button type="button" @click="setActionModalQuickDate(0)"
+                  class="px-3 py-2 rounded-xl border transition-all text-left flex items-center justify-between cursor-pointer"
+                  :class="actionModalDueDate === formatQuickDateISO(0) ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-500' : 'border-gray-200 hover:border-emerald-500 text-gray-700'">
+                  <span>Hôm nay</span>
+                  <span class="text-[11px] text-gray-400 font-medium">{{ getActionQuickDateLabel(0) }}</span>
+                </button>
+                <button type="button" @click="setActionModalQuickDate(1)"
+                  class="px-3 py-2 rounded-xl border transition-all text-left flex items-center justify-between cursor-pointer"
+                  :class="actionModalDueDate === formatQuickDateISO(1) ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-500' : 'border-gray-200 hover:border-emerald-500 text-gray-700'">
+                  <span>Ngày mai</span>
+                  <span class="text-[11px] text-gray-400 font-medium">{{ getActionQuickDateLabel(1) }}</span>
+                </button>
+                <button type="button" @click="setActionModalQuickDate(2)"
+                  class="px-3 py-2 rounded-xl border transition-all text-left flex items-center justify-between cursor-pointer"
+                  :class="actionModalDueDate === formatQuickDateISO(2) ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-500' : 'border-gray-200 hover:border-emerald-500 text-gray-700'">
+                  <span>Ngày mốt</span>
+                  <span class="text-[11px] text-gray-400 font-medium">{{ getActionQuickDateLabel(2) }}</span>
+                </button>
+                <button type="button" @click="setActionModalQuickDate(7)"
+                  class="px-3 py-2 rounded-xl border transition-all text-left flex items-center justify-between cursor-pointer"
+                  :class="actionModalDueDate === formatQuickDateISO(7) ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-500' : 'border-gray-200 hover:border-emerald-500 text-gray-700'">
+                  <span>1 tuần nữa</span>
+                  <span class="text-[11px] text-gray-400 font-medium">{{ getActionQuickDateLabel(7) }}</span>
+                </button>
+              </div>
+
+              <div class="pt-2">
+                <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Hoặc chọn ngày cụ thể:</label>
+                <input type="date" v-model="actionModalDueDate"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-bold text-gray-800 focus:outline-none focus:border-emerald-500 bg-gray-50 cursor-pointer" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="px-5 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-2.5">
+            <button type="button" @click="isActionModalOpen = false"
+              class="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-200/80 cursor-pointer transition-colors">
+              Hủy
+            </button>
+            <button type="button" @click="submitCreateActionFromComment" :disabled="isSubmittingActionModal || !actionModalDueDate"
+              class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 cursor-pointer transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50">
+              <i v-if="isSubmittingActionModal" class="fa-solid fa-spinner fa-spin text-xs"></i>
+              <span>OK (Tạo hành động)</span>
+            </button>
+          </div>
         </div>
       </div>
     </transition>
@@ -1178,18 +1482,25 @@ const isModalOpen = ref(false)
 // Search input ref for keyboard shortcuts
 const searchInputRef = ref(null)
 const mobileSearchInputRef = ref(null)
+const mobileScheduleSearchInputRef = ref(null)
+const mobileActivitySearchInputRef = ref(null)
 const isMobileSearchOpen = ref(false)
 const toggleMobileSearch = async () => {
-  if (viewMode.value === 'activities') {
-    viewMode.value = 'list'
-  }
   isMobileSearchOpen.value = !isMobileSearchOpen.value
   if (isMobileSearchOpen.value) {
     await nextTick()
-    mobileSearchInputRef.value?.focus()
+    if (viewMode.value === 'actions') {
+      mobileScheduleSearchInputRef.value?.focus()
+    } else if (viewMode.value === 'activities') {
+      mobileActivitySearchInputRef.value?.focus()
+    } else {
+      mobileSearchInputRef.value?.focus()
+    }
     if (scrollContainerDefault.value) scrollContainerDefault.value.scrollTop = 0
     if (scrollContainerGrouped.value) scrollContainerGrouped.value.scrollTop = 0
     if (scrollContainerNotes.value) scrollContainerNotes.value.scrollTop = 0
+    if (scheduleScrollContainer.value) scheduleScrollContainer.value.scrollTop = 0
+    if (activityScrollContainer.value) activityScrollContainer.value.scrollTop = 0
   } else {
     projectStore.searchQuery = ''
   }
@@ -1197,6 +1508,7 @@ const toggleMobileSearch = async () => {
 const scrollContainerDefault = ref(null)
 const scrollContainerGrouped = ref(null)
 const scrollContainerNotes = ref(null)
+const scheduleScrollContainer = ref(null)
 
 // Profile dropdown & modal states
 const isProfileDropdownOpen = ref(false)
@@ -1426,11 +1738,12 @@ const removeVietnameseAccents = (str) => {
     .trim()
 }
 
-// Switcher view mode (Grouped by Customer, Notes, Activities)
+// Switcher view mode (Grouped by Customer, Notes, Activities, Actions / Next Actions)
 const isGroupedByCustomer = ref(false)
-const viewMode = ref('list') // 'list', 'activities', 'grouped', 'notes'
+const viewMode = ref('list') // 'list', 'activities', 'grouped', 'notes', 'actions'
 
 const viewModeLabel = computed(() => {
+  if (viewMode.value === 'actions' || viewMode.value === 'schedule') return 'Hành động tiếp theo'
   if (viewMode.value === 'grouped') return 'Khách hàng'
   if (viewMode.value === 'notes') return 'Ghi chú'
   if (viewMode.value === 'activities') return 'Hoạt động'
@@ -1438,6 +1751,7 @@ const viewModeLabel = computed(() => {
 })
 
 const viewModeTitle = computed(() => {
+  if (viewMode.value === 'actions' || viewMode.value === 'schedule') return 'Chế độ xem: Hành động tiếp theo (Ctrl + B để đổi)'
   if (viewMode.value === 'grouped') return 'Chế độ xem: Theo khách hàng (Ctrl + B để đổi)'
   if (viewMode.value === 'notes') return 'Chế độ xem: Ghi chú (Ctrl + B để đổi)'
   if (viewMode.value === 'activities') return 'Chế độ xem: Hoạt động gần đây (Ctrl + B để đổi)'
@@ -1458,15 +1772,19 @@ watch(viewMode, async (newVal) => {
   tvPanelScale.value = 1
   await nextTick()
   requestAnimationFrame(updateTvPosition)
-  if (newVal === 'activities') {
+  if (newVal === 'activities' || newVal === 'actions') {
     scrollToBottom(false)
+  }
+  if (newVal === 'actions') {
+    fetchScheduleTasks()
   }
 })
 
 watch(() => authStore.user?.view_mode, (newVal) => {
-  if (newVal && ['list', 'grouped', 'activities'].includes(newVal)) {
-    viewMode.value = newVal
-    isGroupedByCustomer.value = (newVal === 'grouped')
+  if (newVal && ['list', 'grouped', 'activities', 'actions', 'schedule'].includes(newVal)) {
+    const mode = newVal === 'schedule' ? 'actions' : newVal
+    viewMode.value = mode
+    isGroupedByCustomer.value = (mode === 'grouped')
   } else if (newVal === 'notes') {
     viewMode.value = 'list'
     isGroupedByCustomer.value = false
@@ -1478,18 +1796,22 @@ const toggleCustomerGroup = () => {
   let nextMode = 'list'
 
   if (isMobile) {
-    // Mobile cycle: list (Dự án) -> grouped (Khách hàng) -> activities (Hoạt động gần đây) -> list (Dự án)
+    // Mobile cycle: list (Dự án) -> grouped (Khách hàng) -> actions (Hành động tiếp theo) -> activities (Hoạt động gần đây) -> list (Dự án)
     if (viewMode.value === 'list') {
       nextMode = 'grouped'
     } else if (viewMode.value === 'grouped') {
+      nextMode = 'actions'
+    } else if (viewMode.value === 'actions') {
       nextMode = 'activities'
     } else {
       nextMode = 'list'
     }
   } else {
-    // Desktop cycle: list -> grouped -> list
-    if (viewMode.value === 'list' || viewMode.value === 'activities') {
+    // Desktop cycle: list -> grouped -> actions -> list
+    if (viewMode.value === 'list') {
       nextMode = 'grouped'
+    } else if (viewMode.value === 'grouped') {
+      nextMode = 'actions'
     } else {
       nextMode = 'list'
     }
@@ -1509,6 +1831,146 @@ const toggleCustomerGroup = () => {
   authStore.updateViewMode(nextMode).catch(err => {
     console.error('Failed to update view mode:', err)
   })
+}
+
+// Next Actions / Schedule tasks state & methods
+const scheduleTasks = ref([])
+const isScheduleLoading = ref(false)
+
+const fetchScheduleTasks = async () => {
+  isScheduleLoading.value = true
+  try {
+    const res = await axios.get('/api/tasks')
+    scheduleTasks.value = res.data || []
+  } catch (err) {
+    console.error('Failed to fetch schedule tasks:', err)
+  } finally {
+    isScheduleLoading.value = false
+  }
+}
+
+const toggleTaskStatus = async (task) => {
+  if (!task?.id) return
+  const nextStatus = task.status === 'done' ? 'todo' : 'done'
+  task.status = nextStatus
+  try {
+    await axios.patch(`/api/tasks/${task.id}/status`, { status: nextStatus })
+    toast.success(nextStatus === 'done' ? 'Đã hoàn thành công việc!' : 'Đã mở lại công việc!')
+    fetchActivities?.(true)
+  } catch (err) {
+    console.error('Failed to update task status:', err)
+    task.status = nextStatus === 'done' ? 'todo' : 'done'
+    toast.error('Cập nhật trạng thái thất bại!')
+  }
+}
+
+const formatScheduleGroupKey = (dateStr) => {
+  if (!dateStr) return { key: 'no_date', label: 'Chưa có ngày', order: 999999 }
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return { key: dateStr, label: dateStr, order: 999999 }
+
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const target = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  
+  const diffDays = Math.round((target - today) / (1000 * 60 * 60 * 24))
+  const day = d.getDate()
+  const month = d.getMonth() + 1
+  const year = d.getFullYear()
+  const dateFormatted = `${day} tháng ${month}, ${year}`
+
+  let label = ''
+  if (diffDays === 0) {
+    label = `Hôm nay - ${dateFormatted}`
+  } else if (diffDays === 1) {
+    label = `Mai - ${dateFormatted}`
+  } else if (diffDays === 2) {
+    label = `Mốt - ${dateFormatted}`
+  } else if (diffDays === -1) {
+    label = `Hôm qua - ${dateFormatted}`
+  } else if (diffDays < -1) {
+    label = `Quá hạn - ${dateFormatted}`
+  } else {
+    const dayOfWeek = d.getDay()
+    const daysArr = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy']
+    label = `${daysArr[dayOfWeek]} - ${dateFormatted}`
+  }
+
+  return {
+    key: `${target.getTime()}`,
+    label,
+    order: diffDays
+  }
+}
+
+const groupedScheduleTasks = computed(() => {
+  const q = projectStore.searchQuery ? projectStore.searchQuery.trim().toLowerCase() : ''
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+
+  // Only show tasks that are still within due date (due_date >= today, not overdue)
+  let activeTasks = scheduleTasks.value.filter(t => {
+    if (!t.due_date || t.status === 'done') return false
+    const d = new Date(t.due_date)
+    if (isNaN(d.getTime())) return false
+    const target = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+    return target >= today
+  })
+
+  if (q) {
+    activeTasks = activeTasks.filter(task => {
+      const titleMatch = (task.title || '').toLowerCase().includes(q)
+      const projectTitleMatch = (task.project?.title || '').toLowerCase().includes(q)
+      const customerMatch = (task.project?.customer?.name || '').toLowerCase().includes(q)
+      const userMatch = (task.creator?.name || task.assignee?.name || '').toLowerCase().includes(q)
+      return titleMatch || projectTitleMatch || customerMatch || userMatch
+    })
+  }
+
+  const sorted = [...activeTasks].sort((a, b) => {
+    const dateDiff = new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+    if (dateDiff !== 0) return dateDiff
+    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0
+    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0
+    return timeB - timeA
+  })
+
+  const groupMap = new Map()
+  sorted.forEach(task => {
+    const { key, label, order } = formatScheduleGroupKey(task.due_date)
+    if (!groupMap.has(key)) {
+      groupMap.set(key, {
+        dateKey: key,
+        dateLabel: label,
+        order,
+        tasks: []
+      })
+    }
+    groupMap.get(key).tasks.push(task)
+  })
+
+  return Array.from(groupMap.values()).sort((a, b) => a.order - b.order)
+})
+
+const scheduleTasksCount = computed(() => {
+  return scheduleTasks.value.filter(t => Boolean(t.due_date) && t.status !== 'done').length
+})
+
+// Expanded state for long action items in schedule view
+const expandedTaskIds = ref(new Set())
+const toggleExpandTask = (taskId) => {
+  const nextSet = new Set(expandedTaskIds.value)
+  if (nextSet.has(taskId)) {
+    nextSet.delete(taskId)
+  } else {
+    nextSet.add(taskId)
+  }
+  expandedTaskIds.value = nextSet
+}
+const isTaskExpanded = (taskId) => expandedTaskIds.value.has(taskId)
+const isLongContent = (text) => {
+  if (!text) return false
+  return text.length > 120 || text.split('\n').length > 3
 }
 
 // Pinned Customers logic
@@ -2075,10 +2537,15 @@ const startSelection = (event) => {
   // Only start on left mouse button and not on interactive elements
   if (event.button !== 0) return
 
+  // NEVER start drag selection if image preview modal is active
+  if (activePreviewImage.value || previewModalImages.value?.length > 0) {
+    return
+  }
+
   const target = event.target
 
-  // NEVER start drag selection inside activity feed, TV widget, search modal, navbar, or floating bulk action bar
-  if (target.closest('.recent-activity-panel, .tv-broadcast-panel, .tv-broadcast-frame, .mobile-search-backdrop, nav, .bulk-actions-wrapper, .shortcut-hints-popover')) {
+  // NEVER start drag selection inside activity feed, TV widget, search modal, navbar, or floating bulk action bar, or modals
+  if (target.closest('.recent-activity-panel, .tv-broadcast-panel, .tv-broadcast-frame, .mobile-search-backdrop, nav, .bulk-actions-wrapper, .shortcut-hints-popover, .fixed')) {
     return
   }
 
@@ -2265,13 +2732,115 @@ const toggleSelectAll = () => {
 // Comment content attachment parsers
 const previewModalImages = ref([])
 const previewModalIndex = ref(0)
+const previewZoomScale = ref(1)
+const previewPanX = ref(0)
+const previewPanY = ref(0)
+const isPreviewPanning = ref(false)
+let panStartX = 0
+let panStartY = 0
+let panInitialX = 0
+let panInitialY = 0
+let panHasMoved = false
+
 const activePreviewImage = computed(() => {
   if (!previewModalImages.value || previewModalImages.value.length === 0) return null
   const item = previewModalImages.value[previewModalIndex.value]
   return typeof item === 'string' ? item : (item?.url || item?.src || null)
 })
 
+const resetPreviewZoom = () => {
+  previewZoomScale.value = 1
+  previewPanX.value = 0
+  previewPanY.value = 0
+  isPreviewPanning.value = false
+  panHasMoved = false
+}
+
+const zoomInPreview = (e) => {
+  if (e) e.stopPropagation()
+  previewZoomScale.value = Math.min(+(previewZoomScale.value + 0.5).toFixed(2), 5)
+}
+
+const zoomOutPreview = (e) => {
+  if (e) e.stopPropagation()
+  const nextScale = Math.max(+(previewZoomScale.value - 0.5).toFixed(2), 1)
+  previewZoomScale.value = nextScale
+  if (nextScale === 1) {
+    previewPanX.value = 0
+    previewPanY.value = 0
+  }
+}
+
+const handlePreviewImageClick = (e) => {
+  if (e) e.stopPropagation()
+  if (panHasMoved) return
+  if (previewZoomScale.value <= 1) {
+    previewZoomScale.value = 2.5
+    previewPanX.value = 0
+    previewPanY.value = 0
+  } else {
+    resetPreviewZoom()
+  }
+}
+
+const togglePreviewZoom = (e) => {
+  if (e) e.stopPropagation()
+  if (previewZoomScale.value > 1) {
+    resetPreviewZoom()
+  } else {
+    previewZoomScale.value = 2.5
+    previewPanX.value = 0
+    previewPanY.value = 0
+  }
+}
+
+const handlePreviewWheel = (e) => {
+  if (!activePreviewImage.value) return
+  e.preventDefault()
+  e.stopPropagation()
+  if (e.deltaY < 0) {
+    previewZoomScale.value = Math.min(+(previewZoomScale.value + 0.25).toFixed(2), 5)
+  } else if (e.deltaY > 0) {
+    const nextScale = Math.max(+(previewZoomScale.value - 0.25).toFixed(2), 1)
+    previewZoomScale.value = nextScale
+    if (nextScale === 1) {
+      previewPanX.value = 0
+      previewPanY.value = 0
+    }
+  }
+}
+
+const startPreviewPan = (e) => {
+  if (e.button !== 0) return
+  e.stopPropagation()
+  e.preventDefault()
+  panHasMoved = false
+  panStartX = e.clientX
+  panStartY = e.clientY
+  panInitialX = previewPanX.value
+  panInitialY = previewPanY.value
+  if (previewZoomScale.value > 1) {
+    isPreviewPanning.value = true
+  }
+}
+
+const doPreviewPan = (e) => {
+  if (e) e.stopPropagation()
+  if (Math.abs(e.clientX - panStartX) > 4 || Math.abs(e.clientY - panStartY) > 4) {
+    panHasMoved = true
+  }
+  if (!isPreviewPanning.value || previewZoomScale.value <= 1) return
+  previewPanX.value = panInitialX + (e.clientX - panStartX)
+  previewPanY.value = panInitialY + (e.clientY - panStartY)
+}
+
+const endPreviewPan = (e) => {
+  if (e) e.stopPropagation()
+  isPreviewPanning.value = false
+}
+
 const openImagePreview = (url, imagesList = [], initialIndex = 0) => {
+  resetPreviewZoom()
   if (imagesList && imagesList.length > 0) {
     previewModalImages.value = imagesList
     const foundIdx = initialIndex >= 0 ? initialIndex : imagesList.findIndex(img => (img.url || img.src || img) === url)
@@ -2283,12 +2852,14 @@ const openImagePreview = (url, imagesList = [], initialIndex = 0) => {
 }
 
 const closeImagePreview = () => {
+  resetPreviewZoom()
   previewModalImages.value = []
   previewModalIndex.value = 0
 }
 
 const prevPreviewImage = (e) => {
   if (e) e.stopPropagation()
+  resetPreviewZoom()
   if (previewModalImages.value.length > 1) {
     previewModalIndex.value = (previewModalIndex.value - 1 + previewModalImages.value.length) % previewModalImages.value.length
   }
@@ -2296,6 +2867,7 @@ const prevPreviewImage = (e) => {
 
 const nextPreviewImage = (e) => {
   if (e) e.stopPropagation()
+  resetPreviewZoom()
   if (previewModalImages.value.length > 1) {
     previewModalIndex.value = (previewModalIndex.value + 1) % previewModalImages.value.length
   }
@@ -2311,6 +2883,7 @@ const handleModalTouchStart = (e) => {
 }
 
 const handleModalTouchEnd = (e) => {
+  if (previewZoomScale.value > 1) return
   if (e.changedTouches && e.changedTouches[0]) {
     modalTouchEndX = e.changedTouches[0].clientX
     const diff = modalTouchEndX - modalTouchStartX
@@ -2653,6 +3226,99 @@ const cancelEdit = () => {
   activityComposerRef.value?.clearAttachments()
 }
 
+const handleActivityPanelDragOver = (e) => {
+  e.preventDefault()
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'copy'
+  }
+}
+
+const handleActivityPanelDrop = async (e) => {
+  e.preventDefault()
+  e.stopPropagation()
+  const droppedFiles = []
+  if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+    droppedFiles.push(...Array.from(e.dataTransfer.files))
+  } else if (e.dataTransfer?.items && e.dataTransfer.items.length > 0) {
+    for (const item of Array.from(e.dataTransfer.items)) {
+      if (item.kind === 'file') {
+        const file = item.getAsFile()
+        if (file) droppedFiles.push(file)
+      }
+    }
+  }
+  if (droppedFiles.length > 0 && activityComposerRef.value?.addAttachments) {
+    await activityComposerRef.value.addAttachments(droppedFiles)
+  }
+}
+
+const isActionModalOpen = ref(false)
+const actionModalComment = ref(null)
+const actionModalDueDate = ref('')
+const isSubmittingActionModal = ref(false)
+
+const formatQuickDateISO = (offsetDays) => {
+  const d = new Date()
+  d.setDate(d.getDate() + offsetDays)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+const getActionQuickDateLabel = (offsetDays) => {
+  const d = new Date()
+  d.setDate(d.getDate() + offsetDays)
+  return `${d.getDate()}/${d.getMonth() + 1}`
+}
+
+const openCreateActionFromComment = (comment) => {
+  actionModalComment.value = comment
+  actionModalDueDate.value = formatQuickDateISO(0) // default to today
+  isActionModalOpen.value = true
+  activeLogMenuId.value = null
+  activeLogIdForMobileActions.value = null
+}
+
+const setActionModalQuickDate = (offsetDays) => {
+  actionModalDueDate.value = formatQuickDateISO(offsetDays)
+}
+
+const submitCreateActionFromComment = async () => {
+  if (!actionModalComment.value || !actionModalDueDate.value) {
+    toast.error('Vui lòng chọn thời gian cho hành động!')
+    return
+  }
+  const comment = actionModalComment.value
+  const pId = comment.project_id || comment.project?.id
+  if (!pId) {
+    toast.error('Không tìm thấy thông tin dự án!')
+    return
+  }
+
+  isSubmittingActionModal.value = true
+  try {
+    await axios.post('/api/tasks', {
+      project_id: pId,
+      title: comment.content || comment.text || '',
+      due_date: actionModalDueDate.value,
+      status: 'todo',
+      priority: 'medium',
+    })
+    toast.success('Đã tạo hành động tiếp theo thành công!')
+    isActionModalOpen.value = false
+    actionModalComment.value = null
+    fetchScheduleTasks()
+    fetchActivities?.(true)
+    broadcastLocalUpdate({ projectId: pId })
+  } catch (err) {
+    console.error('Failed to create action from comment:', err)
+    toast.error(err.response?.data?.message || 'Tạo hành động thất bại!')
+  } finally {
+    isSubmittingActionModal.value = false
+  }
+}
+
 const handleDeleteComment = async (id) => {
   const confirmed = await confirmStore.show({
     title: 'Xóa bình luận',
@@ -2678,6 +3344,7 @@ let touchTimer = null
 let touchStarted = false
 
 const handleTouchStart = (log, event) => {
+  if (!canEditComment(log) && !canDeleteComment(log)) return
   touchStarted = true
   touchTimer = setTimeout(() => {
     if (touchStarted) {
@@ -2768,7 +3435,7 @@ const cancelReply = () => {
 
 const isSubmittingChat = ref(false)
 
-const submitChat = async () => {
+const submitChat = async (payload = null) => {
   if (isSubmittingChat.value) return
 
   const pId = chatProjectId.value || composerProjects.value[0]?.id
@@ -2782,6 +3449,8 @@ const submitChat = async () => {
   try {
     const attachmentHtml = await activityComposerRef.value?.buildAttachmentHtml() || ''
     if (!chatMessage.value.trim() && !attachmentHtml) return
+
+    const dueDate = payload?.dueDate || activityComposerRef.value?.selectedDueDate || null
 
     let finalContent = chatMessage.value + attachmentHtml
     if (replyingToLog.value) {
@@ -2817,7 +3486,29 @@ const submitChat = async () => {
       toast.success('Đã cập nhật hoạt động!')
       cancelEdit()
       fetchActivities?.(true)
+      fetchScheduleTasks()
       broadcastLocalUpdate({ projectId: pId, commentId: editingId })
+    } else if (dueDate) {
+      // Create task with due_date which automatically creates both the task in schedule AND notification comment
+      await axios.post('/api/tasks', {
+        project_id: pId,
+        title: finalContent,
+        due_date: dueDate,
+        status: 'todo',
+        priority: 'medium',
+      })
+
+      toast.success('Đã gửi cập nhật và thêm vào hành động tiếp theo!')
+      chatMessage.value = ''
+      replyingToLog.value = null
+      activityComposerRef.value?.clearAttachments()
+      activityComposerRef.value?.clearDueDate?.()
+      scrollToBottom(true)
+      await Promise.all([
+        fetchActivities?.(true),
+        fetchScheduleTasks()
+      ])
+      broadcastLocalUpdate({ projectId: pId })
     } else {
       const res = await axios.post('/api/comments', {
         project_id: pId,
@@ -2833,8 +3524,9 @@ const submitChat = async () => {
       chatMessage.value = ''
       replyingToLog.value = null
       activityComposerRef.value?.clearAttachments()
+      activityComposerRef.value?.clearDueDate?.()
       scrollToBottom(true)
-      // The POST response is rendered immediately; polling reconciles later.
+      fetchScheduleTasks()
       broadcastLocalUpdate({ projectId: pId })
     }
   } catch (err) {
@@ -2854,6 +3546,7 @@ const handleRealtimeChannelMessage = (event) => {
   if (data.sourceId === realtimeSourceId) return
   if (data.type === 'PUSH_RECEIVED' || data.type === 'NOTIFICATION_CLICKED' || data.type === 'PROJECT_UPDATED') {
     fetchActivities?.()
+    fetchScheduleTasks?.()
     projectStore.fetchProjects(true)
   }
 }
@@ -2863,6 +3556,7 @@ const handleServiceWorkerMessage = (event) => {
   if (!data) return
   if (data.type === 'PUSH_RECEIVED' || data.type === 'NOTIFICATION_CLICKED' || data.type === 'PROJECT_UPDATED') {
     fetchActivities?.()
+    fetchScheduleTasks?.()
     projectStore.fetchProjects(true)
   }
 }
@@ -2911,6 +3605,17 @@ const nextBroadcast = () => {
 
 const displayedActivities = computed(() => {
   let list = activities.value
+
+  const q = projectStore.searchQuery ? projectStore.searchQuery.trim().toLowerCase() : ''
+  if (q) {
+    list = list.filter(log => {
+      const contentMatch = (log.content || '').toLowerCase().includes(q)
+      const userMatch = (log.user?.name || '').toLowerCase().includes(q)
+      const projectTitleMatch = (log.project?.title || '').toLowerCase().includes(q)
+      const customerMatch = (log.project?.customer?.name || '').toLowerCase().includes(q)
+      return contentMatch || userMatch || projectTitleMatch || customerMatch
+    })
+  }
 
   if (selectedProjectIds.value.length > 0) {
     list = list.filter(log => {
@@ -3175,6 +3880,7 @@ onMounted(async () => {
     projectStore.fetchProjects(),
     projectStore.fetchAuxData(),
     fetchActivities(),
+    fetchScheduleTasks(),
     fetchBroadcasts(),
     axios.get('/api/mention-groups').then(res => { mentionGroups.value = res.data || [] }).catch(() => { }),
   ])
@@ -3695,6 +4401,41 @@ onUnmounted(() => {
   }
 
   .recent-activity-panel.mobile-activities-active {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background-color: transparent !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    margin: 0 !important;
+    padding: 0 0 2px 0 !important;
+    box-sizing: border-box !important;
+    box-shadow: none !important;
+  }
+
+  .schedule-actions-panel {
+    grid-column: 1;
+    grid-row: 1;
+    width: 100% !important;
+    max-width: 100% !important;
+    justify-self: stretch !important;
+    flex-shrink: 1 !important;
+    height: 100% !important;
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    box-sizing: border-box !important;
+  }
+
+  .schedule-actions-panel.mobile-schedule-active {
     display: flex !important;
     opacity: 1 !important;
     visibility: visible !important;

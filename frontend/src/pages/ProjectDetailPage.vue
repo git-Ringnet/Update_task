@@ -1158,54 +1158,90 @@
       </div>
     </div>
 
-    <!-- IMAGE LIGHTBOX PREVIEW MODAL -->
+    <!-- Image Lightbox Modal with Zoom & Pan -->
     <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95"
       enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in"
       leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
-      <div v-if="previewModalImageUrl" @click="closeImageModal"
-        class="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 select-none">
-        <div class="relative w-[min(92vw,1100px)] h-[min(72vh,720px)] flex flex-col items-center justify-center" @click.stop
-          @touchstart="handleModalTouchStart" @touchend="handleModalTouchEnd">
-          
-          <!-- Top Bar: Image count badge + Close button -->
-          <div class="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-auto">
-            <div v-if="previewModalImages.length > 1"
-              class="px-3 py-1 bg-black/60 backdrop-blur-md text-white/90 text-xs sm:text-sm font-bold rounded-full border border-white/10 shadow-lg">
-              {{ previewModalIndex + 1 }} / {{ previewModalImages.length }}
-            </div>
-            <div v-else></div>
+      <div v-if="previewModalImageUrl"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-slate-950/85 backdrop-blur-md select-none"
+        @mousedown.stop @mousemove.stop @mouseup.stop @click="closeImageModal">
+        <div class="relative w-[min(92vw,1100px)] h-[min(72vh,720px)] flex flex-col items-center justify-center"
+          @click.stop @touchstart="handleModalTouchStart" @touchend="handleModalTouchEnd">
 
-            <button type="button" @click="closeImageModal"
-              class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/20 hover:bg-rose-600 text-white flex items-center justify-center font-bold text-sm sm:text-base backdrop-blur-md shadow-xl transition-all cursor-pointer border border-white/20"
-              title="Đóng (Esc)">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
+          <!-- Top Bar: Image count badge + Zoom controls + Close button -->
+          <div class="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-auto">
+            <div class="flex items-center gap-2">
+              <div v-if="previewModalImages.length > 1"
+                class="px-3 py-1 bg-black/60 backdrop-blur-md text-white/90 text-xs sm:text-sm font-bold rounded-full border border-white/10 shadow-lg">
+                {{ previewModalIndex + 1 }} / {{ previewModalImages.length }}
+              </div>
+            </div>
+
+            <!-- Zoom controls & Close -->
+            <div class="flex items-center gap-2">
+              <div class="flex items-center bg-black/60 backdrop-blur-md rounded-full border border-white/15 px-1 py-0.5 shadow-xl text-white">
+                <button type="button" @click.stop="zoomOutPreview" :disabled="previewZoomScale <= 1"
+                  class="w-8 h-8 rounded-full flex items-center justify-center text-xs hover:bg-white/20 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Thu nhỏ (-)">
+                  <i class="fa-solid fa-magnifying-glass-minus"></i>
+                </button>
+                <button type="button" @click.stop="resetPreviewZoom"
+                  class="px-2 py-0.5 text-xs font-bold hover:bg-white/20 rounded-full transition-all cursor-pointer"
+                  title="Đặt lại kích thước (100%)">
+                  {{ Math.round(previewZoomScale * 100) }}%
+                </button>
+                <button type="button" @click.stop="zoomInPreview" :disabled="previewZoomScale >= 5"
+                  class="w-8 h-8 rounded-full flex items-center justify-center text-xs hover:bg-white/20 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Phóng to (+)">
+                  <i class="fa-solid fa-magnifying-glass-plus"></i>
+                </button>
+              </div>
+
+              <button type="button" @click="closeImageModal"
+                class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/20 hover:bg-rose-600 text-white flex items-center justify-center font-bold text-sm sm:text-base backdrop-blur-md shadow-xl transition-all cursor-pointer border border-white/20"
+                title="Đóng (Esc)">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
           </div>
 
           <!-- Main Image and Prev/Next Navigation -->
-          <div class="relative w-full h-full flex items-center justify-center rounded-2xl overflow-hidden bg-slate-900">
+          <div class="relative w-full h-full flex items-center justify-center rounded-2xl overflow-hidden bg-slate-900 select-none"
+            @wheel.prevent="handlePreviewWheel"
+            @mousemove="doPreviewPan"
+            @mouseup="endPreviewPan"
+            @mouseleave="endPreviewPan">
             <img :src="previewModalImageUrl"
-              class="w-full h-full object-contain transition-opacity duration-150" />
+              @mousedown="startPreviewPan"
+              @click="handlePreviewImageClick"
+              @dblclick="togglePreviewZoom"
+              :style="{
+                transform: `scale(${previewZoomScale}) translate(${previewPanX / previewZoomScale}px, ${previewPanY / previewZoomScale}px)`,
+                transition: isPreviewPanning ? 'none' : 'transform 0.18s ease-out',
+                cursor: previewZoomScale > 1 ? (isPreviewPanning ? 'grabbing' : 'grab') : 'zoom-in'
+              }"
+              class="w-full h-full object-contain pointer-events-auto"
+              draggable="false" />
 
-            <!-- PREV BUTTON (shown when > 1 image) -->
-            <button v-if="previewModalImages.length > 1" type="button" @click="prevPreviewImage"
+            <!-- PREV BUTTON (shown when > 1 image and not zoomed in) -->
+            <button v-if="previewModalImages.length > 1 && previewZoomScale <= 1" type="button" @click="prevPreviewImage"
               class="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center font-bold text-base sm:text-lg backdrop-blur-md shadow-xl transition-all cursor-pointer border border-white/20 hover:scale-110 active:scale-95"
               title="Ảnh trước (Phím ←)">
               <i class="fa-solid fa-chevron-left"></i>
             </button>
 
-            <!-- NEXT BUTTON (shown when > 1 image) -->
-            <button v-if="previewModalImages.length > 1" type="button" @click="nextPreviewImage"
+            <!-- NEXT BUTTON (shown when > 1 image and not zoomed in) -->
+            <button v-if="previewModalImages.length > 1 && previewZoomScale <= 1" type="button" @click="nextPreviewImage"
               class="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center font-bold text-base sm:text-lg backdrop-blur-md shadow-xl transition-all cursor-pointer border border-white/20 hover:scale-110 active:scale-95"
               title="Ảnh tiếp theo (Phím →)">
               <i class="fa-solid fa-chevron-right"></i>
             </button>
           </div>
 
-          <!-- Thumbnails / Dots strip at bottom -->
-          <div v-if="previewModalImages.length > 1" class="flex items-center justify-center gap-2 mt-4 max-w-full overflow-x-auto py-1 px-2">
+          <!-- Thumbnails / Dots strip at bottom (scrollbar-none hidden scrollbar) -->
+          <div v-if="previewModalImages.length > 1" class="flex items-center justify-center gap-2 mt-4 max-w-full overflow-x-auto py-1 px-2 scrollbar-none">
             <button v-for="(pImg, pIdx) in previewModalImages" :key="'thumb-' + pIdx"
-              type="button" @click="previewModalIndex = pIdx"
+              type="button" @click="previewModalIndex = pIdx; resetPreviewZoom()"
               class="w-10 h-10 rounded-lg overflow-hidden border-2 transition-all cursor-pointer flex-shrink-0"
               :class="pIdx === previewModalIndex ? 'border-emerald-400 scale-110 shadow-lg ring-2 ring-emerald-400/50' : 'border-white/30 opacity-60 hover:opacity-100'">
               <img :src="pImg.src || pImg.url || pImg" class="w-full h-full object-cover" />
@@ -1921,13 +1957,115 @@ const onTextareaPaste = async (e) => {
 // IMAGE LIGHTBOX PREVIEW MODAL STATE & HANDLERS
 const previewModalImages = ref([])
 const previewModalIndex = ref(0)
+const previewZoomScale = ref(1)
+const previewPanX = ref(0)
+const previewPanY = ref(0)
+const isPreviewPanning = ref(false)
+let panStartX = 0
+let panStartY = 0
+let panInitialX = 0
+let panInitialY = 0
+let panHasMoved = false
+
 const previewModalImageUrl = computed(() => {
   if (!previewModalImages.value || previewModalImages.value.length === 0) return null
   const item = previewModalImages.value[previewModalIndex.value]
   return typeof item === 'string' ? item : (item?.src || item?.url || null)
 })
 
+const resetPreviewZoom = () => {
+  previewZoomScale.value = 1
+  previewPanX.value = 0
+  previewPanY.value = 0
+  isPreviewPanning.value = false
+  panHasMoved = false
+}
+
+const zoomInPreview = (e) => {
+  if (e) e.stopPropagation()
+  previewZoomScale.value = Math.min(+(previewZoomScale.value + 0.5).toFixed(2), 5)
+}
+
+const zoomOutPreview = (e) => {
+  if (e) e.stopPropagation()
+  const nextScale = Math.max(+(previewZoomScale.value - 0.5).toFixed(2), 1)
+  previewZoomScale.value = nextScale
+  if (nextScale === 1) {
+    previewPanX.value = 0
+    previewPanY.value = 0
+  }
+}
+
+const handlePreviewImageClick = (e) => {
+  if (e) e.stopPropagation()
+  if (panHasMoved) return
+  if (previewZoomScale.value <= 1) {
+    previewZoomScale.value = 2.5
+    previewPanX.value = 0
+    previewPanY.value = 0
+  } else {
+    resetPreviewZoom()
+  }
+}
+
+const togglePreviewZoom = (e) => {
+  if (e) e.stopPropagation()
+  if (previewZoomScale.value > 1) {
+    resetPreviewZoom()
+  } else {
+    previewZoomScale.value = 2.5
+    previewPanX.value = 0
+    previewPanY.value = 0
+  }
+}
+
+const handlePreviewWheel = (e) => {
+  if (!previewModalImageUrl.value) return
+  e.preventDefault()
+  e.stopPropagation()
+  if (e.deltaY < 0) {
+    previewZoomScale.value = Math.min(+(previewZoomScale.value + 0.25).toFixed(2), 5)
+  } else if (e.deltaY > 0) {
+    const nextScale = Math.max(+(previewZoomScale.value - 0.25).toFixed(2), 1)
+    previewZoomScale.value = nextScale
+    if (nextScale === 1) {
+      previewPanX.value = 0
+      previewPanY.value = 0
+    }
+  }
+}
+
+const startPreviewPan = (e) => {
+  if (e.button !== 0) return
+  e.stopPropagation()
+  e.preventDefault()
+  panHasMoved = false
+  panStartX = e.clientX
+  panStartY = e.clientY
+  panInitialX = previewPanX.value
+  panInitialY = previewPanY.value
+  if (previewZoomScale.value > 1) {
+    isPreviewPanning.value = true
+  }
+}
+
+const doPreviewPan = (e) => {
+  if (e) e.stopPropagation()
+  if (Math.abs(e.clientX - panStartX) > 4 || Math.abs(e.clientY - panStartY) > 4) {
+    panHasMoved = true
+  }
+  if (!isPreviewPanning.value || previewZoomScale.value <= 1) return
+  previewPanX.value = panInitialX + (e.clientX - panStartX)
+  previewPanY.value = panInitialY + (e.clientY - panStartY)
+}
+
+const endPreviewPan = (e) => {
+  if (e) e.stopPropagation()
+  isPreviewPanning.value = false
+}
+
 const openImageModal = (url, imagesList = [], initialIndex = 0) => {
+  resetPreviewZoom()
   if (imagesList && imagesList.length > 0) {
     previewModalImages.value = imagesList
     const foundIdx = initialIndex >= 0 ? initialIndex : imagesList.findIndex(img => (img.src || img.url || img) === url)
@@ -1939,12 +2077,14 @@ const openImageModal = (url, imagesList = [], initialIndex = 0) => {
 }
 
 const closeImageModal = () => {
+  resetPreviewZoom()
   previewModalImages.value = []
   previewModalIndex.value = 0
 }
 
 const prevPreviewImage = (e) => {
   if (e) e.stopPropagation()
+  resetPreviewZoom()
   if (previewModalImages.value.length > 1) {
     previewModalIndex.value = (previewModalIndex.value - 1 + previewModalImages.value.length) % previewModalImages.value.length
   }
@@ -1952,6 +2092,7 @@ const prevPreviewImage = (e) => {
 
 const nextPreviewImage = (e) => {
   if (e) e.stopPropagation()
+  resetPreviewZoom()
   if (previewModalImages.value.length > 1) {
     previewModalIndex.value = (previewModalIndex.value + 1) % previewModalImages.value.length
   }
@@ -1967,6 +2108,7 @@ const handleModalTouchStart = (e) => {
 }
 
 const handleModalTouchEnd = (e) => {
+  if (previewZoomScale.value > 1) return
   if (e.changedTouches && e.changedTouches[0]) {
     modalTouchEndX = e.changedTouches[0].clientX
     const diff = modalTouchEndX - modalTouchStartX

@@ -148,8 +148,15 @@ const handleGlobalKeydown = (e) => {
   }
 }
 
-const preventGlobalDrop = (e) => {
-  if (e.dataTransfer?.types?.includes('Files')) {
+const handleGlobalDragOver = (e) => {
+  e.preventDefault()
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'copy'
+  }
+}
+
+const handleGlobalDrop = (e) => {
+  if (!e.target?.closest?.('.activity-composer, .recent-activity-panel, .schedule-actions-panel, .activity-feed-page, .project-update-page')) {
     e.preventDefault()
   }
 }
@@ -165,8 +172,8 @@ const handleVisibilityChange = () => {
 
 onMounted(() => {
   window.addEventListener('keydown', handleGlobalKeydown)
-  window.addEventListener('dragover', preventGlobalDrop)
-  window.addEventListener('drop', preventGlobalDrop)
+  window.addEventListener('dragover', handleGlobalDragOver)
+  window.addEventListener('drop', handleGlobalDrop)
   document.addEventListener('visibilitychange', handleVisibilityChange)
   browserNotifications.refreshPermission()
   requestBrowserNotificationPermission()
@@ -179,8 +186,8 @@ watch(() => authStore.user?.id, (userId) => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleGlobalKeydown)
-  window.removeEventListener('dragover', preventGlobalDrop)
-  window.removeEventListener('drop', preventGlobalDrop)
+  window.removeEventListener('dragover', handleGlobalDragOver)
+  window.removeEventListener('drop', handleGlobalDrop)
   document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>

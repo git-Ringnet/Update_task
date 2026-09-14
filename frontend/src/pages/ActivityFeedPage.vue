@@ -4,8 +4,11 @@
     <Navbar />
 
     <main
-      class="max-w-[800px] w-full mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-2 sm:pb-3 flex-1 flex flex-col min-h-0 overflow-visible relative">
-      <!-- Header Row: Back Button & Vertically Centered Title "Hoạt động của đội" -->
+      class="max-w-[800px] w-full mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-2 sm:pb-3 flex-1 flex flex-col min-h-0 overflow-visible relative"
+      @dragenter.prevent="handleFeedDragOver"
+      @dragover.prevent="handleFeedDragOver"
+      @drop.prevent="handleFeedDrop">
+      <!-- Header Row: Back Button & Vertically Centered Title -->
       <div class="relative flex items-center justify-center mb-3 sm:mb-4 min-h-[40px] flex-shrink-0">
         <button @click="goBack" type="button" title="Quay lại"
           class="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-auto sm:h-auto rounded-xl sm:rounded-none flex items-center justify-center sm:gap-2 text-[16px] sm:text-[15px] text-gray-700 hover:text-emerald-700 font-extrabold transition-colors cursor-pointer focus:outline-none hover:bg-stone-200/60 sm:hover:bg-transparent">
@@ -14,192 +17,112 @@
         </button>
 
         <h1 class="text-[20px] sm:text-[22px] font-black text-[#32312F] font-heading tracking-tight">
-          Hoạt động của đội
+          {{ activeMainTab === 'actions' ? 'Hành động tiếp theo' : 'Hoạt động của đội' }}
         </h1>
       </div>
 
-      <!-- Tabs for System Admin -->
-      <div v-if="authStore.user?.is_system_admin"
-        class="flex gap-2 mb-3 bg-stone-150 p-1.5 rounded-2xl max-w-md mx-auto w-full select-none border border-stone-200/50 flex-shrink-0">
+      <!-- Sub-tabs for System Admin when in Activities view -->
+      <div v-if="authStore.user?.is_system_admin && activeMainTab === 'activities'"
+        class="flex gap-2 mb-3 bg-stone-150 p-1 rounded-xl max-w-xs mx-auto w-full select-none border border-stone-200/50 flex-shrink-0">
         <button @click="activeTab = 'all'" type="button"
-          class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer text-center"
+          class="flex-1 py-1.5 px-2.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer text-center"
           :class="activeTab === 'all' ? 'bg-white text-emerald-800 shadow-3xs border border-stone-200' : 'text-gray-500 hover:text-emerald-700'">
           Tất cả
         </button>
         <button @click="activeTab = 'comments'" type="button"
-          class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer text-center"
+          class="flex-1 py-1.5 px-2.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer text-center"
           :class="activeTab === 'comments' ? 'bg-white text-emerald-800 shadow-3xs border border-stone-200' : 'text-gray-500 hover:text-emerald-700'">
           Bình luận
         </button>
         <button @click="activeTab = 'operations'" type="button"
-          class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer text-center"
+          class="flex-1 py-1.5 px-2.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer text-center"
           :class="activeTab === 'operations' ? 'bg-white text-emerald-800 shadow-3xs border border-stone-200' : 'text-gray-500 hover:text-emerald-700'">
           Lịch sử thao tác
         </button>
       </div>
 
-      <!-- Loading State -->
-      <div v-if="isLoading" class="space-y-4 flex-1 overflow-hidden">
-        <div v-for="i in 3" :key="'skel-' + i"
-          class="bg-white rounded-2xl p-5 border border-gray-100 flex items-start gap-4 animate-pulse">
-          <div class="w-12 h-4 bg-gray-200 rounded-md"></div>
-          <div class="w-10 h-10 rounded-full bg-gray-200"></div>
-          <div class="flex-1 space-y-2">
-            <div class="h-4 bg-gray-200 w-1/4 rounded-md"></div>
-            <div class="h-3 bg-gray-150 w-1/3 rounded-md"></div>
-            <div class="h-12 bg-gray-100 w-full rounded-md"></div>
+      <!-- SCHEDULE TASKS VIEW (Hành động tiếp theo đầy đủ bao gồm quá hạn) -->
+      <div v-if="activeMainTab === 'actions'" class="relative flex-1 min-h-0 flex flex-col mb-2 sm:mb-3">
+        <!-- Skeleton Loading State -->
+        <div v-if="isScheduleLoading && groupedScheduleTasks.length === 0" class="space-y-4 flex-1 overflow-hidden p-2">
+          <div v-for="i in 3" :key="'sk-sched-full-' + i" class="animate-pulse space-y-2">
+            <div class="h-4 bg-gray-200 rounded w-1/3"></div>
+            <div class="h-20 bg-white rounded-2xl border border-gray-100"></div>
           </div>
         </div>
-      </div>
 
-      <!-- Empty State -->
-      <div v-else-if="filteredActivities.length === 0"
-        class="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-2xs flex-1 flex items-center justify-center">
-        <p class="text-gray-400 font-medium">Trong 7 ngày qua, chưa có hoạt động mới</p>
-      </div>
+        <!-- Empty State -->
+        <div v-else-if="groupedScheduleTasks.length === 0"
+          class="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-2xs flex-1 flex flex-col items-center justify-center gap-2">
+          <i class="fa-regular fa-calendar-check text-3xl text-gray-350"></i>
+          <p class="text-gray-400 font-medium">Chưa có lịch trình hành động nào</p>
+        </div>
 
-      <!-- Grouped Activities Feed (Scrollable inner list, chat style) -->
-      <div v-else class="relative flex-1 min-h-0 flex flex-col mb-2 sm:mb-3">
-        <!-- Loading banner when locating quoted older message -->
-        <transition enter-active-class="transition duration-200 ease-out"
-          enter-from-class="opacity-0 -translate-y-2" enter-to-class="opacity-100 translate-y-0"
-          leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 translate-y-0"
-          leave-to-class="opacity-0 -translate-y-2">
-          <div v-if="isLoadingQuotedComment"
-            class="absolute top-2 left-1/2 -translate-x-1/2 z-40 px-3.5 py-1.5 rounded-full bg-emerald-800/90 text-white text-xs font-bold shadow-lg flex items-center gap-2 backdrop-blur-sm pointer-events-none">
-            <i class="fa-solid fa-circle-notch fa-spin text-xs text-emerald-300"></i>
-            <span>Đang tải tin nhắn cũ...</span>
-          </div>
-        </transition>
+        <!-- Grouped Schedule Tasks Feed (Full view: Quá hạn + Hôm nay + Tương lai) -->
+        <div v-else class="activity-feed-scroll flex-1 min-h-0 overflow-y-auto scrollbar-none pr-1 space-y-6">
+          <div v-for="group in groupedScheduleTasks" :key="group.dateKey" class="space-y-3">
+            <!-- Deep Green Bold Date Header -->
+            <h2 class="text-[18px] sm:text-[19px] font-black text-[#1A7A56] font-heading mb-4 pt-1">{{ group.dateLabel
+              }}</h2>
 
-        <div ref="activityFeedScrollRef" @scroll="handleFeedScroll"
-          class="activity-feed-scroll flex-1 min-h-0 overflow-y-auto scrollbar-none pr-1 space-y-6"
-          style="-webkit-overflow-scrolling: touch; touch-action: pan-y; overscroll-behavior-y: contain;">
-          <!-- Loading older comments indicator when scrolling up -->
-          <div v-if="isLoadingOlderActivities" class="flex items-center justify-center py-2 text-xs text-gray-500 gap-2">
-            <i class="fa-solid fa-circle-notch fa-spin text-emerald-600"></i>
-            <span>Đang tải hoạt động cũ hơn...</span>
-          </div>
-          <div v-else-if="!hasMoreOlderActivities && filteredActivities.length >= 30"
-            class="text-center py-1.5 mb-2 text-[12px] text-gray-400 font-semibold border-b border-gray-200/50">
-            Đã hiển thị tất cả hoạt động
-          </div>
+            <!-- Tasks list in this Date Group -->
+            <div class="space-y-0 pl-1">
+              <div v-for="task in group.tasks" :key="task.id"
+                class="schedule-task-item relative flex items-start gap-3 pb-5 bg-transparent select-text group">
 
-          <div v-for="(group, dateStr) in groupedActivities" :key="dateStr" class="space-y-3">
-          <!-- Date Header -->
-          <h2 class="text-[18px] sm:text-[19px] font-black text-[#32312F] font-heading mb-5 pt-1">{{ dateStr }}</h2>
+                <!-- Absolute Timeline Line connecting avatars -->
+                <div class="absolute top-9 bottom-0 left-[15px] w-[1.5px] bg-gray-300 z-0"></div>
 
-          <!-- Timeline list, matching the recent-activity panel -->
-          <div class="space-y-0">
-            <div v-for="(act, idx) in group" :key="act.id" :id="'activity-feed-item-' + act.id"
-              @click="handleActivityClick(act)"
-              class="feed-activity-item relative flex gap-3 pb-5 cursor-pointer group">
-              <!-- Timeline vertical line (always displayed for all messages) -->
-              <div class="absolute top-10 bottom-0 left-[15px] w-[1.5px] bg-gray-300 z-0"></div>
+                <!-- User Avatar -->
+                <div class="flex-shrink-0 w-8 z-10">
+                  <img :src="task.creator?.avatar || task.assignee?.avatar || defaultAvatar"
+                    :alt="task.creator?.name || 'Thành viên'" @error="$event.target.src = defaultAvatar"
+                    class="w-8 h-8 rounded-full object-cover border border-gray-200 relative z-10 shadow-3xs bg-[#F9F4EE]" />
+                </div>
 
-              <div class="flex-shrink-0 w-8 z-10">
-                <img
-                  :src="act.user?.avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=120'"
-                  :alt="act.user?.name" class="w-8 h-8 rounded-full object-cover border border-gray-200 shadow-3xs"
-                  loading="lazy" decoding="async" />
-              </div>
-
-              <div class="flex-1 min-w-0 z-10">
-                <!-- Top Row: Avatar + User Name & supports & relative time / 3-dots menu -->
-                <div class="flex items-center justify-between gap-2 relative min-h-[26px]">
-                  <div class="min-w-0 flex-1">
-                    <span class="font-extrabold text-[18px] sm:text-[19px] text-[#32312F] truncate leading-tight block">
-                      <span>{{ act.user ? act.user.name : 'Thành viên' }}</span>
-                      <template v-if="act.project?.customer">
-                        <span class="font-bold text-[#32312F]">&nbsp;hỗ trợ&nbsp;</span>
-                        <span class="text-[#1A7A56] hover:underline cursor-pointer font-extrabold"
-                          @click.stop="$router.push(`/customers/${act.project.customer.id}`)">
-                          {{ act.project.customer.name }}
-                        </span>
-                      </template>
+                <!-- Details -->
+                <div class="min-w-0 flex-1 pt-0 z-10">
+                  <!-- Project Title Link -->
+                  <div v-if="task.project" class="leading-snug mb-1">
+                    <span @click="goToProject(task.project.id, $event)"
+                      class="activity-project-link text-[#1A7A56] hover:underline font-extrabold text-[16px] sm:text-[17px] cursor-pointer max-w-full truncate inline-block w-fit align-middle"
+                      :title="task.project.title">
+                      {{ (task.project.customer?.name ? task.project.customer.name + ' - ' : '') + task.project.title }}
                     </span>
                   </div>
 
-                  <!-- Right: Timestamp normally, 3-dots icon button on hover / when menu open -->
-                  <div class="relative shrink-0 flex items-center justify-end min-h-[30px] min-w-[32px]" @click.stop>
-                    <!-- Relative Time (shown when not hovered and menu not active) -->
-                    <span
-                      class="text-[14px] sm:text-[15px] text-gray-400 font-medium whitespace-nowrap leading-none text-right"
-                      :class="(activeActivityMenuId === act.id || activeActivityIdForMobileActions === act.id) ? 'hidden' : 'group-hover:hidden'">
-                      {{ formatCommentRelativeTime(act.created_at) }}
-                    </span>
-
-                    <!-- 3-dots Menu Button (shown on hover or when menu is active) -->
-                    <button type="button" @click.stop="toggleActivityMenu(act.id, $event)" title="Tùy chọn"
-                      class="text-gray-400 hover:text-gray-800 hover:bg-gray-200/80 active:bg-gray-300/80 w-8 h-8 -my-1 -mr-1 rounded-lg flex items-center justify-center cursor-pointer transition-all active:scale-95 p-0"
-                      :class="(activeActivityMenuId === act.id || activeActivityIdForMobileActions === act.id) ? 'flex text-gray-800 bg-gray-200/80' : 'hidden group-hover:flex'">
-                      <i class="fa-solid fa-ellipsis-vertical text-[15px] leading-none"></i>
+                  <!-- Task Content -->
+                  <div v-if="parseCommentText(task.title || task.content)"
+                    class="text-[15px] sm:text-[16px] text-gray-900 font-medium leading-relaxed break-words">
+                    <div
+                      :class="!isScheduleTaskExpanded(task.id) && isLongContent(parseCommentText(task.title || task.content)) ? 'line-clamp-4' : ''"
+                      class="whitespace-pre-wrap">
+                      {{ parseCommentText(task.title || task.content) }}
+                    </div>
+                    <button v-if="isLongContent(parseCommentText(task.title || task.content))"
+                      @click.stop="toggleExpandScheduleTask(task.id)" type="button"
+                      class="inline-block text-[13px] font-bold text-[#1A7A56] hover:text-emerald-800 hover:underline mt-1 cursor-pointer select-none">
+                      {{ isScheduleTaskExpanded(task.id) ? 'Thu gọn' : '... Xem thêm' }}
                     </button>
-
-                    <!-- Dropdown Menu for Edit & Delete -->
-                    <div v-if="activeActivityMenuId === act.id"
-                      class="absolute top-full right-0 mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[120px] animate-fade-in-up">
-                      <button v-if="canEditComment(act)" type="button" @click.stop="handleStartEditComment(act)"
-                        class="w-full text-left px-3 py-1.5 text-sm font-bold text-gray-700 hover:bg-gray-100 flex items-center gap-2 cursor-pointer transition-colors">
-                        <i class="fa-solid fa-pen-to-square text-xs text-emerald-600"></i>
-                        <span>Chỉnh sửa</span>
-                      </button>
-                      <button v-if="canDeleteComment(act)" type="button" @click.stop="handleDeleteComment(act.id)"
-                        class="w-full text-left px-3 py-1.5 text-sm font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors">
-                        <i class="fa-solid fa-trash-can text-xs"></i>
-                        <span>Xóa</span>
-                      </button>
-                      <div v-if="!canEditComment(act) && !canDeleteComment(act)"
-                        class="px-3 py-1.5 text-xs font-semibold text-gray-400">
-                        Không có thao tác
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Project title -->
-                <div v-if="act.project" class="leading-snug mt-0.5 mb-1 max-w-full">
-                  <span @click="handleActivityProjectClick(act.project.id, $event)"
-                    class="activity-project-link text-[#1A7A56] hover:underline font-extrabold text-[18px] sm:text-[19px] cursor-pointer max-w-full truncate inline-block w-fit align-middle"
-                    :title="act.project.title">
-                    {{ act.project.title }}
-                  </span>
-                </div>
-
-                <!-- Comment content (Normal Display) -->
-                <div class="text-[16px] sm:text-[18px] text-gray-900 leading-relaxed break-words mt-0.5 space-y-1">
-                  <!-- Zalo Quote Reply Preview inside activity feed page -->
-                  <div v-if="parseReplyInfo(act.content)" @click.stop="scrollToComment(parseReplyInfo(act.content))"
-                    class="bg-[#e1e3ea] px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1 select-none max-w-full cursor-pointer hover:bg-[#d5d7de] transition-colors">
-                    <div class="text-[14px] font-bold text-gray-500 flex items-center gap-1">
-                      <i class="fa-solid fa-reply text-xs"></i>
-                      <span>{{ parseReplyInfo(act.content).user }}</span>
-                    </div>
-                    <div class="text-[14px] text-gray-450 truncate mt-0.5 max-w-[280px]">
-                      {{ parseReplyInfo(act.content).text }}
-                    </div>
-                  </div>
-
-                  <div v-if="parseCommentText(act.content)" class="whitespace-pre-line font-normal text-gray-900">
-                    {{ parseCommentText(act.content) }}
                   </div>
 
                   <!-- Attachments (Images & Files side-by-side) -->
-                  <div v-if="parseCommentImages(act.content).length > 0 || parseCommentFiles(act.content).length > 0"
-                    class="flex flex-wrap items-end gap-1.5 pt-1 pb-1.5">
+                  <div
+                    v-if="parseCommentImages(task.title || task.content).length > 0 || parseCommentFiles(task.title || task.content).length > 0"
+                    class="flex flex-wrap items-end gap-1.5 pt-1.5 pb-1">
                     <!-- Images -->
-                    <button v-for="(img, imgIdx) in parseCommentImages(act.content)" :key="'img-' + imgIdx"
-                      type="button" @click.stop="openImagePreview(img.url, parseCommentImages(act.content), imgIdx)"
+                    <button v-for="(img, imgIdx) in parseCommentImages(task.title || task.content)"
+                      :key="'sched-full-img-' + imgIdx" type="button"
+                      @click.stop="openImagePreview(img.url, parseCommentImages(task.title || task.content), imgIdx)"
                       class="w-11 h-11 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 cursor-pointer hover:ring-2 hover:ring-emerald-400 transition-all flex-shrink-0 shadow-3xs"
                       :title="'Xem ảnh: ' + img.name">
-                      <img :src="img.url" class="w-full h-full object-cover" alt=""
-                        :loading="idx < 3 ? 'eager' : 'lazy'" decoding="async"
-                        :fetchpriority="idx < 3 ? 'high' : 'auto'" />
+                      <img :src="img.url" class="w-full h-full object-cover" alt="" loading="lazy" decoding="async" />
                     </button>
 
                     <!-- Files -->
-                    <a v-for="(file, fIdx) in parseCommentFiles(act.content)" :key="'file-' + fIdx" :href="file.url"
-                      :download="file.name" target="_blank" @click.stop
+                    <a v-for="(file, fIdx) in parseCommentFiles(task.title || task.content)"
+                      :key="'sched-full-file-' + fIdx" :href="file.url" :download="file.name" target="_blank"
+                      @click.stop
                       class="w-8 h-10 rounded border border-[#d4a574] bg-[#f5e6d0] hover:bg-[#edd9bc] flex flex-col items-center justify-end overflow-hidden cursor-pointer transition-colors flex-shrink-0"
                       :title="'Tải xuống: ' + file.name">
                       <i class="fa-solid fa-file text-[#c87828] text-xs mb-0.5"></i>
@@ -207,19 +130,20 @@
                         class="text-[8px] font-bold text-[#8b5a2b] bg-[#e8c99a] w-full text-center py-0.5 leading-none">FILE</span>
                     </a>
                   </div>
-                </div>
 
-                <!-- Bottom Actions: Reply button with text -->
-                <div class="flex items-center gap-3 mt-3 sm:mt-3.5">
-                  <button @click.stop="handleReplyToActivity(act)" type="button"
-                    :title="'Trả lời ' + (act.user?.name || 'thành viên')"
-                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-gray-500 hover:text-emerald-700 hover:bg-stone-200/60 active:bg-stone-300/80 cursor-pointer transition-all active:scale-95 -ml-1.5 select-none font-bold">
-                    <i class="fa-solid fa-reply text-[18px] sm:text-[19px]"></i>
-                    <span class="text-[13px] sm:text-[14px] leading-none">
-                      <span class="sm:hidden">Trả lời</span>
-                      <span class="hidden sm:inline">Trả lời {{ act.user ? act.user.name : 'thành viên' }}</span>
-                    </span>
-                  </button>
+                  <!-- Bottom Action: Reply button -->
+                  <div class="flex items-center gap-3 mt-2 sm:mt-2.5">
+                    <button @click.stop="handleReplyToScheduleTask(task)" type="button"
+                      :title="'Trả lời ' + (task.creator?.name || task.assignee?.name || 'thành viên')"
+                      class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-gray-500 hover:text-emerald-700 hover:bg-stone-200/60 active:bg-stone-300/80 cursor-pointer transition-all active:scale-95 -ml-1.5 select-none font-bold">
+                      <i class="fa-solid fa-reply text-[17px] sm:text-[18px]"></i>
+                      <span class="text-[13px] sm:text-[14px] leading-none">
+                        <span class="sm:hidden">Trả lời</span>
+                        <span class="hidden sm:inline">Trả lời {{ task.creator ? task.creator.name : (task.assignee ?
+                          task.assignee.name : 'thành viên') }}</span>
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -227,20 +151,224 @@
         </div>
       </div>
 
-      <!-- Floating Scroll to Bottom Button -->
-        <transition enter-active-class="transition duration-200 ease-out"
-          enter-from-class="opacity-0 scale-90 translate-y-2"
-          enter-to-class="opacity-100 scale-100 translate-y-0"
-          leave-active-class="transition duration-150 ease-in"
-          leave-from-class="opacity-100 scale-100 translate-y-0"
-          leave-to-class="opacity-0 scale-90 translate-y-2">
-          <button v-if="showScrollToBottom" @click="scrollToBottom(true)" type="button"
-            title="Cuộn xuống tin nhắn mới nhất"
-            class="absolute bottom-3 right-3 z-30 w-10 h-10 rounded-full bg-white/95 hover:bg-white text-gray-700 hover:text-emerald-700 shadow-xl border border-gray-200/80 flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 backdrop-blur-xs">
-            <i class="fa-solid fa-chevron-down text-sm"></i>
-          </button>
-        </transition>
-      </div>
+      <!-- ACTIVITIES VIEW (Hoạt động của đội) -->
+      <template v-else>
+        <!-- Loading State -->
+        <div v-if="isLoading" class="space-y-4 flex-1 overflow-hidden">
+          <div v-for="i in 3" :key="'skel-' + i"
+            class="bg-white rounded-2xl p-5 border border-gray-100 flex items-start gap-4 animate-pulse">
+            <div class="w-12 h-4 bg-gray-200 rounded-md"></div>
+            <div class="w-10 h-10 rounded-full bg-gray-200"></div>
+            <div class="flex-1 space-y-2">
+              <div class="h-4 bg-gray-200 w-1/4 rounded-md"></div>
+              <div class="h-3 bg-gray-150 w-1/3 rounded-md"></div>
+              <div class="h-12 bg-gray-100 w-full rounded-md"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div v-else-if="filteredActivities.length === 0"
+          class="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-2xs flex-1 flex items-center justify-center">
+          <p class="text-gray-400 font-medium">Trong 7 ngày qua, chưa có hoạt động mới</p>
+        </div>
+
+        <!-- Grouped Activities Feed (Scrollable inner list, chat style) -->
+        <div v-else class="relative flex-1 min-h-0 flex flex-col mb-2 sm:mb-3">
+          <!-- Loading banner when locating quoted older message -->
+          <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 -translate-y-2"
+            enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-150 ease-in"
+            leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 -translate-y-2">
+            <div v-if="isLoadingQuotedComment"
+              class="absolute top-2 left-1/2 -translate-x-1/2 z-40 px-3.5 py-1.5 rounded-full bg-emerald-800/90 text-white text-xs font-bold shadow-lg flex items-center gap-2 backdrop-blur-sm pointer-events-none">
+              <i class="fa-solid fa-circle-notch fa-spin text-xs text-emerald-300"></i>
+              <span>Đang tải tin nhắn cũ...</span>
+            </div>
+          </transition>
+
+          <div ref="activityFeedScrollRef" @scroll="handleFeedScroll"
+            class="activity-feed-scroll flex-1 min-h-0 overflow-y-auto scrollbar-none pr-1 space-y-6"
+            style="-webkit-overflow-scrolling: touch; touch-action: pan-y; overscroll-behavior-y: contain;">
+            <!-- Loading older comments indicator when scrolling up -->
+            <div v-if="isLoadingOlderActivities"
+              class="flex items-center justify-center py-2 text-xs text-gray-500 gap-2">
+              <i class="fa-solid fa-circle-notch fa-spin text-emerald-600"></i>
+              <span>Đang tải hoạt động cũ hơn...</span>
+            </div>
+            <div v-else-if="!hasMoreOlderActivities && filteredActivities.length >= 30"
+              class="text-center py-1.5 mb-2 text-[12px] text-gray-400 font-semibold border-b border-gray-200/50">
+              Đã hiển thị tất cả hoạt động
+            </div>
+
+            <div v-for="(group, dateStr) in groupedActivities" :key="dateStr" class="space-y-3">
+              <!-- Date Header -->
+              <h2 class="text-[18px] sm:text-[19px] font-black text-[#32312F] font-heading mb-5 pt-1">{{ dateStr }}</h2>
+
+              <!-- Timeline list, matching the recent-activity panel -->
+              <div class="space-y-0">
+                <div v-for="(act, idx) in group" :key="act.id" :id="'activity-feed-item-' + act.id"
+                  class="feed-activity-item relative flex gap-3 pb-5 group">
+                  <!-- Timeline vertical line (always displayed for all messages) -->
+                  <div class="absolute top-10 bottom-0 left-[15px] w-[1.5px] bg-gray-300 z-0"></div>
+
+                  <div class="flex-shrink-0 w-8 z-10">
+                    <img
+                      :src="act.user?.avatar || defaultAvatar"
+                      @error="$event.target.src = defaultAvatar"
+                      :alt="act.user?.name" class="w-8 h-8 rounded-full object-cover border border-gray-200 shadow-3xs"
+                      loading="lazy" decoding="async" />
+                  </div>
+
+                  <div class="flex-1 min-w-0 z-10">
+                    <!-- Top Row: Avatar + User Name & supports & relative time / 3-dots menu -->
+                    <div class="flex items-center justify-between gap-2 relative min-h-[26px]">
+                      <div class="min-w-0 flex-1">
+                        <span
+                          class="font-extrabold text-[18px] sm:text-[19px] text-[#32312F] truncate leading-tight block">
+                          <span>{{ act.user ? act.user.name : 'Thành viên' }}</span>
+                          <template v-if="act.project?.customer">
+                            <span class="font-bold text-[#32312F]">&nbsp;hỗ trợ&nbsp;</span>
+                            <span class="text-[#1A7A56] hover:underline cursor-pointer font-extrabold"
+                              @click.stop="$router.push(`/customers/${act.project.customer.id}`)">
+                              {{ act.project.customer.name }}
+                            </span>
+                          </template>
+                        </span>
+                      </div>
+
+                      <!-- Right: Timestamp normally, 3-dots icon button on hover / when menu open -->
+                      <div class="relative shrink-0 flex items-center justify-end min-h-[30px] min-w-[32px]"
+                        @click.stop>
+                        <!-- Relative Time (shown when not hovered and menu not active) -->
+                        <span
+                          class="text-[14px] sm:text-[15px] text-gray-400 font-medium whitespace-nowrap leading-none text-right"
+                          :class="(activeActivityMenuId === act.id || activeActivityIdForMobileActions === act.id) ? 'hidden' : 'group-hover:hidden'">
+                          {{ formatCommentRelativeTime(act.created_at) }}
+                        </span>
+
+                            <!-- 3-dots Menu Button (shown on hover or when menu is active, only if user has permission) -->
+                            <button v-if="canEditComment(act) || canDeleteComment(act)" type="button"
+                              @click.stop="toggleActivityMenu(act.id, $event)" title="Tùy chọn"
+                              class="text-gray-400 hover:text-gray-800 hover:bg-gray-200/80 active:bg-gray-300/80 w-8 h-8 -my-1 -mr-1 rounded-lg flex items-center justify-center cursor-pointer transition-all active:scale-95 p-0"
+                              :class="(activeActivityMenuId === act.id || activeActivityIdForMobileActions === act.id) ? 'flex text-gray-800 bg-gray-200/80' : 'hidden group-hover:flex'">
+                              <i class="fa-solid fa-ellipsis-vertical text-[15px] leading-none"></i>
+                            </button>
+
+                            <!-- Dropdown Menu for Action, Edit & Delete -->
+                            <div v-if="activeActivityMenuId === act.id && (canEditComment(act) || canDeleteComment(act))"
+                              class="absolute top-full right-0 mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[145px] animate-fade-in-up">
+                              <button v-if="canEditComment(act)" type="button" @click.stop="openCreateActionFromComment(act)"
+                                class="w-full text-left px-3 py-1.5 text-sm font-bold text-gray-700 hover:bg-emerald-50 hover:text-emerald-800 flex items-center gap-2 cursor-pointer transition-colors">
+                                <i class="fa-regular fa-calendar-plus text-xs text-emerald-600"></i>
+                                <span>Tạo hành động</span>
+                              </button>
+                              <button v-if="canEditComment(act)" type="button" @click.stop="handleStartEditComment(act)"
+                                class="w-full text-left px-3 py-1.5 text-sm font-bold text-gray-700 hover:bg-gray-100 flex items-center gap-2 cursor-pointer transition-colors">
+                                <i class="fa-solid fa-pen-to-square text-xs text-emerald-600"></i>
+                                <span>Chỉnh sửa</span>
+                              </button>
+                              <button v-if="canDeleteComment(act)" type="button" @click.stop="handleDeleteComment(act.id)"
+                                class="w-full text-left px-3 py-1.5 text-sm font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                                <span>Xóa</span>
+                              </button>
+                            </div>
+                      </div>
+                    </div>
+
+                    <!-- Project title -->
+                    <div v-if="act.project" class="leading-snug mt-0.5 mb-1 max-w-full">
+                      <span @click="handleActivityProjectClick(act.project.id, $event)"
+                        class="activity-project-link text-[#1A7A56] hover:underline font-extrabold text-[18px] sm:text-[19px] cursor-pointer max-w-full truncate inline-block w-fit align-middle"
+                        :title="act.project.title">
+                        {{ act.project.title }}
+                      </span>
+                    </div>
+
+                    <!-- Comment content (Normal Display) -->
+                    <div class="text-[16px] sm:text-[18px] text-gray-900 leading-relaxed break-words mt-0.5 space-y-1">
+                      <!-- Zalo Quote Reply Preview inside activity feed page -->
+                      <div v-if="parseReplyInfo(act.content)" @click.stop="scrollToComment(parseReplyInfo(act.content))"
+                        class="bg-[#e1e3ea] px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1 select-none max-w-full cursor-pointer hover:bg-[#d5d7de] transition-colors">
+                        <div class="text-[14px] font-bold text-gray-500 flex items-center gap-1">
+                          <i class="fa-solid fa-reply text-xs"></i>
+                          <span>{{ parseReplyInfo(act.content).user }}</span>
+                        </div>
+                        <div class="text-[14px] text-gray-450 truncate mt-0.5 max-w-[280px]">
+                          {{ parseReplyInfo(act.content).text }}
+                        </div>
+                      </div>
+
+                      <div v-if="parseCommentText(act.content)"
+                        class="whitespace-pre-line font-normal text-gray-900 select-text cursor-text">
+                        <div
+                          :class="!isActivityExpanded(act.id) && isLongContent(parseCommentText(act.content)) ? 'line-clamp-4' : ''">
+                          {{ parseCommentText(act.content) }}
+                        </div>
+                        <button v-if="isLongContent(parseCommentText(act.content))"
+                          @click.stop="toggleExpandActivity(act.id)" type="button"
+                          class="inline-block text-[13px] font-bold text-[#1A7A56] hover:text-emerald-800 hover:underline mt-0.5 cursor-pointer select-none">
+                          {{ isActivityExpanded(act.id) ? 'Thu gọn' : '... Xem thêm' }}
+                        </button>
+                      </div>
+
+                      <!-- Attachments (Images & Files side-by-side) -->
+                      <div
+                        v-if="parseCommentImages(act.content).length > 0 || parseCommentFiles(act.content).length > 0"
+                        class="flex flex-wrap items-end gap-1.5 pt-1 pb-1.5">
+                        <!-- Images -->
+                        <button v-for="(img, imgIdx) in parseCommentImages(act.content)" :key="'img-' + imgIdx"
+                          type="button" @click.stop="openImagePreview(img.url, parseCommentImages(act.content), imgIdx)"
+                          class="w-11 h-11 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 cursor-pointer hover:ring-2 hover:ring-emerald-400 transition-all flex-shrink-0 shadow-3xs"
+                          :title="'Xem ảnh: ' + img.name">
+                          <img :src="img.url" class="w-full h-full object-cover" alt=""
+                            :loading="idx < 3 ? 'eager' : 'lazy'" decoding="async"
+                            :fetchpriority="idx < 3 ? 'high' : 'auto'" />
+                        </button>
+
+                        <!-- Files -->
+                        <a v-for="(file, fIdx) in parseCommentFiles(act.content)" :key="'file-' + fIdx" :href="file.url"
+                          :download="file.name" target="_blank" @click.stop
+                          class="w-8 h-10 rounded border border-[#d4a574] bg-[#f5e6d0] hover:bg-[#edd9bc] flex flex-col items-center justify-end overflow-hidden cursor-pointer transition-colors flex-shrink-0"
+                          :title="'Tải xuống: ' + file.name">
+                          <i class="fa-solid fa-file text-[#c87828] text-xs mb-0.5"></i>
+                          <span
+                            class="text-[8px] font-bold text-[#8b5a2b] bg-[#e8c99a] w-full text-center py-0.5 leading-none">FILE</span>
+                        </a>
+                      </div>
+                    </div>
+
+                    <!-- Bottom Actions: Reply button with text -->
+                    <div class="flex items-center gap-3 mt-3 sm:mt-3.5">
+                      <button @click.stop="handleReplyToActivity(act)" type="button"
+                        :title="'Trả lời ' + (act.user?.name || 'thành viên')"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-gray-500 hover:text-emerald-700 hover:bg-stone-200/60 active:bg-stone-300/80 cursor-pointer transition-all active:scale-95 -ml-1.5 select-none font-bold">
+                        <i class="fa-solid fa-reply text-[18px] sm:text-[19px]"></i>
+                        <span class="text-[13px] sm:text-[14px] leading-none">
+                          <span class="sm:hidden">Trả lời</span>
+                          <span class="hidden sm:inline">Trả lời {{ act.user ? act.user.name : 'thành viên' }}</span>
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Floating Scroll to Bottom Button -->
+          <transition enter-active-class="transition duration-200 ease-out"
+            enter-from-class="opacity-0 scale-90 translate-y-2" enter-to-class="opacity-100 scale-100 translate-y-0"
+            leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 scale-100 translate-y-0"
+            leave-to-class="opacity-0 scale-90 translate-y-2">
+            <button v-if="showScrollToBottom" @click="scrollToBottom(true)" type="button"
+              title="Cuộn xuống tin nhắn mới nhất"
+              class="absolute bottom-3 right-3 z-30 w-10 h-10 rounded-full bg-white/95 hover:bg-white text-gray-700 hover:text-emerald-700 shadow-xl border border-gray-200/80 flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 backdrop-blur-xs">
+              <i class="fa-solid fa-chevron-down text-sm"></i>
+            </button>
+          </transition>
+        </div>
+      </template>
 
       <!-- Bottom Chat Composer with Solid Background and Border -->
       <div v-if="activeTab !== 'operations'"
@@ -254,61 +382,187 @@
       </div>
     </main>
 
-    <!-- Image Lightbox Modal -->
+    <!-- Image Lightbox Modal with Zoom & Pan -->
     <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95"
       enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in"
       leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
       <div v-if="activePreviewImage"
         class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-slate-950/85 backdrop-blur-md select-none"
-        @click="closeImagePreview">
+        @mousedown.stop @mousemove.stop @mouseup.stop @click="closeImagePreview">
         <div class="relative w-[min(92vw,1100px)] h-[min(72vh,720px)] flex flex-col items-center justify-center"
           @click.stop @touchstart="handleModalTouchStart" @touchend="handleModalTouchEnd">
 
-          <!-- Top Bar: Image count badge + Close button -->
-          <div class="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-auto">
-            <div v-if="previewModalImages.length > 1"
-              class="px-3 py-1 bg-black/60 backdrop-blur-md text-white/90 text-xs sm:text-sm font-bold rounded-full border border-white/10 shadow-lg">
-              {{ previewModalIndex + 1 }} / {{ previewModalImages.length }}
+          <!-- Top Bar: Image count badge + Zoom controls + Close button -->
+          <div class="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-auto">
+            <div class="flex items-center gap-2">
+              <div v-if="previewModalImages.length > 1"
+                class="px-3 py-1 bg-black/60 backdrop-blur-md text-white/90 text-xs sm:text-sm font-bold rounded-full border border-white/10 shadow-lg">
+                {{ previewModalIndex + 1 }} / {{ previewModalImages.length }}
+              </div>
             </div>
-            <div v-else></div>
 
-            <button type="button" @click="closeImagePreview"
-              class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/20 hover:bg-rose-600 text-white flex items-center justify-center font-bold text-sm sm:text-base backdrop-blur-md shadow-xl transition-all cursor-pointer border border-white/20"
-              title="Đóng (Esc)">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
+            <!-- Zoom controls & Close -->
+            <div class="flex items-center gap-2">
+              <div class="flex items-center bg-black/60 backdrop-blur-md rounded-full border border-white/15 px-1 py-0.5 shadow-xl text-white">
+                <button type="button" @click.stop="zoomOutPreview" :disabled="previewZoomScale <= 1"
+                  class="w-8 h-8 rounded-full flex items-center justify-center text-xs hover:bg-white/20 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Thu nhỏ (-)">
+                  <i class="fa-solid fa-magnifying-glass-minus"></i>
+                </button>
+                <button type="button" @click.stop="resetPreviewZoom"
+                  class="px-2 py-0.5 text-xs font-bold hover:bg-white/20 rounded-full transition-all cursor-pointer"
+                  title="Đặt lại kích thước (100%)">
+                  {{ Math.round(previewZoomScale * 100) }}%
+                </button>
+                <button type="button" @click.stop="zoomInPreview" :disabled="previewZoomScale >= 5"
+                  class="w-8 h-8 rounded-full flex items-center justify-center text-xs hover:bg-white/20 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Phóng to (+)">
+                  <i class="fa-solid fa-magnifying-glass-plus"></i>
+                </button>
+              </div>
+
+              <button type="button" @click="closeImagePreview"
+                class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/20 hover:bg-rose-600 text-white flex items-center justify-center font-bold text-sm sm:text-base backdrop-blur-md shadow-xl transition-all cursor-pointer border border-white/20"
+                title="Đóng (Esc)">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
           </div>
 
           <!-- Main Image and Prev/Next Navigation -->
-          <div class="relative w-full h-full flex items-center justify-center rounded-2xl overflow-hidden bg-slate-900">
-            <img :src="activePreviewImage" class="w-full h-full object-contain transition-opacity duration-150" />
+          <div class="relative w-full h-full flex items-center justify-center rounded-2xl overflow-hidden bg-slate-900 select-none"
+            @wheel.prevent="handlePreviewWheel"
+            @mousemove="doPreviewPan"
+            @mouseup="endPreviewPan"
+            @mouseleave="endPreviewPan">
+            <img :src="activePreviewImage"
+              @mousedown="startPreviewPan"
+              @click="handlePreviewImageClick"
+              @dblclick="togglePreviewZoom"
+              :style="{
+                transform: `scale(${previewZoomScale}) translate(${previewPanX / previewZoomScale}px, ${previewPanY / previewZoomScale}px)`,
+                transition: isPreviewPanning ? 'none' : 'transform 0.18s ease-out',
+                cursor: previewZoomScale > 1 ? (isPreviewPanning ? 'grabbing' : 'grab') : 'zoom-in'
+              }"
+              class="w-full h-full object-contain pointer-events-auto"
+              draggable="false" />
 
-            <!-- PREV BUTTON (shown when > 1 image) -->
-            <button v-if="previewModalImages.length > 1" type="button" @click="prevPreviewImage"
+            <!-- PREV BUTTON (shown when > 1 image and not zoomed in) -->
+            <button v-if="previewModalImages.length > 1 && previewZoomScale <= 1" type="button" @click="prevPreviewImage"
               class="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center font-bold text-base sm:text-lg backdrop-blur-md shadow-xl transition-all cursor-pointer border border-white/20 hover:scale-110 active:scale-95"
               title="Ảnh trước (Phím ←)">
               <i class="fa-solid fa-chevron-left"></i>
             </button>
 
-            <!-- NEXT BUTTON (shown when > 1 image) -->
-            <button v-if="previewModalImages.length > 1" type="button" @click="nextPreviewImage"
+            <!-- NEXT BUTTON (shown when > 1 image and not zoomed in) -->
+            <button v-if="previewModalImages.length > 1 && previewZoomScale <= 1" type="button" @click="nextPreviewImage"
               class="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center font-bold text-base sm:text-lg backdrop-blur-md shadow-xl transition-all cursor-pointer border border-white/20 hover:scale-110 active:scale-95"
               title="Ảnh tiếp theo (Phím →)">
               <i class="fa-solid fa-chevron-right"></i>
             </button>
           </div>
 
-          <!-- Thumbnails / Dots strip at bottom -->
+          <!-- Thumbnails / Dots strip at bottom (scrollbar-none hidden scrollbar) -->
           <div v-if="previewModalImages.length > 1"
-            class="flex items-center justify-center gap-2 mt-4 max-w-full overflow-x-auto py-1 px-2">
+            class="flex items-center justify-center gap-2 mt-4 max-w-full overflow-x-auto py-1 px-2 scrollbar-none">
             <button v-for="(pImg, pIdx) in previewModalImages" :key="'thumb-' + pIdx" type="button"
-              @click="previewModalIndex = pIdx"
+              @click="previewModalIndex = pIdx; resetPreviewZoom()"
               class="w-10 h-10 rounded-lg overflow-hidden border-2 transition-all cursor-pointer flex-shrink-0"
               :class="pIdx === previewModalIndex ? 'border-emerald-400 scale-110 shadow-lg ring-2 ring-emerald-400/50' : 'border-white/30 opacity-60 hover:opacity-100'">
               <img :src="pImg.url || pImg.src || pImg" class="w-full h-full object-cover" />
             </button>
           </div>
 
+        </div>
+      </div>
+    </transition>
+
+    <!-- Modal Tạo hành động tiếp theo từ tin nhắn / hoạt động -->
+    <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0"
+      enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="isActionModalOpen"
+        class="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4"
+        @click="isActionModalOpen = false">
+        <div
+          class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-md overflow-hidden animate-fade-in-up"
+          @click.stop>
+          <!-- Modal Header -->
+          <div class="px-5 py-3.5 bg-stone-100/70 border-b border-gray-200/80 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-emerald-800 font-extrabold text-[17px]">
+              <i class="fa-regular fa-calendar-plus text-emerald-600"></i>
+              <span>Tạo hành động tiếp theo</span>
+            </div>
+            <button type="button" @click="isActionModalOpen = false"
+              class="text-gray-400 hover:text-gray-700 p-1 rounded-full cursor-pointer">
+              <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+          </div>
+
+          <!-- Modal Body -->
+          <div class="p-5 space-y-4">
+            <!-- Preview of original comment -->
+            <div v-if="actionModalComment" class="bg-stone-50 p-3 rounded-xl border border-stone-200/80 text-xs">
+              <div class="font-extrabold text-[#1A7A56] mb-1 truncate">
+                {{ actionModalComment.project ? ((actionModalComment.project.customer?.name ? actionModalComment.project.customer.name + ' - ' : '') + actionModalComment.project.title) : 'Dự án' }}
+              </div>
+              <div class="text-gray-700 line-clamp-3 leading-relaxed">
+                {{ parseCommentText(actionModalComment.content) || actionModalComment.text }}
+              </div>
+            </div>
+
+            <!-- Date Selection -->
+            <div class="space-y-2">
+              <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                Chọn thời gian thực hiện:
+              </label>
+              <div class="grid grid-cols-2 gap-2 text-xs font-bold">
+                <button type="button" @click="setActionModalQuickDate(0)"
+                  class="px-3 py-2 rounded-xl border transition-all text-left flex items-center justify-between cursor-pointer"
+                  :class="actionModalDueDate === formatQuickDateISO(0) ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-500' : 'border-gray-200 hover:border-emerald-500 text-gray-700'">
+                  <span>Hôm nay</span>
+                  <span class="text-[11px] text-gray-400 font-medium">{{ getActionQuickDateLabel(0) }}</span>
+                </button>
+                <button type="button" @click="setActionModalQuickDate(1)"
+                  class="px-3 py-2 rounded-xl border transition-all text-left flex items-center justify-between cursor-pointer"
+                  :class="actionModalDueDate === formatQuickDateISO(1) ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-500' : 'border-gray-200 hover:border-emerald-500 text-gray-700'">
+                  <span>Ngày mai</span>
+                  <span class="text-[11px] text-gray-400 font-medium">{{ getActionQuickDateLabel(1) }}</span>
+                </button>
+                <button type="button" @click="setActionModalQuickDate(2)"
+                  class="px-3 py-2 rounded-xl border transition-all text-left flex items-center justify-between cursor-pointer"
+                  :class="actionModalDueDate === formatQuickDateISO(2) ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-500' : 'border-gray-200 hover:border-emerald-500 text-gray-700'">
+                  <span>Ngày mốt</span>
+                  <span class="text-[11px] text-gray-400 font-medium">{{ getActionQuickDateLabel(2) }}</span>
+                </button>
+                <button type="button" @click="setActionModalQuickDate(7)"
+                  class="px-3 py-2 rounded-xl border transition-all text-left flex items-center justify-between cursor-pointer"
+                  :class="actionModalDueDate === formatQuickDateISO(7) ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-500' : 'border-gray-200 hover:border-emerald-500 text-gray-700'">
+                  <span>1 tuần nữa</span>
+                  <span class="text-[11px] text-gray-400 font-medium">{{ getActionQuickDateLabel(7) }}</span>
+                </button>
+              </div>
+
+              <div class="pt-2">
+                <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Hoặc chọn ngày cụ thể:</label>
+                <input type="date" v-model="actionModalDueDate"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-bold text-gray-800 focus:outline-none focus:border-emerald-500 bg-gray-50 cursor-pointer" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="px-5 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-2.5">
+            <button type="button" @click="isActionModalOpen = false"
+              class="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-200/80 cursor-pointer transition-colors">
+              Hủy
+            </button>
+            <button type="button" @click="submitCreateActionFromComment" :disabled="isSubmittingActionModal || !actionModalDueDate"
+              class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 cursor-pointer transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50">
+              <i v-if="isSubmittingActionModal" class="fa-solid fa-spinner fa-spin text-xs"></i>
+              <span>OK (Tạo hành động)</span>
+            </button>
+          </div>
         </div>
       </div>
     </transition>
@@ -339,9 +593,12 @@ const goBack = () => {
     router.push('/views')
   }
 }
+const defaultAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'
+
 const activities = ref([])
 const isLoading = ref(true)
-const activeTab = ref(route.query.tab || 'all')
+const activeMainTab = ref(route.query.tab === 'actions' ? 'actions' : 'activities')
+const activeTab = ref(route.query.tab && route.query.tab !== 'actions' ? route.query.tab : 'all')
 const chatMessage = ref('')
 const chatProjectId = ref(null)
 const replyingToActivity = ref(null)
@@ -358,9 +615,152 @@ let activityTouchTimer = null
 let activityTouchStarted = false
 let ignoreActivityClickUntil = 0
 
-watch(() => route.query.tab, (newTab) => {
-  activeTab.value = newTab || 'all'
+// Schedule tasks state for 'actions' view (Tất cả hành động tiếp theo bao gồm quá hạn)
+const scheduleTasks = ref([])
+const isScheduleLoading = ref(false)
+
+const fetchScheduleTasks = async () => {
+  isScheduleLoading.value = true
+  try {
+    const res = await axios.get('/api/tasks')
+    scheduleTasks.value = res.data || []
+  } catch (err) {
+    console.error('Failed to fetch schedule tasks:', err)
+  } finally {
+    isScheduleLoading.value = false
+  }
+}
+
+const formatScheduleGroupKey = (dateStr) => {
+  if (!dateStr) return { key: 'no_date', label: 'Chưa có ngày', order: 999999 }
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return { key: dateStr, label: dateStr, order: 999999 }
+
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const target = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+
+  const diffDays = Math.round((target - today) / (1000 * 60 * 60 * 24))
+  const day = d.getDate()
+  const month = d.getMonth() + 1
+  const year = d.getFullYear()
+  const dateFormatted = `${day} tháng ${month}, ${year}`
+
+  let label = ''
+  if (diffDays === 0) {
+    label = `Hôm nay - ${dateFormatted}`
+  } else if (diffDays === 1) {
+    label = `Mai - ${dateFormatted}`
+  } else if (diffDays === 2) {
+    label = `Mốt - ${dateFormatted}`
+  } else if (diffDays === -1) {
+    label = `Hôm qua - ${dateFormatted}`
+  } else if (diffDays < -1) {
+    label = `Quá hạn - ${dateFormatted}`
+  } else {
+    const dayOfWeek = d.getDay()
+    const daysArr = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy']
+    label = `${daysArr[dayOfWeek]} - ${dateFormatted}`
+  }
+
+  return {
+    key: `${target.getTime()}`,
+    label,
+    order: diffDays
+  }
+}
+
+// In full view of Tất cả hành động tiếp theo, show ALL active tasks (including overdue ones)
+const groupedScheduleTasks = computed(() => {
+  const activeTasks = scheduleTasks.value.filter(t => Boolean(t.due_date) && t.status !== 'done')
+  const sorted = [...activeTasks].sort((a, b) => {
+    const dateDiff = new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+    if (dateDiff !== 0) return dateDiff
+    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0
+    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0
+    return timeB - timeA
+  })
+
+  const groupMap = new Map()
+  sorted.forEach(task => {
+    const { key, label, order } = formatScheduleGroupKey(task.due_date)
+    if (!groupMap.has(key)) {
+      groupMap.set(key, {
+        dateKey: key,
+        dateLabel: label,
+        order,
+        tasks: []
+      })
+    }
+    groupMap.get(key).tasks.push(task)
+  })
+
+  return Array.from(groupMap.values()).sort((a, b) => a.order - b.order)
 })
+
+// Expanded state for long action items in schedule view
+const expandedScheduleTaskIds = ref(new Set())
+const toggleExpandScheduleTask = (taskId) => {
+  const nextSet = new Set(expandedScheduleTaskIds.value)
+  if (nextSet.has(taskId)) {
+    nextSet.delete(taskId)
+  } else {
+    nextSet.add(taskId)
+  }
+  expandedScheduleTaskIds.value = nextSet
+}
+const isScheduleTaskExpanded = (taskId) => expandedScheduleTaskIds.value.has(taskId)
+
+const handleReplyToScheduleTask = (task) => {
+  activeActivityIdForMobileActions.value = null
+  editingCommentLog.value = null
+  replyingToActivity.value = {
+    id: task.id,
+    user: task.creator?.name || task.assignee?.name || 'Thành viên',
+    text: parseCommentText(task.title),
+  }
+  chatProjectId.value = task.project_id || task.project?.id || projectStore.projects[0]?.id
+  const authorName = task.creator?.name || task.assignee?.name
+  chatMessage.value = authorName ? `@${authorName} ` : ''
+  activityComposerRef.value?.focus()
+}
+
+const switchMainTab = (tab) => {
+  activeMainTab.value = tab
+  router.replace({ query: { ...route.query, tab } })
+  if (tab === 'actions') {
+    fetchScheduleTasks()
+  } else {
+    fetchActivities(true)
+  }
+}
+
+// Expanded state for long activity messages
+const expandedActivityIds = ref(new Set())
+const toggleExpandActivity = (activityId) => {
+  const nextSet = new Set(expandedActivityIds.value)
+  if (nextSet.has(activityId)) {
+    nextSet.delete(activityId)
+  } else {
+    nextSet.add(activityId)
+  }
+  expandedActivityIds.value = nextSet
+}
+const isActivityExpanded = (activityId) => expandedActivityIds.value.has(activityId)
+const isLongContent = (text) => {
+  if (!text) return false
+  return text.length > 120 || text.split('\n').length > 3
+}
+
+watch(() => route.query.tab, (newTab) => {
+  if (newTab === 'actions') {
+    activeMainTab.value = 'actions'
+    fetchScheduleTasks()
+  } else {
+    activeMainTab.value = 'activities'
+    activeTab.value = newTab || 'all'
+  }
+}, { immediate: true })
 
 let pollTimer = null
 
@@ -603,6 +1003,98 @@ const handleDeleteComment = async (commentId) => {
   }
 }
 
+const handleFeedDragOver = (e) => {
+  e.preventDefault()
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'copy'
+  }
+}
+
+const handleFeedDrop = async (e) => {
+  e.preventDefault()
+  e.stopPropagation()
+  const droppedFiles = []
+  if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+    droppedFiles.push(...Array.from(e.dataTransfer.files))
+  } else if (e.dataTransfer?.items && e.dataTransfer.items.length > 0) {
+    for (const item of Array.from(e.dataTransfer.items)) {
+      if (item.kind === 'file') {
+        const file = item.getAsFile()
+        if (file) droppedFiles.push(file)
+      }
+    }
+  }
+  if (droppedFiles.length > 0 && activityComposerRef.value?.addAttachments) {
+    await activityComposerRef.value.addAttachments(droppedFiles)
+  }
+}
+
+const isActionModalOpen = ref(false)
+const actionModalComment = ref(null)
+const actionModalDueDate = ref('')
+const isSubmittingActionModal = ref(false)
+
+const formatQuickDateISO = (offsetDays) => {
+  const d = new Date()
+  d.setDate(d.getDate() + offsetDays)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+const getActionQuickDateLabel = (offsetDays) => {
+  const d = new Date()
+  d.setDate(d.getDate() + offsetDays)
+  return `${d.getDate()}/${d.getMonth() + 1}`
+}
+
+const openCreateActionFromComment = (comment) => {
+  actionModalComment.value = comment
+  actionModalDueDate.value = formatQuickDateISO(0) // default to today
+  isActionModalOpen.value = true
+  activeActivityMenuId.value = null
+  activeActivityIdForMobileActions.value = null
+}
+
+const setActionModalQuickDate = (offsetDays) => {
+  actionModalDueDate.value = formatQuickDateISO(offsetDays)
+}
+
+const submitCreateActionFromComment = async () => {
+  if (!actionModalComment.value || !actionModalDueDate.value) {
+    toast.error('Vui lòng chọn thời gian cho hành động!')
+    return
+  }
+  const comment = actionModalComment.value
+  const pId = comment.project_id || comment.project?.id
+  if (!pId) {
+    toast.error('Không tìm thấy thông tin dự án!')
+    return
+  }
+
+  isSubmittingActionModal.value = true
+  try {
+    await axios.post('/api/tasks', {
+      project_id: pId,
+      title: comment.content || comment.text || '',
+      due_date: actionModalDueDate.value,
+      status: 'todo',
+      priority: 'medium',
+    })
+    toast.success('Đã tạo hành động tiếp theo thành công!')
+    isActionModalOpen.value = false
+    actionModalComment.value = null
+    fetchScheduleTasks()
+    fetchActivities?.(true)
+  } catch (err) {
+    console.error('Failed to create action from comment:', err)
+    toast.error(err.response?.data?.message || 'Tạo hành động thất bại!')
+  } finally {
+    isSubmittingActionModal.value = false
+  }
+}
+
 const handleOutsideActivityClick = (event) => {
   if (!event.target.closest?.('.feed-activity-item')) {
     activeActivityIdForMobileActions.value = null
@@ -619,7 +1111,7 @@ const cancelReply = () => {
   chatMessage.value = ''
 }
 
-const submitChat = async () => {
+const submitChat = async (payload = null) => {
   if (isSubmittingChat.value) return
   const projectId = chatProjectId.value || projectStore.projects[0]?.id
   if (!projectId) {
@@ -631,6 +1123,8 @@ const submitChat = async () => {
   try {
     const attachmentHtml = await activityComposerRef.value?.buildAttachmentHtml() || ''
     if (!chatMessage.value.trim() && !attachmentHtml) return
+
+    const dueDate = payload?.dueDate || activityComposerRef.value?.selectedDueDate || null
 
     let content = chatMessage.value + attachmentHtml
     if (replyingToActivity.value) {
@@ -665,7 +1159,29 @@ const submitChat = async () => {
       toast.success('Đã cập nhật hoạt động!')
       cancelEdit()
       fetchActivities(true)
+      fetchScheduleTasks()
       broadcastLocalUpdate({ projectId, commentId: editingId })
+    } else if (dueDate) {
+      // Create task with due_date which automatically creates both the task in schedule AND notification comment
+      await axios.post('/api/tasks', {
+        project_id: projectId,
+        title: content,
+        due_date: dueDate,
+        status: 'todo',
+        priority: 'medium',
+      })
+
+      toast.success('Đã gửi cập nhật và thêm vào hành động tiếp theo!')
+      chatMessage.value = ''
+      replyingToActivity.value = null
+      activityComposerRef.value?.clearAttachments()
+      activityComposerRef.value?.clearDueDate?.()
+      scrollToBottom(true)
+      await Promise.all([
+        fetchActivities(true),
+        fetchScheduleTasks()
+      ])
+      broadcastLocalUpdate({ projectId })
     } else {
       const res = await axios.post('/api/comments', { project_id: projectId, content })
       const createdActivity = res.data
@@ -676,7 +1192,9 @@ const submitChat = async () => {
       chatMessage.value = ''
       replyingToActivity.value = null
       activityComposerRef.value?.clearAttachments()
+      activityComposerRef.value?.clearDueDate?.()
       scrollToBottom(true)
+      fetchScheduleTasks()
       // The POST response is rendered immediately; polling reconciles later.
       broadcastLocalUpdate({ projectId })
     }
@@ -813,13 +1331,115 @@ const getActivityStyle = (act) => {
 
 const previewModalImages = ref([])
 const previewModalIndex = ref(0)
+const previewZoomScale = ref(1)
+const previewPanX = ref(0)
+const previewPanY = ref(0)
+const isPreviewPanning = ref(false)
+let panStartX = 0
+let panStartY = 0
+let panInitialX = 0
+let panInitialY = 0
+let panHasMoved = false
+
 const activePreviewImage = computed(() => {
   if (!previewModalImages.value || previewModalImages.value.length === 0) return null
   const item = previewModalImages.value[previewModalIndex.value]
   return typeof item === 'string' ? item : (item?.url || item?.src || null)
 })
 
+const resetPreviewZoom = () => {
+  previewZoomScale.value = 1
+  previewPanX.value = 0
+  previewPanY.value = 0
+  isPreviewPanning.value = false
+  panHasMoved = false
+}
+
+const zoomInPreview = (e) => {
+  if (e) e.stopPropagation()
+  previewZoomScale.value = Math.min(+(previewZoomScale.value + 0.5).toFixed(2), 5)
+}
+
+const zoomOutPreview = (e) => {
+  if (e) e.stopPropagation()
+  const nextScale = Math.max(+(previewZoomScale.value - 0.5).toFixed(2), 1)
+  previewZoomScale.value = nextScale
+  if (nextScale === 1) {
+    previewPanX.value = 0
+    previewPanY.value = 0
+  }
+}
+
+const handlePreviewImageClick = (e) => {
+  if (e) e.stopPropagation()
+  if (panHasMoved) return
+  if (previewZoomScale.value <= 1) {
+    previewZoomScale.value = 2.5
+    previewPanX.value = 0
+    previewPanY.value = 0
+  } else {
+    resetPreviewZoom()
+  }
+}
+
+const togglePreviewZoom = (e) => {
+  if (e) e.stopPropagation()
+  if (previewZoomScale.value > 1) {
+    resetPreviewZoom()
+  } else {
+    previewZoomScale.value = 2.5
+    previewPanX.value = 0
+    previewPanY.value = 0
+  }
+}
+
+const handlePreviewWheel = (e) => {
+  if (!activePreviewImage.value) return
+  e.preventDefault()
+  e.stopPropagation()
+  if (e.deltaY < 0) {
+    previewZoomScale.value = Math.min(+(previewZoomScale.value + 0.25).toFixed(2), 5)
+  } else if (e.deltaY > 0) {
+    const nextScale = Math.max(+(previewZoomScale.value - 0.25).toFixed(2), 1)
+    previewZoomScale.value = nextScale
+    if (nextScale === 1) {
+      previewPanX.value = 0
+      previewPanY.value = 0
+    }
+  }
+}
+
+const startPreviewPan = (e) => {
+  if (e.button !== 0) return
+  e.stopPropagation()
+  e.preventDefault()
+  panHasMoved = false
+  panStartX = e.clientX
+  panStartY = e.clientY
+  panInitialX = previewPanX.value
+  panInitialY = previewPanY.value
+  if (previewZoomScale.value > 1) {
+    isPreviewPanning.value = true
+  }
+}
+
+const doPreviewPan = (e) => {
+  if (e) e.stopPropagation()
+  if (Math.abs(e.clientX - panStartX) > 4 || Math.abs(e.clientY - panStartY) > 4) {
+    panHasMoved = true
+  }
+  if (!isPreviewPanning.value || previewZoomScale.value <= 1) return
+  previewPanX.value = panInitialX + (e.clientX - panStartX)
+  previewPanY.value = panInitialY + (e.clientY - panStartY)
+}
+
+const endPreviewPan = (e) => {
+  if (e) e.stopPropagation()
+  isPreviewPanning.value = false
+}
+
 const openImagePreview = (url, imagesList = [], initialIndex = 0) => {
+  resetPreviewZoom()
   if (imagesList && imagesList.length > 0) {
     previewModalImages.value = imagesList
     const foundIdx = initialIndex >= 0 ? initialIndex : imagesList.findIndex(img => (img.url || img.src || img) === url)
@@ -831,12 +1451,14 @@ const openImagePreview = (url, imagesList = [], initialIndex = 0) => {
 }
 
 const closeImagePreview = () => {
+  resetPreviewZoom()
   previewModalImages.value = []
   previewModalIndex.value = 0
 }
 
 const prevPreviewImage = (e) => {
   if (e) e.stopPropagation()
+  resetPreviewZoom()
   if (previewModalImages.value.length > 1) {
     previewModalIndex.value = (previewModalIndex.value - 1 + previewModalImages.value.length) % previewModalImages.value.length
   }
@@ -844,6 +1466,7 @@ const prevPreviewImage = (e) => {
 
 const nextPreviewImage = (e) => {
   if (e) e.stopPropagation()
+  resetPreviewZoom()
   if (previewModalImages.value.length > 1) {
     previewModalIndex.value = (previewModalIndex.value + 1) % previewModalImages.value.length
   }
@@ -859,6 +1482,7 @@ const handleModalTouchStart = (e) => {
 }
 
 const handleModalTouchEnd = (e) => {
+  if (previewZoomScale.value > 1) return
   if (e.changedTouches && e.changedTouches[0]) {
     modalTouchEndX = e.changedTouches[0].clientX
     const diff = modalTouchEndX - modalTouchStartX
@@ -1065,7 +1689,7 @@ const handleVirtualKeyboardFocusIn = (e) => {
     }
     isVirtualKeyboardOpen.value = true
     updateKeyboardState(true)
-    
+
     // Smooth multi-pass scroll reset as iOS virtual keyboard animates
     resetWindowScroll()
     setTimeout(() => {
@@ -1125,10 +1749,10 @@ onMounted(() => {
 
   // 2. Load auxiliary and project data in background without blocking the feed
   if (projectStore.projects.length === 0) {
-    projectStore.fetchProjects(true).catch(() => {})
+    projectStore.fetchProjects(true).catch(() => { })
   }
   if (projectStore.users.length === 0 || projectStore.customers.length === 0) {
-    projectStore.fetchAuxData().catch(() => {})
+    projectStore.fetchAuxData().catch(() => { })
   }
   axios.get('/api/mention-groups').then(res => { mentionGroups.value = res.data || [] }).catch(() => { })
   window.addEventListener('keydown', handleKeydown)
