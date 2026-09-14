@@ -314,7 +314,7 @@
         </div>
         <div class="flex items-center gap-2 shrink-0 ml-2">
           <span class="hidden sm:inline text-[11px] text-emerald-700 bg-emerald-200/60 px-2 py-0.5 rounded-md font-semibold">
-            Nhấn Enter / Tab để chọn
+            Nhấn Tab để chọn
           </span>
           <button type="button" @click.stop="dismissDetectedDate" title="Bỏ qua"
             class="text-emerald-600 hover:text-rose-600 p-1 rounded-full hover:bg-emerald-200/50 cursor-pointer">
@@ -495,35 +495,34 @@ const parseNaturalLanguageDate = (text) => {
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
-  // 1. Check explicit date format: DD/MM/YYYY or DD/MM or DD-MM or ngày DD tháng MM
-  const dayMonthRegex = /(?:ngày\s+)?(\b\d{1,2})\s*(?:[\/\-\.]|\s*tháng\s*)(\d{1,2})(?:\s*(?:[\/\-\.]|\s*năm\s*)(\d{4}))?/i
+  // 1. Check explicit date format: DD/MM/YYYY or DD/MM or DD-MM or ngày DD tháng MM (do NOT match dots like 1.8TB or v4.9)
+  const dayMonthRegex = /(?:ngày\s+)(\d{1,2})\s*(?:[\/\-]|\s*tháng\s*)(\d{1,2})(?:\s*(?:[\/\-]|\s*năm\s*)(\d{4}))?|(?:\b)(\d{1,2})\s*[\/\-]\s*(\d{1,2})(?:\s*[\/\-]\s*(\d{4}))?\b/i
   const dmMatch = clean.match(dayMonthRegex)
   if (dmMatch) {
-    const d = parseInt(dmMatch[1], 10)
-    const m = parseInt(dmMatch[2], 10) - 1
-    const y = dmMatch[3] ? parseInt(dmMatch[3], 10) : now.getFullYear()
-    if (m >= 0 && m <= 11 && d >= 1 && d <= 31) {
-      const targetDate = new Date(y, m, d)
-      return {
-        dateStr: formatDateToISO(targetDate),
-        label: formatDueDateDisplay(formatDateToISO(targetDate)),
-        matchText: dmMatch[0]
+    const dStr = dmMatch[1] || dmMatch[4]
+    const mStr = dmMatch[2] || dmMatch[5]
+    const yStr = dmMatch[3] || dmMatch[6]
+    if (dStr && mStr) {
+      const d = parseInt(dStr, 10)
+      const m = parseInt(mStr, 10) - 1
+      const y = yStr ? parseInt(yStr, 10) : now.getFullYear()
+      if (m >= 0 && m <= 11 && d >= 1 && d <= 31) {
+        const targetDate = new Date(y, m, d)
+        // Only consider dates that are today or future
+        if (targetDate >= today) {
+          return {
+            dateStr: formatDateToISO(targetDate),
+            label: formatDueDateDisplay(formatDateToISO(targetDate)),
+            matchText: dmMatch[0]
+          }
+        }
       }
     }
   }
 
   const norm = normalizeString(clean)
 
-  // 2. Hôm nay
-  if (/\b(hom nay|today)\b/i.test(norm)) {
-    return {
-      dateStr: formatDateToISO(today),
-      label: formatDueDateDisplay(formatDateToISO(today)),
-      matchText: 'Hôm nay'
-    }
-  }
-
-  // 3. Mai / Ngày mai
+  // 2. Mai / Ngày mai
   if (/\b(ngay mai|mai|tomorrow)\b/i.test(norm)) {
     const d = new Date(today)
     d.setDate(d.getDate() + 1)
@@ -534,7 +533,7 @@ const parseNaturalLanguageDate = (text) => {
     }
   }
 
-  // 4. Mốt / Ngày mốt
+  // 3. Mốt / Ngày mốt
   if (/\b(ngay mot|mot)\b/i.test(norm)) {
     const d = new Date(today)
     d.setDate(d.getDate() + 2)
@@ -545,7 +544,7 @@ const parseNaturalLanguageDate = (text) => {
     }
   }
 
-  // 5. Tuần sau / 1 tuần nữa
+  // 4. Tuần sau / 1 tuần nữa
   if (/\b(tuan sau|1 tuan nua|next week)\b/i.test(norm)) {
     const d = new Date(today)
     d.setDate(d.getDate() + 7)
@@ -556,7 +555,7 @@ const parseNaturalLanguageDate = (text) => {
     }
   }
 
-  // 6. Day of week: Thứ 2 -> Thứ 7, Chủ nhật (t2 -> t7, cn)
+  // 5. Day of week: Thứ 2 -> Thứ 7, Chủ nhật (only if preceded by 'thu' or 't2'...'t7', 'chu nhat')
   const dowMap = [
     { regex: /\b(chu nhat|cn|sunday)\b/i, targetDay: 0, name: 'Chủ nhật' },
     { regex: /\b(thu 2|thu hai|t2|monday)\b/i, targetDay: 1, name: 'Thứ hai' },
@@ -571,7 +570,7 @@ const parseNaturalLanguageDate = (text) => {
     if (regex.test(norm)) {
       const curDay = today.getDay()
       let diff = targetDay - curDay
-      if (diff <= 0) diff += 7 // next occurrence
+      if (diff <= 0) diff += 7 // next occurrence in the future
       const d = new Date(today)
       d.setDate(d.getDate() + diff)
       return {
@@ -1334,7 +1333,7 @@ const handleKeydown = event => {
     }
   }
   if (detectedDate.value && !showSuggestions.value) {
-    if (event.key === 'Enter' || event.key === 'Tab') {
+    if (event.key === 'Tab') {
       event.preventDefault()
       acceptDetectedDate()
       return
