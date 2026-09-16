@@ -15,17 +15,52 @@ class TaskController extends Controller
 {
     public function index(Request $request)
     {
+        $user = auth()->user();
+
         $query = Task::with(['project.customer', 'assignee', 'creator', 'attachments'])
             ->orderBy('created_at', 'desc');
 
-        $query->whereHas('project', fn ($q) => $q->visibleTo(auth()->user()));
+        // Permission check: use subquery instead of correlated exists whereHas
+        if ($user && !$user->isSystemAdmin()) {
+            $visibleProjectIds = Project::visibleTo($user)->select('id');
+            $query->whereIn('project_id', $visibleProjectIds);
+        }
 
-        if ($request->has('project_id')) {
+        // Filter by specific project
+        if ($request->filled('project_id')) {
             $query->where('project_id', $request->project_id);
         }
 
-        if ($request->has('status')) {
+        // Filter by exact status
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
+        }
+
+        // Exclude specific status (e.g. exclude_status=done or status_not=done)
+        if ($request->filled('exclude_status')) {
+            $query->where('status', '!=', $request->exclude_status);
+        } elseif ($request->filled('status_not')) {
+            $query->where('status', '!=', $request->status_not);
+        }
+
+        // Filter tasks with due_date
+        if ($request->boolean('has_due_date')) {
+            $query->whereNotNull('due_date');
+        }
+
+        // Filter by due_date from date
+        if ($request->filled('due_date_from')) {
+            $query->whereDate('due_date', '>=', $request->due_date_from);
+        }
+
+        // Special mode shortcuts
+        if ($request->get('view_mode') === 'schedule' || $request->get('mode') === 'schedule') {
+            $query->whereNotNull('due_date')
+                  ->where('status', '!=', 'done');
+        }
+
+        if ($request->filled('limit')) {
+            $query->limit((int) $request->limit);
         }
 
         $tasks = $query->get();

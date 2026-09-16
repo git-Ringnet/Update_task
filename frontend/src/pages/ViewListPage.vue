@@ -1834,14 +1834,31 @@ const toggleCustomerGroup = () => {
 }
 
 // Next Actions / Schedule tasks state & methods
-const scheduleTasks = ref([])
+const SCHEDULE_CACHE_KEY = 'cached_schedule_tasks'
+const getCachedScheduleTasks = () => {
+  try {
+    const cached = localStorage.getItem(SCHEDULE_CACHE_KEY)
+    return cached ? JSON.parse(cached) : []
+  } catch {
+    return []
+  }
+}
+const scheduleTasks = ref(getCachedScheduleTasks())
 const isScheduleLoading = ref(false)
 
-const fetchScheduleTasks = async () => {
-  isScheduleLoading.value = true
+const fetchScheduleTasks = async (silent = false) => {
+  if (!silent && scheduleTasks.value.length === 0) {
+    isScheduleLoading.value = true
+  }
   try {
-    const res = await axios.get('/api/tasks')
-    scheduleTasks.value = res.data || []
+    const res = await axios.get('/api/tasks', {
+      params: { view_mode: 'schedule' }
+    })
+    const data = res.data || []
+    scheduleTasks.value = data
+    try {
+      localStorage.setItem(SCHEDULE_CACHE_KEY, JSON.stringify(data))
+    } catch {}
   } catch (err) {
     console.error('Failed to fetch schedule tasks:', err)
   } finally {
@@ -1853,6 +1870,9 @@ const toggleTaskStatus = async (task) => {
   if (!task?.id) return
   const nextStatus = task.status === 'done' ? 'todo' : 'done'
   task.status = nextStatus
+  try {
+    localStorage.setItem(SCHEDULE_CACHE_KEY, JSON.stringify(scheduleTasks.value))
+  } catch {}
   try {
     await axios.patch(`/api/tasks/${task.id}/status`, { status: nextStatus })
     toast.success(nextStatus === 'done' ? 'Đã hoàn thành công việc!' : 'Đã mở lại công việc!')
@@ -2913,9 +2933,24 @@ const parseReplyInfo = (content) => {
 const scrollToComment = async (reply) => {
   if (!reply) return
 
-  let targetId = reply.id
+  let rawId = reply.id
+  let targetId = null
 
-  // Fallback for legacy comments
+  if (rawId !== null && rawId !== undefined) {
+    if (typeof rawId === 'number') {
+      targetId = rawId
+    } else if (typeof rawId === 'string') {
+      const match = rawId.match(/^(?:comment-)?(\d+)$/)
+      if (match) {
+        targetId = parseInt(match[1], 10)
+      } else {
+        const num = parseInt(rawId, 10)
+        if (!isNaN(num)) targetId = num
+      }
+    }
+  }
+
+  // Fallback for legacy comments without valid id in reply json
   if (!targetId && reply.user && reply.text) {
     const quoteTextNorm = reply.text.trim().toLowerCase()
     const foundLog = activities.value.find(log => {
@@ -2944,49 +2979,45 @@ const scrollToComment = async (reply) => {
     return
   }
 
-  // 2. If not currently loaded in DOM, automatically fetch older comments until found
+  // 2. Fetch exact comment directly from API /api/comments/{id}
   isLoadingQuotedComment.value = true
   try {
-    let attempts = 0
-    while (attempts < 8) {
-      attempts++
-      const minId = Math.min(...activities.value.map(a => Number(a.id) || Infinity))
-      if (!minId || minId === Infinity || (Number(targetId) > 0 && minId <= Number(targetId) - 1)) {
-        break
+    const res = await axios.get(`/api/comments/${targetId}`)
+    const targetComment = res.data
+
+    if (targetComment && targetComment.id) {
+      if (!activities.value.some(a => Number(a.id) === Number(targetComment.id))) {
+        activities.value = [targetComment, ...activities.value]
+        defaultActivities.value = [targetComment, ...defaultActivities.value]
       }
 
-      const params = selectedProjectIds.value.length > 0
-        ? { project_ids: selectedProjectIds.value, days: 30, before_id: minId, limit: 40 }
-        : { before_id: minId, limit: 40 }
-
-      const res = await axios.get('/api/comments', { params })
-      const older = (res.data || []).filter(c => Boolean(c.project_id))
-      if (!older.length) break
-
-      const existingIds = new Set(activities.value.map(a => a.id))
-      const newItems = older.filter(a => !existingIds.has(a.id))
-      if (!newItems.length) break
-
-      activities.value = [...activities.value, ...newItems]
-      if (activities.value.some(a => Number(a.id) === Number(targetId))) {
-        break
-      }
-    }
-
-    await nextTick()
-    el = document.getElementById(`activity-log-item-${targetId}`)
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      el.classList.add('activity-card-highlight')
-      setTimeout(() => {
-        el.classList.remove('activity-card-highlight')
-      }, 2500)
+      await nextTick()
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          const targetEl = document.getElementById(`activity-log-item-${targetId}`)
+          if (targetEl) {
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            targetEl.classList.add('activity-card-highlight')
+            setTimeout(() => {
+              targetEl.classList.remove('activity-card-highlight')
+            }, 2500)
+          } else {
+            toast.warning('Bình luận gốc có thể đã bị xóa hoặc không còn tồn tại.')
+          }
+        }, 60)
+      })
     } else {
       toast.warning('Bình luận gốc có thể đã bị xóa hoặc không còn tồn tại.')
     }
   } catch (err) {
     console.error('Failed to load target comment:', err)
-    toast.warning('Không thể tải bình luận gốc.')
+    if (err.response?.status === 404) {
+      toast.warning('Bình luận gốc đã bị xóa hoặc không còn tồn tại.')
+    } else if (err.response?.status === 403) {
+      toast.warning('Bạn không có quyền xem bình luận này.')
+    } else {
+      toast.warning('Không thể tải bình luận gốc.')
+    }
   } finally {
     isLoadingQuotedComment.value = false
   }
@@ -3061,9 +3092,19 @@ const parseCommentFiles = (content) => {
 }
 
 // Activities feed fetching and styling
-const activities = ref([])
-const defaultActivities = ref([])
-const isActivitiesLoading = ref(true)
+const ACTIVITIES_CACHE_KEY = 'cached_team_activities'
+const getCachedActivities = () => {
+  try {
+    const cached = localStorage.getItem(ACTIVITIES_CACHE_KEY)
+    return cached ? JSON.parse(cached) : []
+  } catch {
+    return []
+  }
+}
+const cachedInitialActivities = getCachedActivities()
+const activities = ref(cachedInitialActivities)
+const defaultActivities = ref(cachedInitialActivities)
+const isActivitiesLoading = ref(cachedInitialActivities.length === 0)
 const showMentionedActivities = ref(false)
 const activityScrollContainer = ref(null)
 const hasMoreOlderActivities = ref(true)
@@ -3660,6 +3701,9 @@ async function fetchActivities(isManualRefresh = false) {
 
     if (!isFiltered) {
       defaultActivities.value = filtered
+      try {
+        localStorage.setItem(ACTIVITIES_CACHE_KEY, JSON.stringify(filtered.slice(0, 30)))
+      } catch {}
     }
 
     const isUnchanged = !isManualRefresh && filtered.length === activities.value.length && filtered.every((activity, index) => {
@@ -3877,16 +3921,48 @@ onMounted(async () => {
   projectStore.activePage = 'home'
   projectStore.activeStatus = null
   loadCustomViews()
-  await Promise.allSettled([
-    projectStore.fetchProjects(),
-    projectStore.fetchAuxData(),
-    fetchActivities(),
-    fetchScheduleTasks(),
-    fetchBroadcasts(),
-    axios.get('/api/mention-groups').then(res => { mentionGroups.value = res.data || [] }).catch(() => { }),
-  ])
-  scrollToBottom(false)
-  requestAnimationFrame(updateTvPosition)
+
+  if (viewMode.value === 'actions') {
+    // Priority 1: Fetch schedule tasks immediately so the active view renders instantly
+    fetchScheduleTasks()
+    // Priority 2: Fetch other auxiliary data in parallel background
+    Promise.allSettled([
+      projectStore.fetchProjects(),
+      projectStore.fetchAuxData(),
+      fetchActivities(),
+      fetchBroadcasts(),
+      axios.get('/api/mention-groups').then(res => { mentionGroups.value = res.data || [] }).catch(() => { }),
+    ]).then(() => {
+      scrollToBottom(false)
+      requestAnimationFrame(updateTvPosition)
+    })
+  } else if (viewMode.value === 'activities') {
+    // Priority 1: Fetch activities immediately so the active view renders instantly
+    fetchActivities()
+    // Priority 2: Fetch other auxiliary data in parallel background
+    Promise.allSettled([
+      fetchScheduleTasks(true),
+      projectStore.fetchProjects(),
+      projectStore.fetchAuxData(),
+      fetchBroadcasts(),
+      axios.get('/api/mention-groups').then(res => { mentionGroups.value = res.data || [] }).catch(() => { }),
+    ]).then(() => {
+      scrollToBottom(false)
+      requestAnimationFrame(updateTvPosition)
+    })
+  } else {
+    // Other views: Fetch all in parallel
+    await Promise.allSettled([
+      fetchScheduleTasks(true),
+      projectStore.fetchProjects(),
+      projectStore.fetchAuxData(),
+      fetchActivities(),
+      fetchBroadcasts(),
+      axios.get('/api/mention-groups').then(res => { mentionGroups.value = res.data || [] }).catch(() => { }),
+    ])
+    scrollToBottom(false)
+    requestAnimationFrame(updateTvPosition)
+  }
 
   window.addEventListener('keydown', handleGlobalKeydown)
   window.addEventListener('click', closeAllDropdowns)

@@ -342,6 +342,7 @@ Route::middleware('auth.token')->group(function () {
 
     // Comments
     Route::get('/comments', [CommentController::class, 'index']);
+    Route::get('/comments/{id}', [CommentController::class, 'show']);
     Route::post('/comments', [CommentController::class, 'store']);
     Route::put('/comments/{id}', [CommentController::class, 'update']);
     Route::delete('/comments/{id}', [CommentController::class, 'destroy']);

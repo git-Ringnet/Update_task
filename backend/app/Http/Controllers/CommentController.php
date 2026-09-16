@@ -92,6 +92,25 @@ class CommentController extends Controller
         return response()->json($comments);
     }
 
+    public function show($id)
+    {
+        // Strip out any non-numeric prefix like 'comment-'
+        $commentId = is_numeric($id) ? (int) $id : (int) preg_replace('/\D/', '', (string) $id);
+        abort_unless($commentId > 0, 404, 'Không tìm thấy bình luận.');
+
+        $comment = Comment::with([
+            'user:id,name,avatar',
+            'project:id,customer_id,title',
+            'project.customer:id,name',
+        ])->findOrFail($commentId);
+
+        $user = auth()->user();
+        abort_unless($comment->project?->isVisibleTo($user), 403, 'Bạn không có quyền xem bình luận này.');
+
+        $comment->setAttribute('project_title', $comment->project?->title);
+        return response()->json($comment);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([

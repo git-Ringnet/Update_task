@@ -593,10 +593,18 @@ const goBack = () => {
     router.push('/views')
   }
 }
-const defaultAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120'
-
-const activities = ref([])
-const isLoading = ref(true)
+const ACTIVITIES_CACHE_KEY = 'cached_team_activities'
+const getCachedActivities = () => {
+  try {
+    const cached = localStorage.getItem(ACTIVITIES_CACHE_KEY)
+    return cached ? JSON.parse(cached) : []
+  } catch {
+    return []
+  }
+}
+const cachedInitialActivities = getCachedActivities()
+const activities = ref(cachedInitialActivities)
+const isLoading = ref(cachedInitialActivities.length === 0)
 const activeMainTab = ref(route.query.tab === 'actions' ? 'actions' : 'activities')
 const activeTab = ref(route.query.tab && route.query.tab !== 'actions' ? route.query.tab : 'all')
 const chatMessage = ref('')
@@ -616,14 +624,31 @@ let activityTouchStarted = false
 let ignoreActivityClickUntil = 0
 
 // Schedule tasks state for 'actions' view (Tất cả hành động tiếp theo bao gồm quá hạn)
-const scheduleTasks = ref([])
+const SCHEDULE_CACHE_KEY = 'cached_schedule_tasks'
+const getCachedScheduleTasks = () => {
+  try {
+    const cached = localStorage.getItem(SCHEDULE_CACHE_KEY)
+    return cached ? JSON.parse(cached) : []
+  } catch {
+    return []
+  }
+}
+const scheduleTasks = ref(getCachedScheduleTasks())
 const isScheduleLoading = ref(false)
 
-const fetchScheduleTasks = async () => {
-  isScheduleLoading.value = true
+const fetchScheduleTasks = async (silent = false) => {
+  if (!silent && scheduleTasks.value.length === 0) {
+    isScheduleLoading.value = true
+  }
   try {
-    const res = await axios.get('/api/tasks')
-    scheduleTasks.value = res.data || []
+    const res = await axios.get('/api/tasks', {
+      params: { view_mode: 'schedule' }
+    })
+    const data = res.data || []
+    scheduleTasks.value = data
+    try {
+      localStorage.setItem(SCHEDULE_CACHE_KEY, JSON.stringify(data))
+    } catch {}
   } catch (err) {
     console.error('Failed to fetch schedule tasks:', err)
   } finally {
@@ -850,6 +875,9 @@ const fetchActivities = async (silent = false) => {
     const filtered = (res.data || []).filter(c => c.project_id)
     activities.value = filtered
     hasMoreOlderActivities.value = filtered.length >= 50
+    try {
+      localStorage.setItem(ACTIVITIES_CACHE_KEY, JSON.stringify(filtered.slice(0, 50)))
+    } catch {}
     if (!silent) {
       scrollToBottom(false)
     }
@@ -1745,8 +1773,12 @@ onMounted(() => {
   projectStore.activePage = 'home'
   projectStore.activeStatus = null
 
-  // 1. Fetch activities immediately so the feed renders instantly without waiting for other APIs
-  fetchActivities()
+  // 1. Fetch appropriate tab data immediately so the active feed renders instantly
+  if (activeMainTab.value === 'actions') {
+    fetchScheduleTasks()
+  } else {
+    fetchActivities()
+  }
 
   // 2. Load auxiliary and project data in background without blocking the feed
   if (projectStore.projects.length === 0) {
@@ -1765,11 +1797,14 @@ onMounted(() => {
     window.visualViewport.addEventListener('scroll', handleVisualViewportChange)
   }
 
-  // Lightweight incremental polling keeps the delay low without downloading
-  // the complete activity history over and over.
+  // Lightweight incremental polling according to active tab
   pollTimer = window.setInterval(() => {
     if (document.visibilityState === 'visible' && !isSubmittingChat.value && !isLoading.value) {
-      fetchLatestActivities()
+      if (activeMainTab.value === 'actions') {
+        fetchScheduleTasks(true)
+      } else {
+        fetchLatestActivities()
+      }
     }
   }, 5000)
 
@@ -1817,7 +1852,22 @@ onUnmounted(() => {
 const scrollToComment = async (reply) => {
   if (!reply) return
 
-  let targetId = reply.id
+  let rawId = reply.id
+  let targetId = null
+
+  if (rawId !== null && rawId !== undefined) {
+    if (typeof rawId === 'number') {
+      targetId = rawId
+    } else if (typeof rawId === 'string') {
+      const match = rawId.match(/^(?:comment-)?(\d+)$/)
+      if (match) {
+        targetId = parseInt(match[1], 10)
+      } else {
+        const num = parseInt(rawId, 10)
+        if (!isNaN(num)) targetId = num
+      }
+    }
+  }
 
   // Fallback for legacy comments without id in reply json
   if (!targetId && reply.user && reply.text) {
@@ -1848,47 +1898,44 @@ const scrollToComment = async (reply) => {
     return
   }
 
-  // 2. If not currently loaded in DOM, automatically fetch older comments until found
+  // 2. Fetch exact comment directly from API /api/comments/{id}
   isLoadingQuotedComment.value = true
   try {
-    let attempts = 0
-    while (attempts < 8) {
-      attempts++
-      const minId = Math.min(...activities.value.map(a => Number(a.id) || Infinity))
-      if (!minId || minId === Infinity || (Number(targetId) > 0 && minId <= Number(targetId) - 1)) {
-        break
+    const res = await axios.get(`/api/comments/${targetId}`)
+    const targetComment = res.data
+
+    if (targetComment && targetComment.id) {
+      if (!activities.value.some(a => Number(a.id) === Number(targetComment.id))) {
+        activities.value = [targetComment, ...activities.value]
       }
 
-      const res = await axios.get('/api/comments', {
-        params: { before_id: minId, limit: 40 }
+      await nextTick()
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          const targetEl = document.getElementById(`activity-feed-item-${targetId}`)
+          if (targetEl) {
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            targetEl.classList.add('activity-card-highlight')
+            setTimeout(() => {
+              targetEl.classList.remove('activity-card-highlight')
+            }, 2500)
+          } else {
+            toast.warning('Tin nhắn gốc có thể đã bị xóa hoặc không còn tồn tại.')
+          }
+        }, 60)
       })
-      const older = (res.data || []).filter(c => Boolean(c.project_id))
-      if (!older.length) break
-
-      const existingIds = new Set(activities.value.map(a => a.id))
-      const newItems = older.filter(a => !existingIds.has(a.id))
-      if (!newItems.length) break
-
-      activities.value = [...activities.value, ...newItems]
-      if (activities.value.some(a => Number(a.id) === Number(targetId))) {
-        break
-      }
-    }
-
-    await nextTick()
-    el = document.getElementById(`activity-feed-item-${targetId}`)
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      el.classList.add('activity-card-highlight')
-      setTimeout(() => {
-        el.classList.remove('activity-card-highlight')
-      }, 2500)
     } else {
       toast.warning('Tin nhắn gốc có thể đã bị xóa hoặc không còn tồn tại.')
     }
   } catch (err) {
     console.error('Failed to load target comment:', err)
-    toast.warning('Không thể tải tin nhắn gốc.')
+    if (err.response?.status === 404) {
+      toast.warning('Tin nhắn gốc đã bị xóa hoặc không còn tồn tại.')
+    } else if (err.response?.status === 403) {
+      toast.warning('Bạn không có quyền xem tin nhắn này.')
+    } else {
+      toast.warning('Không thể tải tin nhắn gốc.')
+    }
   } finally {
     isLoadingQuotedComment.value = false
   }
