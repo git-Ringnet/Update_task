@@ -90,7 +90,7 @@
                     <!-- Project Title Link -->
                     <div v-if="task.project" class="leading-snug flex-1 min-w-0">
                       <span @click="goToProject(task.project.id, $event)"
-                        class="activity-project-link text-[#1A7A56] hover:underline font-extrabold text-[16px] sm:text-[17px] cursor-pointer max-w-full truncate inline-block w-fit align-middle"
+                        class="activity-project-link text-[#1A7A56] hover:underline font-extrabold text-[18px] sm:text-[19px] cursor-pointer max-w-full truncate inline-block w-fit align-middle"
                         :title="task.project.title">
                         {{ (task.project.customer?.name ? task.project.customer.name + ' - ' : '') + task.project.title }}
                       </span>
@@ -126,15 +126,15 @@
 
                   <!-- Task Content -->
                   <div v-if="parseCommentText(task.title || task.content)"
-                    class="text-[15px] sm:text-[16px] text-gray-900 font-medium leading-relaxed break-words">
+                    class="text-[16px] sm:text-[18px] text-gray-900 leading-relaxed break-words mt-0.5 space-y-1">
                     <div
                       :class="!isScheduleTaskExpanded(task.id) && isLongContent(parseCommentText(task.title || task.content)) ? 'line-clamp-4' : ''"
-                      class="whitespace-pre-wrap">
+                      class="whitespace-pre-wrap font-normal text-gray-900 select-text cursor-text">
                       {{ parseCommentText(task.title || task.content) }}
                     </div>
                     <button v-if="isLongContent(parseCommentText(task.title || task.content))"
                       @click.stop="toggleExpandScheduleTask(task.id)" type="button"
-                      class="inline-block text-[13px] font-bold text-[#1A7A56] hover:text-emerald-800 hover:underline mt-1 cursor-pointer select-none">
+                      class="inline-block text-[13px] font-bold text-[#1A7A56] hover:text-emerald-800 hover:underline mt-0.5 cursor-pointer select-none">
                       {{ isScheduleTaskExpanded(task.id) ? 'Thu gọn' : '... Xem thêm' }}
                     </button>
                   </div>

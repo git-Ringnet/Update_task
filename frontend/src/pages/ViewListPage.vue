@@ -776,7 +776,7 @@
                     <div class="min-w-0 flex-1 pt-0 z-10">
                       <div class="flex items-start justify-between gap-2">
                         <!-- Project Name: e.g. Ringnet - Thi công 5 node mạng -->
-                        <div class="font-extrabold text-[#32312F] text-[15px] sm:text-[16px] leading-snug break-words flex-1 min-w-0">
+                        <div class="font-extrabold text-[#32312F] text-[18px] sm:text-[19px] leading-tight break-words flex-1 min-w-0">
                           {{ task.project ? ((task.project.customer?.name ? task.project.customer.name + ' - ' : '') + task.project.title) : 'Dự án' }}
                         </div>
 
@@ -808,15 +808,15 @@
                       </div>
                       <!-- Content: clean text with Xem thêm / Thu gọn -->
                       <div v-if="parseCommentText(task.title || task.content)"
-                        class="text-[14px] sm:text-[15px] text-[#32312F] font-medium mt-1 leading-snug break-words">
-                        <div :class="!isTaskExpanded(task.id) && isLongContent(parseCommentText(task.title || task.content)) ? 'line-clamp-3' : ''"
-                          class="whitespace-pre-wrap">
+                        class="text-[16px] sm:text-[18px] text-gray-900 leading-relaxed break-words mt-0.5 space-y-1">
+                        <div :class="!isTaskExpanded(task.id) && isLongContent(parseCommentText(task.title || task.content)) ? 'line-clamp-4' : ''"
+                          class="whitespace-pre-wrap font-normal text-gray-900 select-text cursor-text">
                           {{ parseCommentText(task.title || task.content) }}
                         </div>
                         <button v-if="isLongContent(parseCommentText(task.title || task.content))"
                           @click.stop="toggleExpandTask(task.id)"
                           type="button"
-                          class="inline-block text-[13px] font-bold text-[#1A7A56] hover:text-emerald-800 hover:underline mt-1 cursor-pointer select-none">
+                          class="inline-block text-[13px] font-bold text-[#1A7A56] hover:text-emerald-800 hover:underline mt-0.5 cursor-pointer select-none">
                           {{ isTaskExpanded(task.id) ? 'Thu gọn' : '... Xem thêm' }}
                         </button>
                       </div>
