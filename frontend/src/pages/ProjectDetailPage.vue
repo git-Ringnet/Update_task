@@ -1166,7 +1166,7 @@
         class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-slate-950/85 backdrop-blur-md select-none"
         @mousedown.stop @mousemove.stop @mouseup.stop @click="closeImageModal">
         <div class="relative w-[min(92vw,1100px)] h-[min(72vh,720px)] flex flex-col items-center justify-center"
-          @click.stop @touchstart="handleModalTouchStart" @touchend="handleModalTouchEnd">
+          @click.stop>
 
           <!-- Top Bar: Image count badge + Zoom controls + Close button -->
           <div class="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-auto">
@@ -1206,13 +1206,17 @@
           </div>
 
           <!-- Main Image and Prev/Next Navigation -->
-          <div class="relative w-full h-full flex items-center justify-center rounded-2xl overflow-hidden bg-slate-900 select-none"
+          <div class="relative w-full h-full flex items-center justify-center rounded-2xl overflow-hidden bg-slate-900 select-none touch-none"
             @wheel.prevent="handlePreviewWheel"
+            @mousedown="startPreviewPan"
             @mousemove="doPreviewPan"
             @mouseup="endPreviewPan"
-            @mouseleave="endPreviewPan">
+            @mouseleave="endPreviewPan"
+            @touchstart="handlePreviewTouchStart"
+            @touchmove="handlePreviewTouchMove"
+            @touchend="handlePreviewTouchEnd"
+            @touchcancel="handlePreviewTouchEnd">
             <img :src="previewModalImageUrl"
-              @mousedown="startPreviewPan"
               @click="handlePreviewImageClick"
               @dblclick="togglePreviewZoom"
               :style="{
@@ -1220,7 +1224,7 @@
                 transition: isPreviewPanning ? 'none' : 'transform 0.18s ease-out',
                 cursor: previewZoomScale > 1 ? (isPreviewPanning ? 'grabbing' : 'grab') : 'zoom-in'
               }"
-              class="w-full h-full object-contain pointer-events-auto"
+              class="w-full h-full object-contain pointer-events-auto select-none"
               draggable="false" />
 
             <!-- PREV BUTTON (shown when > 1 image and not zoomed in) -->
@@ -2098,26 +2102,123 @@ const nextPreviewImage = (e) => {
   }
 }
 
-let modalTouchStartX = 0
-let modalTouchEndX = 0
+// Mobile touch gestures: pinch-to-zoom, pan & swipe
+let touchInitialDistance = 0
+let touchInitialScale = 1
+let touchStartCenter = { x: 0, y: 0 }
+let touchStartPan = { x: 0, y: 0 }
+let singleTouchStart = { x: 0, y: 0 }
+let singleTouchStartTime = 0
+let touchHasMoved = false
+let lastTapTimestamp = 0
 
-const handleModalTouchStart = (e) => {
-  if (e.touches && e.touches[0]) {
-    modalTouchStartX = e.touches[0].clientX
+const getTouchDistance = (t1, t2) => {
+  const dx = t1.clientX - t2.clientX
+  const dy = t1.clientY - t2.clientY
+  return Math.hypot(dx, dy)
+}
+
+const getTouchCenter = (t1, t2) => {
+  return {
+    x: (t1.clientX + t2.clientX) / 2,
+    y: (t1.clientY + t2.clientY) / 2
   }
 }
 
-const handleModalTouchEnd = (e) => {
-  if (previewZoomScale.value > 1) return
-  if (e.changedTouches && e.changedTouches[0]) {
-    modalTouchEndX = e.changedTouches[0].clientX
-    const diff = modalTouchEndX - modalTouchStartX
-    if (Math.abs(diff) > 40) {
-      if (diff < 0) {
-        nextPreviewImage()
-      } else {
-        prevPreviewImage()
+const handlePreviewTouchStart = (e) => {
+  if (!previewModalImageUrl.value) return
+  touchHasMoved = false
+
+  if (e.touches.length === 2) {
+    // 2-finger pinch gesture start
+    isPreviewPanning.value = true
+    touchInitialDistance = getTouchDistance(e.touches[0], e.touches[1])
+    touchInitialScale = previewZoomScale.value
+    touchStartCenter = getTouchCenter(e.touches[0], e.touches[1])
+    touchStartPan = { x: previewPanX.value, y: previewPanY.value }
+  } else if (e.touches.length === 1) {
+    const t = e.touches[0]
+    singleTouchStart = { x: t.clientX, y: t.clientY }
+    singleTouchStartTime = Date.now()
+    panInitialX = previewPanX.value
+    panInitialY = previewPanY.value
+    if (previewZoomScale.value > 1) {
+      isPreviewPanning.value = true
+    }
+  }
+}
+
+const handlePreviewTouchMove = (e) => {
+  if (e.touches.length === 2 && touchInitialDistance > 0) {
+    if (e.cancelable) e.preventDefault()
+    touchHasMoved = true
+    const currentDist = getTouchDistance(e.touches[0], e.touches[1])
+    const scaleFactor = currentDist / touchInitialDistance
+    const newScale = Math.min(Math.max(+(touchInitialScale * scaleFactor).toFixed(2), 0.8), 5)
+    previewZoomScale.value = newScale
+
+    const curCenter = getTouchCenter(e.touches[0], e.touches[1])
+    previewPanX.value = touchStartPan.x + (curCenter.x - touchStartCenter.x)
+    previewPanY.value = touchStartPan.y + (curCenter.y - touchStartCenter.y)
+  } else if (e.touches.length === 1) {
+    const t = e.touches[0]
+    const dx = t.clientX - singleTouchStart.x
+    const dy = t.clientY - singleTouchStart.y
+    if (Math.hypot(dx, dy) > 8) {
+      touchHasMoved = true
+    }
+    if (previewZoomScale.value > 1 && isPreviewPanning.value) {
+      if (e.cancelable) e.preventDefault()
+      previewPanX.value = panInitialX + dx
+      previewPanY.value = panInitialY + dy
+    }
+  }
+}
+
+const handlePreviewTouchEnd = (e) => {
+  if (e.touches.length === 0) {
+    isPreviewPanning.value = false
+    touchInitialDistance = 0
+
+    // Auto spring back if zoomed out below normal
+    if (previewZoomScale.value < 1.05) {
+      resetPreviewZoom()
+    } else if (previewZoomScale.value > 5) {
+      previewZoomScale.value = 5
+    }
+
+    // Double tap detection
+    if (!touchHasMoved && Date.now() - singleTouchStartTime < 250) {
+      const now = Date.now()
+      if (now - lastTapTimestamp < 300) {
+        togglePreviewZoom()
+        lastTapTimestamp = 0
+        return
       }
+      lastTapTimestamp = now
+    } else if (previewZoomScale.value <= 1 && e.changedTouches && e.changedTouches[0]) {
+      // Swipe left/right for next/prev image
+      const endX = e.changedTouches[0].clientX
+      const dx = endX - singleTouchStart.x
+      const dt = Date.now() - singleTouchStartTime
+      if (Math.abs(dx) > 40 && dt < 450) {
+        if (dx < 0) {
+          nextPreviewImage()
+        } else {
+          prevPreviewImage()
+        }
+      }
+    }
+  } else if (e.touches.length === 1) {
+    // Transition from 2 fingers to 1 finger
+    const t = e.touches[0]
+    singleTouchStart = { x: t.clientX, y: t.clientY }
+    singleTouchStartTime = Date.now()
+    panInitialX = previewPanX.value
+    panInitialY = previewPanY.value
+    touchInitialDistance = 0
+    if (previewZoomScale.value > 1) {
+      isPreviewPanning.value = true
     }
   }
 }

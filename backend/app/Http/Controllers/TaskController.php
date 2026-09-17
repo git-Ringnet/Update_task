@@ -109,15 +109,6 @@ class TaskController extends Controller
         // Update project last activity
         Project::where('id', $task->project_id)->update(['last_activity_at' => Carbon::now()]);
 
-        // Create notification comment
-        Comment::create([
-            'project_id' => $task->project_id,
-            'task_id' => $task->id,
-            'user_id' => auth()->id() ?? $task->created_by ?? 1,
-            'content' => $task->title,
-            'type' => 'status_change',
-        ]);
-
         app(ProjectMemberService::class)->addMentionedMembers(
             $project,
             $task->title,
@@ -199,26 +190,6 @@ class TaskController extends Controller
         // Update project last activity
         Project::where('id', $task->project_id)->update(['last_activity_at' => Carbon::now()]);
 
-        // Update or create corresponding comment to show up at the top of Recent Activity
-        $comment = Comment::where('task_id', $task->id)->where('type', 'status_change')->first();
-        if ($comment) {
-            $comment->content = $task->title;
-            $comment->user_id = auth()->id() ?? $task->created_by ?? 1;
-            $comment->created_at = Carbon::now();
-            $comment->updated_at = Carbon::now();
-            $comment->save();
-        } else {
-            Comment::create([
-                'project_id' => $task->project_id,
-                'task_id' => $task->id,
-                'user_id' => auth()->id() ?? $task->created_by ?? 1,
-                'content' => $task->title,
-                'type' => 'status_change',
-                'created_at' => Carbon::now(),
-                'updated_at' => Carbon::now()
-            ]);
-        }
-
         app(ProjectMemberService::class)->addMentionedMembers(
             $project,
             $task->title,
@@ -235,9 +206,9 @@ class TaskController extends Controller
         $canDelete = $user->is_system_admin || $user->is_admin || (int) $task->created_by === (int) $user->id;
         abort_unless($canDelete, 403, 'Bạn không có quyền xóa hoạt động này.');
 
-        // Delete associated comments and attachments
-        Comment::where('task_id', $task->id)->delete();
-        Attachment::where('task_id', $task->id)->delete();
+        // Unlink associated comments and attachments so chat history remains intact
+        Comment::where('task_id', $task->id)->update(['task_id' => null]);
+        Attachment::where('task_id', $task->id)->update(['task_id' => null]);
         $task->delete();
 
         return response()->json(['message' => 'Đã xóa công việc']);

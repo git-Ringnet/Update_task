@@ -498,6 +498,7 @@
                     leave-to-class="opacity-0 -translate-y-2">
                     <div v-for="(log, idx) in displayedActivities" :key="log.id" :id="'activity-log-item-' + log.id"
                       class="activity-log-item relative flex gap-3 pb-5 group"
+                      :class="activeLogMenuId === log.id ? 'z-30' : 'z-1'"
                       @touchstart="handleTouchStart(log, $event)" @touchend="handleTouchEnd"
                       @touchmove="handleTouchMove">
 
@@ -538,8 +539,8 @@
                               {{ formatCommentRelativeTime(log.created_at) }}
                             </span>
 
-                            <!-- 3-dots Menu Button (shown on hover or when menu is active, only if user has permission) -->
-                            <button v-if="canEditComment(log) || canDeleteComment(log)" type="button"
+                            <!-- 3-dots Menu Button (shown on hover or when menu is active) -->
+                            <button type="button"
                               @click.stop="toggleActivityMenu(log.id, $event)" title="Tùy chọn"
                               class="text-gray-400 hover:text-gray-800 hover:bg-gray-200/80 active:bg-gray-300/80 w-8 h-8 -my-1 -mr-1 rounded-lg flex items-center justify-center cursor-pointer transition-all active:scale-95 p-0"
                               :class="(activeLogMenuId === log.id || activeLogIdForMobileActions === log.id) ? 'flex text-gray-800 bg-gray-200/80' : 'hidden group-hover:flex'">
@@ -547,9 +548,9 @@
                             </button>
 
                             <!-- Dropdown Menu for Action, Edit & Delete -->
-                            <div v-if="activeLogMenuId === log.id && (canEditComment(log) || canDeleteComment(log))"
+                            <div v-if="activeLogMenuId === log.id"
                               class="absolute top-full right-0 mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[145px] animate-fade-in-up">
-                              <button v-if="canEditComment(log)" type="button" @click.stop="openCreateActionFromComment(log)"
+                              <button type="button" @click.stop="openCreateActionFromComment(log)"
                                 class="w-full text-left px-3 py-1.5 text-sm font-bold text-gray-700 hover:bg-emerald-50 hover:text-emerald-800 flex items-center gap-2 cursor-pointer transition-colors">
                                 <i class="fa-regular fa-calendar-plus text-xs text-emerald-600"></i>
                                 <span>Tạo hành động</span>
@@ -754,6 +755,10 @@
                 <!-- Task Items in this Date Group -->
                 <div class="space-y-0 pl-1">
                   <div v-for="task in group.tasks" :key="task.id"
+                    @touchstart="handleScheduleTaskTouchStart(task, $event)"
+                    @touchend="handleScheduleTaskTouchEnd"
+                    @touchmove="handleScheduleTaskTouchMove"
+                    :class="activeScheduleTaskMenuId === task.id ? 'z-30' : 'z-1'"
                     class="schedule-task-item relative flex items-start gap-3 pb-4.5 bg-transparent select-text group">
                     
                     <!-- Absolute Timeline Line connecting avatars -->
@@ -767,11 +772,39 @@
                         class="w-8 h-8 rounded-full object-cover border border-gray-200 relative z-10 shadow-3xs bg-[#F9F4EE]" />
                     </div>
 
-                    <!-- Details: Project Name & Content & Attachments -->
+                    <!-- Details: Project Name, 3-dots Menu & Content & Attachments -->
                     <div class="min-w-0 flex-1 pt-0 z-10">
-                      <!-- Project Name: e.g. Ringnet - Thi công 5 node mạng -->
-                      <div class="font-extrabold text-[#32312F] text-[15px] sm:text-[16px] leading-snug break-words">
-                        {{ task.project ? ((task.project.customer?.name ? task.project.customer.name + ' - ' : '') + task.project.title) : 'Dự án' }}
+                      <div class="flex items-start justify-between gap-2">
+                        <!-- Project Name: e.g. Ringnet - Thi công 5 node mạng -->
+                        <div class="font-extrabold text-[#32312F] text-[15px] sm:text-[16px] leading-snug break-words flex-1 min-w-0">
+                          {{ task.project ? ((task.project.customer?.name ? task.project.customer.name + ' - ' : '') + task.project.title) : 'Dự án' }}
+                        </div>
+
+                        <!-- Right: 3-dots Menu Button on hover / mobile long-press -->
+                        <div class="relative shrink-0 flex items-center justify-end" @click.stop>
+                          <button type="button"
+                            @click.stop="toggleScheduleTaskMenu(task.id, $event)" title="Tùy chọn"
+                            class="text-gray-400 hover:text-gray-800 hover:bg-gray-200/80 active:bg-gray-300/80 w-7 h-7 -my-1 -mr-1 rounded-lg flex items-center justify-center cursor-pointer transition-all active:scale-95 p-0"
+                            :class="(activeScheduleTaskMenuId === task.id || activeScheduleTaskIdForMobile === task.id) ? 'flex text-gray-800 bg-gray-200/80' : 'hidden group-hover:flex'">
+                            <i class="fa-solid fa-ellipsis-vertical text-[14px] leading-none"></i>
+                          </button>
+
+                          <!-- Dropdown Menu for Edit & Delete -->
+                          <div v-if="activeScheduleTaskMenuId === task.id"
+                            class="absolute top-full right-0 mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[130px] animate-fade-in-up">
+                            <button v-if="canEditScheduleTask(task)" type="button" @click.stop="openEditScheduleTaskModal(task)"
+                              class="w-full text-left px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-100 flex items-center gap-2 cursor-pointer transition-colors">
+                              <i class="fa-solid fa-pen-to-square text-xs text-emerald-600"></i>
+                              <span>Chỉnh sửa</span>
+                            </button>
+                            <button v-if="canDeleteScheduleTask(task)" type="button"
+                              @click.stop="handleDeleteScheduleTask(task)"
+                              class="w-full text-left px-3 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors">
+                              <i class="fa-solid fa-trash-can text-xs"></i>
+                              <span>Xóa</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
                       <!-- Content: clean text with Xem thêm / Thu gọn -->
                       <div v-if="parseCommentText(task.title || task.content)"
@@ -1065,7 +1098,7 @@
         class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-slate-950/85 backdrop-blur-md select-none"
         @mousedown.stop @mousemove.stop @mouseup.stop @click="closeImagePreview">
         <div class="relative w-[min(92vw,1100px)] h-[min(72vh,720px)] flex flex-col items-center justify-center"
-          @click.stop @touchstart="handleModalTouchStart" @touchend="handleModalTouchEnd">
+          @click.stop>
 
           <!-- Top Bar: Image count badge + Zoom controls + Close button -->
           <div class="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-auto">
@@ -1105,13 +1138,17 @@
           </div>
 
           <!-- Main Image and Prev/Next Navigation -->
-          <div class="relative w-full h-full flex items-center justify-center rounded-2xl overflow-hidden bg-slate-900 select-none"
+          <div class="relative w-full h-full flex items-center justify-center rounded-2xl overflow-hidden bg-slate-900 select-none touch-none"
             @wheel.prevent="handlePreviewWheel"
+            @mousedown="startPreviewPan"
             @mousemove="doPreviewPan"
             @mouseup="endPreviewPan"
-            @mouseleave="endPreviewPan">
+            @mouseleave="endPreviewPan"
+            @touchstart="handlePreviewTouchStart"
+            @touchmove="handlePreviewTouchMove"
+            @touchend="handlePreviewTouchEnd"
+            @touchcancel="handlePreviewTouchEnd">
             <img :src="activePreviewImage"
-              @mousedown="startPreviewPan"
               @click="handlePreviewImageClick"
               @dblclick="togglePreviewZoom"
               :style="{
@@ -1119,7 +1156,7 @@
                 transition: isPreviewPanning ? 'none' : 'transform 0.18s ease-out',
                 cursor: previewZoomScale > 1 ? (isPreviewPanning ? 'grabbing' : 'grab') : 'zoom-in'
               }"
-              class="w-full h-full object-contain pointer-events-auto"
+              class="w-full h-full object-contain pointer-events-auto select-none"
               draggable="false" />
 
             <!-- PREV BUTTON (shown when > 1 image and not zoomed in) -->
@@ -1175,14 +1212,22 @@
 
           <!-- Modal Body -->
           <div class="p-5 space-y-4">
-            <!-- Preview of original comment -->
-            <div v-if="actionModalComment" class="bg-stone-50 p-3 rounded-xl border border-stone-200/80 text-xs">
-              <div class="font-extrabold text-[#1A7A56] mb-1 truncate">
-                {{ actionModalComment.project ? ((actionModalComment.project.customer?.name ? actionModalComment.project.customer.name + ' - ' : '') + actionModalComment.project.title) : 'Dự án' }}
-              </div>
-              <div class="text-gray-700 line-clamp-3 leading-relaxed">
-                {{ parseCommentText(actionModalComment.content) || actionModalComment.text }}
-              </div>
+            <!-- Project Info -->
+            <div v-if="actionModalComment?.project" class="bg-stone-50 p-2.5 rounded-xl border border-stone-200/80 text-xs">
+              <span class="text-gray-500 font-medium">Dự án: </span>
+              <span class="font-bold text-[#1A7A56]">
+                {{ (actionModalComment.project.customer?.name ? actionModalComment.project.customer.name + ' - ' : '') + actionModalComment.project.title }}
+              </span>
+            </div>
+
+            <!-- Task Title / Content Textarea (Editable) -->
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                Nội dung hành động:
+              </label>
+              <textarea v-model="actionModalTitle" rows="3"
+                placeholder="Nhập nội dung hành động tiếp theo..."
+                class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-800 focus:outline-none focus:border-emerald-500 bg-gray-50/50 resize-none"></textarea>
             </div>
 
             <!-- Date Selection -->
@@ -1235,6 +1280,104 @@
               class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 cursor-pointer transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50">
               <i v-if="isSubmittingActionModal" class="fa-solid fa-spinner fa-spin text-xs"></i>
               <span>OK (Tạo hành động)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Modal Chỉnh sửa Hành động tiếp theo -->
+    <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0"
+      enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="isEditTaskModalOpen"
+        class="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4"
+        @click="isEditTaskModalOpen = false">
+        <div
+          class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-md overflow-hidden animate-fade-in-up"
+          @click.stop>
+          <!-- Modal Header -->
+          <div class="px-5 py-3.5 bg-stone-100/70 border-b border-gray-200/80 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-emerald-800 font-extrabold text-[17px]">
+              <i class="fa-solid fa-pen-to-square text-emerald-600"></i>
+              <span>Chỉnh sửa hành động tiếp theo</span>
+            </div>
+            <button type="button" @click="isEditTaskModalOpen = false"
+              class="text-gray-400 hover:text-gray-700 p-1 rounded-full cursor-pointer">
+              <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+          </div>
+
+          <!-- Modal Body -->
+          <div class="p-5 space-y-4">
+            <!-- Project Info -->
+            <div v-if="editingTask?.project" class="bg-stone-50 p-2.5 rounded-xl border border-stone-200/80 text-xs">
+              <span class="text-gray-500 font-medium">Dự án: </span>
+              <span class="font-bold text-[#1A7A56]">
+                {{ (editingTask.project.customer?.name ? editingTask.project.customer.name + ' - ' : '') + editingTask.project.title }}
+              </span>
+            </div>
+
+            <!-- Task Title / Content Textarea -->
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                Nội dung hành động:
+              </label>
+              <textarea v-model="editingTaskTitle" rows="3"
+                placeholder="Nhập nội dung hành động tiếp theo..."
+                class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-800 focus:outline-none focus:border-emerald-500 bg-gray-50/50 resize-none"></textarea>
+            </div>
+
+            <!-- Date Selection -->
+            <div class="space-y-2">
+              <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                Thời gian thực hiện:
+              </label>
+              <div class="grid grid-cols-2 gap-2 text-xs font-bold">
+                <button type="button" @click="setEditTaskModalQuickDate(0)"
+                  class="px-3 py-2 rounded-xl border transition-all text-left flex items-center justify-between cursor-pointer"
+                  :class="editingTaskDueDate === formatQuickDateISO(0) ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-500' : 'border-gray-200 hover:border-emerald-500 text-gray-700'">
+                  <span>Hôm nay</span>
+                  <span class="text-[11px] text-gray-400 font-medium">{{ getActionQuickDateLabel(0) }}</span>
+                </button>
+                <button type="button" @click="setEditTaskModalQuickDate(1)"
+                  class="px-3 py-2 rounded-xl border transition-all text-left flex items-center justify-between cursor-pointer"
+                  :class="editingTaskDueDate === formatQuickDateISO(1) ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-500' : 'border-gray-200 hover:border-emerald-500 text-gray-700'">
+                  <span>Ngày mai</span>
+                  <span class="text-[11px] text-gray-400 font-medium">{{ getActionQuickDateLabel(1) }}</span>
+                </button>
+                <button type="button" @click="setEditTaskModalQuickDate(2)"
+                  class="px-3 py-2 rounded-xl border transition-all text-left flex items-center justify-between cursor-pointer"
+                  :class="editingTaskDueDate === formatQuickDateISO(2) ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-500' : 'border-gray-200 hover:border-emerald-500 text-gray-700'">
+                  <span>Ngày mốt</span>
+                  <span class="text-[11px] text-gray-400 font-medium">{{ getActionQuickDateLabel(2) }}</span>
+                </button>
+                <button type="button" @click="setEditTaskModalQuickDate(7)"
+                  class="px-3 py-2 rounded-xl border transition-all text-left flex items-center justify-between cursor-pointer"
+                  :class="editingTaskDueDate === formatQuickDateISO(7) ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-500' : 'border-gray-200 hover:border-emerald-500 text-gray-700'">
+                  <span>1 tuần nữa</span>
+                  <span class="text-[11px] text-gray-400 font-medium">{{ getActionQuickDateLabel(7) }}</span>
+                </button>
+              </div>
+
+              <div class="pt-2">
+                <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Hoặc chọn ngày cụ thể:</label>
+                <input type="date" v-model="editingTaskDueDate"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-bold text-gray-800 focus:outline-none focus:border-emerald-500 bg-gray-50 cursor-pointer" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="px-5 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-2.5">
+            <button type="button" @click="isEditTaskModalOpen = false"
+              class="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-200/80 cursor-pointer transition-colors">
+              Hủy
+            </button>
+            <button type="button" @click="submitEditScheduleTask" :disabled="isSubmittingEditTask || !editingTaskTitle.trim() || !editingTaskDueDate"
+              class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 cursor-pointer transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50">
+              <i v-if="isSubmittingEditTask" class="fa-solid fa-spinner fa-spin text-xs"></i>
+              <span>Lưu thay đổi</span>
             </button>
           </div>
         </div>
@@ -2893,26 +3036,123 @@ const nextPreviewImage = (e) => {
   }
 }
 
-let modalTouchStartX = 0
-let modalTouchEndX = 0
+// Mobile touch gestures: pinch-to-zoom, pan & swipe
+let touchInitialDistance = 0
+let touchInitialScale = 1
+let touchStartCenter = { x: 0, y: 0 }
+let touchStartPan = { x: 0, y: 0 }
+let singleTouchStart = { x: 0, y: 0 }
+let singleTouchStartTime = 0
+let touchHasMoved = false
+let lastTapTimestamp = 0
 
-const handleModalTouchStart = (e) => {
-  if (e.touches && e.touches[0]) {
-    modalTouchStartX = e.touches[0].clientX
+const getTouchDistance = (t1, t2) => {
+  const dx = t1.clientX - t2.clientX
+  const dy = t1.clientY - t2.clientY
+  return Math.hypot(dx, dy)
+}
+
+const getTouchCenter = (t1, t2) => {
+  return {
+    x: (t1.clientX + t2.clientX) / 2,
+    y: (t1.clientY + t2.clientY) / 2
   }
 }
 
-const handleModalTouchEnd = (e) => {
-  if (previewZoomScale.value > 1) return
-  if (e.changedTouches && e.changedTouches[0]) {
-    modalTouchEndX = e.changedTouches[0].clientX
-    const diff = modalTouchEndX - modalTouchStartX
-    if (Math.abs(diff) > 40) {
-      if (diff < 0) {
-        nextPreviewImage()
-      } else {
-        prevPreviewImage()
+const handlePreviewTouchStart = (e) => {
+  if (!activePreviewImage.value) return
+  touchHasMoved = false
+
+  if (e.touches.length === 2) {
+    // 2-finger pinch gesture start
+    isPreviewPanning.value = true
+    touchInitialDistance = getTouchDistance(e.touches[0], e.touches[1])
+    touchInitialScale = previewZoomScale.value
+    touchStartCenter = getTouchCenter(e.touches[0], e.touches[1])
+    touchStartPan = { x: previewPanX.value, y: previewPanY.value }
+  } else if (e.touches.length === 1) {
+    const t = e.touches[0]
+    singleTouchStart = { x: t.clientX, y: t.clientY }
+    singleTouchStartTime = Date.now()
+    panInitialX = previewPanX.value
+    panInitialY = previewPanY.value
+    if (previewZoomScale.value > 1) {
+      isPreviewPanning.value = true
+    }
+  }
+}
+
+const handlePreviewTouchMove = (e) => {
+  if (e.touches.length === 2 && touchInitialDistance > 0) {
+    if (e.cancelable) e.preventDefault()
+    touchHasMoved = true
+    const currentDist = getTouchDistance(e.touches[0], e.touches[1])
+    const scaleFactor = currentDist / touchInitialDistance
+    const newScale = Math.min(Math.max(+(touchInitialScale * scaleFactor).toFixed(2), 0.8), 5)
+    previewZoomScale.value = newScale
+
+    const curCenter = getTouchCenter(e.touches[0], e.touches[1])
+    previewPanX.value = touchStartPan.x + (curCenter.x - touchStartCenter.x)
+    previewPanY.value = touchStartPan.y + (curCenter.y - touchStartCenter.y)
+  } else if (e.touches.length === 1) {
+    const t = e.touches[0]
+    const dx = t.clientX - singleTouchStart.x
+    const dy = t.clientY - singleTouchStart.y
+    if (Math.hypot(dx, dy) > 8) {
+      touchHasMoved = true
+    }
+    if (previewZoomScale.value > 1 && isPreviewPanning.value) {
+      if (e.cancelable) e.preventDefault()
+      previewPanX.value = panInitialX + dx
+      previewPanY.value = panInitialY + dy
+    }
+  }
+}
+
+const handlePreviewTouchEnd = (e) => {
+  if (e.touches.length === 0) {
+    isPreviewPanning.value = false
+    touchInitialDistance = 0
+
+    // Auto spring back if zoomed out below normal
+    if (previewZoomScale.value < 1.05) {
+      resetPreviewZoom()
+    } else if (previewZoomScale.value > 5) {
+      previewZoomScale.value = 5
+    }
+
+    // Double tap detection
+    if (!touchHasMoved && Date.now() - singleTouchStartTime < 250) {
+      const now = Date.now()
+      if (now - lastTapTimestamp < 300) {
+        togglePreviewZoom()
+        lastTapTimestamp = 0
+        return
       }
+      lastTapTimestamp = now
+    } else if (previewZoomScale.value <= 1 && e.changedTouches && e.changedTouches[0]) {
+      // Swipe left/right for next/prev image
+      const endX = e.changedTouches[0].clientX
+      const dx = endX - singleTouchStart.x
+      const dt = Date.now() - singleTouchStartTime
+      if (Math.abs(dx) > 40 && dt < 450) {
+        if (dx < 0) {
+          nextPreviewImage()
+        } else {
+          prevPreviewImage()
+        }
+      }
+    }
+  } else if (e.touches.length === 1) {
+    // Transition from 2 fingers to 1 finger
+    const t = e.touches[0]
+    singleTouchStart = { x: t.clientX, y: t.clientY }
+    singleTouchStartTime = Date.now()
+    panInitialX = previewPanX.value
+    panInitialY = previewPanY.value
+    touchInitialDistance = 0
+    if (previewZoomScale.value > 1) {
+      isPreviewPanning.value = true
     }
   }
 }
@@ -3295,6 +3535,7 @@ const handleActivityPanelDrop = async (e) => {
 
 const isActionModalOpen = ref(false)
 const actionModalComment = ref(null)
+const actionModalTitle = ref('')
 const actionModalDueDate = ref('')
 const isSubmittingActionModal = ref(false)
 
@@ -3315,6 +3556,7 @@ const getActionQuickDateLabel = (offsetDays) => {
 
 const openCreateActionFromComment = (comment) => {
   actionModalComment.value = comment
+  actionModalTitle.value = parseCommentText(comment.content) || comment.text || ''
   actionModalDueDate.value = formatQuickDateISO(0) // default to today
   isActionModalOpen.value = true
   activeLogMenuId.value = null
@@ -3326,7 +3568,12 @@ const setActionModalQuickDate = (offsetDays) => {
 }
 
 const submitCreateActionFromComment = async () => {
-  if (!actionModalComment.value || !actionModalDueDate.value) {
+  if (!actionModalComment.value) return
+  if (!actionModalTitle.value.trim()) {
+    toast.error('Vui lòng nhập nội dung hành động!')
+    return
+  }
+  if (!actionModalDueDate.value) {
     toast.error('Vui lòng chọn thời gian cho hành động!')
     return
   }
@@ -3341,7 +3588,7 @@ const submitCreateActionFromComment = async () => {
   try {
     await axios.post('/api/tasks', {
       project_id: pId,
-      title: comment.content || comment.text || '',
+      title: actionModalTitle.value.trim(),
       due_date: actionModalDueDate.value,
       status: 'todo',
       priority: 'medium',
@@ -3349,8 +3596,8 @@ const submitCreateActionFromComment = async () => {
     toast.success('Đã tạo hành động tiếp theo thành công!')
     isActionModalOpen.value = false
     actionModalComment.value = null
-    fetchScheduleTasks()
-    fetchActivities?.(true)
+    actionModalTitle.value = ''
+    fetchScheduleTasks(true)
     broadcastLocalUpdate({ projectId: pId })
   } catch (err) {
     console.error('Failed to create action from comment:', err)
@@ -3385,7 +3632,6 @@ let touchTimer = null
 let touchStarted = false
 
 const handleTouchStart = (log, event) => {
-  if (!canEditComment(log) && !canDeleteComment(log)) return
   touchStarted = true
   touchTimer = setTimeout(() => {
     if (touchStarted) {
@@ -3407,10 +3653,135 @@ const handleTouchMove = () => {
   if (touchTimer) clearTimeout(touchTimer)
 }
 
+// Schedule Task Actions (Edit & Delete & Long-press for Mobile)
+const activeScheduleTaskMenuId = ref(null)
+const activeScheduleTaskIdForMobile = ref(null)
+const isEditTaskModalOpen = ref(false)
+const isSubmittingEditTask = ref(false)
+const editingTask = ref(null)
+const editingTaskTitle = ref('')
+const editingTaskDueDate = ref('')
+
+const toggleScheduleTaskMenu = (id, event) => {
+  event?.stopPropagation()
+  activeScheduleTaskMenuId.value = activeScheduleTaskMenuId.value === id ? null : id
+}
+
+let schedTouchTimer = null
+let schedTouchStarted = false
+
+const handleScheduleTaskTouchStart = (task, event) => {
+  schedTouchStarted = true
+  schedTouchTimer = setTimeout(() => {
+    if (schedTouchStarted) {
+      if (navigator.vibrate) {
+        navigator.vibrate(50)
+      }
+      activeScheduleTaskIdForMobile.value = task.id
+    }
+  }, 500)
+}
+
+const handleScheduleTaskTouchEnd = () => {
+  schedTouchStarted = false
+  if (schedTouchTimer) clearTimeout(schedTouchTimer)
+}
+
+const handleScheduleTaskTouchMove = () => {
+  schedTouchStarted = false
+  if (schedTouchTimer) clearTimeout(schedTouchTimer)
+}
+
+const canEditScheduleTask = (task) => {
+  if (!task || !currentUser.value) return false
+  if (currentUser.value.is_system_admin || currentUser.value.is_admin) {
+    return true
+  }
+  return String(task.created_by) === String(currentUser.value.id) || String(task.creator?.id) === String(currentUser.value.id)
+}
+
+const canDeleteScheduleTask = (task) => {
+  if (!task || !currentUser.value) return false
+  if (currentUser.value.is_system_admin || currentUser.value.is_admin) {
+    return true
+  }
+  return String(task.created_by) === String(currentUser.value.id) || String(task.creator?.id) === String(currentUser.value.id)
+}
+
+const openEditScheduleTaskModal = (task) => {
+  activeScheduleTaskMenuId.value = null
+  activeScheduleTaskIdForMobile.value = null
+  editingTask.value = task
+  editingTaskTitle.value = parseCommentText(task.title || task.content) || task.title || ''
+  editingTaskDueDate.value = task.due_date ? String(task.due_date).substring(0, 10) : ''
+  isEditTaskModalOpen.value = true
+}
+
+const setEditTaskModalQuickDate = (offsetDays) => {
+  editingTaskDueDate.value = formatQuickDateISO(offsetDays)
+}
+
+const submitEditScheduleTask = async () => {
+  if (!editingTask.value) return
+  if (!editingTaskTitle.value.trim()) {
+    toast.error('Vui lòng nhập nội dung hành động!')
+    return
+  }
+  if (!editingTaskDueDate.value) {
+    toast.error('Vui lòng chọn ngày thực hiện!')
+    return
+  }
+
+  isSubmittingEditTask.value = true
+  try {
+    await axios.put(`/api/tasks/${editingTask.value.id}`, {
+      title: editingTaskTitle.value.trim(),
+      due_date: editingTaskDueDate.value,
+      status: editingTask.value.status || 'todo',
+      priority: editingTask.value.priority || 'medium'
+    })
+    toast.success('Đã cập nhật hành động!')
+    isEditTaskModalOpen.value = false
+    editingTask.value = null
+    fetchScheduleTasks(true)
+    fetchActivities?.(true)
+  } catch (err) {
+    console.error('Failed to update schedule task:', err)
+    toast.error(err.response?.data?.message || 'Cập nhật hành động thất bại!')
+  } finally {
+    isSubmittingEditTask.value = false
+  }
+}
+
+const handleDeleteScheduleTask = async (task) => {
+  activeScheduleTaskMenuId.value = null
+  activeScheduleTaskIdForMobile.value = null
+
+  const confirmed = await confirmStore.show({
+    title: 'Xóa hành động',
+    message: 'Bạn có chắc chắn muốn xóa hành động tiếp theo này?'
+  })
+  if (!confirmed) return
+
+  try {
+    await axios.delete(`/api/tasks/${task.id}`)
+    toast.success('Đã xóa hành động!')
+    fetchScheduleTasks(true)
+    fetchActivities?.(true)
+  } catch (err) {
+    console.error('Failed to delete schedule task:', err)
+    toast.error(err.response?.data?.message || 'Xóa hành động thất bại!')
+  }
+}
+
 const handleGlobalClick = (e) => {
   if (!e.target.closest('.activity-log-item')) {
     activeLogIdForMobileActions.value = null
     activeLogMenuId.value = null
+  }
+  if (!e.target.closest('.schedule-task-item')) {
+    activeScheduleTaskIdForMobile.value = null
+    activeScheduleTaskMenuId.value = null
   }
 }
 

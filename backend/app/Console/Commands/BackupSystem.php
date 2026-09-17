@@ -23,13 +23,18 @@ class BackupSystem extends Command
             $this->error('RCLONE_REMOTE is not configured.');
             return self::FAILURE;
         }
-        $result = Process::timeout(config('backup.rclone_timeout'))
+        $timeoutSec = config('backup.rclone_timeout') ?: 3600;
+        $rcloneDuration = $timeoutSec . 's';
+
+        $result = Process::timeout($timeoutSec)
+            ->env(['RCLONE_TIMEOUT' => $rcloneDuration])
             ->run([config('backup.rclone_binary'), 'copy', $archive, $remote]);
         if ($result->failed()) {
             $this->error($result->errorOutput());
             return self::FAILURE;
         }
-        $prune = Process::timeout(config('backup.rclone_timeout'))
+        $prune = Process::timeout($timeoutSec)
+            ->env(['RCLONE_TIMEOUT' => $rcloneDuration])
             ->run([config('backup.rclone_binary'), 'delete', $remote, '--include', 'system_backup_*.zip', '--min-age', config('backup.retention_days') . 'd']);
         if ($prune->failed()) {
             $this->warn('Upload succeeded but remote retention cleanup failed: ' . $prune->errorOutput());
