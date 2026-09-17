@@ -2129,7 +2129,7 @@ const handlePreviewTouchStart = (e) => {
   if (!previewModalImageUrl.value) return
   touchHasMoved = false
 
-  if (e.touches.length === 2) {
+  if (e.touches.length >= 2) {
     // 2-finger pinch gesture start
     isPreviewPanning.value = true
     touchInitialDistance = getTouchDistance(e.touches[0], e.touches[1])
@@ -2142,6 +2142,7 @@ const handlePreviewTouchStart = (e) => {
     singleTouchStartTime = Date.now()
     panInitialX = previewPanX.value
     panInitialY = previewPanY.value
+    touchInitialDistance = 0
     if (previewZoomScale.value > 1) {
       isPreviewPanning.value = true
     }
@@ -2149,22 +2150,36 @@ const handlePreviewTouchStart = (e) => {
 }
 
 const handlePreviewTouchMove = (e) => {
-  if (e.touches.length === 2 && touchInitialDistance > 0) {
+  if (!activePreviewImage.value) return
+
+  if (e.touches.length >= 2) {
     if (e.cancelable) e.preventDefault()
     touchHasMoved = true
-    const currentDist = getTouchDistance(e.touches[0], e.touches[1])
-    const scaleFactor = currentDist / touchInitialDistance
-    const newScale = Math.min(Math.max(+(touchInitialScale * scaleFactor).toFixed(2), 0.8), 5)
-    previewZoomScale.value = newScale
+    isPreviewPanning.value = true
 
-    const curCenter = getTouchCenter(e.touches[0], e.touches[1])
-    previewPanX.value = touchStartPan.x + (curCenter.x - touchStartCenter.x)
-    previewPanY.value = touchStartPan.y + (curCenter.y - touchStartCenter.y)
+    // Initialize initial distance if not already set (e.g. 2nd finger placed during move)
+    if (!touchInitialDistance || touchInitialDistance <= 0) {
+      touchInitialDistance = getTouchDistance(e.touches[0], e.touches[1])
+      touchInitialScale = previewZoomScale.value
+      touchStartCenter = getTouchCenter(e.touches[0], e.touches[1])
+      touchStartPan = { x: previewPanX.value, y: previewPanY.value }
+    }
+
+    if (touchInitialDistance > 0) {
+      const currentDist = getTouchDistance(e.touches[0], e.touches[1])
+      const scaleFactor = currentDist / touchInitialDistance
+      const newScale = Math.min(Math.max(+(touchInitialScale * scaleFactor).toFixed(3), 0.5), 6)
+      previewZoomScale.value = newScale
+
+      const curCenter = getTouchCenter(e.touches[0], e.touches[1])
+      previewPanX.value = touchStartPan.x + (curCenter.x - touchStartCenter.x)
+      previewPanY.value = touchStartPan.y + (curCenter.y - touchStartCenter.y)
+    }
   } else if (e.touches.length === 1) {
     const t = e.touches[0]
     const dx = t.clientX - singleTouchStart.x
     const dy = t.clientY - singleTouchStart.y
-    if (Math.hypot(dx, dy) > 8) {
+    if (Math.hypot(dx, dy) > 6) {
       touchHasMoved = true
     }
     if (previewZoomScale.value > 1 && isPreviewPanning.value) {

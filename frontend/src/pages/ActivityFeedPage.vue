@@ -557,6 +557,27 @@
                 class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-800 focus:outline-none focus:border-emerald-500 bg-gray-50/50 resize-none"></textarea>
             </div>
 
+            <!-- Attachments preview in create modal if any -->
+            <div v-if="parseCommentImages(actionModalComment?.content).length > 0 || parseCommentFiles(actionModalComment?.content).length > 0"
+              class="space-y-1.5">
+              <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                Tệp đính kèm đi kèm:
+              </label>
+              <div class="flex flex-wrap items-center gap-2 p-2 rounded-xl bg-stone-50 border border-stone-200/80">
+                <!-- Images -->
+                <div v-for="(img, imgIdx) in parseCommentImages(actionModalComment.content)" :key="'act-modal-img-' + imgIdx"
+                  class="w-10 h-10 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 flex-shrink-0">
+                  <img :src="img.url" class="w-full h-full object-cover" />
+                </div>
+                <!-- Files -->
+                <div v-for="(file, fIdx) in parseCommentFiles(actionModalComment.content)" :key="'act-modal-file-' + fIdx"
+                  class="px-2 py-1 rounded-lg border border-[#d4a574] bg-[#f5e6d0] text-[11px] font-bold text-[#8b5a2b] flex items-center gap-1">
+                  <i class="fa-solid fa-file text-[#c87828] text-xs"></i>
+                  <span class="truncate max-w-[140px]">{{ file.name }}</span>
+                </div>
+              </div>
+            </div>
+
             <!-- Date Selection -->
             <div class="space-y-2">
               <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">
@@ -653,6 +674,27 @@
               <textarea v-model="editingTaskTitle" rows="3"
                 placeholder="Nhập nội dung hành động tiếp theo..."
                 class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-800 focus:outline-none focus:border-emerald-500 bg-gray-50/50 resize-none"></textarea>
+            </div>
+
+            <!-- Attachments preview in edit modal if any -->
+            <div v-if="parseCommentImages(editingTask?.title || editingTask?.content).length > 0 || parseCommentFiles(editingTask?.title || editingTask?.content).length > 0"
+              class="space-y-1.5">
+              <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                Tệp đính kèm đi kèm:
+              </label>
+              <div class="flex flex-wrap items-center gap-2 p-2 rounded-xl bg-stone-50 border border-stone-200/80">
+                <!-- Images -->
+                <div v-for="(img, imgIdx) in parseCommentImages(editingTask.title || editingTask.content)" :key="'edit-modal-img-' + imgIdx"
+                  class="w-10 h-10 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 flex-shrink-0">
+                  <img :src="img.url" class="w-full h-full object-cover" />
+                </div>
+                <!-- Files -->
+                <div v-for="(file, fIdx) in parseCommentFiles(editingTask.title || editingTask.content)" :key="'edit-modal-file-' + fIdx"
+                  class="px-2 py-1 rounded-lg border border-[#d4a574] bg-[#f5e6d0] text-[11px] font-bold text-[#8b5a2b] flex items-center gap-1">
+                  <i class="fa-solid fa-file text-[#c87828] text-xs"></i>
+                  <span class="truncate max-w-[140px]">{{ file.name }}</span>
+                </div>
+              </div>
             </div>
 
             <!-- Date Selection -->
@@ -1256,9 +1298,12 @@ const submitCreateActionFromComment = async () => {
 
   isSubmittingActionModal.value = true
   try {
+    const rawAttachments = extractCommentAttachments(comment.content || comment.text || '')
+    const finalTitle = (actionModalTitle.value.trim() + rawAttachments).trim()
+
     await axios.post('/api/tasks', {
       project_id: pId,
-      title: actionModalTitle.value.trim(),
+      title: finalTitle,
       due_date: actionModalDueDate.value,
       status: 'todo',
       priority: 'medium',
@@ -1353,8 +1398,11 @@ const submitEditScheduleTask = async () => {
 
   isSubmittingEditTask.value = true
   try {
+    const rawAttachments = extractCommentAttachments(editingTask.value.title || editingTask.value.content || '')
+    const finalTitle = (editingTaskTitle.value.trim() + rawAttachments).trim()
+
     await axios.put(`/api/tasks/${editingTask.value.id}`, {
-      title: editingTaskTitle.value.trim(),
+      title: finalTitle,
       due_date: editingTaskDueDate.value,
       status: editingTask.value.status || 'todo',
       priority: editingTask.value.priority || 'medium'
@@ -1802,7 +1850,7 @@ const handlePreviewTouchStart = (e) => {
   if (!activePreviewImage.value) return
   touchHasMoved = false
 
-  if (e.touches.length === 2) {
+  if (e.touches.length >= 2) {
     // 2-finger pinch gesture start
     isPreviewPanning.value = true
     touchInitialDistance = getTouchDistance(e.touches[0], e.touches[1])
@@ -1815,6 +1863,7 @@ const handlePreviewTouchStart = (e) => {
     singleTouchStartTime = Date.now()
     panInitialX = previewPanX.value
     panInitialY = previewPanY.value
+    touchInitialDistance = 0
     if (previewZoomScale.value > 1) {
       isPreviewPanning.value = true
     }
@@ -1822,22 +1871,36 @@ const handlePreviewTouchStart = (e) => {
 }
 
 const handlePreviewTouchMove = (e) => {
-  if (e.touches.length === 2 && touchInitialDistance > 0) {
+  if (!activePreviewImage.value) return
+
+  if (e.touches.length >= 2) {
     if (e.cancelable) e.preventDefault()
     touchHasMoved = true
-    const currentDist = getTouchDistance(e.touches[0], e.touches[1])
-    const scaleFactor = currentDist / touchInitialDistance
-    const newScale = Math.min(Math.max(+(touchInitialScale * scaleFactor).toFixed(2), 0.8), 5)
-    previewZoomScale.value = newScale
+    isPreviewPanning.value = true
 
-    const curCenter = getTouchCenter(e.touches[0], e.touches[1])
-    previewPanX.value = touchStartPan.x + (curCenter.x - touchStartCenter.x)
-    previewPanY.value = touchStartPan.y + (curCenter.y - touchStartCenter.y)
+    // Initialize initial distance if not already set (e.g. 2nd finger placed during move)
+    if (!touchInitialDistance || touchInitialDistance <= 0) {
+      touchInitialDistance = getTouchDistance(e.touches[0], e.touches[1])
+      touchInitialScale = previewZoomScale.value
+      touchStartCenter = getTouchCenter(e.touches[0], e.touches[1])
+      touchStartPan = { x: previewPanX.value, y: previewPanY.value }
+    }
+
+    if (touchInitialDistance > 0) {
+      const currentDist = getTouchDistance(e.touches[0], e.touches[1])
+      const scaleFactor = currentDist / touchInitialDistance
+      const newScale = Math.min(Math.max(+(touchInitialScale * scaleFactor).toFixed(3), 0.5), 6)
+      previewZoomScale.value = newScale
+
+      const curCenter = getTouchCenter(e.touches[0], e.touches[1])
+      previewPanX.value = touchStartPan.x + (curCenter.x - touchStartCenter.x)
+      previewPanY.value = touchStartPan.y + (curCenter.y - touchStartCenter.y)
+    }
   } else if (e.touches.length === 1) {
     const t = e.touches[0]
     const dx = t.clientX - singleTouchStart.x
     const dy = t.clientY - singleTouchStart.y
-    if (Math.hypot(dx, dy) > 8) {
+    if (Math.hypot(dx, dy) > 6) {
       touchHasMoved = true
     }
     if (previewZoomScale.value > 1 && isPreviewPanning.value) {
@@ -1975,6 +2038,33 @@ const parseCommentFiles = (content) => {
   }
 
   return matches
+}
+
+const extractCommentAttachments = (content) => {
+  if (!content) return ''
+  const items = []
+
+  // 1. Markdown images ![name](url)
+  const mdImages = content.match(/!\[.*?\]\(.*?\)/g) || []
+  items.push(...mdImages)
+
+  // 2. HTML <img> tags
+  const htmlImages = content.match(/<img[^>]+>/gi) || []
+  items.push(...htmlImages)
+
+  // 3. Markdown files 📎 [name](url)
+  const mdFiles = content.match(/📎\s*\[.*?\]\(.*?\)/g) || []
+  items.push(...mdFiles)
+
+  // 4. HTML file links <a ...>...📎 Tệp đính kèm:...</a>
+  const htmlLinks = content.match(/<a\b[^>]*\bhref=["'][^"']+["'][^>]*>[\s\S]*?📎\s*Tệp đính kèm:\s*[^<]+<\/a>/gi) || []
+  items.push(...htmlLinks)
+
+  // 5. Legacy HTML file spans
+  const htmlSpans = content.match(/<span[^>]*>📎\s*Tệp đính kèm:[^<]*<\/span>/gi) || []
+  items.push(...htmlSpans)
+
+  return items.length > 0 ? (' ' + items.join(' ')) : ''
 }
 
 const selectProjectForChat = (projectId, event = null) => {
