@@ -1920,20 +1920,41 @@ const saveUpdate = async (projectId) => {
     }
 
     // 1. Post to /api/tasks (creates task under selected project & milestone)
-    await axios.post('/api/tasks', {
+    let createdTask = null
+    try {
+      const taskRes = await axios.post('/api/tasks', {
+        project_id: projectId,
+        milestone_id: (selectedMsId !== null && selectedMsId !== undefined && !isNaN(Number(selectedMsId))) ? Number(selectedMsId) : null,
+        assignee_id: selectedAssigneeId,
+        title: titleText,
+        status: 'todo',
+        priority: 'medium',
+        due_date: selectedDueDate,
+        created_by: currentUserId,
+        tagged_user_ids: taggedIds.map(Number),
+        attachment_ids: uploadedAttachmentIds
+      })
+      createdTask = taskRes.data
+    } catch (taskErr) {
+      console.warn('Could not create task in bulk update, continuing comment creation:', taskErr)
+    }
+
+    // 2. Post to /api/comments (so it appears in "Hoạt động của đội" and project chat)
+    await axios.post('/api/comments', {
       project_id: projectId,
-      milestone_id: (selectedMsId !== null && selectedMsId !== undefined && !isNaN(Number(selectedMsId))) ? Number(selectedMsId) : null,
-      assignee_id: selectedAssigneeId,
-      title: titleText,
-      status: 'todo',
-      priority: 'medium',
-      due_date: selectedDueDate,
-      created_by: currentUserId,
-      tagged_user_ids: taggedIds.map(Number),
-      attachment_ids: uploadedAttachmentIds
+      task_id: createdTask?.id || null,
+      content: titleText,
+      tagged_user_ids: taggedIds.map(Number)
     })
 
-
+    // 3. Clear activity cache and broadcast update
+    try {
+      localStorage.removeItem('cached_team_activities')
+      localStorage.setItem('local_sync_update', JSON.stringify({
+        timestamp: Date.now(),
+        projectId
+      }))
+    } catch {}
 
     // Set saved state
     isSaved[projectId] = true

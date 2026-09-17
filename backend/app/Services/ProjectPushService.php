@@ -166,8 +166,7 @@ class ProjectPushService
                         'authToken' => $subscription->auth_token,
                         'contentEncoding' => $subscription->content_encoding,
                     ]),
-                    $payload,
-                    ['topic' => 'project-'.$project->id]
+                    $payload
                 );
             }
 

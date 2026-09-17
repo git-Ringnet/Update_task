@@ -347,6 +347,11 @@ Route::middleware('auth.token')->group(function () {
     Route::put('/comments/{id}', [CommentController::class, 'update']);
     Route::delete('/comments/{id}', [CommentController::class, 'destroy']);
 
+    // Web Push Notifications
+    Route::get('/push/public-key', [PushSubscriptionController::class, 'publicKey']);
+    Route::post('/push/subscriptions', [PushSubscriptionController::class, 'store']);
+    Route::delete('/push/subscriptions', [PushSubscriptionController::class, 'destroy']);
+
     // Database SQL Export
     Route::get('/database/export', [\App\Http\Controllers\DatabaseController::class, 'exportSql'])
         ->middleware('system_admin');
