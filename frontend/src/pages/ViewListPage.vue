@@ -780,8 +780,9 @@
                           {{ task.project ? ((task.project.customer?.name ? task.project.customer.name + ' - ' : '') + task.project.title) : 'Dự án' }}
                         </div>
 
-                        <!-- Right: 3-dots Menu Button on hover / mobile long-press -->
-                        <div class="relative shrink-0 flex items-center justify-end" @click.stop>
+                        <!-- Right: 3-dots Menu Button on hover / mobile long-press (only if user has permission) -->
+                        <div v-if="canEditScheduleTask(task) || canDeleteScheduleTask(task)"
+                          class="relative shrink-0 flex items-center justify-end" @click.stop>
                           <button type="button"
                             @click.stop="toggleScheduleTaskMenu(task.id, $event)" title="Tùy chọn"
                             class="text-gray-400 hover:text-gray-800 hover:bg-gray-200/80 active:bg-gray-300/80 w-7 h-7 -my-1 -mr-1 rounded-lg flex items-center justify-center cursor-pointer transition-all active:scale-95 p-0"
@@ -1138,7 +1139,8 @@
           </div>
 
           <!-- Main Image and Prev/Next Navigation -->
-          <div class="relative w-full h-full flex items-center justify-center rounded-2xl overflow-hidden bg-slate-900 select-none touch-none"
+          <div ref="previewContainerRef"
+            class="relative w-full h-full flex items-center justify-center rounded-2xl overflow-hidden bg-slate-900 select-none touch-none"
             @wheel.prevent="handlePreviewWheel"
             @mousedown="startPreviewPan"
             @mousemove="doPreviewPan"
@@ -1152,8 +1154,8 @@
               @click="handlePreviewImageClick"
               @dblclick="togglePreviewZoom"
               :style="{
-                transform: `scale(${previewZoomScale}) translate(${previewPanX / previewZoomScale}px, ${previewPanY / previewZoomScale}px)`,
-                transition: isPreviewPanning ? 'none' : 'transform 0.18s ease-out',
+                transform: `translate(${previewPanX}px, ${previewPanY}px) scale(${previewZoomScale})`,
+                transition: isPreviewPanning ? 'none' : 'transform 0.18s cubic-bezier(0.25, 1, 0.5, 1)',
                 cursor: previewZoomScale > 1 ? (isPreviewPanning ? 'grabbing' : 'grab') : 'zoom-in'
               }"
               class="w-full h-full object-contain pointer-events-auto select-none"
@@ -2935,6 +2937,7 @@ const toggleSelectAll = () => {
 }
 
 // Comment content attachment parsers
+const previewContainerRef = ref(null)
 const previewModalImages = ref([])
 const previewModalIndex = ref(0)
 const previewZoomScale = ref(1)
@@ -2953,6 +2956,29 @@ const activePreviewImage = computed(() => {
   return typeof item === 'string' ? item : (item?.url || item?.src || null)
 })
 
+const clampPreviewPan = (scale = previewZoomScale.value, targetX = previewPanX.value, targetY = previewPanY.value, isDragging = false) => {
+  if (scale <= 1) {
+    previewPanX.value = 0
+    previewPanY.value = 0
+    return
+  }
+  const container = previewContainerRef.value
+  const cWidth = container?.clientWidth || (typeof window !== 'undefined' ? window.innerWidth * 0.92 : 800)
+  const cHeight = container?.clientHeight || (typeof window !== 'undefined' ? window.innerHeight * 0.72 : 600)
+  const maxPanX = Math.max(0, (cWidth * (scale - 1)) / 2)
+  const maxPanY = Math.max(0, (cHeight * (scale - 1)) / 2)
+
+  if (isDragging) {
+    const overdragX = 35
+    const overdragY = 35
+    previewPanX.value = Math.max(-maxPanX - overdragX, Math.min(maxPanX + overdragX, targetX))
+    previewPanY.value = Math.max(-maxPanY - overdragY, Math.min(maxPanY + overdragY, targetY))
+  } else {
+    previewPanX.value = Math.max(-maxPanX, Math.min(maxPanX, targetX))
+    previewPanY.value = Math.max(-maxPanY, Math.min(maxPanY, targetY))
+  }
+}
+
 const resetPreviewZoom = () => {
   previewZoomScale.value = 1
   previewPanX.value = 0
@@ -2964,15 +2990,17 @@ const resetPreviewZoom = () => {
 const zoomInPreview = (e) => {
   if (e) e.stopPropagation()
   previewZoomScale.value = Math.min(+(previewZoomScale.value + 0.5).toFixed(2), 5)
+  clampPreviewPan(previewZoomScale.value)
 }
 
 const zoomOutPreview = (e) => {
   if (e) e.stopPropagation()
   const nextScale = Math.max(+(previewZoomScale.value - 0.5).toFixed(2), 1)
   previewZoomScale.value = nextScale
-  if (nextScale === 1) {
-    previewPanX.value = 0
-    previewPanY.value = 0
+  if (nextScale <= 1.05) {
+    resetPreviewZoom()
+  } else {
+    clampPreviewPan(nextScale)
   }
 }
 
@@ -3005,12 +3033,14 @@ const handlePreviewWheel = (e) => {
   e.stopPropagation()
   if (e.deltaY < 0) {
     previewZoomScale.value = Math.min(+(previewZoomScale.value + 0.25).toFixed(2), 5)
+    clampPreviewPan(previewZoomScale.value)
   } else if (e.deltaY > 0) {
     const nextScale = Math.max(+(previewZoomScale.value - 0.25).toFixed(2), 1)
     previewZoomScale.value = nextScale
-    if (nextScale === 1) {
-      previewPanX.value = 0
-      previewPanY.value = 0
+    if (nextScale <= 1.05) {
+      resetPreviewZoom()
+    } else {
+      clampPreviewPan(nextScale)
     }
   }
 }
@@ -3035,13 +3065,19 @@ const doPreviewPan = (e) => {
     panHasMoved = true
   }
   if (!isPreviewPanning.value || previewZoomScale.value <= 1) return
-  previewPanX.value = panInitialX + (e.clientX - panStartX)
-  previewPanY.value = panInitialY + (e.clientY - panStartY)
+  const rawX = panInitialX + (e.clientX - panStartX)
+  const rawY = panInitialY + (e.clientY - panStartY)
+  clampPreviewPan(previewZoomScale.value, rawX, rawY, true)
 }
 
 const endPreviewPan = (e) => {
   if (e) e.stopPropagation()
   isPreviewPanning.value = false
+  if (previewZoomScale.value > 1.05) {
+    clampPreviewPan(previewZoomScale.value)
+  } else {
+    resetPreviewZoom()
+  }
 }
 
 const openImagePreview = (url, imagesList = [], initialIndex = 0) => {
@@ -3148,8 +3184,15 @@ const handlePreviewTouchMove = (e) => {
       previewZoomScale.value = newScale
 
       const curCenter = getTouchCenter(e.touches[0], e.touches[1])
-      previewPanX.value = touchStartPan.x + (curCenter.x - touchStartCenter.x)
-      previewPanY.value = touchStartPan.y + (curCenter.y - touchStartCenter.y)
+      const rawPanX = touchStartPan.x + (curCenter.x - touchStartCenter.x)
+      const rawPanY = touchStartPan.y + (curCenter.y - touchStartCenter.y)
+
+      if (newScale > 1) {
+        clampPreviewPan(newScale, rawPanX, rawPanY, true)
+      } else {
+        previewPanX.value = rawPanX * 0.2
+        previewPanY.value = rawPanY * 0.2
+      }
     }
   } else if (e.touches.length === 1) {
     const t = e.touches[0]
@@ -3160,8 +3203,9 @@ const handlePreviewTouchMove = (e) => {
     }
     if (previewZoomScale.value > 1 && isPreviewPanning.value) {
       if (e.cancelable) e.preventDefault()
-      previewPanX.value = panInitialX + dx
-      previewPanY.value = panInitialY + dy
+      const rawPanX = panInitialX + dx
+      const rawPanY = panInitialY + dy
+      clampPreviewPan(previewZoomScale.value, rawPanX, rawPanY, true)
     }
   }
 }
@@ -3171,11 +3215,14 @@ const handlePreviewTouchEnd = (e) => {
     isPreviewPanning.value = false
     touchInitialDistance = 0
 
-    // Auto spring back if zoomed out below normal
-    if (previewZoomScale.value < 1.05) {
+    // Auto spring back if zoomed out below or near normal
+    if (previewZoomScale.value <= 1.05) {
       resetPreviewZoom()
-    } else if (previewZoomScale.value > 5) {
-      previewZoomScale.value = 5
+    } else {
+      if (previewZoomScale.value > 5) {
+        previewZoomScale.value = 5
+      }
+      clampPreviewPan(previewZoomScale.value)
     }
 
     // Double tap detection
