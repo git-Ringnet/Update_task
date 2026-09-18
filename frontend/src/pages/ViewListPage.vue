@@ -3722,6 +3722,7 @@ const submitCreateActionFromComment = async () => {
 
     await axios.post('/api/tasks', {
       project_id: pId,
+      comment_id: comment.id,
       title: finalTitle,
       due_date: actionModalDueDate.value,
       status: 'todo',
@@ -4054,10 +4055,8 @@ const submitChat = async (payload = null) => {
       activityComposerRef.value?.clearAttachments()
       activityComposerRef.value?.clearDueDate?.()
       scrollToBottom(true)
-      await Promise.all([
-        fetchActivities?.(true),
-        fetchScheduleTasks()
-      ])
+      fetchActivities?.(true)
+      fetchScheduleTasks()
       broadcastLocalUpdate({ projectId: pId })
     } else {
       const res = await axios.post('/api/comments', {

@@ -35,10 +35,9 @@ class Comment extends Model
 
         static::created(function (Comment $comment) {
             // Web Push can involve dozens of external Apple/FCM/WNS requests.
-            // Queue the work instead of retaining a PHP-FPM worker after the
-            // response. A queue worker must be running in production.
+            // Dispatch after response so the HTTP response is returned immediately to the client.
             $baseUrl = request()->hasHeader('host') ? request()->getSchemeAndHttpHost() : config('app.url');
-            SendProjectCommentPush::dispatch($comment->id, $baseUrl);
+            SendProjectCommentPush::dispatchAfterResponse($comment->id, $baseUrl);
         });
     }
 

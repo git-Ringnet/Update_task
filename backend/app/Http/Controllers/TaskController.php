@@ -78,6 +78,7 @@ class TaskController extends Controller
             'status' => 'required|in:todo,in_progress,review,done',
             'priority' => 'required|in:low,medium,high,urgent',
             'due_date' => 'nullable',
+            'comment_id' => 'nullable|integer|exists:comments,id',
             'health' => 'nullable|string',
             'tagged_user_ids' => 'nullable|array',
             'tagged_user_ids.*' => Rule::exists('users', 'id')->where('is_admin', 0),
@@ -92,7 +93,8 @@ class TaskController extends Controller
         }
         $taggedUserIds = $validated['tagged_user_ids'] ?? [];
         $attachmentIds = $validated['attachment_ids'] ?? [];
-        unset($validated['tagged_user_ids'], $validated['attachment_ids']);
+        $commentId = $validated['comment_id'] ?? null;
+        unset($validated['tagged_user_ids'], $validated['attachment_ids'], $validated['comment_id']);
         $validated['created_by'] = auth()->id();
         $task = Task::create($validated);
 
@@ -105,6 +107,28 @@ class TaskController extends Controller
         }
 
         $task->load(['project', 'assignee', 'creator', 'attachments']);
+
+        // Link to existing comment if created from an existing chat, otherwise create a new comment for activity feed
+        $existingComment = null;
+        if (!empty($commentId)) {
+            $existingComment = Comment::where('id', $commentId)->where('project_id', $task->project_id)->first();
+            if ($existingComment) {
+                $existingComment->update(['task_id' => $task->id]);
+            }
+        }
+
+        if (!$existingComment) {
+            Comment::create([
+                'project_id' => $task->project_id,
+                'task_id' => $task->id,
+                'user_id' => $task->created_by ?? auth()->id(),
+                'content' => $task->title,
+                'type' => 'comment',
+                'project_health' => $task->health ?? $project->health,
+                'created_at' => $task->created_at,
+                'updated_at' => $task->updated_at,
+            ]);
+        }
 
         // Update project last activity
         Project::where('id', $task->project_id)->update(['last_activity_at' => Carbon::now()]);
@@ -183,6 +207,26 @@ class TaskController extends Controller
                 ->where('uploaded_by', auth()->id())
                 ->whereNull('task_id')
                 ->update(['task_id' => $task->id]);
+        }
+
+        // Sync associated comment
+        $comment = Comment::where('task_id', $task->id)->first();
+        if ($comment) {
+            $comment->update([
+                'content' => $task->title,
+                'project_health' => $task->health ?? $project->health,
+            ]);
+        } else {
+            Comment::create([
+                'project_id' => $task->project_id,
+                'task_id' => $task->id,
+                'user_id' => $task->created_by ?? auth()->id(),
+                'content' => $task->title,
+                'type' => 'comment',
+                'project_health' => $task->health ?? $project->health,
+                'created_at' => $task->created_at,
+                'updated_at' => $task->updated_at,
+            ]);
         }
 
         $task->load(['project', 'assignee', 'attachments']);
