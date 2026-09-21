@@ -48,22 +48,80 @@ html, body, #app {
   scrollbar-width: none;
 }
 .scrollbar-none::-webkit-scrollbar {
-  display: none;
+  display: none !important;
 }
 
+/* Firefox fallback */
+@supports not selector(::-webkit-scrollbar) {
+  .scrollbar-hover,
+  .project-scroll-container,
+  .activity-feed-scroll,
+  .custom-scrollbar,
+  .activity-feed-page main {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+
+  .scrollbar-hover:hover,
+  .project-scroll-container:hover,
+  .activity-feed-scroll:hover,
+  .custom-scrollbar:hover,
+  .activity-feed-page main:hover {
+    scrollbar-color: rgba(120, 120, 120, 0.5) transparent;
+  }
+}
+
+/* Modern WebKit Scrollbars (Chrome, Edge, Safari, Opera, CocCoc) */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 6.5px;
+  height: 6.5px;
 }
+
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: transparent;
 }
+
+/* Invisible by default */
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
+  background: transparent;
+  border-radius: 9999px;
+  min-height: 80px !important;
 }
+
+::-webkit-scrollbar-thumb:vertical {
+  min-height: 80px !important;
+}
+
+::-webkit-scrollbar-thumb:horizontal {
+  min-width: 80px !important;
+}
+
+/* Appears instantly when hovering anywhere on any scrollable element, its parent panel, section, or container */
+*:hover::-webkit-scrollbar-thumb,
+* :hover::-webkit-scrollbar-thumb,
+div:hover::-webkit-scrollbar-thumb,
+section:hover::-webkit-scrollbar-thumb,
+main:hover::-webkit-scrollbar-thumb,
+aside:hover::-webkit-scrollbar-thumb,
+textarea:hover::-webkit-scrollbar-thumb,
+.project-list-panel:hover *::-webkit-scrollbar-thumb,
+.recent-activity-panel:hover *::-webkit-scrollbar-thumb,
+.schedule-actions-panel:hover *::-webkit-scrollbar-thumb,
+.activity-feed-page:hover *::-webkit-scrollbar-thumb,
+.project-detail-page:hover *::-webkit-scrollbar-thumb,
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 120, 0.45);
+}
+
+/* Darker when hovering/dragging the thumb directly */
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: rgba(60, 60, 60, 0.85) !important;
 }
 
 /* Glow effects for Health Status dots */

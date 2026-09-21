@@ -324,46 +324,65 @@
         </div>
       </div>
 
-      <!-- Textarea Input Area: inline with submit button for instant visibility on all devices -->
-      <div class="flex items-end gap-2 px-4 py-2 bg-[#ebe6df] rounded-b-[14px] cursor-text"
+      <!-- Textarea Input Area & Bottom Action Row -->
+      <div class="relative flex flex-col bg-[#ebe6df] rounded-b-[14px] cursor-text transition-all"
         @click="focusTextarea"
         @dragenter.prevent="handleDragEnter"
         @dragover.prevent="handleDragOver"
         @dragleave.prevent="handleDragLeave"
         @drop.prevent="handleDrop">
-        <textarea ref="textareaRef"
-          :value="messageModel"
-          @input="syncInputState"
-          @beforeinput="syncInputState"
-          @compositionstart="syncInputState"
-          @compositionupdate="syncInputState"
-          @compositionend="syncInputState"
-          @keyup="handleKeyup"
-          @keydown="handleKeydown"
-          @click="updateCursorPos"
-          @pointerup="updateCursorPos"
-          @touchend="updateCursorPos"
-          @focus="handleFocus"
-          @blur="handleBlur"
-          @paste="handlePaste"
-          @dragenter.prevent="handleDragEnter"
-          @dragover.prevent="handleDragOver"
-          @dragleave.prevent="handleDragLeave"
-          @drop.prevent="handleDrop"
-          rows="1"
-          name="chat_activity_message"
-          id="activity-composer-textarea"
-          :placeholder="editingComment ? 'Chỉnh sửa nội dung hoạt động...' : 'Báo thông tin cho đồng đội'"
-          class="flex-1 min-h-[36px] max-h-[140px] overflow-y-auto bg-transparent border-0 focus:ring-0 focus:outline-none text-[16px] sm:text-[18px] font-normal text-gray-900 resize-none p-0 placeholder-gray-500 leading-relaxed"
-          autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-          data-lpignore="true" data-1p-ignore="true" data-form-type="other" aria-autocomplete="none"></textarea>
-        
-        <div class="flex-shrink-0 flex items-center mb-0.5">
+
+        <!-- Top Textarea Area: Full width across entire box -->
+        <div class="relative px-3.5 sm:px-4 pt-2 pb-1">
+          <!-- Floating Expand/Collapse Button in Top Right of Composer Box (Matched size with Paperclip icon) -->
+          <button v-if="canShowExpandButton"
+            type="button"
+            @click.stop="toggleExpand"
+            :title="isExpanded ? 'Thu gọn khung nhập' : 'Mở rộng khung nhập'"
+            class="absolute top-1.5 right-2 sm:right-2.5 z-20 w-8 h-8 rounded-lg flex items-center justify-center text-[#4a4a4a] hover:text-[#1A7A56] hover:bg-[#eae4dc] active:bg-[#dfd8ce] transition-all cursor-pointer active:scale-95 shadow-3xs bg-[#ebe6df]/90 select-none">
+            <i :class="isExpanded ? 'fa-solid fa-compress text-[19px] sm:text-[18px]' : 'fa-solid fa-expand text-[19px] sm:text-[18px]'"></i>
+          </button>
+
+          <!-- Full-width Textarea with fixed max-height and internal scrolling -->
+          <textarea ref="textareaRef"
+            :value="messageModel"
+            @input="syncInputState"
+            @beforeinput="syncInputState"
+            @compositionstart="syncInputState"
+            @compositionupdate="syncInputState"
+            @compositionend="syncInputState"
+            @keyup="handleKeyup"
+            @keydown="handleKeydown"
+            @click="updateCursorPos"
+            @pointerup="updateCursorPos"
+            @touchend="updateCursorPos"
+            @focus="handleFocus"
+            @blur="handleBlur"
+            @paste="handlePaste"
+            @dragenter.prevent="handleDragEnter"
+            @dragover.prevent="handleDragOver"
+            @dragleave.prevent="handleDragLeave"
+            @drop.prevent="handleDrop"
+            rows="1"
+            name="chat_activity_message"
+            id="activity-composer-textarea"
+            :placeholder="editingComment ? 'Chỉnh sửa nội dung hoạt động...' : 'Báo thông tin cho đồng đội'"
+            :class="[
+              isExpanded ? 'h-[190px] sm:h-[220px] max-h-[35vh]' : 'min-h-[36px] max-h-[100px]',
+              canShowExpandButton ? 'pr-9' : 'pr-1'
+            ]"
+            class="w-full overflow-y-auto scrollbar-hover bg-transparent border-0 focus:ring-0 focus:outline-none text-[16px] sm:text-[18px] font-normal text-gray-900 resize-none p-0 placeholder-gray-500 leading-relaxed transition-[height] duration-150 block"
+            autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+            data-lpignore="true" data-1p-ignore="true" data-form-type="other" aria-autocomplete="none"></textarea>
+        </div>
+
+        <!-- Separate Bottom Action Row: Submit button is below textarea, not on the same line as text -->
+        <div class="flex items-center justify-end px-3.5 sm:px-4 pb-2 pt-0.5">
           <button @click="handleSubmit" :disabled="submitting || !canSend" type="button"
             :title="editingComment ? 'Lưu thay đổi' : 'Gửi cập nhật (Hú hú)'"
-            class="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
+            class="w-8.5 h-8.5 rounded-xl flex items-center justify-center text-white shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
             :class="canSend && !submitting ? 'bg-[#45A246] hover:bg-[#3a903b] opacity-100 shadow-sm' : 'bg-gray-300/80 opacity-40 cursor-not-allowed'">
-            <i class="fa-solid fa-dove text-[15px]"></i>
+            <i class="fa-solid fa-dove text-[14px]"></i>
           </button>
         </div>
       </div>
@@ -399,6 +418,21 @@ const textareaRef = ref(null)
 const lastCursorPosition = ref(null)
 const isExpanded = ref(false)
 const isAutoExpanded = ref(false)
+const isTextareaMultiline = ref(false)
+
+const canShowExpandButton = computed(() => {
+  if (isExpanded.value) return true
+  const text = (rawInputText.value || messageModel.value || textareaRef.value?.value || '')
+  return text.includes('\n') || text.trim().length >= 40 || isTextareaMultiline.value
+})
+
+const toggleExpand = () => {
+  isExpanded.value = !isExpanded.value
+  nextTick(() => {
+    resizeTextarea()
+    textareaRef.value?.focus()
+  })
+}
 const isProjectPickerOpen = ref(false)
 const projectSearch = ref('')
 const suggestionsListRef = ref(null)
@@ -691,7 +725,16 @@ const resizeTextarea = () => {
   if (!textarea) return
   textarea.style.height = 'auto'
   const contentHeight = textarea.scrollHeight
-  textarea.style.height = `${Math.min(140, Math.max(36, contentHeight))}px`
+  isTextareaMultiline.value = contentHeight > 42
+
+  if (isExpanded.value) {
+    const maxViewportHeight = typeof window !== 'undefined' ? Math.round(window.innerHeight * 0.35) : 210
+    const targetHeight = Math.min(230, Math.max(170, maxViewportHeight))
+    textarea.style.height = `${targetHeight}px`
+  } else {
+    const targetHeight = Math.min(100, Math.max(36, contentHeight))
+    textarea.style.height = `${targetHeight}px`
+  }
 }
 
 const compressImage = file => {
@@ -1129,6 +1172,7 @@ watch(messageModel, value => {
   rawInputText.value = value || ''
   if (!String(value || '').trim()) {
     isAutoExpanded.value = false
+    isExpanded.value = false
   }
   nextTick(resizeTextarea)
 })
@@ -1253,9 +1297,11 @@ const handleSubmit = () => {
     messageModel.value = directVal
   }
   if (!canSend.value) return
+  isExpanded.value = false
   emit('submit', {
     dueDate: selectedDueDate.value
   })
+  nextTick(resizeTextarea)
 }
 
 const scrollSelectedSuggestionIntoView = () => {

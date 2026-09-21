@@ -1596,12 +1596,21 @@ const isStartStageSelected = ref(false)
 // Tasks thuộc chặng "Bắt đầu" (không có milestone_id)
 const startStageTasks = computed(() => {
   if (!project.value || !project.value.tasks) return []
-  return project.value.tasks.filter(t => !t.milestone_id).sort((a, b) => {
-    const timeA = a.created_at ? new Date(a.created_at).getTime() : (typeof a.id === 'number' ? a.id : 0)
-    const timeB = b.created_at ? new Date(b.created_at).getTime() : (typeof b.id === 'number' ? b.id : 0)
-    if (timeA !== timeB) return timeB - timeA
-    return (b.id || 0) - (a.id || 0)
-  })
+  const seenIds = new Set()
+  return project.value.tasks
+    .filter(t => {
+      if (!t || t.milestone_id) return false
+      const idKey = String(t.id)
+      if (seenIds.has(idKey)) return false
+      seenIds.add(idKey)
+      return true
+    })
+    .sort((a, b) => {
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : (typeof a.id === 'number' ? a.id : 0)
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : (typeof b.id === 'number' ? b.id : 0)
+      if (timeA !== timeB) return timeB - timeA
+      return (b.id || 0) - (a.id || 0)
+    })
 })
 
 const selectStartStage = () => {
@@ -2981,19 +2990,56 @@ const activePreviewImage = ref(null)
 // ALL PROJECT CARDS SORTED NEWEST FIRST
 const allProjectCards = computed(() => {
   const cards = []
+  const seenTaskIds = new Set()
+  const seenCardIds = new Set()
 
   if (project.value && project.value.tasks) {
     project.value.tasks.forEach(t => {
-      cards.push({
-        ...t,
-        isTask: true
-      })
+      if (t && t.id) {
+        const idKey = String(t.id)
+        if (!seenTaskIds.has(idKey)) {
+          seenTaskIds.add(idKey)
+          seenCardIds.add(idKey)
+          cards.push({
+            ...t,
+            isTask: true
+          })
+        }
+      }
     })
   }
 
   if (activityLogs.value) {
     activityLogs.value.forEach(c => {
       if (c.type !== 'status_change') {
+        // Skip comment if it is already linked to a task in the project
+        if (c.task_id && seenTaskIds.has(String(c.task_id))) {
+          return
+        }
+
+        // Also check if this comment matches an existing task in the project (by creator, title, and timestamp)
+        if (project.value && project.value.tasks) {
+          const isTaskDuplicate = project.value.tasks.some(t => {
+            if (String(t.created_by) === String(c.user_id) && (t.title || '').trim() === (c.content || '').trim()) {
+              if (t.created_at && c.created_at) {
+                const diff = Math.abs(new Date(t.created_at).getTime() - new Date(c.created_at).getTime())
+                return diff < 60000 // within 1 minute
+              }
+              return true
+            }
+            return false
+          })
+          if (isTaskDuplicate) {
+            return
+          }
+        }
+
+        const commentCardId = 'comment-' + c.id
+        if (seenCardIds.has(commentCardId)) {
+          return
+        }
+        seenCardIds.add(commentCardId)
+
         let milestoneId = null
         if (c.task_id && project.value && project.value.tasks) {
           const correspondingTask = project.value.tasks.find(t => String(t.id) === String(c.task_id))
@@ -3003,7 +3049,7 @@ const allProjectCards = computed(() => {
         }
 
         cards.push({
-          id: 'comment-' + c.id,
+          id: commentCardId,
           realCommentId: c.id,
           project_id: c.project_id,
           task_id: c.task_id,
@@ -3026,7 +3072,7 @@ const allProjectCards = computed(() => {
     const timeA = a.created_at ? new Date(a.created_at).getTime() : 0
     const timeB = b.created_at ? new Date(b.created_at).getTime() : 0
     if (timeA !== timeB) return timeB - timeA
-    return 0
+    return (b.id || 0) - (a.id || 0)
   })
 })
 

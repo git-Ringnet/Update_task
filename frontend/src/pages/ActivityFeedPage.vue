@@ -59,7 +59,7 @@
         </div>
 
         <!-- Grouped Schedule Tasks Feed (Full view: Quá hạn + Hôm nay + Tương lai) -->
-        <div v-else class="activity-feed-scroll flex-1 min-h-0 overflow-y-auto scrollbar-none pr-1 space-y-6">
+        <div v-else class="activity-feed-scroll flex-1 min-h-0 overflow-y-auto scrollbar-hover pr-1 space-y-6">
           <div v-for="group in groupedScheduleTasks" :key="group.dateKey" class="space-y-3">
             <!-- Deep Green Bold Date Header -->
             <h2 class="text-[18px] sm:text-[19px] font-black text-[#1A7A56] font-heading mb-4 pt-1">{{ group.dateLabel
@@ -221,7 +221,7 @@
           </transition>
 
           <div ref="activityFeedScrollRef" @scroll="handleFeedScroll"
-            class="activity-feed-scroll flex-1 min-h-0 overflow-y-auto scrollbar-none pr-1 space-y-6"
+            class="activity-feed-scroll flex-1 min-h-0 overflow-y-auto scrollbar-hover pr-1 space-y-6"
             style="-webkit-overflow-scrolling: touch; touch-action: pan-y; overscroll-behavior-y: contain;">
             <!-- Loading older comments indicator when scrolling up -->
             <div v-if="isLoadingOlderActivities"
@@ -847,9 +847,9 @@ const fetchScheduleTasks = async (silent = false) => {
 }
 
 const formatScheduleGroupKey = (dateStr) => {
-  if (!dateStr) return { key: 'no_date', label: 'Chưa có ngày', order: 999999 }
+  if (!dateStr) return { key: 'no_date', label: 'Chưa có ngày', order: -999999 }
   const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return { key: dateStr, label: dateStr, order: 999999 }
+  if (isNaN(d.getTime())) return { key: dateStr, label: dateStr, order: -999999 }
 
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -885,11 +885,11 @@ const formatScheduleGroupKey = (dateStr) => {
   }
 }
 
-// In full view of Tất cả hành động tiếp theo, show ALL active tasks (including overdue ones)
+// In full view of Tất cả hành động tiếp theo, show ALL active tasks (including overdue ones) sorted from newest downwards
 const groupedScheduleTasks = computed(() => {
   const activeTasks = scheduleTasks.value.filter(t => Boolean(t.due_date) && t.status !== 'done')
   const sorted = [...activeTasks].sort((a, b) => {
-    const dateDiff = new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+    const dateDiff = new Date(b.due_date).getTime() - new Date(a.due_date).getTime()
     if (dateDiff !== 0) return dateDiff
     const timeA = a.created_at ? new Date(a.created_at).getTime() : 0
     const timeB = b.created_at ? new Date(b.created_at).getTime() : 0
@@ -910,7 +910,7 @@ const groupedScheduleTasks = computed(() => {
     groupMap.get(key).tasks.push(task)
   })
 
-  return Array.from(groupMap.values()).sort((a, b) => a.order - b.order)
+  return Array.from(groupMap.values()).sort((a, b) => b.order - a.order)
 })
 
 // Expanded state for long action items in schedule view

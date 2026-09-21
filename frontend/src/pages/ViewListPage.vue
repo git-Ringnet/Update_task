@@ -228,7 +228,7 @@
 
             <!-- Grouped by Customer Mode (Matches Mockup) -->
             <div v-else-if="isGroupedByCustomer" ref="scrollContainerGrouped" @scroll="handleScroll"
-              class="project-scroll-container space-y-6 max-h-[calc(100vh-130px)] overflow-y-auto scrollbar-none md:pl-8 md:-ml-8 md:pr-8 md:-mr-8">
+              class="project-scroll-container space-y-6 max-h-[calc(100vh-130px)] overflow-y-auto scrollbar-hover md:pl-8 md:-ml-8 md:pr-8 md:-mr-8">
               <div v-for="group in projectsByCustomer" :key="group.name" class="space-y-2.5">
                 <!-- Customer Header -->
                 <div class="customer-group-header flex items-center gap-2 pt-1 select-none w-full min-[1140px]:max-w-[360px] mx-auto min-[1140px]:-translate-x-7">
@@ -287,7 +287,7 @@
 
             <!-- Sticky Notes View (Grid Layout) -->
             <div v-else-if="viewMode === 'notes'" ref="scrollContainerNotes" @scroll="handleScroll"
-              class="project-scroll-container overflow-y-auto pr-1 pb-8 max-h-[calc(100vh-130px)] scrollbar-none">
+              class="project-scroll-container overflow-y-auto pr-1 pb-8 max-h-[calc(100vh-130px)] scrollbar-hover">
               <div class="sticky-grid">
                 <div v-for="project in displayedProjects" :key="project.id" :data-project-id="project.id"
                   @click="goToProjectDetail(project.id, $event)" class="note-card" :class="getStickyNoteStyle(project)">
@@ -335,7 +335,7 @@
 
             <!-- Default Cards list -->
             <div v-else ref="scrollContainerDefault" @scroll="handleScroll"
-              class="project-scroll-container space-y-3.5 max-h-[calc(100vh-130px)] overflow-y-auto scrollbar-none md:pl-8 md:-ml-8 md:pr-8 md:-mr-8">
+              class="project-scroll-container space-y-3.5 max-h-[calc(100vh-130px)] overflow-y-auto scrollbar-hover md:pl-8 md:-ml-8 md:pr-8 md:-mr-8">
               <transition-group enter-active-class="transition duration-300 ease-out"
                 enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0"
                 leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0"
@@ -480,7 +480,7 @@
                 </transition>
 
                 <div ref="activityScrollContainer" @scroll="handleActivityScroll"
-                  class="activity-feed-scroll space-y-0 overflow-y-auto scrollbar-none flex-1 px-4 pt-3.5 pr-3">
+                  class="activity-feed-scroll space-y-0 overflow-y-auto scrollbar-hover flex-1 px-4 pt-3.5 pr-3">
                   <!-- Loading older comments indicator when scrolling up -->
                   <div v-if="isLoadingOlderActivities"
                     class="flex items-center justify-center py-2 text-xs text-gray-500 gap-2">
@@ -728,7 +728,7 @@
             </div>
 
             <!-- Content Area: List grouped by date matching user screenshot -->
-            <div ref="scheduleScrollContainer" class="flex-1 overflow-y-auto overscroll-contain p-4 space-y-6 scrollbar-none">
+            <div ref="scheduleScrollContainer" class="flex-1 overflow-y-auto overscroll-contain p-4 space-y-6 scrollbar-hover">
               <!-- Loading Skeleton -->
               <div v-if="isScheduleLoading && groupedScheduleTasks.length === 0" class="space-y-4">
                 <div v-for="i in 3" :key="'sk-sched-' + i" class="animate-pulse space-y-2">

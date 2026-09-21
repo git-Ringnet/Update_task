@@ -1939,13 +1939,14 @@ const saveUpdate = async (projectId) => {
       console.warn('Could not create task in bulk update, continuing comment creation:', taskErr)
     }
 
-    // 2. Post to /api/comments (so it appears in "Hoạt động của đội" and project chat)
-    await axios.post('/api/comments', {
-      project_id: projectId,
-      task_id: createdTask?.id || null,
-      content: titleText,
-      tagged_user_ids: taggedIds.map(Number)
-    })
+    // 2. Post to /api/comments only if task creation failed (TaskController already creates comment upon task creation)
+    if (!createdTask) {
+      await axios.post('/api/comments', {
+        project_id: projectId,
+        content: titleText,
+        tagged_user_ids: taggedIds.map(Number)
+      })
+    }
 
     // 3. Clear activity cache and broadcast update
     try {
