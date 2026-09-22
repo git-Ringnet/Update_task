@@ -153,6 +153,26 @@ Route::middleware('auth.token')->group(function () {
             'pinned_customers' => 'sometimes|nullable|array',
         ]);
 
+        if ($request->filled('new_password')) {
+            $request->validate([
+                'current_password' => 'required|string',
+                'new_password' => 'required|string|min:6',
+            ], [
+                'current_password.required' => 'Vui lòng nhập mật khẩu hiện tại.',
+                'new_password.required' => 'Vui lòng nhập mật khẩu mới.',
+                'new_password.min' => 'Mật khẩu mới phải có ít nhất 6 ký tự.',
+            ]);
+
+            if (!\Illuminate\Support\Facades\Hash::check($request->current_password, $user->password)) {
+                return response()->json([
+                    'message' => 'Mật khẩu hiện tại không chính xác.',
+                    'errors' => ['current_password' => ['Mật khẩu hiện tại không chính xác.']]
+                ], 422);
+            }
+
+            $user->password = \Illuminate\Support\Facades\Hash::make($request->new_password);
+        }
+
         if (!empty($validated['avatar']) && str_starts_with($validated['avatar'], 'data:image/')) {
             try {
                 $data = $validated['avatar'];

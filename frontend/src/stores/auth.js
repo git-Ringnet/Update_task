@@ -124,11 +124,16 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async updateProfile(profileData) {
-      const res = await axios.put('/api/me', {
+      const payload = {
         name: profileData.name,
         email: profileData.email,
-        avatar: profileData.avatar
-      })
+        avatar: profileData.avatar,
+      }
+      if (profileData.current_password && profileData.new_password) {
+        payload.current_password = profileData.current_password
+        payload.new_password = profileData.new_password
+      }
+      const res = await axios.put('/api/me', payload)
       this.user = res.data
       localStorage.setItem('user', JSON.stringify(this.user))
       return this.user

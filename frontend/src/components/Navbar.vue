@@ -304,6 +304,80 @@
                 class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500" />
             </div>
 
+            <!-- Password Change Collapsible Section -->
+            <div class="pt-2 border-t border-gray-100">
+              <button 
+                type="button" 
+                @click="showPasswordSection = !showPasswordSection"
+                class="flex items-center justify-between w-full py-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 transition-colors cursor-pointer select-none"
+              >
+                <span class="flex items-center gap-1.5">
+                  <i class="fa-solid fa-key"></i>
+                  <span>{{ showPasswordSection ? 'Ẩn đổi mật khẩu' : 'Đổi mật khẩu tài khoản' }}</span>
+                </span>
+                <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200" :class="{ 'rotate-180': showPasswordSection }"></i>
+              </button>
+
+              <div v-if="showPasswordSection" class="space-y-3 pt-2 pb-1">
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 mb-1">Mật khẩu hiện tại <span class="text-rose-500">*</span></label>
+                  <div class="relative">
+                    <input 
+                      v-model="passwordForm.current_password" 
+                      :type="showCurrentPassword ? 'text' : 'password'"
+                      placeholder="Nhập mật khẩu đang dùng"
+                      class="w-full px-3.5 py-2 pr-9 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500" 
+                    />
+                    <button 
+                      @click="showCurrentPassword = !showCurrentPassword" 
+                      type="button"
+                      class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 cursor-pointer"
+                    >
+                      <i :class="showCurrentPassword ? 'fa-solid fa-eye-slash text-xs' : 'fa-solid fa-eye text-xs'"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 mb-1">Mật khẩu mới (tối thiểu 6 ký tự) <span class="text-rose-500">*</span></label>
+                  <div class="relative">
+                    <input 
+                      v-model="passwordForm.new_password" 
+                      :type="showNewPassword ? 'text' : 'password'"
+                      placeholder="Nhập mật khẩu mới"
+                      class="w-full px-3.5 py-2 pr-9 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500" 
+                    />
+                    <button 
+                      @click="showNewPassword = !showNewPassword" 
+                      type="button"
+                      class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 cursor-pointer"
+                    >
+                      <i :class="showNewPassword ? 'fa-solid fa-eye-slash text-xs' : 'fa-solid fa-eye text-xs'"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 mb-1">Xác nhận mật khẩu mới <span class="text-rose-500">*</span></label>
+                  <div class="relative">
+                    <input 
+                      v-model="passwordForm.password_confirmation" 
+                      :type="showConfirmPassword ? 'text' : 'password'"
+                      placeholder="Nhập lại mật khẩu mới"
+                      class="w-full px-3.5 py-2 pr-9 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500" 
+                    />
+                    <button 
+                      @click="showConfirmPassword = !showConfirmPassword" 
+                      type="button"
+                      class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 cursor-pointer"
+                    >
+                      <i :class="showConfirmPassword ? 'fa-solid fa-eye-slash text-xs' : 'fa-solid fa-eye text-xs'"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Browser Notifications Toggle -->
             <div v-if="browserNotifications.isSupported"
               class="pt-3 border-t border-gray-100 flex items-center justify-between">
@@ -624,6 +698,17 @@ const editForm = reactive({
   avatar: ''
 })
 
+const passwordForm = reactive({
+  current_password: '',
+  new_password: '',
+  password_confirmation: ''
+})
+
+const showPasswordSection = ref(false)
+const showCurrentPassword = ref(false)
+const showNewPassword = ref(false)
+const showConfirmPassword = ref(false)
+
 // Crop avatar states
 const isDragging = ref(false)
 const dragStart = { x: 0, y: 0 }
@@ -706,6 +791,13 @@ const openEditProfile = () => {
   avatarZoom.value = 1
   avatarOffsetX.value = 0
   avatarOffsetY.value = 0
+  passwordForm.current_password = ''
+  passwordForm.new_password = ''
+  passwordForm.password_confirmation = ''
+  showPasswordSection.value = false
+  showCurrentPassword.value = false
+  showNewPassword.value = false
+  showConfirmPassword.value = false
   isDropdownOpen.value = false
   isProfileModalOpen.value = true
 }
@@ -840,12 +932,37 @@ const importSystemBackup = async (event) => {
 }
 
 const handleSaveProfile = async () => {
+  if (showPasswordSection.value || passwordForm.new_password) {
+    if (!passwordForm.current_password) {
+      toastStore.error('Vui lòng nhập mật khẩu hiện tại.')
+      return
+    }
+    if (!passwordForm.new_password) {
+      toastStore.error('Vui lòng nhập mật khẩu mới.')
+      return
+    }
+    if (passwordForm.new_password.length < 6) {
+      toastStore.error('Mật khẩu mới phải có ít nhất 6 ký tự.')
+      return
+    }
+    if (passwordForm.new_password !== passwordForm.password_confirmation) {
+      toastStore.error('Mật khẩu xác nhận không khớp.')
+      return
+    }
+  }
+
   try {
-    const res = await axios.put('/api/me', {
+    const payload = {
       name: editForm.name,
       email: editForm.email,
       avatar: editForm.avatar
-    })
+    }
+    if (showPasswordSection.value && passwordForm.new_password) {
+      payload.current_password = passwordForm.current_password
+      payload.new_password = passwordForm.new_password
+    }
+
+    const res = await axios.put('/api/me', payload)
 
     if (authStore.user) {
       authStore.user.name = res.data.name
@@ -853,10 +970,16 @@ const handleSaveProfile = async () => {
       authStore.user.avatar = res.data.avatar
       localStorage.setItem('user', JSON.stringify(authStore.user))
     }
+
+    passwordForm.current_password = ''
+    passwordForm.new_password = ''
+    passwordForm.password_confirmation = ''
+    showPasswordSection.value = false
+
     isProfileModalOpen.value = false
-    toastStore.success('Đã cập nhật thông tin tài khoản!')
+    toastStore.success('Đã cập nhật thông tin tài khoản thành công!')
   } catch (err) {
-    toastStore.error(err.response?.data?.message || 'Không thể lưu thay đổi!')
+    toastStore.error(err.response?.data?.message || err.response?.data?.errors?.current_password?.[0] || 'Không thể lưu thay đổi!')
   }
 }
 

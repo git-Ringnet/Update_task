@@ -978,52 +978,7 @@
       :edit-project="editingProject" @close="handleCloseModal" @submit="handleCreateProject"
       @customer-created="projectStore.fetchAuxData()" />
 
-    <!-- Edit Profile Modal -->
-    <div v-if="isProfileModalOpen" class="fixed inset-0 z-50 overflow-y-auto">
-      <div class="fixed inset-0 bg-gray-900/50 backdrop-blur-xs" @click="isProfileModalOpen = false"></div>
-      <div class="flex min-h-full items-center justify-center p-4">
-        <div class="relative w-full max-w-md bg-white rounded-2xl p-6 shadow-xl border border-gray-100">
 
-          <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
-            <h3 class="text-lg font-bold text-gray-900">Chỉnh Sửa Thông Tin Tài Khoản</h3>
-            <button @click="isProfileModalOpen = false" class="text-gray-400 hover:text-gray-600">
-              <i class="fa-solid fa-xmark text-lg"></i>
-            </button>
-          </div>
-
-          <form @submit.prevent="handleSaveProfile" class="space-y-4">
-            <div class="flex justify-center mb-2">
-              <img :src="editForm.avatar"
-                class="w-20 h-20 rounded-full object-cover border-2 border-emerald-400 shadow-md" />
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-gray-700 mb-1">Tên tài khoản</label>
-              <input v-model="editForm.name" required type="text"
-                class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500" />
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-gray-700 mb-1">Email</label>
-              <input v-model="editForm.email" required type="email"
-                class="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500" />
-            </div>
-
-            <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
-              <button type="button" @click="isProfileModalOpen = false"
-                class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl">
-                Hủy
-              </button>
-              <button type="submit"
-                class="px-5 py-2 bg-[#45A246] hover:bg-[#3a903b] text-white text-sm font-bold rounded-xl shadow-2xs transition-colors cursor-pointer">
-                Lưu thay đổi
-              </button>
-            </div>
-          </form>
-
-        </div>
-      </div>
-    </div>
 
     <!-- Create View Modal -->
     <div v-if="isViewModalOpen" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog"
