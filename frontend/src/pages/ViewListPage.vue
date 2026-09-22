@@ -2,7 +2,7 @@
   <div class="view-list-page min-h-screen flex flex-col pb-2 transition-colors duration-200"
     :class="viewMode === 'notes' ? 'sticky-board-bg pb-12' : 'bg-[#F9F4EE]'">
     <!-- Navbar Component -->
-    <Navbar @search="handleSearch" />
+    <Navbar @search="handleSearch" :class="{ 'max-md:hidden': shouldHideMobileNavbar }" />
 
     <!-- Main Container -->
     <main class="max-w-[1440px] mx-auto px-3 sm:px-4 lg:px-6 py-6 w-full">
@@ -523,6 +523,7 @@
                             <template v-if="log.project?.customer">
                               <span class="font-bold text-[#32312F]">&nbsp;hỗ trợ&nbsp;</span>
                               <span class="text-[#1A7A56] font-extrabold cursor-pointer hover:underline"
+                                :title="log.project.customer.name"
                                 @click.stop="$router.push(`/customers/${log.project.customer.id}`)">
                                 {{ log.project.customer.name }}
                               </span>
@@ -598,7 +599,7 @@
                           <div v-if="parseCommentText(log.content)"
                             class="whitespace-pre-line font-normal text-gray-900 select-text cursor-text">
                             <div :class="!isTaskExpanded(log.id) && isLongContent(parseCommentText(log.content)) ? 'line-clamp-4' : ''">
-                              {{ parseCommentText(log.content) }}
+                              <i v-if="log.is_private" class="fa-solid fa-lock text-[13px] text-[#ea580c] mr-1.5 align-middle inline-block" title="Tin nhắn riêng tư"></i><span v-html="formatCommentTextWithMentions(log.content, projectStore.users, mentionGroups)"></span>
                             </div>
                             <button v-if="isLongContent(parseCommentText(log.content))"
                               @click.stop="toggleExpandTask(log.id)"
@@ -635,16 +636,25 @@
                           </div>
                         </div>
 
-                        <!-- Bottom Actions: Reply button with text -->
-                        <div class="flex items-center gap-3 mt-3 sm:mt-3.5">
-                          <button @click.stop="handleReplyToActivity(log)" type="button"
+                        <!-- Bottom Actions: Reply & Private Reply buttons with text -->
+                        <div class="flex items-center gap-2 mt-3 sm:mt-3.5 flex-wrap">
+                          <button v-if="!log.is_private" @click.stop="handleReplyToActivity(log)" type="button"
                             :title="'Trả lời ' + (log.user?.name || 'thành viên')"
                             class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-gray-500 hover:text-emerald-700 hover:bg-stone-200/60 active:bg-stone-300/80 cursor-pointer transition-all active:scale-95 -ml-1.5 select-none font-bold">
                             <i class="fa-solid fa-reply text-[18px] sm:text-[19px]"></i>
                             <span class="text-[13px] sm:text-[14px] leading-none">
                               <span class="sm:hidden">Trả lời</span>
-                              <span class="hidden sm:inline">Trả lời {{ log.user ? log.user.name : 'thành viên'
-                                }}</span>
+                              <span class="hidden sm:inline">Trả lời {{ log.user ? log.user.name : 'thành viên' }}</span>
+                            </span>
+                          </button>
+
+                          <button @click.stop="handlePrivateReplyToActivity(log)" type="button"
+                            :title="'Trả lời riêng ' + (log.user?.name || 'thành viên')"
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[#ea580c] hover:text-orange-700 hover:bg-orange-100/60 active:bg-orange-200/80 cursor-pointer transition-all active:scale-95 select-none font-bold">
+                            <i class="fa-solid fa-reply text-[18px] sm:text-[19px]"></i>
+                            <span class="text-[13px] sm:text-[14px] leading-none">
+                              <span class="sm:hidden">Trả lời riêng</span>
+                              <span class="hidden sm:inline">Trả lời riêng {{ log.user ? log.user.name : 'thành viên' }}</span>
                             </span>
                           </button>
                         </div>
@@ -728,7 +738,13 @@
             </div>
 
             <!-- Content Area: List grouped by date matching user screenshot -->
-            <div ref="scheduleScrollContainer" class="flex-1 overflow-y-auto overscroll-contain p-4 space-y-6 scrollbar-hover">
+            <div ref="scheduleScrollContainer" @scroll="handleScheduleScroll" class="flex-1 overflow-y-auto overscroll-contain p-4 space-y-6 scrollbar-hover">
+              <!-- Past Loading Spinner -->
+              <div v-if="isLoadingPastTasks" class="py-2.5 text-center text-xs text-gray-500 font-medium flex items-center justify-center gap-2">
+                <i class="fa-solid fa-spinner fa-spin text-emerald-600"></i>
+                <span>Đang tải hành động cũ hơn...</span>
+              </div>
+
               <!-- Loading Skeleton -->
               <div v-if="isScheduleLoading && groupedScheduleTasks.length === 0" class="space-y-4">
                 <div v-for="i in 3" :key="'sk-sched-' + i" class="animate-pulse space-y-2">
@@ -746,7 +762,7 @@
               </div>
 
               <!-- Grouped Tasks by Date -->
-              <div v-for="group in groupedScheduleTasks" :key="group.dateKey" class="space-y-3">
+              <div v-for="group in groupedScheduleTasks" :key="group.dateKey" :data-group-key="group.dateKey" class="space-y-3">
                 <!-- Group Date Header (Deep green bold header matching screenshot) -->
                 <h3 class="text-[17px] sm:text-[18px] font-black text-[#1A7A56] tracking-tight">
                   {{ group.dateLabel }}
@@ -849,6 +865,11 @@
                     </div>
                   </div>
                 </div>
+              </div>
+              <!-- Future Loading Spinner -->
+              <div v-if="isLoadingFutureTasks" class="py-2.5 text-center text-xs text-gray-500 font-medium flex items-center justify-center gap-2">
+                <i class="fa-solid fa-spinner fa-spin text-emerald-600"></i>
+                <span>Đang tải hành động tiếp theo...</span>
               </div>
             </div>
           </section>
@@ -1442,6 +1463,7 @@ import { useProjectStore } from '../stores/project'
 import { useToastStore } from '../stores/toast'
 import { useConfirmStore } from '../stores/confirm'
 import { useAuthStore } from '../stores/auth'
+import { formatCommentTextWithMentions } from '../utils/mentionFormatter'
 
 const projectStore = useProjectStore()
 const authStore = useAuthStore()
@@ -1945,6 +1967,10 @@ const viewModeTitle = computed(() => {
   return 'Chế độ xem: Dự án (Ctrl + B để đổi)'
 })
 
+const shouldHideMobileNavbar = computed(() => {
+  return viewMode.value === 'activities' || viewMode.value === 'actions' || viewMode.value === 'schedule'
+})
+
 watch(viewMode, async (newVal) => {
   if (typeof window !== 'undefined' && window.innerWidth < 768) {
     const activeEl = document.activeElement
@@ -2032,6 +2058,43 @@ const getCachedScheduleTasks = () => {
 }
 const scheduleTasks = ref(getCachedScheduleTasks())
 const isScheduleLoading = ref(false)
+const hasMorePastTasks = ref(false)
+const hasMoreFutureTasks = ref(false)
+const isLoadingPastTasks = ref(false)
+const isLoadingFutureTasks = ref(false)
+
+const scrollToTodayOrNearestSchedule = (smooth = false) => {
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      const container = scheduleScrollContainer.value
+      if (!container) return
+      const groups = groupedScheduleTasks.value
+      if (!groups || groups.length === 0) return
+
+      // Target priority:
+      // 1. Today (order === 0)
+      // 2. Nearest future date (first group with order > 0)
+      // 3. Nearest past date (last group with order < 0)
+      let targetGroup = groups.find(g => g.order === 0)
+      if (!targetGroup) targetGroup = groups.find(g => g.order > 0)
+      if (!targetGroup && groups.length > 0) targetGroup = groups[groups.length - 1]
+
+      if (targetGroup) {
+        const targetEl = container.querySelector(`[data-group-key="${targetGroup.dateKey}"]`)
+        if (targetEl) {
+          const containerTop = container.getBoundingClientRect().top
+          const targetTop = targetEl.getBoundingClientRect().top
+          const offset = targetTop - containerTop + container.scrollTop
+          if (smooth) {
+            container.scrollTo({ top: Math.max(0, offset - 4), behavior: 'smooth' })
+          } else {
+            container.scrollTop = Math.max(0, offset - 4)
+          }
+        }
+      }
+    })
+  })
+}
 
 const fetchScheduleTasks = async (silent = false) => {
   if (!silent && scheduleTasks.value.length === 0) {
@@ -2039,17 +2102,128 @@ const fetchScheduleTasks = async (silent = false) => {
   }
   try {
     const res = await axios.get('/api/tasks', {
-      params: { view_mode: 'schedule' }
+      params: { view_mode: 'schedule', paginate: 1, limit: 15 }
     })
-    const data = res.data || []
+    const data = res.data?.tasks || (Array.isArray(res.data) ? res.data : [])
+    hasMorePastTasks.value = Boolean(res.data?.has_more_past)
+    hasMoreFutureTasks.value = Boolean(res.data?.has_more_future)
     scheduleTasks.value = data
     try {
       localStorage.setItem(SCHEDULE_CACHE_KEY, JSON.stringify(data))
     } catch {}
+    scrollToTodayOrNearestSchedule()
+    setTimeout(() => scrollToTodayOrNearestSchedule(), 100)
   } catch (err) {
     console.error('Failed to fetch schedule tasks:', err)
   } finally {
     isScheduleLoading.value = false
+  }
+}
+
+const loadOlderScheduleTasks = async () => {
+  if (isLoadingPastTasks.value || !hasMorePastTasks.value || scheduleTasks.value.length === 0) return
+
+  // Find oldest task
+  const activeTasks = [...scheduleTasks.value].sort((a, b) => {
+    return new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+  })
+  const oldestTask = activeTasks[0]
+  if (!oldestTask) return
+
+  isLoadingPastTasks.value = true
+  const container = scheduleScrollContainer.value
+  const prevScrollHeight = container ? container.scrollHeight : 0
+  const prevScrollTop = container ? container.scrollTop : 0
+
+  try {
+    const res = await axios.get('/api/tasks', {
+      params: {
+        view_mode: 'schedule',
+        paginate: 1,
+        direction: 'past',
+        before_date: oldestTask.due_date,
+        before_id: oldestTask.id,
+        limit: 15
+      }
+    })
+    const newOlderTasks = res.data?.tasks || []
+    hasMorePastTasks.value = Boolean(res.data?.has_more_past)
+
+    if (newOlderTasks.length > 0) {
+      const existingIds = new Set(scheduleTasks.value.map(t => t.id))
+      const uniqueNew = newOlderTasks.filter(t => !existingIds.has(t.id))
+      if (uniqueNew.length > 0) {
+        scheduleTasks.value = [...uniqueNew, ...scheduleTasks.value]
+
+        // Keep scroll anchor so screen doesn't jump
+        await nextTick()
+        requestAnimationFrame(() => {
+          if (container) {
+            const heightDiff = container.scrollHeight - prevScrollHeight
+            container.scrollTop = prevScrollTop + heightDiff
+          }
+        })
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load older schedule tasks:', err)
+  } finally {
+    isLoadingPastTasks.value = false
+  }
+}
+
+const loadFutureScheduleTasks = async () => {
+  if (isLoadingFutureTasks.value || !hasMoreFutureTasks.value || scheduleTasks.value.length === 0) return
+
+  // Find latest task
+  const activeTasks = [...scheduleTasks.value].sort((a, b) => {
+    return new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+  })
+  const latestTask = activeTasks[activeTasks.length - 1]
+  if (!latestTask) return
+
+  isLoadingFutureTasks.value = true
+  try {
+    const res = await axios.get('/api/tasks', {
+      params: {
+        view_mode: 'schedule',
+        paginate: 1,
+        direction: 'future',
+        after_date: latestTask.due_date,
+        after_id: latestTask.id,
+        limit: 15
+      }
+    })
+    const newFutureTasks = res.data?.tasks || []
+    hasMoreFutureTasks.value = Boolean(res.data?.has_more_future)
+
+    if (newFutureTasks.length > 0) {
+      const existingIds = new Set(scheduleTasks.value.map(t => t.id))
+      const uniqueNew = newFutureTasks.filter(t => !existingIds.has(t.id))
+      if (uniqueNew.length > 0) {
+        scheduleTasks.value = [...scheduleTasks.value, ...uniqueNew]
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load future schedule tasks:', err)
+  } finally {
+    isLoadingFutureTasks.value = false
+  }
+}
+
+const handleScheduleScroll = (event) => {
+  const el = event?.target || scheduleScrollContainer.value
+  if (!el) return
+
+  // Scrolling up: near top
+  if (el.scrollTop <= 40 && hasMorePastTasks.value && !isLoadingPastTasks.value) {
+    loadOlderScheduleTasks()
+  }
+
+  // Scrolling down: near bottom
+  const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+  if (distanceFromBottom <= 50 && hasMoreFutureTasks.value && !isLoadingFutureTasks.value) {
+    loadFutureScheduleTasks()
   }
 }
 
@@ -2112,17 +2286,9 @@ const formatScheduleGroupKey = (dateStr) => {
 
 const groupedScheduleTasks = computed(() => {
   const q = projectStore.searchQuery ? projectStore.searchQuery.trim().toLowerCase() : ''
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
 
-  // Only show tasks that are still within due date (due_date >= today, not overdue)
-  let activeTasks = scheduleTasks.value.filter(t => {
-    if (!t.due_date || t.status === 'done') return false
-    const d = new Date(t.due_date)
-    if (isNaN(d.getTime())) return false
-    const target = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
-    return target >= today
-  })
+  // Show all tasks that have due_date and are not done (including overdue and future)
+  let activeTasks = scheduleTasks.value.filter(t => Boolean(t.due_date) && t.status !== 'done')
 
   if (q) {
     activeTasks = activeTasks.filter(task => {
@@ -2134,12 +2300,13 @@ const groupedScheduleTasks = computed(() => {
     })
   }
 
+  // Sort chronological: oldest past first -> today -> newest future last
   const sorted = [...activeTasks].sort((a, b) => {
     const dateDiff = new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
     if (dateDiff !== 0) return dateDiff
     const timeA = a.created_at ? new Date(a.created_at).getTime() : 0
     const timeB = b.created_at ? new Date(b.created_at).getTime() : 0
-    return timeB - timeA
+    return timeA - timeB
   })
 
   const groupMap = new Map()
@@ -2157,6 +2324,20 @@ const groupedScheduleTasks = computed(() => {
   })
 
   return Array.from(groupMap.values()).sort((a, b) => a.order - b.order)
+})
+
+watch(() => viewMode.value, (newVal) => {
+  if (newVal === 'actions' || newVal === 'schedule') {
+    scrollToTodayOrNearestSchedule()
+    setTimeout(() => scrollToTodayOrNearestSchedule(), 100)
+  }
+})
+
+watch(() => groupedScheduleTasks.value.length, (newLen) => {
+  if (newLen > 0 && (viewMode.value === 'actions' || viewMode.value === 'schedule')) {
+    scrollToTodayOrNearestSchedule()
+    setTimeout(() => scrollToTodayOrNearestSchedule(), 120)
+  }
 })
 
 const scheduleTasksCount = computed(() => {
@@ -3959,12 +4140,35 @@ watch(() => [followingProjects.value, projectStore.projects], ([newFollowing, al
 
 const handleReplyToActivity = (log) => {
   editingCommentLog.value = null
-  replyingToLog.value = log
+  replyingToLog.value = {
+    ...log,
+    is_private_reply: false
+  }
   chatProjectId.value = log.project_id || log.project?.id || followingProjects.value[0]?.id
 
   let mention = ''
   if (log.user) {
     mention = `@${log.user.name} `
+  }
+
+  chatMessage.value = mention
+
+  nextTick(() => {
+    activityComposerRef.value?.focus()
+  })
+}
+
+const handlePrivateReplyToActivity = (log) => {
+  editingCommentLog.value = null
+  replyingToLog.value = {
+    ...log,
+    is_private_reply: true
+  }
+  chatProjectId.value = log.project_id || log.project?.id || followingProjects.value[0]?.id
+
+  let mention = ''
+  if (log.user) {
+    mention = `"${log.user.name} `
   }
 
   chatMessage.value = mention
@@ -4999,7 +5203,7 @@ onUnmounted(() => {
     height: 100% !important;
     max-height: 100% !important;
     margin: 0 !important;
-    padding: 0 0 2px 0 !important;
+    padding: env(safe-area-inset-top, 0px) 0 2px 0 !important;
     box-sizing: border-box !important;
     box-shadow: none !important;
   }
@@ -5034,7 +5238,7 @@ onUnmounted(() => {
     height: 100% !important;
     max-height: 100% !important;
     margin: 0 !important;
-    padding: 0 0 2px 0 !important;
+    padding: env(safe-area-inset-top, 0px) 0 2px 0 !important;
     box-sizing: border-box !important;
     box-shadow: none !important;
   }

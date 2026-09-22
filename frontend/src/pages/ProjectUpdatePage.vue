@@ -221,20 +221,24 @@
                       class="absolute z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-2xl py-1 text-gray-800 ring-1 ring-black/5 animate-fade-in-up"
                       :style="mentionDropdownStyle">
                       <div
-                        class="px-3 py-1 text-[10px] uppercase font-bold text-gray-400 border-b border-gray-100 mb-1 flex items-center justify-between">
-                        <span>Gắn thẻ thành viên</span>
-                        <span class="text-[9px] text-emerald-600 font-extrabold">↑↓ Enter</span>
+                        class="px-3 py-1 text-[10px] uppercase font-bold border-b border-gray-100 mb-1 flex items-center justify-between"
+                        :class="isPrivateMentionTrigger ? 'text-[#ea580c]' : 'text-gray-400'">
+                        <span class="flex items-center gap-1">
+                          <i v-if="isPrivateMentionTrigger" class="fa-solid fa-lock text-[9px] text-[#ea580c]"></i>
+                          <span>{{ isPrivateMentionTrigger ? 'Tin nhắn riêng tư' : 'Gắn thẻ thành viên' }}</span>
+                        </span>
+                        <span class="text-[9px] font-extrabold" :class="isPrivateMentionTrigger ? 'text-[#ea580c]' : 'text-emerald-600'">↑↓ Enter</span>
                       </div>
                       <button v-for="(u, idx) in filteredUsersForMention" :key="u.id" type="button" @mousedown.prevent
                         @click="selectMentionUser(project.id, u)"
-                        class="w-full px-3 py-2 flex items-center gap-2.5 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left cursor-pointer"
-                        :class="{ 'bg-emerald-50 text-emerald-800 font-bold': idx === mentionIndex }">
+                        class="w-full px-3 py-2 flex items-center gap-2.5 text-xs font-semibold hover:bg-stone-50 transition-colors text-left cursor-pointer"
+                        :class="idx === mentionIndex ? (isPrivateMentionTrigger ? 'bg-orange-50 text-[#ea580c] font-bold' : 'bg-emerald-50 text-emerald-800 font-bold') : ''">
                         <img v-if="!u.isMentionGroup" :src="u.avatar || defaultAvatar"
                           class="w-6 h-6 rounded-full object-cover border border-gray-200" />
                         <div class="flex flex-col min-w-0 flex-1">
                           <span class="truncate font-bold">{{ u.name }}</span>
                           <span class="text-[10px] text-gray-400 truncate">
-                            {{ u.isMentionGroup ? u.description : '@' + u.name }}
+                            {{ u.isMentionGroup ? u.description : (isPrivateMentionTrigger ? '"' + u.name : '@' + u.name) }}
                           </span>
                         </div>
                       </button>
@@ -983,6 +987,8 @@ const quickCreateStage = async (projectId) => {
 
 // @Mention State & Auto-Assign Logic
 const activeMentionProjectId = ref(null)
+const activeMentionTrigger = ref('@')
+const isPrivateMentionTrigger = computed(() => activeMentionTrigger.value === '"')
 const showMentionDropdown = ref(false)
 const mentionQuery = ref('')
 const mentionIndex = ref(0)
@@ -1224,18 +1230,19 @@ const onInputText = (projectId, event) => {
     el.style.height = '128px'
   }
 
-  // Mention dropdown trigger
+  // Mention dropdown trigger (@ or ")
   const cursorPos = el?.selectionStart || text.length
   const textBeforeCursor = text.substring(0, cursorPos)
-  const match = textBeforeCursor.match(/@([^@\n]{0,30})$/)
+  const match = textBeforeCursor.match(/([@"])([^@"\n]{0,30})$/)
 
   if (match) {
     activeMentionProjectId.value = projectId
-    mentionQuery.value = match[1]
+    activeMentionTrigger.value = match[1]
+    mentionQuery.value = match[2]
     showMentionDropdown.value = true
     mentionIndex.value = 0
     nextTick(() => {
-      const coords = getCaretCoordinates(el, cursorPos - match[1].length - 1)
+      const coords = getCaretCoordinates(el, cursorPos - match[2].length - 1)
       const dropdownWidth = 256
       const leftClamped = Math.max(0, Math.min(coords.left, el.clientWidth - dropdownWidth - 10))
       activeTextareaHeight.value = el.clientHeight
@@ -1293,43 +1300,41 @@ const onTextareaKeydown = (projectId, event) => {
 
 const selectMentionUser = (projectId, user) => {
   if (!user) return
+  const text = updateTexts[projectId] || ''
+  const el = textareaRefs[projectId]
+  const cursorPos = el?.selectionStart || text.length
+  const textBeforeCursor = text.substring(0, cursorPos)
+  const textAfterCursor = text.substring(cursorPos)
+  const match = textBeforeCursor.match(/([@"])([^@"\n]{0,30})$/)
+  const prefix = match ? match[1] : (activeMentionTrigger.value || '@')
+
   if (user.isMentionGroup) {
-    const text = updateTexts[projectId] || ''
-    const el = textareaRefs[projectId]
-    const cursorPos = el?.selectionStart || text.length
-    const textBeforeCursor = text.substring(0, cursorPos)
-    const textAfterCursor = text.substring(cursorPos)
-    const match = textBeforeCursor.match(/@([^@\n]{0,30})$/)
     const newBefore = match ? textBeforeCursor.substring(0, match.index) + `@${user.mentionName} ` : `${textBeforeCursor}@${user.mentionName} `
     updateTexts[projectId] = newBefore + textAfterCursor
     showMentionDropdown.value = false
     nextTick(() => { el?.focus(); el?.setSelectionRange(newBefore.length, newBefore.length) })
     return
   }
-  const idStr = String(user.id)
-  if (!taggedUsersMap[projectId]) {
-    taggedUsersMap[projectId] = []
-  }
-  if (!taggedUsersMap[projectId].includes(idStr)) {
-    taggedUsersMap[projectId].push(idStr)
-  }
-  assigneeMap[projectId] = taggedUsersMap[projectId][0]
 
-  const text = updateTexts[projectId] || ''
-  const el = textareaRefs[projectId]
-  const cursorPos = el?.selectionStart || text.length
-  const textBeforeCursor = text.substring(0, cursorPos)
-  const textAfterCursor = text.substring(cursorPos)
+  const idStr = String(user.id)
+  if (prefix === '@') {
+    if (!taggedUsersMap[projectId]) {
+      taggedUsersMap[projectId] = []
+    }
+    if (!taggedUsersMap[projectId].includes(idStr)) {
+      taggedUsersMap[projectId].push(idStr)
+    }
+    assigneeMap[projectId] = taggedUsersMap[projectId][0]
+  }
 
   let newPos = cursorPos
-  const match = textBeforeCursor.match(/@([^@\n]{0,30})$/)
   if (match) {
     const startIndex = match.index
-    const newBefore = textBeforeCursor.substring(0, startIndex) + `@${user.name} `
+    const newBefore = textBeforeCursor.substring(0, startIndex) + `${prefix}${user.name} `
     updateTexts[projectId] = newBefore + textAfterCursor
     newPos = newBefore.length
   } else {
-    updateTexts[projectId] = `${text} @${user.name} `
+    updateTexts[projectId] = `${text} ${prefix}${user.name} `
     newPos = updateTexts[projectId].length
   }
   showMentionDropdown.value = false

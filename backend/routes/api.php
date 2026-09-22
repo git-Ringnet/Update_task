@@ -131,6 +131,9 @@ Route::get('/active-users', function () {
 // TV only receives recent broadcasts. Older records stay in the database.
 Route::get('/tv/broadcasts', [BroadcastController::class, 'index']);
 
+// Allow deleting push subscription by endpoint even during logout/expired session
+Route::delete('/push/subscriptions', [PushSubscriptionController::class, 'destroy']);
+
 // Protected Group
 Route::middleware('auth.token')->group(function () {
     Route::get('/me', function (Request $request) {

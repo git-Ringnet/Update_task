@@ -19,16 +19,19 @@
 
     <!-- Replying to banner if replying -->
     <div v-if="replyingTo"
-      class="flex items-start justify-between bg-[#e1e3ea] px-3.5 py-2 border-l-3 border-[#0068FF] text-sm shadow-3xs border-b border-gray-300">
+      class="flex items-start justify-between px-3.5 py-2 text-sm shadow-3xs border-b transition-colors"
+      :class="isPrivateReply ? 'bg-[#fff2e8] border-l-3 border-[#ea580c] border-orange-200' : 'bg-[#e1e3ea] border-l-3 border-[#0068FF] border-gray-300'">
       <div class="flex-1 min-w-0">
-        <div class="text-[14px] font-extrabold text-[#0068FF] uppercase tracking-wider flex items-center gap-1">
-          <i class="fa-solid fa-reply text-xs"></i>
-          <span>Trả lời {{ replyingTo.user?.name || (typeof replyingTo.user === 'string' ? replyingTo.user : 'Hệ thống') }}</span>
+        <div class="text-[14px] font-extrabold uppercase tracking-wider flex items-center gap-1.5"
+          :class="isPrivateReply ? 'text-[#ea580c]' : 'text-[#0068FF]'">
+          <i :class="isPrivateReply ? 'fa-solid fa-user-lock text-xs' : 'fa-solid fa-reply text-xs'"></i>
+          <span>{{ isPrivateReply ? 'Trả lời riêng' : 'Trả lời' }} {{ replyingTo.user?.name || (typeof replyingTo.user === 'string' ? replyingTo.user : 'Hệ thống') }}</span>
         </div>
-        <div class="text-[15px] text-gray-600 truncate mt-0.5">{{ replyText || replyingTo.content || replyingTo.text }}</div>
+        <div class="text-[15px] truncate mt-0.5" :class="isPrivateReply ? 'text-orange-950/80 font-medium' : 'text-gray-600'">{{ replyText || replyingTo.content || replyingTo.text }}</div>
       </div>
       <button v-if="!editingComment" type="button" title="Hủy trả lời" @click="$emit('cancel-reply')"
-        class="text-gray-400 hover:text-gray-650 p-1 rounded-full hover:bg-gray-200/50 cursor-pointer shrink-0 ml-2">
+        class="p-1 rounded-full cursor-pointer shrink-0 ml-2 transition-colors"
+        :class="isPrivateReply ? 'text-orange-400 hover:text-orange-700 hover:bg-orange-200/50' : 'text-gray-400 hover:text-gray-650 hover:bg-gray-200/50'">
         <i class="fa-solid fa-xmark text-sm"></i>
       </button>
     </div>
@@ -55,24 +58,33 @@
         ref="suggestionsListRef"
         class="absolute z-50 bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-[220px] overflow-y-auto divide-y divide-gray-100"
         @touchstart.stop @mousedown.stop>
-        <div class="px-3 py-1.5 bg-gray-50 text-[13px] font-extrabold text-gray-400 uppercase tracking-wider sticky top-0 z-10">
-          {{ trigger === '#' ? 'Chọn dự án' : 'Gắn thẻ thành viên hoặc nhóm' }}
+        <div class="px-3 py-1.5 bg-gray-50 text-[13px] font-extrabold uppercase tracking-wider sticky top-0 z-10 flex items-center gap-1.5"
+          :class="isPrivateTrigger ? 'text-orange-600 bg-orange-50/70 border-b border-orange-100' : 'text-gray-400'">
+          <i v-if="isPrivateTrigger" class="fa-solid fa-user-lock text-xs text-orange-500"></i>
+          <span>{{ trigger === '#' ? 'Chọn dự án' : (isPrivateTrigger ? 'Gửi tin nhắn riêng tới thành viên' : 'Gắn thẻ thành viên hoặc nhóm') }}</span>
         </div>
         <button v-for="(item, index) in suggestions" :key="`${item.type}-${item.id}`" type="button"
           @pointerdown.prevent="selectSuggestion(item)"
           @touchstart.prevent="selectSuggestion(item)"
           @mousedown.prevent="selectSuggestion(item)"
           @click.prevent="selectSuggestion(item)"
-          class="w-full text-left px-3.5 py-2.5 text-[16px] font-bold flex justify-between items-center cursor-pointer hover:bg-emerald-50 hover:text-emerald-800 active:bg-emerald-100 touch-manipulation"
-          :class="index === suggestionIndex ? 'bg-emerald-50 text-emerald-800' : 'text-gray-700'">
+          class="w-full text-left px-3.5 py-2.5 text-[16px] font-bold flex justify-between items-center cursor-pointer transition-colors touch-manipulation"
+          :class="[
+            index === suggestionIndex
+              ? (item.type === 'private_member' ? 'bg-orange-50 text-orange-900' : 'bg-emerald-50 text-emerald-800')
+              : (item.type === 'private_member' ? 'text-gray-800 hover:bg-orange-50/60 hover:text-orange-900' : 'text-gray-700 hover:bg-emerald-50 hover:text-emerald-800'),
+            item.type === 'private_member' ? 'active:bg-orange-100' : 'active:bg-emerald-100'
+          ]">
           <span class="truncate flex-1 flex items-center gap-1.5">
             <i v-if="item.type === 'project'" class="fa-solid fa-folder text-emerald-600 text-xs"></i>
+            <i v-else-if="item.type === 'private_member'" class="fa-solid fa-user-lock text-orange-500 text-xs"></i>
             <i v-else-if="item.type === 'all'" class="fa-solid fa-users text-emerald-600 text-xs"></i>
             <i v-else-if="item.type === 'member'" class="fa-solid fa-user text-blue-500 text-xs"></i>
             <i v-else class="fa-solid fa-users text-amber-500 text-xs"></i>
             <span>{{ item.title }}</span>
           </span>
-          <span class="text-[14px] text-gray-400 font-semibold truncate max-w-[130px] shrink-0 ml-2">
+          <span class="text-[14px] font-semibold truncate max-w-[130px] shrink-0 ml-2"
+            :class="item.type === 'private_member' ? 'text-orange-500 font-bold' : 'text-gray-400'">
             {{ item.subtitle }}
           </span>
         </button>
@@ -324,26 +336,39 @@
         </div>
       </div>
 
-      <!-- Textarea Input Area & Bottom Action Row -->
-      <div class="relative flex flex-col bg-[#ebe6df] rounded-b-[14px] cursor-text transition-all"
+      <!-- Smart NLP Private Mention Suggestion Pill -->
+      <div v-else-if="detectedPrivateSuggestion"
+        class="flex items-center justify-between px-3.5 py-1.5 bg-orange-50 border-b border-orange-200 text-xs font-bold text-orange-900 animate-fade-in-up select-none cursor-pointer hover:bg-orange-100/80 transition-colors"
+        @click="acceptPrivateSuggestion">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="w-5 h-5 rounded-full bg-orange-600 text-white flex items-center justify-center text-[10px] shrink-0 shadow-3xs">
+            <i class="fa-solid fa-user-lock"></i>
+          </span>
+          <span class="truncate">
+            Tin nhắn riêng cho: <strong class="text-orange-950 font-extrabold">{{ detectedPrivateSuggestion.name }}</strong>
+          </span>
+        </div>
+        <div class="flex items-center gap-2 shrink-0 ml-2">
+          <span class="hidden sm:inline text-[11px] text-orange-700 bg-orange-200/60 px-2 py-0.5 rounded-md font-semibold">
+            Nhấn Tab để xác nhận
+          </span>
+          <button type="button" @click.stop="dismissPrivateSuggestion" title="Bỏ qua"
+            class="text-orange-600 hover:text-rose-600 p-1 rounded-full hover:bg-orange-200/50 cursor-pointer">
+            <i class="fa-solid fa-xmark text-xs"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Textarea Input Area & Right Action Column (Vertically aligned) -->
+      <div class="relative flex items-stretch gap-2 bg-[#ebe6df] rounded-b-[14px] px-3.5 sm:px-4 py-2 cursor-text transition-all"
         @click="focusTextarea"
         @dragenter.prevent="handleDragEnter"
         @dragover.prevent="handleDragOver"
         @dragleave.prevent="handleDragLeave"
         @drop.prevent="handleDrop">
 
-        <!-- Top Textarea Area: Full width across entire box -->
-        <div class="relative px-3.5 sm:px-4 pt-2 pb-1">
-          <!-- Floating Expand/Collapse Button in Top Right of Composer Box (Matched size with Paperclip icon) -->
-          <button v-if="canShowExpandButton"
-            type="button"
-            @click.stop="toggleExpand"
-            :title="isExpanded ? 'Thu gọn khung nhập' : 'Mở rộng khung nhập'"
-            class="absolute top-1.5 right-2 sm:right-2.5 z-20 w-8 h-8 rounded-lg flex items-center justify-center text-[#4a4a4a] hover:text-[#1A7A56] hover:bg-[#eae4dc] active:bg-[#dfd8ce] transition-all cursor-pointer active:scale-95 shadow-3xs bg-[#ebe6df]/90 select-none">
-            <i :class="isExpanded ? 'fa-solid fa-compress text-[19px] sm:text-[18px]' : 'fa-solid fa-expand text-[19px] sm:text-[18px]'"></i>
-          </button>
-
-          <!-- Full-width Textarea with fixed max-height and internal scrolling -->
+        <!-- Left: Textarea expanding vertically -->
+        <div class="flex-1 min-w-0 relative flex flex-col justify-center">
           <textarea ref="textareaRef"
             :value="messageModel"
             @input="syncInputState"
@@ -367,23 +392,34 @@
             name="chat_activity_message"
             id="activity-composer-textarea"
             :placeholder="editingComment ? 'Chỉnh sửa nội dung hoạt động...' : 'Báo thông tin cho đồng đội'"
-            :class="[
-              isExpanded ? 'h-[190px] sm:h-[220px] max-h-[35vh]' : 'min-h-[36px] max-h-[100px]',
-              canShowExpandButton ? 'pr-9' : 'pr-1'
-            ]"
+            :class="isExpanded ? 'h-[190px] sm:h-[220px] max-h-[35vh]' : 'min-h-[36px] max-h-[140px]'"
             class="w-full overflow-y-auto scrollbar-hover bg-transparent border-0 focus:ring-0 focus:outline-none text-[16px] sm:text-[18px] font-normal text-gray-900 resize-none p-0 placeholder-gray-500 leading-relaxed transition-[height] duration-150 block"
             autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
             data-lpignore="true" data-1p-ignore="true" data-form-type="other" aria-autocomplete="none"></textarea>
         </div>
 
-        <!-- Separate Bottom Action Row: Submit button is below textarea, not on the same line as text -->
-        <div class="flex items-center justify-end px-3.5 sm:px-4 pb-2 pt-0.5">
-          <button @click="handleSubmit" :disabled="submitting || !canSend" type="button"
-            :title="editingComment ? 'Lưu thay đổi' : 'Gửi cập nhật (Hú hú)'"
-            class="w-8.5 h-8.5 rounded-xl flex items-center justify-center text-white shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
-            :class="canSend && !submitting ? 'bg-[#45A246] hover:bg-[#3a903b] opacity-100 shadow-sm' : 'bg-gray-300/80 opacity-40 cursor-not-allowed'">
-            <i class="fa-solid fa-dove text-[14px]"></i>
-          </button>
+        <!-- Right: Action Column (Expand button at top, Send button at bottom, vertically aligned) -->
+        <div class="flex flex-col items-center justify-between shrink-0 self-stretch select-none gap-1.5 min-w-[34px]">
+          <!-- Top: Expand/Collapse Button (Straight in the same vertical column with send button) -->
+          <div class="flex items-center justify-center">
+            <button v-if="canShowExpandButton"
+              type="button"
+              @click.stop="toggleExpand"
+              :title="isExpanded ? 'Thu gọn khung nhập' : 'Mở rộng khung nhập'"
+              class="w-8 h-8 rounded-lg flex items-center justify-center text-[#4a4a4a] hover:text-[#1A7A56] hover:bg-[#eae4dc] active:bg-[#dfd8ce] transition-all cursor-pointer active:scale-95 shadow-3xs bg-[#ebe6df]/90">
+              <i :class="isExpanded ? 'fa-solid fa-compress text-[17px] sm:text-[16px]' : 'fa-solid fa-expand text-[17px] sm:text-[16px]'"></i>
+            </button>
+          </div>
+
+          <!-- Bottom: Send Button (Original Position) -->
+          <div class="flex items-center justify-center mt-auto">
+            <button @click="handleSubmit" :disabled="submitting || !canSend" type="button"
+              :title="editingComment ? 'Lưu thay đổi' : 'Gửi cập nhật (Hú hú)'"
+              class="w-8.5 h-8.5 rounded-xl flex items-center justify-center text-white shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
+              :class="canSend && !submitting ? 'bg-[#45A246] hover:bg-[#3a903b] opacity-100 shadow-sm' : 'bg-gray-300/80 opacity-40 cursor-not-allowed'">
+              <i class="fa-solid fa-dove text-[14px]"></i>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -438,6 +474,7 @@ const projectSearch = ref('')
 const suggestionsListRef = ref(null)
 const showSuggestions = ref(false)
 const trigger = ref('')
+const isPrivateTrigger = computed(() => trigger.value === '"')
 const query = ref('')
 const suggestionIndex = ref(0)
 const fileInputRef = ref(null)
@@ -637,6 +674,66 @@ const acceptDetectedDate = () => {
 
 const dismissDetectedDate = () => {
   isDismissedDetectedDate.value = true
+}
+
+const isDismissedPrivateSuggestion = ref(false)
+
+const isPrivateReply = computed(() => {
+  if (props.replyingTo?.is_private_reply === true) return true
+  if (props.replyingTo?.is_private_reply === false) {
+    const msg = rawInputText.value || messageModel.value || ''
+    return msg.trim().startsWith('"')
+  }
+  const msg = rawInputText.value || messageModel.value || ''
+  return msg.trim().startsWith('"')
+})
+
+const detectedPrivateSuggestion = computed(() => {
+  if (isDismissedPrivateSuggestion.value || showSuggestions.value) return null
+  const currentText = rawInputText.value || messageModel.value || ''
+  if (!currentText || !currentText.includes('"')) return null
+
+  // Match the last " followed by letters without a trailing space
+  const match = currentText.match(/(?:^|\s)"([^\s".,;:!?()\n]{1,30})$/)
+  if (match) {
+    const q = match[1].trim()
+    const currentUserId = String(authStore.user?.id || '')
+    const otherUsers = (props.users || []).filter(user => String(user.id) !== currentUserId)
+    const found = otherUsers.find(u => matches(u.name, q) || matches(String(u.email || '').split('@')[0], q))
+    if (found) {
+      return {
+        user: found,
+        name: found.name,
+        query: q,
+        rawMatch: match[0]
+      }
+    }
+  }
+  return null
+})
+
+const acceptPrivateSuggestion = () => {
+  if (!detectedPrivateSuggestion.value) return
+  const item = detectedPrivateSuggestion.value
+  const text = (rawInputText.value || messageModel.value || textareaRef.value?.value || '')
+  const replacement = text.replace(/(?:^|\s)"[^\s".,;:!?()\n]{1,30}$/, (m) => {
+    const prefix = m.startsWith(' ') ? ' ' : ''
+    return `${prefix}"${item.name} `
+  })
+  rawInputText.value = replacement
+  messageModel.value = replacement
+  if (textareaRef.value) textareaRef.value.value = replacement
+  isDismissedPrivateSuggestion.value = false
+  nextTick(() => {
+    resizeTextarea()
+    textareaRef.value?.focus()
+    const len = replacement.length
+    textareaRef.value?.setSelectionRange(len, len)
+  })
+}
+
+const dismissPrivateSuggestion = () => {
+  isDismissedPrivateSuggestion.value = true
 }
 
 const updateCursorPos = (event) => {
@@ -1096,14 +1193,45 @@ const suggestions = computed(() => {
     }))
   }
 
-  if (trigger.value !== '@') return []
-  const items = []
   const currentUserId = String(authStore.user?.id || '')
   const otherUsers = (props.users || []).filter(user => String(user.id) !== currentUserId)
   const q = query.value.trim()
   const isQueryEmpty = !q
 
-  // 1. Initial State (@ typed without search letters):
+  // 1. Private Mention Trigger (")
+  if (trigger.value === '"') {
+    if (isQueryEmpty) {
+      const projectMembers = otherUsers.filter(user => projectMemberIdSet.value.has(Number(user.id)))
+      const usersToShow = projectMembers.length > 0 ? projectMembers : otherUsers
+      return usersToShow.slice(0, 10).map(user => ({
+        type: 'private_member',
+        id: user.id,
+        title: user.name,
+        subtitle: 'Tin nhắn riêng'
+      }))
+    }
+
+    const matchingUsers = otherUsers
+      .filter(user => matches(user.name) || matches(String(user.email || '').split('@')[0]))
+      .map(user => {
+        const isProjectMember = projectMemberIdSet.value.has(Number(user.id))
+        const score = getMatchScore(user.name) + (isProjectMember ? 10 : 0)
+        return { user, isProjectMember, score }
+      })
+      .sort((a, b) => b.score - a.score)
+
+    return matchingUsers.slice(0, 10).map(({ user, isProjectMember }) => ({
+      type: 'private_member',
+      id: user.id,
+      title: user.name,
+      subtitle: isProjectMember ? 'Tin nhắn riêng' : '+ Tin nhắn riêng'
+    }))
+  }
+
+  if (trigger.value !== '@') return []
+  const items = []
+
+  // 2. Initial State (@ typed without search letters):
   // Show only members belonging to this project (or all if none defined), plus @all
   if (isQueryEmpty) {
     items.push({ type: 'all', id: 'all', title: '@all', token: 'all', subtitle: `Tất cả ${otherUsers.length} thành viên` })
@@ -1127,7 +1255,7 @@ const suggestions = computed(() => {
     return items.slice(0, 10)
   }
 
-  // 2. Search State (User typed letters after @, e.g. @H):
+  // 3. Search State (User typed letters after @, e.g. @H):
   // Match across all members in system, prioritizing words starting with query
   if (matches('all') || matches('@all')) {
     items.push({ type: 'all', id: 'all', title: '@all', token: 'all', subtitle: `Tất cả ${otherUsers.length} thành viên` })
@@ -1221,8 +1349,8 @@ const syncInputState = (event) => {
   }
 
   const beforeCursor = text.substring(0, cursor)
-  // Match @ or # preceded by start of line or whitespace, allowing spaces within query
-  const match = beforeCursor.match(/(?:^|\s)([@#])([^@#\n]{0,30})$/)
+  // Match @, #, or " preceded by start of line or whitespace, allowing spaces within query
+  const match = beforeCursor.match(/(?:^|\s)([@#"])([^@#"\n]{0,30})$/)
   if (!match) {
     showSuggestions.value = false
     suggestionIndex.value = 0
@@ -1324,8 +1452,8 @@ const selectSuggestion = item => {
   const before = text.substring(0, cursor)
   const after = text.substring(cursor)
   
-  // Find where the trigger (@ or #) starts in before
-  const tokenMatch = before.match(/(?:^|\s)([@#])([^@#\n]{0,30})$/)
+  // Find where the trigger (@, #, or ") starts in before
+  const tokenMatch = before.match(/(?:^|\s)([@#"])([^@#"\n]{0,30})$/)
   let prefix = before
   if (tokenMatch) {
     const triggerIndex = before.lastIndexOf(tokenMatch[1])
@@ -1336,6 +1464,8 @@ const selectSuggestion = item => {
   if (item.type === 'project') {
     projectId.value = item.id
     replacement = prefix
+  } else if (item.type === 'private_member') {
+    replacement = `${prefix}"${item.token || item.title} `
   } else {
     replacement = `${prefix}@${item.token || item.title} `
   }
@@ -1376,6 +1506,18 @@ const handleKeydown = event => {
     if (event.key === 'Escape') {
       event.preventDefault()
       showSuggestions.value = false
+      return
+    }
+  }
+  if (detectedPrivateSuggestion.value && !showSuggestions.value) {
+    if (event.key === 'Tab') {
+      event.preventDefault()
+      acceptPrivateSuggestion()
+      return
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      dismissPrivateSuggestion()
       return
     }
   }

@@ -19,21 +19,32 @@ class ProjectPushService
             return;
         }
 
-        $adminIds = \App\Models\User::query()
-            ->where('is_system_admin', true)
-            ->when(!$project->hidden_from_admin, function ($users) {
-                $users->orWhere('is_admin', true);
-            })
-            ->pluck('id');
+        if ($comment->is_private) {
+            $privateRecipients = collect($comment->private_user_ids ?? [])
+                ->map(fn ($id) => (int) $id)
+                ->filter();
 
-        $recipientIds = $project->members->pluck('id')
-            ->push($project->created_by)
-            ->push($project->lead_id)
-            ->concat($adminIds)
-            ->filter()
-            ->unique()
-            ->reject(fn ($id) => (int) $id === (int) $comment->user_id)
-            ->values();
+            $recipientIds = $privateRecipients
+                ->unique()
+                ->reject(fn ($id) => (int) $id === (int) $comment->user_id)
+                ->values();
+        } else {
+            $adminIds = \App\Models\User::query()
+                ->where('is_system_admin', true)
+                ->when(!$project->hidden_from_admin, function ($users) {
+                    $users->orWhere('is_admin', true);
+                })
+                ->pluck('id');
+
+            $recipientIds = $project->members->pluck('id')
+                ->push($project->created_by)
+                ->push($project->lead_id)
+                ->concat($adminIds)
+                ->filter()
+                ->unique()
+                ->reject(fn ($id) => (int) $id === (int) $comment->user_id)
+                ->values();
+        }
 
         if ($recipientIds->isEmpty()) {
             return;
@@ -57,7 +68,8 @@ class ProjectPushService
         // Web Push payloads are limited to roughly 4 KB. Attachments and long
         // updates must not make the entire notification fail.
         $content = Str::limit($content, 500);
-        $body = "{$projectTitle}\n{$userName}: " . ($content ?: 'vừa cập nhật dự án.');
+        $prefix = $comment->is_private ? '[Tin riêng] ' : '';
+        $body = "{$projectTitle}\n{$prefix}{$userName}: " . ($content ?: 'vừa cập nhật dự án.');
 
         $base = $baseUrl ?: config('app.url');
         $avatar = $comment->user?->avatar;
@@ -141,6 +153,8 @@ class ProjectPushService
             'project_id' => $project->id,
             'comment_id' => $comment->id,
             'tag' => 'project-'.$project->id,
+            'is_private' => (bool) $comment->is_private,
+            'private_user_ids' => $comment->is_private ? array_values(array_map('intval', $comment->private_user_ids ?? [])) : null,
         ], JSON_UNESCAPED_UNICODE);
 
         try {

@@ -24,6 +24,16 @@ class TaskController extends Controller
         if ($user && !$user->isSystemAdmin()) {
             $visibleProjectIds = Project::visibleTo($user)->select('id');
             $query->whereIn('project_id', $visibleProjectIds);
+
+            // Privacy filter for tasks
+            $query->where(function ($privacyQuery) use ($user) {
+                $privacyQuery->where('tasks.is_private', false)
+                    ->orWhereNull('tasks.is_private')
+                    ->orWhere('tasks.created_by', $user->id)
+                    ->orWhere('tasks.assignee_id', $user->id)
+                    ->orWhereJsonContains('tasks.private_user_ids', (int) $user->id)
+                    ->orWhereJsonContains('tasks.private_user_ids', (string) $user->id);
+            });
         }
 
         // Filter by specific project
@@ -57,6 +67,122 @@ class TaskController extends Controller
         if ($request->get('view_mode') === 'schedule' || $request->get('mode') === 'schedule') {
             $query->whereNotNull('due_date')
                   ->where('status', '!=', 'done');
+
+            if ($request->boolean('paginate')) {
+                $limit = max(1, min(50, (int) $request->get('limit', 15)));
+                $direction = $request->get('direction', 'initial');
+
+                if ($direction === 'past') {
+                    $beforeDate = $request->get('before_date');
+                    $beforeId = $request->get('before_id');
+
+                    $pastQuery = (clone $query)->reorder();
+                    if ($beforeDate && $beforeId) {
+                        $pastQuery->where(function ($q) use ($beforeDate, $beforeId) {
+                            $q->where('due_date', '<', $beforeDate)
+                              ->orWhere(function ($sub) use ($beforeDate, $beforeId) {
+                                  $sub->where('due_date', '=', $beforeDate)
+                                      ->where('id', '<', $beforeId);
+                              });
+                        });
+                    } elseif ($beforeDate) {
+                        $pastQuery->where('due_date', '<', $beforeDate);
+                    }
+
+                    $pastTasks = $pastQuery->orderBy('due_date', 'desc')
+                        ->orderBy('id', 'desc')
+                        ->limit($limit + 1)
+                        ->get();
+
+                    $hasMorePast = $pastTasks->count() > $limit;
+                    if ($hasMorePast) {
+                        $pastTasks = $pastTasks->slice(0, $limit);
+                    }
+                    $tasks = $pastTasks->reverse()->values();
+
+                    return response()->json([
+                        'tasks' => $tasks,
+                        'has_more_past' => $hasMorePast,
+                    ]);
+                } elseif ($direction === 'future') {
+                    $afterDate = $request->get('after_date');
+                    $afterId = $request->get('after_id');
+
+                    $futureQuery = (clone $query)->reorder();
+                    if ($afterDate && $afterId) {
+                        $futureQuery->where(function ($q) use ($afterDate, $afterId) {
+                            $q->where('due_date', '>', $afterDate)
+                              ->orWhere(function ($sub) use ($afterDate, $afterId) {
+                                  $sub->where('due_date', '=', $afterDate)
+                                      ->where('id', '>', $afterId);
+                              });
+                        });
+                    } elseif ($afterDate) {
+                        $futureQuery->where('due_date', '>', $afterDate);
+                    }
+
+                    $futureTasks = $futureQuery->orderBy('due_date', 'asc')
+                        ->orderBy('id', 'asc')
+                        ->limit($limit + 1)
+                        ->get();
+
+                    $hasMoreFuture = $futureTasks->count() > $limit;
+                    if ($hasMoreFuture) {
+                        $futureTasks = $futureTasks->slice(0, $limit)->values();
+                    } else {
+                        $futureTasks = $futureTasks->values();
+                    }
+
+                    return response()->json([
+                        'tasks' => $futureTasks,
+                        'has_more_future' => $hasMoreFuture,
+                    ]);
+                } else {
+                    // Initial load: fetch past slice + today + future slice
+                    $refDate = $request->get('reference_date', Carbon::today()->toDateString());
+
+                    $pastTasks = (clone $query)->reorder()
+                        ->whereDate('due_date', '<', $refDate)
+                        ->orderBy('due_date', 'desc')
+                        ->orderBy('id', 'desc')
+                        ->limit($limit + 1)
+                        ->get();
+
+                    $hasMorePast = $pastTasks->count() > $limit;
+                    if ($hasMorePast) {
+                        $pastTasks = $pastTasks->slice(0, $limit);
+                    }
+                    $pastTasks = $pastTasks->reverse()->values();
+
+                    $todayTasks = (clone $query)->reorder()
+                        ->whereDate('due_date', '=', $refDate)
+                        ->orderBy('due_date', 'asc')
+                        ->orderBy('id', 'asc')
+                        ->get();
+
+                    $futureTasks = (clone $query)->reorder()
+                        ->whereDate('due_date', '>', $refDate)
+                        ->orderBy('due_date', 'asc')
+                        ->orderBy('id', 'asc')
+                        ->limit($limit + 1)
+                        ->get();
+
+                    $hasMoreFuture = $futureTasks->count() > $limit;
+                    if ($hasMoreFuture) {
+                        $futureTasks = $futureTasks->slice(0, $limit)->values();
+                    } else {
+                        $futureTasks = $futureTasks->values();
+                    }
+
+                    $combinedTasks = $pastTasks->concat($todayTasks)->concat($futureTasks)->values();
+
+                    return response()->json([
+                        'tasks' => $combinedTasks,
+                        'has_more_past' => $hasMorePast,
+                        'has_more_future' => $hasMoreFuture,
+                    ]);
+                }
+            }
         }
 
         if ($request->filled('limit')) {
@@ -80,6 +206,9 @@ class TaskController extends Controller
             'due_date' => 'nullable',
             'comment_id' => 'nullable|integer|exists:comments,id',
             'health' => 'nullable|string',
+            'is_private' => 'nullable|boolean',
+            'private_user_ids' => 'nullable|array',
+            'private_user_ids.*' => Rule::exists('users', 'id')->where('is_admin', 0),
             'tagged_user_ids' => 'nullable|array',
             'tagged_user_ids.*' => Rule::exists('users', 'id')->where('is_admin', 0),
             'attachment_ids' => 'nullable|array',
@@ -95,6 +224,16 @@ class TaskController extends Controller
         $attachmentIds = $validated['attachment_ids'] ?? [];
         $commentId = $validated['comment_id'] ?? null;
         unset($validated['tagged_user_ids'], $validated['attachment_ids'], $validated['comment_id']);
+
+        $privateUserIds = app(ProjectMemberService::class)->extractPrivateMentionUserIds(
+            $validated['title'],
+            $validated['private_user_ids'] ?? []
+        );
+        if (!empty($privateUserIds)) {
+            $validated['is_private'] = true;
+            $validated['private_user_ids'] = array_values(array_unique($privateUserIds));
+        }
+
         $validated['created_by'] = auth()->id();
         $task = Task::create($validated);
 
@@ -113,7 +252,11 @@ class TaskController extends Controller
         if (!empty($commentId)) {
             $existingComment = Comment::where('id', $commentId)->where('project_id', $task->project_id)->first();
             if ($existingComment) {
-                $existingComment->update(['task_id' => $task->id]);
+                $existingComment->update([
+                    'task_id' => $task->id,
+                    'is_private' => $task->is_private,
+                    'private_user_ids' => $task->private_user_ids,
+                ]);
             }
         }
 
@@ -124,6 +267,8 @@ class TaskController extends Controller
                 'user_id' => $task->created_by ?? auth()->id(),
                 'content' => $task->title,
                 'type' => 'comment',
+                'is_private' => $task->is_private,
+                'private_user_ids' => $task->private_user_ids,
                 'project_health' => $task->health ?? $project->health,
                 'created_at' => $task->created_at,
                 'updated_at' => $task->updated_at,
@@ -136,7 +281,7 @@ class TaskController extends Controller
         app(ProjectMemberService::class)->addMentionedMembers(
             $project,
             $task->title,
-            array_filter(array_merge($taggedUserIds, [$task->assignee_id]))
+            array_filter(array_merge($taggedUserIds, $privateUserIds, [$task->assignee_id]))
         );
 
         return response()->json($task, 201);

@@ -118,8 +118,8 @@ export const useBrowserNotificationStore = defineStore('browserNotifications', (
     if (enabled) return requestPermission()
 
     try {
-      const registration = await navigator.serviceWorker.getRegistration('/push-sw.js')
-      const subscription = await registration?.pushManager.getSubscription()
+      const registration = await navigator.serviceWorker.getRegistration('/') || await navigator.serviceWorker.ready.catch(() => null)
+      const subscription = await registration?.pushManager?.getSubscription()
       if (subscription) {
         await axios.delete('/api/push/subscriptions', { data: { endpoint: subscription.endpoint } })
         await subscription.unsubscribe()
@@ -147,13 +147,25 @@ export const useBrowserNotificationStore = defineStore('browserNotifications', (
   const clearSubscriptionFromServer = async () => {
     if (!isSupported.value) return
     try {
-      const registration = await navigator.serviceWorker.getRegistration('/push-sw.js')
-      const subscription = await registration?.pushManager.getSubscription()
+      const registration = await navigator.serviceWorker.getRegistration('/') || await navigator.serviceWorker.ready.catch(() => null)
+      const subscription = await registration?.pushManager?.getSubscription()
       if (subscription) {
-        await axios.delete('/api/push/subscriptions', { data: { endpoint: subscription.endpoint } })
+        try {
+          await axios.delete('/api/push/subscriptions', { data: { endpoint: subscription.endpoint } })
+        } catch (e) {
+          console.error('Failed to delete subscription on backend:', e)
+        }
+        try {
+          await subscription.unsubscribe()
+        } catch (e) {
+          console.error('Failed to unsubscribe on client:', e)
+        }
       }
     } catch (error) {
       console.error('Failed to clear Web Push subscription on logout:', error)
+    } finally {
+      localStorage.removeItem('push-subscription-version')
+      localStorage.removeItem('push-subscription-refreshed-at')
     }
   }
 

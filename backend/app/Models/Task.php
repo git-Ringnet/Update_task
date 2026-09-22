@@ -22,11 +22,29 @@ class Task extends Model
         'priority',
         'due_date',
         'health',
+        'is_private',
+        'private_user_ids',
     ];
 
     protected $casts = [
         'due_date' => 'datetime',
+        'is_private' => 'boolean',
+        'private_user_ids' => 'array',
     ];
+
+    protected static function booted()
+    {
+        static::creating(function ($task) {
+            $extracted = app(\App\ProjectMemberService::class)->extractPrivateMentionUserIds(
+                $task->title,
+                is_array($task->private_user_ids) ? $task->private_user_ids : []
+            );
+            if (!empty($extracted)) {
+                $task->is_private = true;
+                $task->private_user_ids = array_values(array_unique($extracted));
+            }
+        });
+    }
 
     public function project(): BelongsTo
     {

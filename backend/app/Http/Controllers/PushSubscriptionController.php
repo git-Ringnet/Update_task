@@ -41,9 +41,11 @@ class PushSubscriptionController extends Controller
     {
         $request->validate(['endpoint' => 'required|string|max:2048']);
 
-        PushSubscription::where('user_id', auth()->id())
-            ->where('endpoint', $request->endpoint)
-            ->delete();
+        $query = PushSubscription::where('endpoint', $request->endpoint);
+        if (auth()->check()) {
+            $query->where('user_id', auth()->id());
+        }
+        $query->delete();
 
         return response()->noContent();
     }

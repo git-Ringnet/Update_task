@@ -17,9 +17,16 @@ class Comment extends Model
         'user_id',
         'content',
         'type',
+        'is_private',
+        'private_user_ids',
         'project_health',
         'created_at',
         'updated_at',
+    ];
+
+    protected $casts = [
+        'is_private' => 'boolean',
+        'private_user_ids' => 'array',
     ];
 
     protected static function booted()
@@ -29,6 +36,29 @@ class Comment extends Model
                 $project = \App\Models\Project::find($comment->project_id);
                 if ($project) {
                     $comment->project_health = $project->health;
+                }
+            }
+
+            // Auto-detect private recipients from content if present
+            $extracted = app(\App\ProjectMemberService::class)->extractPrivateMentionUserIds(
+                $comment->content,
+                is_array($comment->private_user_ids) ? $comment->private_user_ids : []
+            );
+            if (!empty($extracted)) {
+                $comment->is_private = true;
+                $comment->private_user_ids = array_values(array_unique($extracted));
+            }
+        });
+
+        static::updating(function ($comment) {
+            if ($comment->isDirty('content')) {
+                $extracted = app(\App\ProjectMemberService::class)->extractPrivateMentionUserIds(
+                    $comment->content,
+                    is_array($comment->private_user_ids) ? $comment->private_user_ids : []
+                );
+                if (!empty($extracted)) {
+                    $comment->is_private = true;
+                    $comment->private_user_ids = array_values(array_unique($extracted));
                 }
             }
         });

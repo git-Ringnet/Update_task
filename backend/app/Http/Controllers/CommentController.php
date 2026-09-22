@@ -24,6 +24,17 @@ class CommentController extends Controller
         $user = auth()->user();
         $query->whereHas('project', fn ($q) => $q->visibleTo($user));
 
+        // Privacy filter: Private comments are only visible to system-admin, sender, and private recipients
+        if (!$user->isSystemAdmin()) {
+            $query->where(function ($privacyQuery) use ($user) {
+                $privacyQuery->where('comments.is_private', false)
+                    ->orWhereNull('comments.is_private')
+                    ->orWhere('comments.user_id', $user->id)
+                    ->orWhereJsonContains('comments.private_user_ids', (int) $user->id)
+                    ->orWhereJsonContains('comments.private_user_ids', (string) $user->id);
+            });
+        }
+
         $projectIds = collect($request->input('project_ids', []))
             ->map(fn ($id) => filter_var($id, FILTER_VALIDATE_INT))
             ->filter()
@@ -107,6 +118,16 @@ class CommentController extends Controller
         $user = auth()->user();
         abort_unless($comment->project?->isVisibleTo($user), 403, 'Bạn không có quyền xem bình luận này.');
 
+        // Privacy check: only sender, recipients, and system-admin can view private comment
+        if ($comment->is_private && !$user->isSystemAdmin()) {
+            $isSender = (int) $comment->user_id === (int) $user->id;
+            $isRecipient = is_array($comment->private_user_ids) && (
+                in_array((int) $user->id, $comment->private_user_ids, true) ||
+                in_array((string) $user->id, $comment->private_user_ids, true)
+            );
+            abort_unless($isSender || $isRecipient, 403, 'Bạn không có quyền xem bình luận riêng tư này.');
+        }
+
         $comment->setAttribute('project_title', $comment->project?->title);
         return response()->json($comment);
     }
@@ -118,6 +139,9 @@ class CommentController extends Controller
             'task_id' => 'nullable|exists:tasks,id',
             'content' => 'required|string',
             'type' => 'nullable|string',
+            'is_private' => 'nullable|boolean',
+            'private_user_ids' => 'nullable|array',
+            'private_user_ids.*' => Rule::exists('users', 'id')->where('is_admin', 0),
             'tagged_user_ids' => 'nullable|array',
             'tagged_user_ids.*' => Rule::exists('users', 'id')->where('is_admin', 0),
         ]);
@@ -134,7 +158,16 @@ class CommentController extends Controller
         // Comment's creating hook from querying the same project again.
         $validated['project_health'] = $project->health;
 
-        app(ProjectMemberService::class)->addMentionedMembers($project, $validated['content'], $taggedUserIds);
+        $privateUserIds = app(ProjectMemberService::class)->extractPrivateMentionUserIds(
+            $validated['content'],
+            $validated['private_user_ids'] ?? []
+        );
+        if (!empty($privateUserIds)) {
+            $validated['is_private'] = true;
+            $validated['private_user_ids'] = array_values(array_unique($privateUserIds));
+        }
+
+        app(ProjectMemberService::class)->addMentionedMembers($project, $validated['content'], array_merge($taggedUserIds, $privateUserIds));
 
         $comment = Comment::create($validated);
         $comment->load([
@@ -159,6 +192,9 @@ class CommentController extends Controller
         $validated = $request->validate([
             'content' => 'required|string',
             'project_id' => 'nullable|exists:projects,id',
+            'is_private' => 'nullable|boolean',
+            'private_user_ids' => 'nullable|array',
+            'private_user_ids.*' => Rule::exists('users', 'id')->where('is_admin', 0),
             'tagged_user_ids' => 'nullable|array',
             'tagged_user_ids.*' => Rule::exists('users', 'id')->where('is_admin', 0),
         ]);
@@ -168,11 +204,22 @@ class CommentController extends Controller
         $taggedUserIds = $validated['tagged_user_ids'] ?? [];
         unset($validated['tagged_user_ids']);
 
-        if (!empty($taggedUserIds)) {
-            app(ProjectMemberService::class)->addMentionedMembers($project, $validated['content'], $taggedUserIds);
-        }
+        $privateUserIds = app(ProjectMemberService::class)->extractPrivateMentionUserIds(
+            $validated['content'],
+            $validated['private_user_ids'] ?? ($comment->private_user_ids ?? [])
+        );
 
         $updateData = ['content' => $validated['content']];
+        if (!empty($privateUserIds)) {
+            $updateData['is_private'] = true;
+            $updateData['private_user_ids'] = array_values(array_unique($privateUserIds));
+        } else {
+            $updateData['is_private'] = $validated['is_private'] ?? false;
+            $updateData['private_user_ids'] = $validated['private_user_ids'] ?? null;
+        }
+
+        app(ProjectMemberService::class)->addMentionedMembers($project, $validated['content'], array_merge($taggedUserIds, $privateUserIds));
+
         if (!empty($validated['project_id'])) {
             $updateData['project_id'] = $validated['project_id'];
         }

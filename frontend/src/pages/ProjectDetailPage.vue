@@ -192,7 +192,7 @@
           <!-- Row 2: Customer Name (centered below title) -->
           <div class="text-center">
             <div class="flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold text-gray-500 font-sans">
-              <span>{{ project.customer ? project.customer.name : '' }}</span>
+              <span :title="project.customer ? project.customer.name : ''">{{ project.customer ? project.customer.name : '' }}</span>
             </div>
           </div>
 
@@ -581,12 +581,18 @@
               class="relative bg-white border border-gray-200/80 hover:border-gray-300 rounded-2xl shadow-2xs hover:shadow-xs transition-all group flex items-stretch overflow-visible"
               :title="isTaskInDoneStage(t) ? 'Chặng đã hoàn thành (Không thể chỉnh sửa)' : undefined">
 
-              <!-- Desktop/Mobile reply button (Outside Right Edge) -->
-              <button @click.stop="handleReplyToTask(t)" type="button" title="Trả lời hoạt động này"
-                class="absolute right-[-14px] top-1/2 -translate-y-1/2 opacity-0 md:group-hover:opacity-100 transition-all duration-200 bg-white hover:bg-emerald-600 text-gray-500 hover:text-white border border-gray-200 hover:border-emerald-600 cursor-pointer rounded-full h-7 w-7 flex items-center justify-center shadow-2xs z-20 focus:outline-none"
+              <!-- Desktop/Mobile reply & private reply buttons (Outside Right Edge) -->
+              <div class="absolute right-[-14px] top-1/2 -translate-y-1/2 opacity-0 md:group-hover:opacity-100 transition-all duration-200 flex flex-col gap-1 z-20"
                 :class="{ 'opacity-100 pointer-events-auto': activeTaskIdForMobileActions === t.id }">
-                <i class="fa-solid fa-reply text-xs"></i>
-              </button>
+                <button v-if="!t.is_private" @click.stop="handleReplyToTask(t)" type="button" title="Trả lời"
+                  class="bg-white hover:bg-emerald-600 text-gray-500 hover:text-white border border-gray-200 hover:border-emerald-600 cursor-pointer rounded-full h-7 w-7 flex items-center justify-center shadow-2xs focus:outline-none">
+                  <i class="fa-solid fa-reply text-xs"></i>
+                </button>
+                <button @click.stop="handlePrivateReplyToTask(t)" type="button" title="Trả lời riêng"
+                  class="bg-white hover:bg-[#ea580c] text-[#ea580c] hover:text-white border border-orange-200 hover:border-[#ea580c] cursor-pointer rounded-full h-7 w-7 flex items-center justify-center shadow-2xs focus:outline-none">
+                  <i class="fa-solid fa-reply text-xs"></i>
+                </button>
+              </div>
 
               <!-- LEFT: Icon block; reveal card actions on hover -->
               <div
@@ -648,9 +654,13 @@
                       <i class="fa-solid fa-ellipsis-vertical"></i>
                     </button>
                     <div v-if="activeTaskActionMenuId === t.id" class="task-mobile-menu-popover">
-                      <button type="button" @click.stop="handleReplyToTask(t); activeTaskActionMenuId = null"
+                      <button v-if="!t.is_private" type="button" @click.stop="handleReplyToTask(t); activeTaskActionMenuId = null"
                         class="border-b border-gray-100">
                         <i class="fa-solid fa-reply text-xs"></i><span>Trả lời</span>
+                      </button>
+                      <button type="button" @click.stop="handlePrivateReplyToTask(t); activeTaskActionMenuId = null"
+                        class="border-b border-gray-100 text-[#ea580c]">
+                        <i class="fa-solid fa-reply text-xs text-[#ea580c]"></i><span>Trả lời riêng</span>
                       </button>
                       <button v-if="canEditOrDelete(t)" type="button"
                         @click.stop="openEditStageTaskForm(t); activeTaskActionMenuId = null">
@@ -678,7 +688,7 @@
                     </div>
                   </div>
 
-                  <div v-html="formatTitleText(t.title)" class="whitespace-pre-wrap"></div>
+                  <div class="whitespace-pre-wrap"><i v-if="t.is_private" class="fa-solid fa-lock text-[13px] text-[#ea580c] mr-1.5 align-middle inline-block" title="Tin nhắn riêng tư"></i><span v-html="formatTitleText(t.title)"></span></div>
                 </div>
 
                 <!-- Attachments -->
@@ -901,12 +911,14 @@
                 <div class="project-mention-picker flex-1 min-w-0 relative">
                   <!-- Reply banner (Zalo Style Quote) -->
                   <div v-if="replyingToLog"
-                    class="flex items-start justify-between bg-gray-100/80 px-3.5 py-2.5 rounded-xl border-l-3 border-[#0068FF] text-xs transition-all duration-300 relative select-none mb-2">
+                    class="flex items-start justify-between px-3.5 py-2.5 rounded-xl text-xs transition-all duration-300 relative select-none mb-2"
+                    :class="replyingToLog.is_private_reply ? 'bg-orange-50/80 border-l-3 border-[#ea580c]' : 'bg-gray-100/80 border-l-3 border-[#0068FF]'">
                     <div class="flex-1 min-w-0">
                       <div
-                        class="text-[10px] font-extrabold text-[#0068FF] uppercase tracking-wider flex items-center gap-1">
-                        <i class="fa-solid fa-reply text-[9px]"></i>
-                        <span>Trả lời {{ getCreatorDisplayName(replyingToLog) }}</span>
+                        class="text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1"
+                        :class="replyingToLog.is_private_reply ? 'text-[#ea580c]' : 'text-[#0068FF]'">
+                        <i :class="replyingToLog.is_private_reply ? 'fa-solid fa-user-lock text-[9px]' : 'fa-solid fa-reply text-[9px]'"></i>
+                        <span>{{ replyingToLog.is_private_reply ? 'Trả lời riêng' : 'Trả lời' }} {{ getCreatorDisplayName(replyingToLog) }}</span>
                       </div>
                       <div class="text-[11px] text-gray-500 truncate mt-0.5 max-w-[280px]">
                         {{ parseCommentText(replyingToLog.title) }}
@@ -1641,22 +1653,6 @@ const isSubmittingStageTask = ref(false)
 const uploadProgress = ref(null)
 
 const replyingToLog = ref(null)
-const cancelReply = () => {
-  replyingToLog.value = null
-}
-const handleReplyToTask = (task) => {
-  replyingToLog.value = task
-  // Keep the current activity view intact while replying. The target milestone
-  // is remembered only for saving the reply; changing the selected stage here
-  // hides comment cards because stage lists contain tasks only.
-  const replyMilestoneId = task?.milestone_id ?? null
-  newStageTaskMilestoneId.value = replyMilestoneId
-  isInlineFormOpen.value = true
-  nextTick(() => {
-    stageTaskTitleInputRef.value?.focus()
-  })
-}
-
 const activeTaskIdForMobileActions = ref(null)
 
 let touchTimer = null
@@ -2377,7 +2373,20 @@ const formatTitleWithMentions = (titleText) => {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
 
-  // 6) Format @mentions
+  // 6) Format private mentions "Name (orange)
+  const userList = (users && users.value) ? users.value : []
+  if (userList && userList.length > 0) {
+    const sortedUsers = [...userList].sort((a, b) => (b.name ? b.name.length : 0) - (a.name ? a.name.length : 0))
+    sortedUsers.forEach(u => {
+      if (u && u.name) {
+        const escapedName = u.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const regex = new RegExp(`(?<=^|\\s)(?:&quot;|")${escapedName}(?=\\s|$|[.,!?:;])`, 'gi')
+        escaped = escaped.replace(regex, `<span class="text-[#ea580c] font-bold">"${u.name}</span>`)
+      }
+    })
+  }
+
+  // Format public mentions @Group and @all (green)
   const groupList = (mentionGroups && mentionGroups.value) ? mentionGroups.value : []
   if (groupList && groupList.length > 0) {
     const sortedGroups = [...groupList].sort((a, b) => (b.name ? b.name.length : 0) - (a.name ? a.name.length : 0))
@@ -2385,24 +2394,23 @@ const formatTitleWithMentions = (titleText) => {
       if (g && g.name) {
         const escapedName = g.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
         const regex = new RegExp(`@${escapedName}`, 'gi')
-        escaped = escaped.replace(regex, `<span class="text-emerald-600 font-bold">@${g.name}</span>`)
+        escaped = escaped.replace(regex, `<span class="text-[#1A7A56] font-bold">@${g.name}</span>`)
       }
     })
   }
-  escaped = escaped.replace(/@all/gi, '<span class="text-emerald-600 font-bold">@all</span>')
+  escaped = escaped.replace(/@all/gi, '<span class="text-[#1A7A56] font-bold">@all</span>')
 
-  const userList = (users && users.value) ? users.value : []
   if (userList && userList.length > 0) {
     const sortedUsers = [...userList].sort((a, b) => (b.name ? b.name.length : 0) - (a.name ? a.name.length : 0))
     sortedUsers.forEach(u => {
       if (u && u.name) {
         const escapedName = u.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
         const regex = new RegExp(`@${escapedName}`, 'gi')
-        escaped = escaped.replace(regex, `<span class="text-emerald-600 font-bold">@${u.name}</span>`)
+        escaped = escaped.replace(regex, `<span class="text-[#1A7A56] font-bold">@${u.name}</span>`)
       }
     })
   }
-  escaped = escaped.replace(/@([^\s@,.:;!?()\n]+)(?![^<]*>|[^<>]*<\/span>)/g, '<span class="text-emerald-600 font-bold">@$1</span>')
+  escaped = escaped.replace(/@([^\s@,.:;!?()\n]+)(?![^<]*>|[^<>]*<\/span>)/g, '<span class="text-[#1A7A56] font-bold">@$1</span>')
 
   // 7) Restore all protected HTML blocks
   protectedBlocks.forEach((block, idx) => {
@@ -2764,17 +2772,17 @@ const onTitleInput = (e) => {
     el.style.height = '128px'
   }
 
-  // Mention dropdown trigger
+  // Mention dropdown trigger (@ or ")
   const cursorPos = e.target.selectionStart || text.length
   const textBeforeCursor = text.substring(0, cursorPos)
-  const match = textBeforeCursor.match(/@([^@]{0,30})$/)
+  const match = textBeforeCursor.match(/([@"])([^@"]{0,30})$/)
 
   if (match) {
-    mentionQuery.value = match[1]
+    mentionQuery.value = match[2]
     showMentionDropdown.value = true
     mentionIndex.value = 0
     nextTick(() => {
-      const coords = getCaretCoordinates(el, cursorPos - match[1].length - 1)
+      const coords = getCaretCoordinates(el, cursorPos - match[2].length - 1)
       const dropdownWidth = 256
       const leftClamped = Math.max(0, Math.min(coords.left, el.clientWidth - dropdownWidth - 10))
       mentionPosition.value = {
@@ -2822,38 +2830,37 @@ const onTitleKeydown = (e) => {
 
 const selectMentionUser = (user) => {
   if (!user) return
+  const text = newStageTaskTitle.value || ''
+  const cursorPos = stageTaskTitleInputRef.value?.selectionStart || text.length
+  const textBeforeCursor = text.substring(0, cursorPos)
+  const textAfterCursor = text.substring(cursorPos)
+  const match = textBeforeCursor.match(/([@"])([^@"]{0,30})$/)
+  const prefix = match ? match[1] : '@'
+
   if (user.isMentionGroup) {
-    const text = newStageTaskTitle.value || ''
-    const cursorPos = stageTaskTitleInputRef.value?.selectionStart || text.length
-    const textBeforeCursor = text.substring(0, cursorPos)
-    const textAfterCursor = text.substring(cursorPos)
-    const match = textBeforeCursor.match(/@([^@]{0,30})$/)
     const newBefore = match ? textBeforeCursor.substring(0, match.index) + `@${user.mentionName} ` : `${textBeforeCursor}@${user.mentionName} `
     newStageTaskTitle.value = newBefore + textAfterCursor
     showMentionDropdown.value = false
     nextTick(() => { stageTaskTitleInputRef.value?.focus(); stageTaskTitleInputRef.value?.setSelectionRange(newBefore.length, newBefore.length) })
     return
   }
-  const idStr = String(user.id)
-  if (!newStageTaskTaggedUsers.value.includes(idStr)) {
-    newStageTaskTaggedUsers.value.push(idStr)
-  }
-  newStageTaskAssignee.value = newStageTaskTaggedUsers.value[0]
 
-  const text = newStageTaskTitle.value
-  const cursorPos = stageTaskTitleInputRef.value?.selectionStart || text.length
-  const textBeforeCursor = text.substring(0, cursorPos)
-  const textAfterCursor = text.substring(cursorPos)
+  const idStr = String(user.id)
+  if (prefix === '@') {
+    if (!newStageTaskTaggedUsers.value.includes(idStr)) {
+      newStageTaskTaggedUsers.value.push(idStr)
+    }
+    newStageTaskAssignee.value = newStageTaskTaggedUsers.value[0]
+  }
 
   let newCursorPos = cursorPos
-  const match = textBeforeCursor.match(/@([^@]{0,30})$/)
   if (match) {
     const startIndex = match.index
-    const newBefore = textBeforeCursor.substring(0, startIndex) + `@${user.name} `
+    const newBefore = textBeforeCursor.substring(0, startIndex) + `${prefix}${user.name} `
     newStageTaskTitle.value = newBefore + textAfterCursor
     newCursorPos = newBefore.length
   } else {
-    newStageTaskTitle.value = `${text} @${user.name} `
+    newStageTaskTitle.value = `${text} ${prefix}${user.name} `
     newCursorPos = newStageTaskTitle.value.length
   }
   showMentionDropdown.value = false
@@ -2913,24 +2920,51 @@ const cancelEditTask = () => {
   clearAttachedFiles()
 }
 
-const openAddStageTaskForm = () => {
+const handleReplyToTask = (t) => {
+  if (!t) return
   editingTaskId.value = null
-  newStageTaskTitle.value = ''
-  newStageTaskDueDate.value = ''
-  newStageTaskDueTime.value = ''
-  newStageTaskAssignee.value = ''
-  newStageTaskTaggedUsers.value = []
-  newStageTaskHealth.value = project.value ? project.value.health : 'yellow'
-  const currentTarget = effectiveMilestones.value.find(ms => ms.id === newStageTaskMilestoneId.value)
-  if (!newStageTaskMilestoneId.value || isStageCompleted(currentTarget)) {
-    newStageTaskMilestoneId.value = (selectedMilestone.value && !isStageCompleted(selectedMilestone.value))
-      ? selectedMilestone.value.id
-      : (activeTargetMilestones.value[0]?.id || null)
+  replyingToLog.value = {
+    id: t.id,
+    creator: { name: getCreatorDisplayName(t) },
+    user: { name: getCreatorDisplayName(t) },
+    title: t.title || t.content || '',
+    milestone_id: t.milestone_id,
+    is_private_reply: false
   }
+  const authorName = getCreatorDisplayName(t)
+  newStageTaskTitle.value = authorName ? `@${authorName} ` : ''
   isInlineFormOpen.value = true
   nextTick(() => {
+    inlineFormRef.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     stageTaskTitleInputRef.value?.focus()
+    adjustTextareaHeight()
   })
+}
+
+const handlePrivateReplyToTask = (t) => {
+  if (!t) return
+  editingTaskId.value = null
+  replyingToLog.value = {
+    id: t.id,
+    creator: { name: getCreatorDisplayName(t) },
+    user: { name: getCreatorDisplayName(t) },
+    title: t.title || t.content || '',
+    milestone_id: t.milestone_id,
+    is_private_reply: true
+  }
+  const authorName = getCreatorDisplayName(t)
+  newStageTaskTitle.value = authorName ? `"${authorName} ` : ''
+  isInlineFormOpen.value = true
+  nextTick(() => {
+    inlineFormRef.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    stageTaskTitleInputRef.value?.focus()
+    adjustTextareaHeight()
+  })
+}
+
+const cancelReply = () => {
+  replyingToLog.value = null
+  newStageTaskTitle.value = ''
 }
 
 const openEditStageTaskForm = (task) => {

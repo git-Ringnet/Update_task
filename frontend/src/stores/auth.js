@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import axios from 'axios'
+import { syncAuthSessionToCache, clearAuthSessionFromCache } from '../utils/authSessionCache'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -20,6 +21,9 @@ export const useAuthStore = defineStore('auth', {
       localStorage.setItem('user', JSON.stringify(user))
       localStorage.setItem('token', token)
       
+      // Sync auth session to Service Worker cache
+      syncAuthSessionToCache(true, user?.id)
+
       // Set axios header
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
 
@@ -35,6 +39,9 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem('user')
       localStorage.removeItem('token')
       delete axios.defaults.headers.common['Authorization']
+
+      // Clear auth session from Service Worker cache
+      clearAuthSessionFromCache()
     },
 
     async login(username, password) {
@@ -86,6 +93,9 @@ export const useAuthStore = defineStore('auth', {
     async checkAuth() {
       if (!this.token) {
         this.clearAuth()
+        import('./browserNotifications').then(({ useBrowserNotificationStore }) => {
+          useBrowserNotificationStore().clearSubscriptionFromServer()
+        }).catch(() => {})
         return null
       }
       
@@ -95,6 +105,7 @@ export const useAuthStore = defineStore('auth', {
         const res = await axios.get('/api/me')
         this.user = res.data
         localStorage.setItem('user', JSON.stringify(this.user))
+        syncAuthSessionToCache(true, this.user.id)
 
         // Sync push subscription
         import('./browserNotifications').then(({ useBrowserNotificationStore }) => {
@@ -105,6 +116,9 @@ export const useAuthStore = defineStore('auth', {
       } catch (err) {
         console.error('Session verification failed, logging out:', err)
         this.clearAuth()
+        import('./browserNotifications').then(({ useBrowserNotificationStore }) => {
+          useBrowserNotificationStore().clearSubscriptionFromServer()
+        }).catch(() => {})
         return null
       }
     },

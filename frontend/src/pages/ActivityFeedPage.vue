@@ -1,7 +1,7 @@
 <template>
   <div class="activity-feed-page flex flex-col bg-[#F9F4EE] overflow-hidden"
     :style="{ height: 'var(--vvh, 100dvh)', maxHeight: 'var(--vvh, 100dvh)' }">
-    <Navbar />
+    <Navbar class="max-md:hidden" />
 
     <main
       class="max-w-[800px] w-full mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-2 sm:pb-3 flex-1 flex flex-col min-h-0 overflow-visible relative"
@@ -59,8 +59,14 @@
         </div>
 
         <!-- Grouped Schedule Tasks Feed (Full view: Quá hạn + Hôm nay + Tương lai) -->
-        <div v-else class="activity-feed-scroll flex-1 min-h-0 overflow-y-auto scrollbar-hover pr-1 space-y-6">
-          <div v-for="group in groupedScheduleTasks" :key="group.dateKey" class="space-y-3">
+        <div v-else ref="scheduleTasksScrollContainer" @scroll="handleScheduleScroll" class="activity-feed-scroll flex-1 min-h-0 overflow-y-auto scrollbar-hover pr-1 space-y-6">
+          <!-- Past Loading Spinner -->
+          <div v-if="isLoadingPastTasks" class="py-2.5 text-center text-xs text-gray-500 font-medium flex items-center justify-center gap-2">
+            <i class="fa-solid fa-spinner fa-spin text-emerald-600"></i>
+            <span>Đang tải hành động cũ hơn...</span>
+          </div>
+
+          <div v-for="group in groupedScheduleTasks" :key="group.dateKey" :data-group-key="group.dateKey" class="space-y-3">
             <!-- Deep Green Bold Date Header -->
             <h2 class="text-[18px] sm:text-[19px] font-black text-[#1A7A56] font-heading mb-4 pt-1">{{ group.dateLabel
               }}</h2>
@@ -131,7 +137,7 @@
                     <div
                       :class="!isScheduleTaskExpanded(task.id) && isLongContent(parseCommentText(task.title || task.content)) ? 'line-clamp-4' : ''"
                       class="whitespace-pre-wrap font-normal text-gray-900 select-text cursor-text">
-                      {{ parseCommentText(task.title || task.content) }}
+                      <i v-if="task.is_private" class="fa-solid fa-lock text-[13px] text-[#ea580c] mr-1.5 align-middle inline-block" title="Tin nhắn riêng tư"></i><span v-html="formatCommentTextWithMentions(task.title || task.content, projectStore.users, mentionGroups)"></span>
                     </div>
                     <button v-if="isLongContent(parseCommentText(task.title || task.content))"
                       @click.stop="toggleExpandScheduleTask(task.id)" type="button"
@@ -164,23 +170,14 @@
                         class="text-[8px] font-bold text-[#8b5a2b] bg-[#e8c99a] w-full text-center py-0.5 leading-none">FILE</span>
                     </a>
                   </div>
-
-                  <!-- Bottom Action: Reply button -->
-                  <div class="flex items-center gap-3 mt-2 sm:mt-2.5">
-                    <button @click.stop="handleReplyToScheduleTask(task)" type="button"
-                      :title="'Trả lời ' + (task.creator?.name || task.assignee?.name || 'thành viên')"
-                      class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-gray-500 hover:text-emerald-700 hover:bg-stone-200/60 active:bg-stone-300/80 cursor-pointer transition-all active:scale-95 -ml-1.5 select-none font-bold">
-                      <i class="fa-solid fa-reply text-[17px] sm:text-[18px]"></i>
-                      <span class="text-[13px] sm:text-[14px] leading-none">
-                        <span class="sm:hidden">Trả lời</span>
-                        <span class="hidden sm:inline">Trả lời {{ task.creator ? task.creator.name : (task.assignee ?
-                          task.assignee.name : 'thành viên') }}</span>
-                      </span>
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>
+          </div>
+          <!-- Future Loading Spinner -->
+          <div v-if="isLoadingFutureTasks" class="py-2.5 text-center text-xs text-gray-500 font-medium flex items-center justify-center gap-2">
+            <i class="fa-solid fa-spinner fa-spin text-emerald-600"></i>
+            <span>Đang tải hành động tiếp theo...</span>
           </div>
         </div>
       </div>
@@ -264,6 +261,7 @@
                           <template v-if="act.project?.customer">
                             <span class="font-bold text-[#32312F]">&nbsp;hỗ trợ&nbsp;</span>
                             <span class="text-[#1A7A56] hover:underline cursor-pointer font-extrabold"
+                              :title="act.project.customer.name"
                               @click.stop="$router.push(`/customers/${act.project.customer.id}`)">
                               {{ act.project.customer.name }}
                             </span>
@@ -338,7 +336,7 @@
                         class="whitespace-pre-line font-normal text-gray-900 select-text cursor-text">
                         <div
                           :class="!isActivityExpanded(act.id) && isLongContent(parseCommentText(act.content)) ? 'line-clamp-4' : ''">
-                          {{ parseCommentText(act.content) }}
+                          <i v-if="act.is_private" class="fa-solid fa-lock text-[13px] text-[#ea580c] mr-1.5 align-middle inline-block" title="Tin nhắn riêng tư"></i><span v-html="formatCommentTextWithMentions(act.content, projectStore.users, mentionGroups)"></span>
                         </div>
                         <button v-if="isLongContent(parseCommentText(act.content))"
                           @click.stop="toggleExpandActivity(act.id)" type="button"
@@ -373,15 +371,25 @@
                       </div>
                     </div>
 
-                    <!-- Bottom Actions: Reply button with text -->
-                    <div class="flex items-center gap-3 mt-3 sm:mt-3.5">
-                      <button @click.stop="handleReplyToActivity(act)" type="button"
+                    <!-- Bottom Actions: Reply & Private Reply buttons with text -->
+                    <div class="flex items-center gap-2 mt-3 sm:mt-3.5 flex-wrap">
+                      <button v-if="!act.is_private" @click.stop="handleReplyToActivity(act)" type="button"
                         :title="'Trả lời ' + (act.user?.name || 'thành viên')"
                         class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-gray-500 hover:text-emerald-700 hover:bg-stone-200/60 active:bg-stone-300/80 cursor-pointer transition-all active:scale-95 -ml-1.5 select-none font-bold">
                         <i class="fa-solid fa-reply text-[18px] sm:text-[19px]"></i>
                         <span class="text-[13px] sm:text-[14px] leading-none">
                           <span class="sm:hidden">Trả lời</span>
                           <span class="hidden sm:inline">Trả lời {{ act.user ? act.user.name : 'thành viên' }}</span>
+                        </span>
+                      </button>
+
+                      <button @click.stop="handlePrivateReplyToActivity(act)" type="button"
+                        :title="'Trả lời riêng ' + (act.user?.name || 'thành viên')"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[#ea580c] hover:text-orange-700 hover:bg-orange-100/60 active:bg-orange-200/80 cursor-pointer transition-all active:scale-95 select-none font-bold">
+                        <i class="fa-solid fa-reply text-[18px] sm:text-[19px]"></i>
+                        <span class="text-[13px] sm:text-[14px] leading-none">
+                          <span class="sm:hidden">Trả lời riêng</span>
+                          <span class="hidden sm:inline">Trả lời riêng {{ act.user ? act.user.name : 'thành viên' }}</span>
                         </span>
                       </button>
                     </div>
@@ -767,6 +775,7 @@ import { useAuthStore } from '../stores/auth'
 import { useProjectStore } from '../stores/project'
 import { useToastStore } from '../stores/toast'
 import { useConfirmStore } from '../stores/confirm'
+import { formatCommentTextWithMentions } from '../utils/mentionFormatter'
 
 
 const router = useRouter()
@@ -825,6 +834,41 @@ const getCachedScheduleTasks = () => {
 }
 const scheduleTasks = ref(getCachedScheduleTasks())
 const isScheduleLoading = ref(false)
+const hasMorePastTasks = ref(false)
+const hasMoreFutureTasks = ref(false)
+const isLoadingPastTasks = ref(false)
+const isLoadingFutureTasks = ref(false)
+
+const scheduleTasksScrollContainer = ref(null)
+
+const scrollToTodayOrNearestSchedule = (smooth = false) => {
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      const container = scheduleTasksScrollContainer.value
+      if (!container) return
+      const groups = groupedScheduleTasks.value
+      if (!groups || groups.length === 0) return
+
+      let targetGroup = groups.find(g => g.order === 0)
+      if (!targetGroup) targetGroup = groups.find(g => g.order > 0)
+      if (!targetGroup && groups.length > 0) targetGroup = groups[groups.length - 1]
+
+      if (targetGroup) {
+        const targetEl = container.querySelector(`[data-group-key="${targetGroup.dateKey}"]`)
+        if (targetEl) {
+          const containerTop = container.getBoundingClientRect().top
+          const targetTop = targetEl.getBoundingClientRect().top
+          const offset = targetTop - containerTop + container.scrollTop
+          if (smooth) {
+            container.scrollTo({ top: Math.max(0, offset - 4), behavior: 'smooth' })
+          } else {
+            container.scrollTop = Math.max(0, offset - 4)
+          }
+        }
+      }
+    })
+  })
+}
 
 const fetchScheduleTasks = async (silent = false) => {
   if (!silent && scheduleTasks.value.length === 0) {
@@ -832,13 +876,17 @@ const fetchScheduleTasks = async (silent = false) => {
   }
   try {
     const res = await axios.get('/api/tasks', {
-      params: { view_mode: 'schedule' }
+      params: { view_mode: 'schedule', paginate: 1, limit: 15 }
     })
-    const data = res.data || []
+    const data = res.data?.tasks || (Array.isArray(res.data) ? res.data : [])
+    hasMorePastTasks.value = Boolean(res.data?.has_more_past)
+    hasMoreFutureTasks.value = Boolean(res.data?.has_more_future)
     scheduleTasks.value = data
     try {
       localStorage.setItem(SCHEDULE_CACHE_KEY, JSON.stringify(data))
     } catch {}
+    scrollToTodayOrNearestSchedule()
+    setTimeout(() => scrollToTodayOrNearestSchedule(), 100)
   } catch (err) {
     console.error('Failed to fetch schedule tasks:', err)
   } finally {
@@ -846,10 +894,115 @@ const fetchScheduleTasks = async (silent = false) => {
   }
 }
 
+const loadOlderScheduleTasks = async () => {
+  if (isLoadingPastTasks.value || !hasMorePastTasks.value || scheduleTasks.value.length === 0) return
+
+  const activeTasks = [...scheduleTasks.value].sort((a, b) => {
+    return new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+  })
+  const oldestTask = activeTasks[0]
+  if (!oldestTask) return
+
+  isLoadingPastTasks.value = true
+  const container = scheduleTasksScrollContainer.value
+  const prevScrollHeight = container ? container.scrollHeight : 0
+  const prevScrollTop = container ? container.scrollTop : 0
+
+  try {
+    const res = await axios.get('/api/tasks', {
+      params: {
+        view_mode: 'schedule',
+        paginate: 1,
+        direction: 'past',
+        before_date: oldestTask.due_date,
+        before_id: oldestTask.id,
+        limit: 15
+      }
+    })
+    const newOlderTasks = res.data?.tasks || []
+    hasMorePastTasks.value = Boolean(res.data?.has_more_past)
+
+    if (newOlderTasks.length > 0) {
+      const existingIds = new Set(scheduleTasks.value.map(t => t.id))
+      const uniqueNew = newOlderTasks.filter(t => !existingIds.has(t.id))
+      if (uniqueNew.length > 0) {
+        scheduleTasks.value = [...uniqueNew, ...scheduleTasks.value]
+
+        // Keep scroll anchor so screen doesn't jump
+        await nextTick()
+        requestAnimationFrame(() => {
+          if (container) {
+            const heightDiff = container.scrollHeight - prevScrollHeight
+            container.scrollTop = prevScrollTop + heightDiff
+          }
+        })
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load older schedule tasks:', err)
+  } finally {
+    isLoadingPastTasks.value = false
+  }
+}
+
+const loadFutureScheduleTasks = async () => {
+  if (isLoadingFutureTasks.value || !hasMoreFutureTasks.value || scheduleTasks.value.length === 0) return
+
+  const activeTasks = [...scheduleTasks.value].sort((a, b) => {
+    return new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+  })
+  const latestTask = activeTasks[activeTasks.length - 1]
+  if (!latestTask) return
+
+  isLoadingFutureTasks.value = true
+  try {
+    const res = await axios.get('/api/tasks', {
+      params: {
+        view_mode: 'schedule',
+        paginate: 1,
+        direction: 'future',
+        after_date: latestTask.due_date,
+        after_id: latestTask.id,
+        limit: 15
+      }
+    })
+    const newFutureTasks = res.data?.tasks || []
+    hasMoreFutureTasks.value = Boolean(res.data?.has_more_future)
+
+    if (newFutureTasks.length > 0) {
+      const existingIds = new Set(scheduleTasks.value.map(t => t.id))
+      const uniqueNew = newFutureTasks.filter(t => !existingIds.has(t.id))
+      if (uniqueNew.length > 0) {
+        scheduleTasks.value = [...scheduleTasks.value, ...uniqueNew]
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load future schedule tasks:', err)
+  } finally {
+    isLoadingFutureTasks.value = false
+  }
+}
+
+const handleScheduleScroll = (event) => {
+  const el = event?.target || scheduleTasksScrollContainer.value
+  if (!el) return
+
+  // Scrolling up: near top
+  if (el.scrollTop <= 40 && hasMorePastTasks.value && !isLoadingPastTasks.value) {
+    loadOlderScheduleTasks()
+  }
+
+  // Scrolling down: near bottom
+  const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+  if (distanceFromBottom <= 50 && hasMoreFutureTasks.value && !isLoadingFutureTasks.value) {
+    loadFutureScheduleTasks()
+  }
+}
+
 const formatScheduleGroupKey = (dateStr) => {
-  if (!dateStr) return { key: 'no_date', label: 'Chưa có ngày', order: -999999 }
+  if (!dateStr) return { key: 'no_date', label: 'Chưa có ngày', order: 999999 }
   const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return { key: dateStr, label: dateStr, order: -999999 }
+  if (isNaN(d.getTime())) return { key: dateStr, label: dateStr, order: 999999 }
 
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -885,15 +1038,15 @@ const formatScheduleGroupKey = (dateStr) => {
   }
 }
 
-// In full view of Tất cả hành động tiếp theo, show ALL active tasks (including overdue ones) sorted from newest downwards
+// In full view of Tất cả hành động tiếp theo, show ALL active tasks sorted chronological (oldest past -> today -> future)
 const groupedScheduleTasks = computed(() => {
   const activeTasks = scheduleTasks.value.filter(t => Boolean(t.due_date) && t.status !== 'done')
   const sorted = [...activeTasks].sort((a, b) => {
-    const dateDiff = new Date(b.due_date).getTime() - new Date(a.due_date).getTime()
+    const dateDiff = new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
     if (dateDiff !== 0) return dateDiff
     const timeA = a.created_at ? new Date(a.created_at).getTime() : 0
     const timeB = b.created_at ? new Date(b.created_at).getTime() : 0
-    return timeB - timeA
+    return timeA - timeB
   })
 
   const groupMap = new Map()
@@ -910,7 +1063,34 @@ const groupedScheduleTasks = computed(() => {
     groupMap.get(key).tasks.push(task)
   })
 
-  return Array.from(groupMap.values()).sort((a, b) => b.order - a.order)
+  return Array.from(groupMap.values()).sort((a, b) => a.order - b.order)
+})
+
+watch(() => activeMainTab.value, (newTab) => {
+  if (newTab === 'actions') {
+    fetchScheduleTasks()
+    scrollToTodayOrNearestSchedule()
+    setTimeout(() => scrollToTodayOrNearestSchedule(), 100)
+  }
+})
+
+watch(() => route.query.tab, (newTab) => {
+  if (newTab === 'actions') {
+    activeMainTab.value = 'actions'
+    fetchScheduleTasks()
+    scrollToTodayOrNearestSchedule()
+    setTimeout(() => scrollToTodayOrNearestSchedule(), 100)
+  } else if (newTab) {
+    activeMainTab.value = 'activities'
+    activeTab.value = newTab
+  }
+})
+
+watch(() => groupedScheduleTasks.value.length, (newLen) => {
+  if (newLen > 0 && activeMainTab.value === 'actions') {
+    scrollToTodayOrNearestSchedule()
+    setTimeout(() => scrollToTodayOrNearestSchedule(), 120)
+  }
 })
 
 // Expanded state for long action items in schedule view
@@ -926,25 +1106,12 @@ const toggleExpandScheduleTask = (taskId) => {
 }
 const isScheduleTaskExpanded = (taskId) => expandedScheduleTaskIds.value.has(taskId)
 
-const handleReplyToScheduleTask = (task) => {
-  activeActivityIdForMobileActions.value = null
-  editingCommentLog.value = null
-  replyingToActivity.value = {
-    id: task.id,
-    user: task.creator?.name || task.assignee?.name || 'Thành viên',
-    text: parseCommentText(task.title),
-  }
-  chatProjectId.value = task.project_id || task.project?.id || projectStore.projects[0]?.id
-  const authorName = task.creator?.name || task.assignee?.name
-  chatMessage.value = authorName ? `@${authorName} ` : ''
-  activityComposerRef.value?.focus()
-}
-
 const switchMainTab = (tab) => {
   activeMainTab.value = tab
   router.replace({ query: { ...route.query, tab } })
   if (tab === 'actions') {
     fetchScheduleTasks()
+    scrollToTodayOrNearestSchedule()
   } else {
     fetchActivities(true)
   }
@@ -1110,9 +1277,24 @@ const fetchLatestActivities = () => {
 const handleReplyToActivity = (activity) => {
   activeActivityIdForMobileActions.value = null
   editingCommentLog.value = null
-  replyingToActivity.value = activity
+  replyingToActivity.value = {
+    ...activity,
+    is_private_reply: false
+  }
   chatProjectId.value = activity.project_id || activity.project?.id || projectStore.projects[0]?.id
   chatMessage.value = activity.user?.name ? `@${activity.user.name} ` : ''
+  activityComposerRef.value?.focus()
+}
+
+const handlePrivateReplyToActivity = (activity) => {
+  activeActivityIdForMobileActions.value = null
+  editingCommentLog.value = null
+  replyingToActivity.value = {
+    ...activity,
+    is_private_reply: true
+  }
+  chatProjectId.value = activity.project_id || activity.project?.id || projectStore.projects[0]?.id
+  chatMessage.value = activity.user?.name ? `"${activity.user.name} ` : ''
   activityComposerRef.value?.focus()
 }
 
@@ -2283,6 +2465,9 @@ onMounted(() => {
   // 1. Fetch appropriate tab data immediately so the active feed renders instantly
   if (activeMainTab.value === 'actions') {
     fetchScheduleTasks()
+    scrollToTodayOrNearestSchedule()
+    setTimeout(() => scrollToTodayOrNearestSchedule(), 100)
+    setTimeout(() => scrollToTodayOrNearestSchedule(), 350)
   } else {
     fetchActivities()
   }
@@ -2465,6 +2650,10 @@ const scrollToComment = async (reply) => {
     height: var(--vvh, 100dvh) !important;
     max-height: var(--vvh, 100dvh) !important;
     min-height: 0 !important;
+  }
+
+  .activity-feed-page main {
+    padding-top: calc(8px + env(safe-area-inset-top, 0px)) !important;
   }
 }
 
