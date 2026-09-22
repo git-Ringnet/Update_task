@@ -10,6 +10,7 @@ class ApiToken extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'token_hash',
         'expires_at',
         'last_used_at',
