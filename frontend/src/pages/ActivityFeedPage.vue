@@ -91,31 +91,31 @@
                 </div>
 
                 <!-- Details -->
-                <div class="min-w-0 flex-1 pt-0 z-10">
-                  <div class="flex items-start justify-between gap-2 mb-1">
+                <div class="min-w-0 flex-1 pt-0 z-10 relative">
+                  <div class="relative flex items-start mb-1">
                     <!-- Project Title Link -->
                     <div v-if="task.project" class="leading-snug flex-1 min-w-0">
                       <span @click="goToProject(task.project.id, $event)"
-                        class="activity-project-link text-[#1A7A56] hover:underline font-extrabold text-[18px] sm:text-[19px] cursor-pointer max-w-full truncate inline-block w-fit align-middle"
+                        class="activity-project-link text-[#1A7A56] hover:underline font-extrabold text-[18px] sm:text-[19px] cursor-pointer max-w-full break-words inline-block w-fit align-middle select-text cursor-pointer"
                         :title="task.project.title">
                         {{ (task.project.customer?.name ? task.project.customer.name + ' - ' : '') + task.project.title }}
                       </span>
                     </div>
                     <div v-else class="flex-1"></div>
 
-                    <!-- Right: 3-dots Menu Button on hover / mobile long-press (only if user has permission) -->
+                    <!-- Right: 3-dots Menu Button overlaying on hover / mobile long-press (only if user has permission) -->
                     <div v-if="canEditScheduleTask(task) || canDeleteScheduleTask(task)"
-                      class="relative shrink-0 flex items-center justify-end" @click.stop>
+                      class="absolute -top-0.5 right-0 z-20 flex items-center justify-end select-none" @click.stop>
                       <button type="button"
                         @click.stop="toggleScheduleTaskMenu(task.id, $event)" title="Tùy chọn"
-                        class="text-gray-400 hover:text-gray-800 hover:bg-gray-200/80 active:bg-gray-300/80 w-7 h-7 -my-1 -mr-1 rounded-lg flex items-center justify-center cursor-pointer transition-all active:scale-95 p-0"
-                        :class="(activeScheduleTaskMenuId === task.id || activeScheduleTaskIdForMobile === task.id) ? 'flex text-gray-800 bg-gray-200/80' : 'hidden group-hover:flex'">
+                        class="text-gray-700 hover:text-gray-950 bg-gray-200/95 hover:bg-gray-300 active:bg-gray-400 border border-gray-300/90 w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer transition-all active:scale-95 p-0 shadow-xs backdrop-blur-none"
+                        :class="(activeScheduleTaskMenuId === task.id || activeScheduleTaskIdForMobile === task.id) ? 'flex text-gray-950 bg-gray-300 border-gray-400' : 'hidden group-hover:flex'">
                         <i class="fa-solid fa-ellipsis-vertical text-[14px] leading-none"></i>
                       </button>
 
                       <!-- Dropdown Menu for Edit & Delete -->
                       <div v-if="activeScheduleTaskMenuId === task.id"
-                        class="absolute top-full right-0 mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[130px] animate-fade-in-up">
+                        class="absolute top-full right-0 mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[130px] animate-fade-in-up select-none">
                         <button v-if="canEditScheduleTask(task)" type="button" @click.stop="openEditScheduleTaskModal(task)"
                           class="w-full text-left px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-100 flex items-center gap-2 cursor-pointer transition-colors">
                           <i class="fa-solid fa-pen-to-square text-xs text-emerald-600"></i>
@@ -383,12 +383,23 @@
                         </span>
                       </button>
 
+                      <!-- Nút Trả lời riêng (nhắn tiếp những người đang được nhắn riêng trước đó) -->
+                      <button v-if="act.is_private" @click.stop="handlePrivateReplyToAllInActivity(act)" type="button"
+                        title="Trả lời riêng (nhắn tiếp những người đang được nhắn riêng trước đó)"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[#ea580c] hover:text-orange-700 hover:bg-orange-100/60 active:bg-orange-200/80 cursor-pointer transition-all active:scale-95 select-none font-bold">
+                        <i class="fa-solid fa-reply text-[18px] sm:text-[19px]"></i>
+                        <span class="text-[13px] sm:text-[14px] leading-none">
+                          <span>Trả lời riêng</span>
+                        </span>
+                      </button>
+
+                      <!-- Nút Trả lời riêng {tên người nhắn} -->
                       <button @click.stop="handlePrivateReplyToActivity(act)" type="button"
                         :title="'Trả lời riêng ' + (act.user?.name || 'thành viên')"
                         class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[#ea580c] hover:text-orange-700 hover:bg-orange-100/60 active:bg-orange-200/80 cursor-pointer transition-all active:scale-95 select-none font-bold">
                         <i class="fa-solid fa-reply text-[18px] sm:text-[19px]"></i>
                         <span class="text-[13px] sm:text-[14px] leading-none">
-                          <span class="sm:hidden">Trả lời riêng</span>
+                          <span class="sm:hidden">Trả lời riêng {{ act.user ? act.user.name : '' }}</span>
                           <span class="hidden sm:inline">Trả lời riêng {{ act.user ? act.user.name : 'thành viên' }}</span>
                         </span>
                       </button>
@@ -792,15 +803,40 @@ const goBack = () => {
     router.push('/views')
   }
 }
-const ACTIVITIES_CACHE_KEY = 'cached_team_activities'
+const getCurrentUserId = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user'))
+    return user?.id || null
+  } catch {
+    return null
+  }
+}
+
 const getCachedActivities = () => {
   try {
-    const cached = localStorage.getItem(ACTIVITIES_CACHE_KEY)
-    return cached ? JSON.parse(cached) : []
+    const currentUid = getCurrentUserId()
+    if (!currentUid) return []
+    const raw = localStorage.getItem(`cached_team_activities_${currentUid}`)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (parsed && parsed.userId && parsed.userId !== currentUid) return []
+    return Array.isArray(parsed) ? parsed : (parsed.data || [])
   } catch {
     return []
   }
 }
+
+const setCachedActivities = (data) => {
+  try {
+    const currentUid = getCurrentUserId()
+    if (!currentUid) return
+    localStorage.setItem(`cached_team_activities_${currentUid}`, JSON.stringify({
+      userId: currentUid,
+      data: (data || []).slice(0, 50)
+    }))
+  } catch {}
+}
+
 const cachedInitialActivities = getCachedActivities()
 const activities = ref(cachedInitialActivities)
 const isLoading = ref(cachedInitialActivities.length === 0)
@@ -823,15 +859,31 @@ let activityTouchStarted = false
 let ignoreActivityClickUntil = 0
 
 // Schedule tasks state for 'actions' view (Tất cả hành động tiếp theo bao gồm quá hạn)
-const SCHEDULE_CACHE_KEY = 'cached_schedule_tasks'
 const getCachedScheduleTasks = () => {
   try {
-    const cached = localStorage.getItem(SCHEDULE_CACHE_KEY)
-    return cached ? JSON.parse(cached) : []
+    const currentUid = getCurrentUserId()
+    if (!currentUid) return []
+    const raw = localStorage.getItem(`cached_schedule_tasks_${currentUid}`)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (parsed && parsed.userId && parsed.userId !== currentUid) return []
+    return Array.isArray(parsed) ? parsed : (parsed.data || [])
   } catch {
     return []
   }
 }
+
+const setCachedScheduleTasks = (data) => {
+  try {
+    const currentUid = getCurrentUserId()
+    if (!currentUid) return
+    localStorage.setItem(`cached_schedule_tasks_${currentUid}`, JSON.stringify({
+      userId: currentUid,
+      data: data || []
+    }))
+  } catch {}
+}
+
 const scheduleTasks = ref(getCachedScheduleTasks())
 const isScheduleLoading = ref(false)
 const hasMorePastTasks = ref(false)
@@ -882,9 +934,7 @@ const fetchScheduleTasks = async (silent = false) => {
     hasMorePastTasks.value = Boolean(res.data?.has_more_past)
     hasMoreFutureTasks.value = Boolean(res.data?.has_more_future)
     scheduleTasks.value = data
-    try {
-      localStorage.setItem(SCHEDULE_CACHE_KEY, JSON.stringify(data))
-    } catch {}
+    setCachedScheduleTasks(data)
     scrollToTodayOrNearestSchedule()
     setTimeout(() => scrollToTodayOrNearestSchedule(), 100)
   } catch (err) {
@@ -1086,13 +1136,6 @@ watch(() => route.query.tab, (newTab) => {
   }
 })
 
-watch(() => groupedScheduleTasks.value.length, (newLen) => {
-  if (newLen > 0 && activeMainTab.value === 'actions') {
-    scrollToTodayOrNearestSchedule()
-    setTimeout(() => scrollToTodayOrNearestSchedule(), 120)
-  }
-})
-
 // Expanded state for long action items in schedule view
 const expandedScheduleTaskIds = ref(new Set())
 const toggleExpandScheduleTask = (taskId) => {
@@ -1232,9 +1275,7 @@ const fetchActivities = async (silent = false) => {
     const filtered = (res.data || []).filter(c => c.project_id)
     activities.value = filtered
     hasMoreOlderActivities.value = filtered.length >= 50
-    try {
-      localStorage.setItem(ACTIVITIES_CACHE_KEY, JSON.stringify(filtered.slice(0, 50)))
-    } catch {}
+    setCachedActivities(filtered)
     if (!silent) {
       scrollToBottom(false)
     }
@@ -1249,9 +1290,9 @@ let latestActivityRequest = null
 const fetchLatestActivities = () => {
   if (latestActivityRequest || activities.value.length === 0) return latestActivityRequest
   const afterId = Math.max(...activities.value.map(activity => Number(activity.id) || 0))
-  latestActivityRequest = axios.get('/api/comments', {
-    params: { after_id: afterId, limit: 30 }
-  }).then(res => {
+  const params = { after_id: afterId, limit: 30 }
+
+  latestActivityRequest = axios.get('/api/comments', { params }).then(res => {
     const incoming = (res.data || []).filter(comment => comment.project_id)
     if (!incoming.length) return
     const incomingIds = new Set(incoming.map(comment => comment.id))
@@ -1261,7 +1302,9 @@ const fetchLatestActivities = () => {
       ? (container.scrollHeight - container.scrollTop - container.clientHeight <= 150)
       : true
 
-    activities.value = [...incoming, ...activities.value.filter(comment => !incomingIds.has(comment.id))]
+    const updated = [...incoming, ...activities.value.filter(comment => !incomingIds.has(comment.id))]
+    activities.value = updated
+    setCachedActivities(updated)
 
     if (isNearBottom) {
       scrollToBottom(true)
@@ -1283,6 +1326,66 @@ const handleReplyToActivity = (activity) => {
   }
   chatProjectId.value = activity.project_id || activity.project?.id || projectStore.projects[0]?.id
   chatMessage.value = activity.user?.name ? `@${activity.user.name} ` : ''
+  activityComposerRef.value?.focus()
+}
+
+const getPrivateRecipientsForActivity = (activity) => {
+  if (!activity) return []
+  const recipientIds = new Set()
+
+  // 1. Author of the activity
+  const authorId = activity.user_id || activity.user?.id || activity.created_by || activity.creator_id || activity.creator?.id
+  if (authorId) {
+    recipientIds.add(Number(authorId))
+  }
+
+  // 2. private_user_ids array
+  if (Array.isArray(activity.private_user_ids)) {
+    activity.private_user_ids.forEach(id => {
+      if (id) {
+        recipientIds.add(Number(id))
+      }
+    })
+  }
+
+  // 3. Extract from text: "Name or “Name
+  const text = activity.content || activity.title || ''
+  if (text && (text.includes('"') || text.includes('“') || text.includes('”')) && projectStore.users && projectStore.users.length > 0) {
+    const cleanText = text.replace(/^\[reply:\{.*?\}\]\s*/, '')
+    projectStore.users.forEach(u => {
+      if (!u || !u.name) return
+      const escapedName = u.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const regex = new RegExp(`(?<!\\w)["“”]${escapedName}(?=\\s|$|[,.;:!?()"\'“”<])`, 'i')
+      if (regex.test(cleanText)) {
+        recipientIds.add(Number(u.id))
+      }
+    })
+  }
+
+  return Array.from(recipientIds).map(id => {
+    return projectStore.users?.find(u => Number(u.id) === Number(id)) || { id, name: `Thành viên #${id}` }
+  }).filter(Boolean)
+}
+
+const handlePrivateReplyToAllInActivity = (activity) => {
+  activeActivityIdForMobileActions.value = null
+  editingCommentLog.value = null
+  const recipients = getPrivateRecipientsForActivity(activity)
+  const recipientNames = recipients.map(u => u.name).join(', ')
+
+  replyingToActivity.value = {
+    ...activity,
+    is_private_reply: true,
+    reply_to_names: recipientNames || activity.user?.name
+  }
+  chatProjectId.value = activity.project_id || activity.project?.id || projectStore.projects[0]?.id
+  if (recipients.length > 0) {
+    chatMessage.value = recipients.map(u => `"${u.name}`).join(' ') + ' '
+  } else if (activity.user?.name) {
+    chatMessage.value = `"${activity.user.name} `
+  } else {
+    chatMessage.value = ''
+  }
   activityComposerRef.value?.focus()
 }
 
@@ -2469,6 +2572,10 @@ onMounted(() => {
     setTimeout(() => scrollToTodayOrNearestSchedule(), 100)
     setTimeout(() => scrollToTodayOrNearestSchedule(), 350)
   } else {
+    // Immediately scroll to bottom for any cached activities without waiting for network
+    scrollToBottom(false)
+    setTimeout(() => scrollToBottom(false), 50)
+    setTimeout(() => scrollToBottom(false), 150)
     fetchActivities()
   }
 

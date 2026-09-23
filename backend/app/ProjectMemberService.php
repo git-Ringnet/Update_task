@@ -21,7 +21,7 @@ class ProjectMemberService
 
         $cleanText = $text ? preg_replace('/^\[reply:\{.*?\}\]\s*/', '', $text) : '';
 
-        if ($cleanText && str_contains($cleanText, '"')) {
+        if ($cleanText && (str_contains($cleanText, '"') || str_contains($cleanText, '“') || str_contains($cleanText, '”'))) {
             $users = User::where('is_admin', false)->get(['id', 'name', 'email']);
             // Sort by longest name first to prevent partial prefix match
             $users = $users->sortByDesc(fn ($u) => mb_strlen((string) $u->name));
@@ -32,7 +32,7 @@ class ProjectMemberService
                 $identifiers = array_filter([$name, $emailPrefix]);
 
                 foreach ($identifiers as $identifier) {
-                    $pattern = '/(?<!\w)"' . preg_quote($identifier, '/') . '(?=\s|$|[,.;:!?()"\'<])/iu';
+                    $pattern = '/(?<!\w)["“”]' . preg_quote($identifier, '/') . '(?=\s|$|[,.;:!?()"\'“”<])/iu';
                     if (preg_match($pattern, $cleanText)) {
                         $memberIds->push($user->id);
                         break;
@@ -86,7 +86,7 @@ class ProjectMemberService
             }
         }
 
-        if ($text && str_contains($text, '"')) {
+        if ($text && (str_contains($text, '"') || str_contains($text, '“') || str_contains($text, '”'))) {
             $privateIds = $this->extractPrivateMentionUserIds($text);
             $memberIds->push(...$privateIds);
         }

@@ -16,6 +16,18 @@ export const useAuthStore = defineStore('auth', {
 
   actions: {
     setAuth(user, token) {
+      const prevUser = JSON.parse(localStorage.getItem('user') || 'null')
+      if (prevUser && user && prevUser.id !== user.id) {
+        // Purge caches from previous different user
+        try {
+          Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('cached_team_activities') || key.startsWith('cached_schedule_tasks')) {
+              localStorage.removeItem(key)
+            }
+          })
+        } catch {}
+      }
+
       this.user = user
       this.token = token
       localStorage.setItem('user', JSON.stringify(user))
@@ -38,6 +50,15 @@ export const useAuthStore = defineStore('auth', {
       this.token = null
       localStorage.removeItem('user')
       localStorage.removeItem('token')
+      localStorage.removeItem('cached_team_activities')
+      localStorage.removeItem('cached_schedule_tasks')
+      try {
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('cached_team_activities') || key.startsWith('cached_schedule_tasks')) {
+            localStorage.removeItem(key)
+          }
+        })
+      } catch {}
       delete axios.defaults.headers.common['Authorization']
 
       // Clear auth session from Service Worker cache

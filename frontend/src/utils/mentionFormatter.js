@@ -39,8 +39,8 @@ export const formatCommentTextWithMentions = (content, usersList = [], groupsLis
   allUsers.forEach(u => {
     if (u && u.name) {
       const esc = u.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      // Matches "Name or &quot;Name preceded by start of line, space, or quote
-      const reg = new RegExp(`(?<=^|\\s)(?:"|&quot;)${esc}(?=\\s|$|[.,!?:;])`, 'gi')
+      // Matches "Name or &quot;Name or “Name preceded by start of line, space, or quote
+      const reg = new RegExp(`(?<=^|\\s)(?:"|&quot;|[“])${esc}(?=\\s|$|[.,!?:;])`, 'gi')
       escaped = escaped.replace(reg, `<span class="text-[#ea580c] font-bold">"${u.name}</span>`)
     }
   })

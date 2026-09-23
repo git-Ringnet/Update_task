@@ -254,7 +254,7 @@ class TaskController extends Controller
             if ($existingComment) {
                 $existingComment->update([
                     'task_id' => $task->id,
-                    'is_private' => $task->is_private,
+                    'is_private' => (bool) ($task->is_private ?? false),
                     'private_user_ids' => $task->private_user_ids,
                 ]);
             }
@@ -267,7 +267,7 @@ class TaskController extends Controller
                 'user_id' => $task->created_by ?? auth()->id(),
                 'content' => $task->title,
                 'type' => 'comment',
-                'is_private' => $task->is_private,
+                'is_private' => (bool) ($task->is_private ?? false),
                 'private_user_ids' => $task->private_user_ids,
                 'project_health' => $task->health ?? $project->health,
                 'created_at' => $task->created_at,
@@ -325,6 +325,9 @@ class TaskController extends Controller
             'status' => 'required|in:todo,in_progress,review,done',
             'priority' => 'required|in:low,medium,high,urgent',
             'health' => 'nullable|string',
+            'is_private' => 'nullable|boolean',
+            'private_user_ids' => 'nullable|array',
+            'private_user_ids.*' => Rule::exists('users', 'id')->where('is_admin', 0),
             'tagged_user_ids' => 'nullable|array',
             'tagged_user_ids.*' => Rule::exists('users', 'id')->where('is_admin', 0),
             'attachment_ids' => 'nullable|array',
@@ -342,6 +345,19 @@ class TaskController extends Controller
         $taggedUserIds = $validated['tagged_user_ids'] ?? [];
         $attachmentIds = $validated['attachment_ids'] ?? [];
         unset($validated['tagged_user_ids'], $validated['attachment_ids']);
+
+        $privateUserIds = app(ProjectMemberService::class)->extractPrivateMentionUserIds(
+            $validated['title'],
+            $validated['private_user_ids'] ?? ($task->private_user_ids ?? [])
+        );
+        if (!empty($privateUserIds)) {
+            $validated['is_private'] = true;
+            $validated['private_user_ids'] = array_values(array_unique($privateUserIds));
+        } else {
+            $validated['is_private'] = $request->has('is_private') ? $request->boolean('is_private') : ($task->is_private ?? false);
+            $validated['private_user_ids'] = $request->input('private_user_ids', $task->private_user_ids);
+        }
+
         $task->update($validated);
         $task->created_at = Carbon::now();
         $task->save();
@@ -359,6 +375,8 @@ class TaskController extends Controller
         if ($comment) {
             $comment->update([
                 'content' => $task->title,
+                'is_private' => (bool) ($task->is_private ?? false),
+                'private_user_ids' => $task->private_user_ids,
                 'project_health' => $task->health ?? $project->health,
             ]);
         } else {
@@ -368,6 +386,8 @@ class TaskController extends Controller
                 'user_id' => $task->created_by ?? auth()->id(),
                 'content' => $task->title,
                 'type' => 'comment',
+                'is_private' => (bool) ($task->is_private ?? false),
+                'private_user_ids' => $task->private_user_ids,
                 'project_health' => $task->health ?? $project->health,
                 'created_at' => $task->created_at,
                 'updated_at' => $task->updated_at,
@@ -382,7 +402,7 @@ class TaskController extends Controller
         app(ProjectMemberService::class)->addMentionedMembers(
             $project,
             $task->title,
-            array_filter(array_merge($taggedUserIds, [$task->assignee_id]))
+            array_filter(array_merge($taggedUserIds, $privateUserIds, [$task->assignee_id]))
         );
 
         return response()->json($task);

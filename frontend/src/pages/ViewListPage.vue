@@ -648,12 +648,23 @@
                             </span>
                           </button>
 
+                          <!-- Nút Trả lời riêng (nhắn tiếp những người đang được nhắn riêng trước đó) -->
+                          <button v-if="log.is_private" @click.stop="handlePrivateReplyToAllInActivity(log)" type="button"
+                            title="Trả lời riêng (nhắn tiếp những người đang được nhắn riêng trước đó)"
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[#ea580c] hover:text-orange-700 hover:bg-orange-100/60 active:bg-orange-200/80 cursor-pointer transition-all active:scale-95 select-none font-bold">
+                            <i class="fa-solid fa-reply text-[18px] sm:text-[19px]"></i>
+                            <span class="text-[13px] sm:text-[14px] leading-none">
+                              <span>Trả lời riêng</span>
+                            </span>
+                          </button>
+
+                          <!-- Nút Trả lời riêng {tên người nhắn} -->
                           <button @click.stop="handlePrivateReplyToActivity(log)" type="button"
                             :title="'Trả lời riêng ' + (log.user?.name || 'thành viên')"
                             class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[#ea580c] hover:text-orange-700 hover:bg-orange-100/60 active:bg-orange-200/80 cursor-pointer transition-all active:scale-95 select-none font-bold">
                             <i class="fa-solid fa-reply text-[18px] sm:text-[19px]"></i>
                             <span class="text-[13px] sm:text-[14px] leading-none">
-                              <span class="sm:hidden">Trả lời riêng</span>
+                              <span class="sm:hidden">Trả lời riêng {{ log.user ? log.user.name : '' }}</span>
                               <span class="hidden sm:inline">Trả lời riêng {{ log.user ? log.user.name : 'thành viên' }}</span>
                             </span>
                           </button>
@@ -696,7 +707,7 @@
 
           <!-- RIGHT PANEL: Hành động tiếp theo (Block 3 in 'actions' view) -->
           <section v-if="viewMode === 'actions'"
-            class="schedule-actions-panel bg-[#F9F4EE] border-[2.5px] border-[#4d4d4d] rounded-lg p-0 flex flex-col h-[calc(100vh-130px)] w-[360px] flex-shrink-0 shadow-3xs overflow-hidden select-none"
+            class="schedule-actions-panel bg-[#F9F4EE] border-[2.5px] border-[#4d4d4d] rounded-lg p-0 flex flex-col h-[calc(100vh-130px)] w-[360px] flex-shrink-0 shadow-3xs overflow-hidden select-text"
             :class="{ 'mobile-schedule-active': viewMode === 'actions' }">
 
             <!-- Mobile Top Search Header Bar in schedule/actions mode -->
@@ -705,7 +716,7 @@
               leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 translate-y-0"
               leave-to-class="opacity-0 -translate-y-2">
               <div v-if="isMobileSearchOpen"
-                class="mobile-top-search-bar md:hidden px-3 pt-2 pb-2 bg-[#F9F4EE] border-b border-gray-300/60 sticky top-0 z-30 flex items-center gap-2">
+                class="mobile-top-search-bar md:hidden px-3 pt-2 pb-2 bg-[#F9F4EE] border-b border-gray-300/60 sticky top-0 z-30 flex items-center gap-2 select-none">
                 <div class="relative flex-1">
                   <i
                     class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4d4d4d] text-[16px]"></i>
@@ -729,7 +740,7 @@
             </transition>
 
             <!-- Header: "Hành động tiếp theo" & Expand Button -->
-            <div class="flex items-center justify-between px-4 py-2.5 border-b border-[#4d4d4d] flex-shrink-0">
+            <div class="flex items-center justify-between px-4 py-2.5 border-b border-[#4d4d4d] flex-shrink-0 select-none">
               <h2 class="text-[20px] sm:text-[22px] font-black text-[#32312F] font-heading">Hành động tiếp theo</h2>
               <button @click="router.push('/feed?tab=actions')" type="button" title="Mở rộng tất cả hành động tiếp theo"
                 class="w-10 h-10 sm:w-9.5 sm:h-9.5 rounded-xl flex items-center justify-center text-gray-700 hover:text-emerald-700 hover:bg-emerald-50/80 active:bg-emerald-100 cursor-pointer transition-all active:scale-95">
@@ -738,15 +749,15 @@
             </div>
 
             <!-- Content Area: List grouped by date matching user screenshot -->
-            <div ref="scheduleScrollContainer" @scroll="handleScheduleScroll" class="flex-1 overflow-y-auto overscroll-contain p-4 space-y-6 scrollbar-hover">
+            <div ref="scheduleScrollContainer" @scroll="handleScheduleScroll" class="flex-1 overflow-y-auto overscroll-contain p-4 space-y-6 scrollbar-hover select-text">
               <!-- Past Loading Spinner -->
-              <div v-if="isLoadingPastTasks" class="py-2.5 text-center text-xs text-gray-500 font-medium flex items-center justify-center gap-2">
+              <div v-if="isLoadingPastTasks" class="py-2.5 text-center text-xs text-gray-500 font-medium flex items-center justify-center gap-2 select-none">
                 <i class="fa-solid fa-spinner fa-spin text-emerald-600"></i>
                 <span>Đang tải hành động cũ hơn...</span>
               </div>
 
               <!-- Loading Skeleton -->
-              <div v-if="isScheduleLoading && groupedScheduleTasks.length === 0" class="space-y-4">
+              <div v-if="isScheduleLoading && groupedScheduleTasks.length === 0" class="space-y-4 select-none">
                 <div v-for="i in 3" :key="'sk-sched-' + i" class="animate-pulse space-y-2">
                   <div class="h-4 bg-gray-200 rounded w-1/3"></div>
                   <div class="h-16 bg-white/70 rounded-xl border border-gray-200"></div>
@@ -755,7 +766,7 @@
 
               <!-- Empty State -->
               <div v-else-if="groupedScheduleTasks.length === 0"
-                class="py-16 text-center text-gray-450 text-sm font-semibold flex flex-col items-center gap-2">
+                class="py-16 text-center text-gray-450 text-sm font-semibold flex flex-col items-center gap-2 select-none">
                 <i class="fa-regular fa-calendar-check text-3xl text-gray-350"></i>
                 <span>{{ projectStore.searchQuery ? 'Không tìm thấy hành động phù hợp' : 'Chưa có lịch trình hành động nào' }}</span>
                 <span v-if="!projectStore.searchQuery" class="text-xs text-gray-400 font-normal">Hãy chọn ngày khi chat để tạo hành động tiếp theo</span>
@@ -764,7 +775,7 @@
               <!-- Grouped Tasks by Date -->
               <div v-for="group in groupedScheduleTasks" :key="group.dateKey" :data-group-key="group.dateKey" class="space-y-3">
                 <!-- Group Date Header (Deep green bold header matching screenshot) -->
-                <h3 class="text-[17px] sm:text-[18px] font-black text-[#1A7A56] tracking-tight">
+                <h3 class="text-[17px] sm:text-[18px] font-black text-[#1A7A56] tracking-tight select-text">
                   {{ group.dateLabel }}
                 </h3>
 
@@ -778,10 +789,10 @@
                     class="schedule-task-item relative flex items-start gap-3 pb-4.5 bg-transparent select-text group">
                     
                     <!-- Absolute Timeline Line connecting avatars -->
-                    <div class="absolute top-9 bottom-0 left-[15px] w-[1.5px] bg-gray-300 z-0"></div>
+                    <div class="absolute top-9 bottom-0 left-[15px] w-[1.5px] bg-gray-300 z-0 select-none pointer-events-none"></div>
 
                     <!-- Chatter Avatar -->
-                    <div class="flex-shrink-0 w-8 z-10">
+                    <div class="flex-shrink-0 w-8 z-10 select-none">
                       <img :src="task.creator?.avatar || task.assignee?.avatar || defaultAvatar"
                         :alt="task.creator?.name || 'Thành viên'"
                         @error="$event.target.src = defaultAvatar"
@@ -789,26 +800,26 @@
                     </div>
 
                     <!-- Details: Project Name, 3-dots Menu & Content & Attachments -->
-                    <div class="min-w-0 flex-1 pt-0 z-10">
-                      <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0 flex-1 pt-0 z-10 relative">
+                      <div class="relative flex items-start">
                         <!-- Project Name: e.g. Ringnet - Thi công 5 node mạng -->
-                        <div class="font-extrabold text-[#32312F] text-[18px] sm:text-[19px] leading-tight break-words flex-1 min-w-0">
+                        <div class="font-extrabold text-[#32312F] text-[18px] sm:text-[19px] leading-tight break-words flex-1 min-w-0 select-text cursor-text">
                           {{ task.project ? ((task.project.customer?.name ? task.project.customer.name + ' - ' : '') + task.project.title) : 'Dự án' }}
                         </div>
 
-                        <!-- Right: 3-dots Menu Button on hover / mobile long-press (only if user has permission) -->
+                        <!-- Right: 3-dots Menu Button overlaying on hover / mobile long-press (only if user has permission) -->
                         <div v-if="canEditScheduleTask(task) || canDeleteScheduleTask(task)"
-                          class="relative shrink-0 flex items-center justify-end" @click.stop>
+                          class="absolute -top-0.5 right-0 z-20 flex items-center justify-end select-none" @click.stop>
                           <button type="button"
                             @click.stop="toggleScheduleTaskMenu(task.id, $event)" title="Tùy chọn"
-                            class="text-gray-400 hover:text-gray-800 hover:bg-gray-200/80 active:bg-gray-300/80 w-7 h-7 -my-1 -mr-1 rounded-lg flex items-center justify-center cursor-pointer transition-all active:scale-95 p-0"
-                            :class="(activeScheduleTaskMenuId === task.id || activeScheduleTaskIdForMobile === task.id) ? 'flex text-gray-800 bg-gray-200/80' : 'hidden group-hover:flex'">
+                            class="text-gray-700 hover:text-gray-950 bg-gray-200/95 hover:bg-gray-300 active:bg-gray-400 border border-gray-300/90 w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer transition-all active:scale-95 p-0 shadow-xs backdrop-blur-none"
+                            :class="(activeScheduleTaskMenuId === task.id || activeScheduleTaskIdForMobile === task.id) ? 'flex text-gray-950 bg-gray-300 border-gray-400' : 'hidden group-hover:flex'">
                             <i class="fa-solid fa-ellipsis-vertical text-[14px] leading-none"></i>
                           </button>
 
                           <!-- Dropdown Menu for Edit & Delete -->
                           <div v-if="activeScheduleTaskMenuId === task.id"
-                            class="absolute top-full right-0 mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[130px] animate-fade-in-up">
+                            class="absolute top-full right-0 mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[130px] animate-fade-in-up select-none">
                             <button v-if="canEditScheduleTask(task)" type="button" @click.stop="openEditScheduleTaskModal(task)"
                               class="w-full text-left px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-100 flex items-center gap-2 cursor-pointer transition-colors">
                               <i class="fa-solid fa-pen-to-square text-xs text-emerald-600"></i>
@@ -2002,15 +2013,40 @@ const toggleCustomerGroup = () => {
 }
 
 // Next Actions / Schedule tasks state & methods
-const SCHEDULE_CACHE_KEY = 'cached_schedule_tasks'
+const getCurrentUserId = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user'))
+    return user?.id || null
+  } catch {
+    return null
+  }
+}
+
 const getCachedScheduleTasks = () => {
   try {
-    const cached = localStorage.getItem(SCHEDULE_CACHE_KEY)
-    return cached ? JSON.parse(cached) : []
+    const currentUid = getCurrentUserId()
+    if (!currentUid) return []
+    const raw = localStorage.getItem(`cached_schedule_tasks_${currentUid}`)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (parsed && parsed.userId && parsed.userId !== currentUid) return []
+    return Array.isArray(parsed) ? parsed : (parsed.data || [])
   } catch {
     return []
   }
 }
+
+const setCachedScheduleTasks = (data) => {
+  try {
+    const currentUid = getCurrentUserId()
+    if (!currentUid) return
+    localStorage.setItem(`cached_schedule_tasks_${currentUid}`, JSON.stringify({
+      userId: currentUid,
+      data: data || []
+    }))
+  } catch {}
+}
+
 const scheduleTasks = ref(getCachedScheduleTasks())
 const isScheduleLoading = ref(false)
 const hasMorePastTasks = ref(false)
@@ -2063,9 +2099,7 @@ const fetchScheduleTasks = async (silent = false) => {
     hasMorePastTasks.value = Boolean(res.data?.has_more_past)
     hasMoreFutureTasks.value = Boolean(res.data?.has_more_future)
     scheduleTasks.value = data
-    try {
-      localStorage.setItem(SCHEDULE_CACHE_KEY, JSON.stringify(data))
-    } catch {}
+    setCachedScheduleTasks(data)
     scrollToTodayOrNearestSchedule()
     setTimeout(() => scrollToTodayOrNearestSchedule(), 100)
   } catch (err) {
@@ -2186,9 +2220,7 @@ const toggleTaskStatus = async (task) => {
   if (!task?.id) return
   const nextStatus = task.status === 'done' ? 'todo' : 'done'
   task.status = nextStatus
-  try {
-    localStorage.setItem(SCHEDULE_CACHE_KEY, JSON.stringify(scheduleTasks.value))
-  } catch {}
+  setCachedScheduleTasks(scheduleTasks.value)
   try {
     await axios.patch(`/api/tasks/${task.id}/status`, { status: nextStatus })
     toast.success(nextStatus === 'done' ? 'Đã hoàn thành công việc!' : 'Đã mở lại công việc!')
@@ -2285,13 +2317,6 @@ watch(() => viewMode.value, (newVal) => {
   if (newVal === 'actions' || newVal === 'schedule') {
     scrollToTodayOrNearestSchedule()
     setTimeout(() => scrollToTodayOrNearestSchedule(), 100)
-  }
-})
-
-watch(() => groupedScheduleTasks.value.length, (newLen) => {
-  if (newLen > 0 && (viewMode.value === 'actions' || viewMode.value === 'schedule')) {
-    scrollToTodayOrNearestSchedule()
-    setTimeout(() => scrollToTodayOrNearestSchedule(), 120)
   }
 })
 
@@ -3599,15 +3624,31 @@ const extractCommentAttachments = (content) => {
 }
 
 // Activities feed fetching and styling
-const ACTIVITIES_CACHE_KEY = 'cached_team_activities'
 const getCachedActivities = () => {
   try {
-    const cached = localStorage.getItem(ACTIVITIES_CACHE_KEY)
-    return cached ? JSON.parse(cached) : []
+    const currentUid = getCurrentUserId()
+    if (!currentUid) return []
+    const raw = localStorage.getItem(`cached_team_activities_${currentUid}`)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (parsed && parsed.userId && parsed.userId !== currentUid) return []
+    return Array.isArray(parsed) ? parsed : (parsed.data || [])
   } catch {
     return []
   }
 }
+
+const setCachedActivities = (data) => {
+  try {
+    const currentUid = getCurrentUserId()
+    if (!currentUid) return
+    localStorage.setItem(`cached_team_activities_${currentUid}`, JSON.stringify({
+      userId: currentUid,
+      data: (data || []).slice(0, 30)
+    }))
+  } catch {}
+}
+
 const cachedInitialActivities = getCachedActivities()
 const activities = ref(cachedInitialActivities)
 const defaultActivities = ref(cachedInitialActivities)
@@ -4113,6 +4154,69 @@ const handleReplyToActivity = (log) => {
   })
 }
 
+const getPrivateRecipientsForActivity = (activity) => {
+  if (!activity) return []
+  const recipientIds = new Set()
+
+  // 1. Author of the activity
+  const authorId = activity.user_id || activity.user?.id || activity.created_by || activity.creator_id || activity.creator?.id
+  if (authorId) {
+    recipientIds.add(Number(authorId))
+  }
+
+  // 2. private_user_ids array
+  if (Array.isArray(activity.private_user_ids)) {
+    activity.private_user_ids.forEach(id => {
+      if (id) {
+        recipientIds.add(Number(id))
+      }
+    })
+  }
+
+  // 3. Extract from text: "Name or “Name
+  const text = activity.content || activity.title || ''
+  if (text && (text.includes('"') || text.includes('“') || text.includes('”')) && projectStore.users && projectStore.users.length > 0) {
+    const cleanText = text.replace(/^\[reply:\{.*?\}\]\s*/, '')
+    projectStore.users.forEach(u => {
+      if (!u || !u.name) return
+      const escapedName = u.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const regex = new RegExp(`(?<!\\w)["“”]${escapedName}(?=\\s|$|[,.;:!?()"\'“”<])`, 'i')
+      if (regex.test(cleanText)) {
+        recipientIds.add(Number(u.id))
+      }
+    })
+  }
+
+  return Array.from(recipientIds).map(id => {
+    return projectStore.users?.find(u => Number(u.id) === Number(id)) || { id, name: `Thành viên #${id}` }
+  }).filter(Boolean)
+}
+
+const handlePrivateReplyToAllInActivity = (log) => {
+  editingCommentLog.value = null
+  const recipients = getPrivateRecipientsForActivity(log)
+  const recipientNames = recipients.map(u => u.name).join(', ')
+
+  replyingToLog.value = {
+    ...log,
+    is_private_reply: true,
+    reply_to_names: recipientNames || log.user?.name
+  }
+  chatProjectId.value = log.project_id || log.project?.id || followingProjects.value[0]?.id
+
+  if (recipients.length > 0) {
+    chatMessage.value = recipients.map(u => `"${u.name}`).join(' ') + ' '
+  } else if (log.user?.name) {
+    chatMessage.value = `"${log.user.name} `
+  } else {
+    chatMessage.value = ''
+  }
+
+  nextTick(() => {
+    activityComposerRef.value?.focus()
+  })
+}
+
 const handlePrivateReplyToActivity = (log) => {
   editingCommentLog.value = null
   replyingToLog.value = {
@@ -4367,9 +4471,7 @@ async function fetchActivities(isManualRefresh = false) {
 
     if (!isFiltered) {
       defaultActivities.value = filtered
-      try {
-        localStorage.setItem(ACTIVITIES_CACHE_KEY, JSON.stringify(filtered.slice(0, 30)))
-      } catch {}
+      setCachedActivities(filtered)
     }
 
     const isUnchanged = !isManualRefresh && filtered.length === activities.value.length && filtered.every((activity, index) => {
@@ -4382,8 +4484,9 @@ async function fetchActivities(isManualRefresh = false) {
     if (!isUnchanged || isManualRefresh) {
       activities.value = filtered
       hasMoreOlderActivities.value = filtered.length >= (params.limit || 30)
-      scrollToBottom(false)
     }
+    // Always ensure the activity feed is scrolled to bottom on initial load / refresh
+    scrollToBottom(false)
   } catch (err) {
     console.error('Failed to load activities:', err)
   } finally {
@@ -4581,12 +4684,17 @@ const handleScroll = (event) => {
   }
 }
 
-onMounted(async () => {
+onMounted(() => {
   updateKeyboardState()
   resetWindowScroll()
   projectStore.activePage = 'home'
   projectStore.activeStatus = null
   loadCustomViews()
+
+  // Immediately scroll to bottom for any cached activities right on mount
+  scrollToBottom(false)
+  setTimeout(() => scrollToBottom(false), 50)
+  setTimeout(() => scrollToBottom(false), 150)
 
   if (viewMode.value === 'actions') {
     // Priority 1: Fetch schedule tasks immediately so the active view renders instantly
@@ -4617,17 +4725,18 @@ onMounted(async () => {
       requestAnimationFrame(updateTvPosition)
     })
   } else {
-    // Other views: Fetch all in parallel
-    await Promise.allSettled([
+    // Other views: Fetch all in parallel non-blocking
+    fetchActivities()
+    Promise.allSettled([
       fetchScheduleTasks(true),
       projectStore.fetchProjects(),
       projectStore.fetchAuxData(),
-      fetchActivities(),
       fetchBroadcasts(),
       axios.get('/api/mention-groups').then(res => { mentionGroups.value = res.data || [] }).catch(() => { }),
-    ])
-    scrollToBottom(false)
-    requestAnimationFrame(updateTvPosition)
+    ]).then(() => {
+      scrollToBottom(false)
+      requestAnimationFrame(updateTvPosition)
+    })
   }
 
   window.addEventListener('keydown', handleGlobalKeydown)
