@@ -52,13 +52,19 @@ class CommentController extends Controller
             // detail page can still provide the full project context.
             $query->where(function ($visibleComments) use ($user) {
                 $visibleComments
-                    ->whereHas('project', function ($projects) use ($user) {
+                    ->where('comments.user_id', $user->id)
+                    ->orWhereJsonContains('comments.private_user_ids', (int) $user->id)
+                    ->orWhereJsonContains('comments.private_user_ids', (string) $user->id)
+                    ->orWhereHas('project', function ($projects) use ($user) {
                         $projects->where('created_by', $user->id)
                             ->orWhere('lead_id', $user->id);
                     })
                     ->orWhereHas('project.members', function ($members) use ($user) {
                         $members->where('users.id', $user->id)
-                            ->whereColumn('project_members.created_at', '<=', 'comments.created_at');
+                            ->where(function ($m) {
+                                $m->whereColumn('project_members.created_at', '<=', 'comments.created_at')
+                                  ->orWhereRaw('TIMESTAMPDIFF(MINUTE, comments.created_at, project_members.created_at) <= 1');
+                            });
                     });
             });
         }

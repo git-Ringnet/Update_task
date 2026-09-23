@@ -25,7 +25,7 @@
         <div class="text-[14px] font-extrabold uppercase tracking-wider flex items-center gap-1.5"
           :class="isPrivateReply ? 'text-[#ea580c]' : 'text-[#0068FF]'">
           <i :class="isPrivateReply ? 'fa-solid fa-user-lock text-xs' : 'fa-solid fa-reply text-xs'"></i>
-          <span>{{ isPrivateReply ? 'Trả lời riêng' : 'Trả lời' }} {{ replyingTo.user?.name || (typeof replyingTo.user === 'string' ? replyingTo.user : 'Hệ thống') }}</span>
+          <span>{{ isPrivateReply ? 'Trả lời riêng' : 'Trả lời' }} {{ replyingTo.reply_to_names || replyingTo.user?.name || (typeof replyingTo.user === 'string' ? replyingTo.user : 'Hệ thống') }}</span>
         </div>
         <div class="text-[15px] truncate mt-0.5" :class="isPrivateReply ? 'text-orange-950/80 font-medium' : 'text-gray-600'">{{ replyText || replyingTo.content || replyingTo.text }}</div>
       </div>
@@ -680,12 +680,8 @@ const isDismissedPrivateSuggestion = ref(false)
 
 const isPrivateReply = computed(() => {
   if (props.replyingTo?.is_private_reply === true) return true
-  if (props.replyingTo?.is_private_reply === false) {
-    const msg = rawInputText.value || messageModel.value || ''
-    return msg.trim().startsWith('"')
-  }
   const msg = rawInputText.value || messageModel.value || ''
-  return msg.trim().startsWith('"')
+  return msg.trim().startsWith('"') || msg.trim().startsWith('“')
 })
 
 const detectedPrivateSuggestion = computed(() => {

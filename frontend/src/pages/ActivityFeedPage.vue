@@ -383,12 +383,23 @@
                         </span>
                       </button>
 
+                      <!-- Nút Trả lời riêng (nhắn tiếp những người đang được nhắn riêng trước đó) -->
+                      <button v-if="act.is_private" @click.stop="handlePrivateReplyToAllInActivity(act)" type="button"
+                        title="Trả lời riêng (nhắn tiếp những người đang được nhắn riêng trước đó)"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[#ea580c] hover:text-orange-700 hover:bg-orange-100/60 active:bg-orange-200/80 cursor-pointer transition-all active:scale-95 select-none font-bold">
+                        <i class="fa-solid fa-reply text-[18px] sm:text-[19px]"></i>
+                        <span class="text-[13px] sm:text-[14px] leading-none">
+                          <span>Trả lời riêng</span>
+                        </span>
+                      </button>
+
+                      <!-- Nút Trả lời riêng {tên người nhắn} -->
                       <button @click.stop="handlePrivateReplyToActivity(act)" type="button"
                         :title="'Trả lời riêng ' + (act.user?.name || 'thành viên')"
                         class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[#ea580c] hover:text-orange-700 hover:bg-orange-100/60 active:bg-orange-200/80 cursor-pointer transition-all active:scale-95 select-none font-bold">
                         <i class="fa-solid fa-reply text-[18px] sm:text-[19px]"></i>
                         <span class="text-[13px] sm:text-[14px] leading-none">
-                          <span class="sm:hidden">Trả lời riêng</span>
+                          <span class="sm:hidden">Trả lời riêng {{ act.user ? act.user.name : '' }}</span>
                           <span class="hidden sm:inline">Trả lời riêng {{ act.user ? act.user.name : 'thành viên' }}</span>
                         </span>
                       </button>
@@ -1315,6 +1326,66 @@ const handleReplyToActivity = (activity) => {
   }
   chatProjectId.value = activity.project_id || activity.project?.id || projectStore.projects[0]?.id
   chatMessage.value = activity.user?.name ? `@${activity.user.name} ` : ''
+  activityComposerRef.value?.focus()
+}
+
+const getPrivateRecipientsForActivity = (activity) => {
+  if (!activity) return []
+  const recipientIds = new Set()
+
+  // 1. Author of the activity
+  const authorId = activity.user_id || activity.user?.id || activity.created_by || activity.creator_id || activity.creator?.id
+  if (authorId) {
+    recipientIds.add(Number(authorId))
+  }
+
+  // 2. private_user_ids array
+  if (Array.isArray(activity.private_user_ids)) {
+    activity.private_user_ids.forEach(id => {
+      if (id) {
+        recipientIds.add(Number(id))
+      }
+    })
+  }
+
+  // 3. Extract from text: "Name or “Name
+  const text = activity.content || activity.title || ''
+  if (text && (text.includes('"') || text.includes('“') || text.includes('”')) && projectStore.users && projectStore.users.length > 0) {
+    const cleanText = text.replace(/^\[reply:\{.*?\}\]\s*/, '')
+    projectStore.users.forEach(u => {
+      if (!u || !u.name) return
+      const escapedName = u.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const regex = new RegExp(`(?<!\\w)["“”]${escapedName}(?=\\s|$|[,.;:!?()"\'“”<])`, 'i')
+      if (regex.test(cleanText)) {
+        recipientIds.add(Number(u.id))
+      }
+    })
+  }
+
+  return Array.from(recipientIds).map(id => {
+    return projectStore.users?.find(u => Number(u.id) === Number(id)) || { id, name: `Thành viên #${id}` }
+  }).filter(Boolean)
+}
+
+const handlePrivateReplyToAllInActivity = (activity) => {
+  activeActivityIdForMobileActions.value = null
+  editingCommentLog.value = null
+  const recipients = getPrivateRecipientsForActivity(activity)
+  const recipientNames = recipients.map(u => u.name).join(', ')
+
+  replyingToActivity.value = {
+    ...activity,
+    is_private_reply: true,
+    reply_to_names: recipientNames || activity.user?.name
+  }
+  chatProjectId.value = activity.project_id || activity.project?.id || projectStore.projects[0]?.id
+  if (recipients.length > 0) {
+    chatMessage.value = recipients.map(u => `"${u.name}`).join(' ') + ' '
+  } else if (activity.user?.name) {
+    chatMessage.value = `"${activity.user.name} `
+  } else {
+    chatMessage.value = ''
+  }
   activityComposerRef.value?.focus()
 }
 

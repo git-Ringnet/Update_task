@@ -85,11 +85,24 @@ class ProjectController extends Controller
 
     public function show($id)
     {
-        $project = Project::visibleTo(auth()->user())
+        $user = auth()->user();
+        $project = Project::visibleTo($user)
             ->with([
                 'customer:id,name',
                 'lead:id,name,avatar',
                 'creator:id,name,avatar',
+                'tasks' => function ($q) use ($user) {
+                    if ($user && !$user->isSystemAdmin()) {
+                        $q->where(function ($privacyQuery) use ($user) {
+                            $privacyQuery->where('tasks.is_private', false)
+                                ->orWhereNull('tasks.is_private')
+                                ->orWhere('tasks.created_by', $user->id)
+                                ->orWhere('tasks.assignee_id', $user->id)
+                                ->orWhereJsonContains('tasks.private_user_ids', (int) $user->id)
+                                ->orWhereJsonContains('tasks.private_user_ids', (string) $user->id);
+                        });
+                    }
+                },
                 'tasks.assignee:id,name,avatar',
                 'tasks.creator:id,name,avatar',
                 'tasks.attachments',

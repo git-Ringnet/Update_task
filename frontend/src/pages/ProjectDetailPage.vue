@@ -588,7 +588,13 @@
                   class="bg-white hover:bg-emerald-600 text-gray-500 hover:text-white border border-gray-200 hover:border-emerald-600 cursor-pointer rounded-full h-7 w-7 flex items-center justify-center shadow-2xs focus:outline-none">
                   <i class="fa-solid fa-reply text-xs"></i>
                 </button>
-                <button @click.stop="handlePrivateReplyToTask(t)" type="button" title="Trả lời riêng"
+                <!-- Trả lời riêng tất cả -->
+                <button v-if="t.is_private" @click.stop="handlePrivateReplyToTask(t, true)" type="button" title="Trả lời riêng"
+                  class="bg-white hover:bg-[#ea580c] text-[#ea580c] hover:text-white border border-orange-200 hover:border-[#ea580c] cursor-pointer rounded-full h-7 w-7 flex items-center justify-center shadow-2xs focus:outline-none">
+                  <i class="fa-solid fa-reply-all text-xs"></i>
+                </button>
+                <!-- Trả lời riêng người nhắn -->
+                <button @click.stop="handlePrivateReplyToTask(t, false)" type="button" :title="'Trả lời riêng ' + getCreatorDisplayName(t)"
                   class="bg-white hover:bg-[#ea580c] text-[#ea580c] hover:text-white border border-orange-200 hover:border-[#ea580c] cursor-pointer rounded-full h-7 w-7 flex items-center justify-center shadow-2xs focus:outline-none">
                   <i class="fa-solid fa-reply text-xs"></i>
                 </button>
@@ -658,9 +664,13 @@
                         class="border-b border-gray-100">
                         <i class="fa-solid fa-reply text-xs"></i><span>Trả lời</span>
                       </button>
-                      <button type="button" @click.stop="handlePrivateReplyToTask(t); activeTaskActionMenuId = null"
+                      <button v-if="t.is_private" type="button" @click.stop="handlePrivateReplyToTask(t, true); activeTaskActionMenuId = null"
                         class="border-b border-gray-100 text-[#ea580c]">
-                        <i class="fa-solid fa-reply text-xs text-[#ea580c]"></i><span>Trả lời riêng</span>
+                        <i class="fa-solid fa-reply-all text-xs text-[#ea580c]"></i><span>Trả lời riêng</span>
+                      </button>
+                      <button type="button" @click.stop="handlePrivateReplyToTask(t, false); activeTaskActionMenuId = null"
+                        class="border-b border-gray-100 text-[#ea580c]">
+                        <i class="fa-solid fa-reply text-xs text-[#ea580c]"></i><span>Trả lời riêng {{ getCreatorDisplayName(t) }}</span>
                       </button>
                       <button v-if="canEditOrDelete(t)" type="button"
                         @click.stop="openEditStageTaskForm(t); activeTaskActionMenuId = null">
@@ -936,21 +946,27 @@
                     @focus="handleTextareaFocus" placeholder="Chia sẻ cập nhật với team..."
                     class="w-full h-32 overflow-y-auto bg-transparent text-sm sm:text-base font-bold text-gray-900 leading-relaxed py-1 focus:outline-none placeholder-gray-400 resize-none m-0 border-0"></textarea>
 
-                  <!-- AUTOCOMPLETE @MENTION DROPDOWN POPOVER -->
+                  <!-- AUTOCOMPLETE @MENTION / " PRIVATE DROPDOWN POPOVER -->
                   <div v-if="showMentionDropdown && filteredUsersForMention.length > 0"
                     class="absolute z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-xl py-1 text-gray-800 max-h-52 overflow-y-auto ring-1 ring-black/5"
                     :style="mentionDropdownStyle">
                     <div
-                      class="px-3 py-1 text-[10px] uppercase font-bold text-emerald-600 border-b border-gray-100 mb-1 flex items-center justify-between">
-                      <span>Chọn người phụ trách (@)</span>
-                      <i class="fa-solid fa-at text-xs"></i>
+                      class="px-3 py-1 text-[10px] uppercase font-bold border-b mb-1 flex items-center justify-between"
+                      :class="isPrivateTrigger ? 'text-[#ea580c] bg-orange-50/70 border-orange-100' : 'text-emerald-600 bg-gray-50/80 border-gray-100'">
+                      <span>{{ isPrivateTrigger ? 'Gửi tin nhắn riêng tới thành viên' : 'Chọn người phụ trách (@)' }}</span>
+                      <i :class="isPrivateTrigger ? 'fa-solid fa-user-lock text-xs text-orange-500' : 'fa-solid fa-at text-xs'"></i>
                     </div>
                     <button v-for="(u, idx) in filteredUsersForMention" :key="u.id" type="button" @mousedown.prevent
                       @click="selectMentionUser(u)"
-                      class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold hover:bg-emerald-50 transition-colors text-left"
-                      :class="{ 'bg-emerald-50 text-emerald-800 font-bold': idx === mentionIndex }">
+                      class="w-full px-3 py-1.5 flex items-center gap-2 text-xs font-semibold transition-colors text-left"
+                      :class="[
+                        idx === mentionIndex
+                          ? (isPrivateTrigger ? 'bg-orange-50 text-orange-900 font-bold' : 'bg-emerald-50 text-emerald-800 font-bold')
+                          : (isPrivateTrigger ? 'text-gray-800 hover:bg-orange-50/60 hover:text-orange-900' : 'text-gray-700 hover:bg-emerald-50 hover:text-emerald-800')
+                      ]">
                       <img v-if="!u.isMentionGroup" :src="u.avatar || defaultAvatar"
                         class="w-5 h-5 rounded-full object-cover border border-gray-200" />
+                      <i v-else class="fa-solid fa-users text-emerald-600 text-xs"></i>
                       <span class="truncate flex-1">{{ u.name }}</span>
                     </button>
                   </div>
@@ -997,7 +1013,7 @@
               <!-- BOTTOM ROW: Attachment left, Person + Date + Submit right -->
               <div class="flex flex-wrap items-center justify-between gap-2 pt-0.5">
 
-                <!-- LEFT: Attachment button only -->
+                <!-- LEFT: Attachment button + Private whisper lock button + Health status -->
                 <div class="flex items-center gap-2">
                   <div class="relative inline-flex items-center gap-1">
                     <button type="button" @click="triggerFileInput"
@@ -1009,6 +1025,14 @@
                       accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar" class="hidden"
                       @change="onFileSelected" />
                   </div>
+
+                  <!-- Lock button for private mention -->
+                  <button type="button" @click="insertPrivateMentionTrigger"
+                    class="inline-flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold cursor-pointer transition-colors select-none shadow-3xs border w-9 h-9"
+                    :class="hasPrivateMentionInTitle ? 'bg-orange-50 hover:bg-orange-100 border-orange-200 text-[#ea580c]' : 'bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-500'"
+                    title="Nhắn tin riêng tư (hoặc gõ &quot; trước tên ví dụ &quot;Hiếu)">
+                    <i class="fa-solid fa-lock text-sm"></i>
+                  </button>
 
                   <HealthStatusSelector v-model="newStageTaskHealth" :show-label="false" is-toggle />
                 </div>
@@ -2677,6 +2701,42 @@ const hasMentionsInTitle = computed(() => {
   return /@[^\s]+/.test(newStageTaskTitle.value)
 })
 
+const mentionTriggerChar = ref('@')
+const isPrivateTrigger = computed(() => mentionTriggerChar.value === '"')
+const hasPrivateMentionInTitle = computed(() => {
+  return /"[^\s]+/.test(newStageTaskTitle.value || '')
+})
+
+const insertPrivateMentionTrigger = () => {
+  const el = stageTaskTitleInputRef.value
+  let text = newStageTaskTitle.value || ''
+  const cursorPos = el?.selectionStart || text.length
+  const textBefore = text.substring(0, cursorPos)
+  const textAfter = text.substring(cursorPos)
+  const needsSpace = textBefore.length > 0 && !/\s$/.test(textBefore)
+  const toInsert = (needsSpace ? ' ' : '') + '"'
+  newStageTaskTitle.value = textBefore + toInsert + textAfter
+  mentionTriggerChar.value = '"'
+  mentionQuery.value = ''
+  showMentionDropdown.value = true
+  mentionIndex.value = 0
+  nextTick(() => {
+    if (el) {
+      const newPos = cursorPos + toInsert.length
+      el.focus()
+      el.setSelectionRange(newPos, newPos)
+      const coords = getCaretCoordinates(el, newPos - 1)
+      const dropdownWidth = 256
+      const leftClamped = Math.max(0, Math.min(coords.left, el.clientWidth - dropdownWidth - 10))
+      mentionPosition.value = {
+        top: coords.top,
+        left: leftClamped,
+        height: coords.height
+      }
+    }
+  })
+}
+
 const filteredUsersForMention = computed(() => {
   const currentText = newStageTaskTitle.value || ''
 
@@ -2690,7 +2750,7 @@ const filteredUsersForMention = computed(() => {
   sortedUsers.forEach(u => {
     if (u && u.name) {
       const escapedName = u.name.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
-      const regex = new RegExp('@' + escapedName + '(?=\\s|$|[,.;:!?()])', 'i')
+      const regex = new RegExp('[@"]' + escapedName + '(?=\\s|$|[,.;:!?()])', 'i')
       if (regex.test(tempText)) {
         taggedUserIds.add(String(u.id))
         tempText = tempText.replace(regex, '[TAGGED]')
@@ -2700,6 +2760,27 @@ const filteredUsersForMention = computed(() => {
 
   // Filter out users that are already tagged
   const availableUsers = taggableUsers.value.filter(u => !taggedUserIds.has(String(u.id)))
+
+  if (mentionTriggerChar.value === '"') {
+    // For private message trigger ("), only suggest actual individual members
+    if (!mentionQuery.value) return availableUsers
+    const q = removeVietnameseAccents(mentionQuery.value).toLowerCase()
+    const matches = (name) => {
+      if (!name) return false
+      const nameNorm = removeVietnameseAccents(name).toLowerCase()
+      if (q.includes(' ')) return nameNorm.includes(q)
+      const words = nameNorm.split(/\s+/).filter(Boolean)
+      return words.some(word => word.startsWith(q)) || words.map(w => w[0]).join('').includes(q)
+    }
+    return availableUsers.filter(u => matches(u.name)).sort((a, b) => {
+      const aNorm = removeVietnameseAccents(a.name).toLowerCase()
+      const bNorm = removeVietnameseAccents(b.name).toLowerCase()
+      const aStarts = aNorm.startsWith(q) ? 1 : 0
+      const bStarts = bNorm.startsWith(q) ? 1 : 0
+      if (aStarts !== bStarts) return bStarts - aStarts
+      return aNorm.localeCompare(bNorm)
+    })
+  }
 
   const groupOptions = mentionGroups.value.map(group => ({ id: `group-${group.id}`, name: `@${group.name}`, mentionName: group.name, isMentionGroup: true, avatar: null, description: group.description || 'Nhóm nhắc tên' }))
   const allOption = { id: 'all', name: '@all', mentionName: 'all', isMentionGroup: true, avatar: null, description: 'Tất cả thành viên' }
@@ -2778,6 +2859,7 @@ const onTitleInput = (e) => {
   const match = textBeforeCursor.match(/([@"])([^@"]{0,30})$/)
 
   if (match) {
+    mentionTriggerChar.value = match[1]
     mentionQuery.value = match[2]
     showMentionDropdown.value = true
     mentionIndex.value = 0
@@ -2835,7 +2917,7 @@ const selectMentionUser = (user) => {
   const textBeforeCursor = text.substring(0, cursorPos)
   const textAfterCursor = text.substring(cursorPos)
   const match = textBeforeCursor.match(/([@"])([^@"]{0,30})$/)
-  const prefix = match ? match[1] : '@'
+  const prefix = match ? match[1] : (mentionTriggerChar.value || '@')
 
   if (user.isMentionGroup) {
     const newBefore = match ? textBeforeCursor.substring(0, match.index) + `@${user.mentionName} ` : `${textBeforeCursor}@${user.mentionName} `
@@ -2920,6 +3002,44 @@ const cancelEditTask = () => {
   clearAttachedFiles()
 }
 
+const getPrivateRecipientsForTask = (task) => {
+  if (!task) return []
+  const recipientIds = new Set()
+
+  // 1. Author of the task / card
+  const authorId = task.user_id || task.user?.id || task.created_by || task.creator_id || task.creator?.id
+  if (authorId) {
+    recipientIds.add(Number(authorId))
+  }
+
+  // 2. private_user_ids array
+  if (Array.isArray(task.private_user_ids)) {
+    task.private_user_ids.forEach(id => {
+      if (id) {
+        recipientIds.add(Number(id))
+      }
+    })
+  }
+
+  // 3. Extract from text: "Name or “Name
+  const text = task.content || task.title || ''
+  if (text && (text.includes('"') || text.includes('“') || text.includes('”')) && users.value && users.value.length > 0) {
+    const cleanText = text.replace(/^\[reply:\{.*?\}\]\s*/, '')
+    users.value.forEach(u => {
+      if (!u || !u.name) return
+      const escapedName = u.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const regex = new RegExp(`(?<!\\w)["“”]${escapedName}(?=\\s|$|[,.;:!?()"\'“”<])`, 'i')
+      if (regex.test(cleanText)) {
+        recipientIds.add(Number(u.id))
+      }
+    })
+  }
+
+  return Array.from(recipientIds).map(id => {
+    return users.value?.find(u => Number(u.id) === Number(id)) || { id, name: `Thành viên #${id}` }
+  }).filter(Boolean)
+}
+
 const handleReplyToTask = (t) => {
   if (!t) return
   editingTaskId.value = null
@@ -2941,19 +3061,39 @@ const handleReplyToTask = (t) => {
   })
 }
 
-const handlePrivateReplyToTask = (t) => {
+const handlePrivateReplyToTask = (t, replyToAll = false) => {
   if (!t) return
   editingTaskId.value = null
-  replyingToLog.value = {
-    id: t.id,
-    creator: { name: getCreatorDisplayName(t) },
-    user: { name: getCreatorDisplayName(t) },
-    title: t.title || t.content || '',
-    milestone_id: t.milestone_id,
-    is_private_reply: true
-  }
   const authorName = getCreatorDisplayName(t)
-  newStageTaskTitle.value = authorName ? `"${authorName} ` : ''
+
+  if (replyToAll) {
+    const recipients = getPrivateRecipientsForTask(t)
+    const recipientNames = recipients.map(u => u.name).join(', ')
+    replyingToLog.value = {
+      id: t.id,
+      creator: { name: recipientNames || authorName },
+      user: { name: recipientNames || authorName },
+      title: t.title || t.content || '',
+      milestone_id: t.milestone_id,
+      is_private_reply: true
+    }
+    if (recipients.length > 0) {
+      newStageTaskTitle.value = recipients.map(u => `"${u.name}`).join(' ') + ' '
+    } else {
+      newStageTaskTitle.value = authorName ? `"${authorName} ` : ''
+    }
+  } else {
+    replyingToLog.value = {
+      id: t.id,
+      creator: { name: authorName },
+      user: { name: authorName },
+      title: t.title || t.content || '',
+      milestone_id: t.milestone_id,
+      is_private_reply: true
+    }
+    newStageTaskTitle.value = authorName ? `"${authorName} ` : ''
+  }
+
   isInlineFormOpen.value = true
   nextTick(() => {
     inlineFormRef.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -3096,7 +3236,9 @@ const allProjectCards = computed(() => {
           health: null,
           type: 'comment',
           is_comment: true,
-          isComment: true
+          isComment: true,
+          is_private: c.is_private,
+          private_user_ids: c.private_user_ids
         })
       }
     })
