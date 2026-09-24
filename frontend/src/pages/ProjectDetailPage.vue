@@ -698,7 +698,7 @@
                     </div>
                   </div>
 
-                  <div class="whitespace-pre-wrap"><i v-if="t.is_private" class="fa-solid fa-lock text-[13px] text-[#ea580c] mr-1.5 align-middle inline-block" title="Tin nhắn riêng tư"></i><span v-html="formatTitleText(t.title)"></span></div>
+                  <div class="whitespace-pre-wrap"><span v-html="formatTitleText(t.title)"></span></div>
                 </div>
 
                 <!-- Attachments -->

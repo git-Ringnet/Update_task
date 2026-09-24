@@ -599,7 +599,7 @@
                           <div v-if="parseCommentText(log.content)"
                             class="whitespace-pre-line font-normal text-gray-900 select-text cursor-text">
                             <div :class="!isTaskExpanded(log.id) && isLongContent(parseCommentText(log.content)) ? 'line-clamp-4' : ''">
-                              <i v-if="log.is_private" class="fa-solid fa-lock text-[13px] text-[#ea580c] mr-1.5 align-middle inline-block" title="Tin nhắn riêng tư"></i><span v-html="formatCommentTextWithMentions(log.content, projectStore.users, mentionGroups)"></span>
+                              <span v-html="formatCommentTextWithMentions(log.content, projectStore.users, mentionGroups)"></span>
                             </div>
                             <button v-if="isLongContent(parseCommentText(log.content))"
                               @click.stop="toggleExpandTask(log.id)"
@@ -4056,10 +4056,12 @@ const submitEditScheduleTask = async () => {
       priority: editingTask.value.priority || 'medium'
     })
     toast.success('Đã cập nhật hành động!')
+    const pId = editingTask.value?.project_id || editingTask.value?.project?.id
     isEditTaskModalOpen.value = false
     editingTask.value = null
     fetchScheduleTasks(true)
     fetchActivities?.(true)
+    broadcastLocalUpdate({ projectId: pId })
   } catch (err) {
     console.error('Failed to update schedule task:', err)
     toast.error(err.response?.data?.message || 'Cập nhật hành động thất bại!')

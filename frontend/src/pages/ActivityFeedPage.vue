@@ -137,7 +137,7 @@
                     <div
                       :class="!isScheduleTaskExpanded(task.id) && isLongContent(parseCommentText(task.title || task.content)) ? 'line-clamp-4' : ''"
                       class="whitespace-pre-wrap font-normal text-gray-900 select-text cursor-text">
-                      <i v-if="task.is_private" class="fa-solid fa-lock text-[13px] text-[#ea580c] mr-1.5 align-middle inline-block" title="Tin nhắn riêng tư"></i><span v-html="formatCommentTextWithMentions(task.title || task.content, projectStore.users, mentionGroups)"></span>
+                      <span v-html="formatCommentTextWithMentions(task.title || task.content, projectStore.users, mentionGroups)"></span>
                     </div>
                     <button v-if="isLongContent(parseCommentText(task.title || task.content))"
                       @click.stop="toggleExpandScheduleTask(task.id)" type="button"
@@ -336,7 +336,7 @@
                         class="whitespace-pre-line font-normal text-gray-900 select-text cursor-text">
                         <div
                           :class="!isActivityExpanded(act.id) && isLongContent(parseCommentText(act.content)) ? 'line-clamp-4' : ''">
-                          <i v-if="act.is_private" class="fa-solid fa-lock text-[13px] text-[#ea580c] mr-1.5 align-middle inline-block" title="Tin nhắn riêng tư"></i><span v-html="formatCommentTextWithMentions(act.content, projectStore.users, mentionGroups)"></span>
+                          <span v-html="formatCommentTextWithMentions(act.content, projectStore.users, mentionGroups)"></span>
                         </div>
                         <button v-if="isLongContent(parseCommentText(act.content))"
                           @click.stop="toggleExpandActivity(act.id)" type="button"

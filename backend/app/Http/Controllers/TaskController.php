@@ -358,6 +358,7 @@ class TaskController extends Controller
             $validated['private_user_ids'] = $request->input('private_user_ids', $task->private_user_ids);
         }
 
+        $oldTitle = $task->getOriginal('title');
         $task->update($validated);
         $task->created_at = Carbon::now();
         $task->save();
@@ -372,8 +373,23 @@ class TaskController extends Controller
 
         // Sync associated comment
         $comment = Comment::where('task_id', $task->id)->first();
+        if (!$comment) {
+            $comment = Comment::where('project_id', $task->project_id)
+                ->where('user_id', $task->created_by)
+                ->whereNull('task_id')
+                ->where(function ($q) use ($oldTitle, $task) {
+                    $q->where('content', $oldTitle)
+                      ->orWhere('content', $task->title);
+                })
+                ->first();
+            if ($comment) {
+                $comment->task_id = $task->id;
+            }
+        }
+
         if ($comment) {
             $comment->update([
+                'project_id' => $task->project_id,
                 'content' => $task->title,
                 'is_private' => (bool) ($task->is_private ?? false),
                 'private_user_ids' => $task->private_user_ids,

@@ -226,10 +226,39 @@ class CommentController extends Controller
 
         app(ProjectMemberService::class)->addMentionedMembers($project, $validated['content'], array_merge($taggedUserIds, $privateUserIds));
 
-        if (!empty($validated['project_id'])) {
-            $updateData['project_id'] = $validated['project_id'];
-        }
+        $oldContent = $comment->getOriginal('content');
         $comment->update($updateData);
+
+        // Sync associated Task
+        $task = null;
+        if ($comment->task_id) {
+            $task = Task::find($comment->task_id);
+        }
+        if (!$task) {
+            $task = Task::where('project_id', $comment->project_id)
+                ->where('created_by', $comment->user_id)
+                ->where(function ($q) use ($oldContent, $comment) {
+                    $q->where('title', $oldContent)
+                      ->orWhere('title', $comment->content);
+                })
+                ->first();
+            if ($task && !$comment->task_id) {
+                $comment->task_id = $task->id;
+                $comment->saveQuietly();
+            }
+        }
+
+        if ($task) {
+            $taskUpdateData = [
+                'title' => $comment->content,
+                'is_private' => (bool) ($comment->is_private ?? false),
+                'private_user_ids' => $comment->private_user_ids,
+            ];
+            if (!empty($validated['project_id'])) {
+                $taskUpdateData['project_id'] = $validated['project_id'];
+            }
+            $task->update($taskUpdateData);
+        }
 
         $comment->load([
             'user:id,name,avatar',
