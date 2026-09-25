@@ -588,13 +588,8 @@
                   class="bg-white hover:bg-emerald-600 text-gray-500 hover:text-white border border-gray-200 hover:border-emerald-600 cursor-pointer rounded-full h-7 w-7 flex items-center justify-center shadow-2xs focus:outline-none">
                   <i class="fa-solid fa-reply text-xs"></i>
                 </button>
-                <!-- Trả lời riêng tất cả -->
+                <!-- Trả lời riêng -->
                 <button v-if="t.is_private" @click.stop="handlePrivateReplyToTask(t, true)" type="button" title="Trả lời riêng"
-                  class="bg-white hover:bg-[#ea580c] text-[#ea580c] hover:text-white border border-orange-200 hover:border-[#ea580c] cursor-pointer rounded-full h-7 w-7 flex items-center justify-center shadow-2xs focus:outline-none">
-                  <i class="fa-solid fa-reply-all text-xs"></i>
-                </button>
-                <!-- Trả lời riêng người nhắn -->
-                <button @click.stop="handlePrivateReplyToTask(t, false)" type="button" :title="'Trả lời riêng ' + getCreatorDisplayName(t)"
                   class="bg-white hover:bg-[#ea580c] text-[#ea580c] hover:text-white border border-orange-200 hover:border-[#ea580c] cursor-pointer rounded-full h-7 w-7 flex items-center justify-center shadow-2xs focus:outline-none">
                   <i class="fa-solid fa-reply text-xs"></i>
                 </button>
@@ -666,11 +661,7 @@
                       </button>
                       <button v-if="t.is_private" type="button" @click.stop="handlePrivateReplyToTask(t, true); activeTaskActionMenuId = null"
                         class="border-b border-gray-100 text-[#ea580c]">
-                        <i class="fa-solid fa-reply-all text-xs text-[#ea580c]"></i><span>Trả lời riêng</span>
-                      </button>
-                      <button type="button" @click.stop="handlePrivateReplyToTask(t, false); activeTaskActionMenuId = null"
-                        class="border-b border-gray-100 text-[#ea580c]">
-                        <i class="fa-solid fa-reply text-xs text-[#ea580c]"></i><span>Trả lời riêng {{ getCreatorDisplayName(t) }}</span>
+                        <i class="fa-solid fa-reply text-xs text-[#ea580c]"></i><span>Trả lời riêng</span>
                       </button>
                       <button v-if="canEditOrDelete(t)" type="button"
                         @click.stop="openEditStageTaskForm(t); activeTaskActionMenuId = null">
@@ -685,7 +676,7 @@
                 </div>
 
                 <!-- Body: message content -->
-                <div class="mt-1 text-[17px] font-bold text-gray-900 leading-snug break-words">
+                <div class="mt-1 text-[17px] font-bold leading-snug break-words" :class="t.is_private ? 'text-[#ea580c]' : 'text-gray-900'">
                   <!-- Zalo Quote Reply Preview inside task feed -->
                   <div v-if="parseReplyInfo(t.title)" @click.stop="scrollToTask(parseReplyInfo(t.title))"
                     class="bg-gray-50 px-2.5 py-1.5 rounded-r-md rounded-l-xs border-l-2 border-emerald-500 text-xs mb-1.5 select-none max-w-full font-semibold cursor-pointer hover:bg-gray-100 transition-colors">
@@ -2404,11 +2395,13 @@ const formatTitleWithMentions = (titleText) => {
     sortedUsers.forEach(u => {
       if (u && u.name) {
         const escapedName = u.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-        const regex = new RegExp(`(?<=^|\\s)(?:&quot;|")${escapedName}(?=\\s|$|[.,!?:;])`, 'gi')
+        const regex = new RegExp(`(?<=^|\\s)(?:&quot;|"|[“])${escapedName}(?=\\s|$|[.,!?:;])`, 'gi')
         escaped = escaped.replace(regex, `<span class="text-[#ea580c] font-bold">"${u.name}</span>`)
       }
     })
   }
+  // Generic fallback for any "word private mention
+  escaped = escaped.replace(/(?<=^|\s)(?:"|&quot;|[“])([^\s"“”<]+)(?![^<]*>|[^<>]*<\/span>)/g, '<span class="text-[#ea580c] font-bold">"$1</span>')
 
   // Format public mentions @Group and @all (green)
   const groupList = (mentionGroups && mentionGroups.value) ? mentionGroups.value : []

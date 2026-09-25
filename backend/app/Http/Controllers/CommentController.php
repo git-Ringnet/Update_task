@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Comment;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\Milestone;
 use App\Models\Attachment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -216,6 +217,9 @@ class CommentController extends Controller
         );
 
         $updateData = ['content' => $validated['content']];
+        if (!empty($projectId)) {
+            $updateData['project_id'] = $projectId;
+        }
         if (!empty($privateUserIds)) {
             $updateData['is_private'] = true;
             $updateData['private_user_ids'] = array_values(array_unique($privateUserIds));
@@ -227,6 +231,7 @@ class CommentController extends Controller
         app(ProjectMemberService::class)->addMentionedMembers($project, $validated['content'], array_merge($taggedUserIds, $privateUserIds));
 
         $oldContent = $comment->getOriginal('content');
+        $oldProjectId = $comment->getOriginal('project_id');
         $comment->update($updateData);
 
         // Sync associated Task
@@ -235,7 +240,10 @@ class CommentController extends Controller
             $task = Task::find($comment->task_id);
         }
         if (!$task) {
-            $task = Task::where('project_id', $comment->project_id)
+            $task = Task::where(function ($q) use ($comment, $oldProjectId) {
+                    $q->where('project_id', $comment->project_id)
+                      ->orWhere('project_id', $oldProjectId);
+                })
                 ->where('created_by', $comment->user_id)
                 ->where(function ($q) use ($oldContent, $comment) {
                     $q->where('title', $oldContent)
@@ -254,8 +262,14 @@ class CommentController extends Controller
                 'is_private' => (bool) ($comment->is_private ?? false),
                 'private_user_ids' => $comment->private_user_ids,
             ];
-            if (!empty($validated['project_id'])) {
-                $taskUpdateData['project_id'] = $validated['project_id'];
+            if (!empty($projectId)) {
+                $taskUpdateData['project_id'] = $projectId;
+                if ($task->milestone_id) {
+                    $milestoneValid = Milestone::where('id', $task->milestone_id)->where('project_id', $projectId)->exists();
+                    if (!$milestoneValid) {
+                        $taskUpdateData['milestone_id'] = null;
+                    }
+                }
             }
             $task->update($taskUpdateData);
         }

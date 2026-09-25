@@ -133,10 +133,11 @@
 
                   <!-- Task Content -->
                   <div v-if="parseCommentText(task.title || task.content)"
-                    class="text-[16px] sm:text-[18px] text-gray-900 leading-relaxed break-words mt-0.5 space-y-1">
+                    class="text-[16px] sm:text-[18px] leading-relaxed break-words mt-0.5 space-y-1"
+                    :class="task.is_private ? 'text-[#ea580c] font-medium' : 'text-gray-900'">
                     <div
                       :class="!isScheduleTaskExpanded(task.id) && isLongContent(parseCommentText(task.title || task.content)) ? 'line-clamp-4' : ''"
-                      class="whitespace-pre-wrap font-normal text-gray-900 select-text cursor-text">
+                      class="whitespace-pre-wrap font-normal select-text cursor-text">
                       <span v-html="formatCommentTextWithMentions(task.title || task.content, projectStore.users, mentionGroups)"></span>
                     </div>
                     <button v-if="isLongContent(parseCommentText(task.title || task.content))"
@@ -333,7 +334,8 @@
                       </div>
 
                       <div v-if="parseCommentText(act.content)"
-                        class="whitespace-pre-line font-normal text-gray-900 select-text cursor-text">
+                        class="whitespace-pre-line font-normal select-text cursor-text"
+                        :class="act.is_private ? 'text-[#ea580c] font-medium' : 'text-gray-900'">
                         <div
                           :class="!isActivityExpanded(act.id) && isLongContent(parseCommentText(act.content)) ? 'line-clamp-4' : ''">
                           <span v-html="formatCommentTextWithMentions(act.content, projectStore.users, mentionGroups)"></span>
@@ -385,22 +387,11 @@
 
                       <!-- Nút Trả lời riêng (nhắn tiếp những người đang được nhắn riêng trước đó) -->
                       <button v-if="act.is_private" @click.stop="handlePrivateReplyToAllInActivity(act)" type="button"
-                        title="Trả lời riêng (nhắn tiếp những người đang được nhắn riêng trước đó)"
+                        title="Trả lời riêng"
                         class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[#ea580c] hover:text-orange-700 hover:bg-orange-100/60 active:bg-orange-200/80 cursor-pointer transition-all active:scale-95 select-none font-bold">
                         <i class="fa-solid fa-reply text-[18px] sm:text-[19px]"></i>
                         <span class="text-[13px] sm:text-[14px] leading-none">
                           <span>Trả lời riêng</span>
-                        </span>
-                      </button>
-
-                      <!-- Nút Trả lời riêng {tên người nhắn} -->
-                      <button @click.stop="handlePrivateReplyToActivity(act)" type="button"
-                        :title="'Trả lời riêng ' + (act.user?.name || 'thành viên')"
-                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[#ea580c] hover:text-orange-700 hover:bg-orange-100/60 active:bg-orange-200/80 cursor-pointer transition-all active:scale-95 select-none font-bold">
-                        <i class="fa-solid fa-reply text-[18px] sm:text-[19px]"></i>
-                        <span class="text-[13px] sm:text-[14px] leading-none">
-                          <span class="sm:hidden">Trả lời riêng {{ act.user ? act.user.name : '' }}</span>
-                          <span class="hidden sm:inline">Trả lời riêng {{ act.user ? act.user.name : 'thành viên' }}</span>
                         </span>
                       </button>
                     </div>
