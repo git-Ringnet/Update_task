@@ -114,6 +114,7 @@ import { useToastStore } from './stores/toast'
 import { useConfirmStore } from './stores/confirm'
 import { useAuthStore } from './stores/auth'
 import { useBrowserNotificationStore } from './stores/browserNotifications'
+import { syncAuthSessionToCache } from './utils/authSessionCache'
 
 const toastStore = useToastStore()
 const confirmStore = useConfirmStore()
@@ -175,13 +176,19 @@ onMounted(() => {
   window.addEventListener('dragover', handleGlobalDragOver)
   window.addEventListener('drop', handleGlobalDrop)
   document.addEventListener('visibilitychange', handleVisibilityChange)
+  if (authStore.user?.id) {
+    syncAuthSessionToCache(true, authStore.user.id)
+  }
   browserNotifications.refreshPermission()
   requestBrowserNotificationPermission()
 })
 
 // Also request immediately after a successful login, not only after a page refresh.
 watch(() => authStore.user?.id, (userId) => {
-  if (userId) requestBrowserNotificationPermission()
+  if (userId) {
+    syncAuthSessionToCache(true, userId)
+    requestBrowserNotificationPermission()
+  }
 })
 
 onUnmounted(() => {

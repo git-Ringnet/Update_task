@@ -15,7 +15,7 @@ const base64UrlToUint8Array = (value) => {
   return Uint8Array.from(raw, char => char.charCodeAt(0))
 }
 
-const subscriptionVersion = '2026-09-07-v2'
+const subscriptionVersion = '2026-09-27-v3'
 const subscriptionMaxAge = 30 * 24 * 60 * 60 * 1000
 
 export const useBrowserNotificationStore = defineStore('browserNotifications', () => {

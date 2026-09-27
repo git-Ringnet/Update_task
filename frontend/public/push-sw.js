@@ -22,14 +22,8 @@ self.addEventListener('push', (event) => {
       }
     } catch (e) {}
 
-    // If browser is NOT logged in, do NOT show notification and unsubscribe orphan subscription
+    // If browser is NOT logged in, do NOT show notification
     if (!authUser || !authUser.is_logged_in || !authUser.user_id) {
-      try {
-        const sub = await self.registration.pushManager.getSubscription()
-        if (sub) {
-          await sub.unsubscribe()
-        }
-      } catch (e) {}
       return
     }
 
