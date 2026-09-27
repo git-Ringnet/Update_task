@@ -46,6 +46,8 @@ self.addEventListener('push', (event) => {
       badge: '/cactus-logo-square.png',
       tag: payload.tag || 'project-update',
       renotify: true,
+      vibrate: [200, 100, 200],
+      timestamp: Date.now(),
       data: { url: payload.url || '/views', payload },
     }
 
