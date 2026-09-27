@@ -431,10 +431,17 @@ class TaskController extends Controller
         $canDelete = $user->is_system_admin || $user->is_admin || (int) $task->created_by === (int) $user->id;
         abort_unless($canDelete, 403, 'Bạn không có quyền xóa hoạt động này.');
 
-        // Unlink associated comments and attachments so chat history remains intact
-        Comment::where('task_id', $task->id)->update(['task_id' => null]);
-        Attachment::where('task_id', $task->id)->update(['task_id' => null]);
+        // Delete associated comments and attachments
+        Comment::where('task_id', $task->id)->delete();
+        Comment::where('project_id', $task->project_id)
+            ->where('user_id', $task->created_by)
+            ->where('content', $task->title)
+            ->delete();
+        Attachment::where('task_id', $task->id)->delete();
         $task->delete();
+
+        // Update project last activity
+        Project::where('id', $task->project_id)->update(['last_activity_at' => Carbon::now()]);
 
         return response()->json(['message' => 'Đã xóa công việc']);
     }

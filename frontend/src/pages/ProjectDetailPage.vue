@@ -4658,11 +4658,14 @@ const handleDeleteTask = async (id) => {
         await axios.delete(`/api/tasks/${rawId}`)
       }
       if (project.value && project.value.tasks) {
-        project.value.tasks = project.value.tasks.filter(t => t.id !== id)
+        project.value.tasks = project.value.tasks.filter(t => t.id != id && t.id != rawId)
       }
       if (selectedMilestone.value && selectedMilestone.value.tasks) {
-        selectedMilestone.value.tasks = selectedMilestone.value.tasks.filter(t => t.id !== id)
+        selectedMilestone.value.tasks = selectedMilestone.value.tasks.filter(t => t.id != id && t.id != rawId)
         selectedMilestone.value.tasks_count = Math.max(0, (selectedMilestone.value.tasks_count || 1) - 1)
+      }
+      if (activityLogs.value) {
+        activityLogs.value = activityLogs.value.filter(c => c.task_id != rawId && c.id != rawId)
       }
     }
     toast.success('Đã xóa hoạt động!')

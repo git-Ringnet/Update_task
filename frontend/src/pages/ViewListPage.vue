@@ -4349,7 +4349,7 @@ const handleRealtimeChannelMessage = (event) => {
   if (!data) return
   if (data.sourceId === realtimeSourceId) return
   if (data.type === 'PUSH_RECEIVED' || data.type === 'NOTIFICATION_CLICKED' || data.type === 'PROJECT_UPDATED') {
-    fetchActivities?.()
+    fetchActivities?.(true)
     fetchScheduleTasks?.()
     projectStore.fetchProjects(true)
   }
@@ -4359,7 +4359,7 @@ const handleServiceWorkerMessage = (event) => {
   const data = event.data
   if (!data) return
   if (data.type === 'PUSH_RECEIVED' || data.type === 'NOTIFICATION_CLICKED' || data.type === 'PROJECT_UPDATED') {
-    fetchActivities?.()
+    fetchActivities?.(true)
     fetchScheduleTasks?.()
     projectStore.fetchProjects(true)
   }
@@ -4750,7 +4750,8 @@ onMounted(() => {
     if (document.visibilityState !== 'visible') return
     fetchLatestActivities()
     pollTick += 1
-    if (pollTick % 5 === 0) {
+    if (pollTick % 4 === 0) {
+      fetchActivities(true)
       projectStore.fetchProjects(true)
       fetchBroadcasts()
     }
