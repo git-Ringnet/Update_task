@@ -2453,38 +2453,52 @@ const parseReplyInfo = (content) => {
 const scrollToTask = async (reply) => {
   if (!reply) return
 
-  let targetId = reply.id
+  const targetId = reply.id ? String(reply.id) : null
+  const cleanTargetId = targetId ? targetId.replace(/^comment-/, '') : null
+  const quoteUser = (reply.user || '').trim().toLowerCase()
+  const quoteText = (reply.text || '').replace(/^\[reply:\{.*?\}\]\s*/, '').trim().toLowerCase()
 
-  // Fallback for legacy comments without id: search by username and text
-  if (!targetId && reply.user && reply.text) {
-    const quoteTextNorm = reply.text.trim().toLowerCase()
-    const foundCard = allProjectCards.value.find(c => {
+  // 1. Search in allProjectCards using multiple smart matching strategies
+  let foundCard = allProjectCards.value.find(c => {
+    const cId = String(c.id || '')
+    const cRealCommentId = c.realCommentId ? String(c.realCommentId) : null
+    const cTaskId = c.task_id ? String(c.task_id) : null
+
+    // Exact ID matches
+    if (targetId && (cId === targetId || cId === `comment-${targetId}`)) return true
+    if (cleanTargetId && (cId === cleanTargetId || cId === `comment-${cleanTargetId}`)) return true
+    if (cleanTargetId && (cRealCommentId === cleanTargetId || cTaskId === cleanTargetId)) return true
+    if (targetId && (cRealCommentId === targetId || cTaskId === targetId)) return true
+
+    return false
+  })
+
+  // 2. Fallback: Search by author name & text match
+  if (!foundCard && (quoteText || quoteUser)) {
+    foundCard = allProjectCards.value.find(c => {
       const creatorName = getCreatorDisplayName(c).trim().toLowerCase()
-      const cTitle = parseCommentText(c.title || '').trim().toLowerCase()
-      return creatorName === reply.user.trim().toLowerCase() && cTitle.includes(quoteTextNorm)
+      const cTitle = parseCommentText(c.title || c.content || '').trim().toLowerCase()
+
+      if (quoteUser && creatorName !== quoteUser) return false
+      if (quoteText) {
+        // Compare prefixes / substrings (since quoteText might be truncated)
+        const prefix = quoteText.substring(0, 30)
+        return cTitle.includes(prefix) || quoteText.includes(cTitle.substring(0, 30))
+      }
+      return false
     })
-    if (foundCard) {
-      targetId = foundCard.id
-    }
   }
 
-  if (!targetId) {
-    toast.warning('Không tìm thấy bình luận gốc.')
-    return
-  }
-
-  const id = targetId
-
-  // 1. Find the target card in the master list of all cards
-  const foundCard = allProjectCards.value.find(c => String(c.id) === String(id))
   if (!foundCard) {
     toast.warning('Không tìm thấy bình luận gốc.')
     return
   }
 
-  // 2. Automatically switch filter to the target milestone/stage
+  const foundCardId = foundCard.id
+
+  // 3. Automatically switch filter to the target milestone/stage
   if (foundCard.isComment || foundCard.is_comment || foundCard.type === 'comment') {
-    // Comments are only visible in "All" view (no milestone or start stage filter selected)
+    // Comments are visible in "All" view (no milestone or start stage filter selected)
     selectedMilestone.value = null
     isStartStageSelected.value = false
   } else {
@@ -2493,6 +2507,9 @@ const scrollToTask = async (reply) => {
       const ms = effectiveMilestones.value.find(m => String(m.id) === String(foundCard.milestone_id))
       if (ms) {
         selectedMilestone.value = ms
+        isStartStageSelected.value = false
+      } else {
+        selectedMilestone.value = null
         isStartStageSelected.value = false
       }
     } else {
@@ -2504,16 +2521,20 @@ const scrollToTask = async (reply) => {
 
   await nextTick()
 
-  // 3. Make sure the card isn't paginated out (below "Load more" threshold)
-  const idx = totalCardsForCurrentView.value.findIndex(c => String(c.id) === String(id))
+  // 4. Make sure the card isn't paginated out (below "Load more" threshold)
+  const idx = totalCardsForCurrentView.value.findIndex(c => String(c.id) === String(foundCardId))
   if (idx !== -1 && idx >= visibleCardCount.value) {
     visibleCardCount.value = idx + 10
   }
 
   await nextTick()
 
-  // 4. Scroll smoothly and flash targeted card
-  const el = document.getElementById(`task-card-${id}`)
+  // 5. Scroll smoothly and flash targeted card
+  let el = document.getElementById(`task-card-${foundCardId}`)
+  if (!el && cleanTargetId) {
+    el = document.getElementById(`task-card-${cleanTargetId}`) || document.getElementById(`task-card-comment-${cleanTargetId}`)
+  }
+
   if (el) {
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     el.classList.add('task-card-highlight')
@@ -4647,27 +4668,67 @@ const handleDeleteTask = async (id) => {
   const isCommentCard = String(id).startsWith('comment-')
   const rawId = isCommentCard ? String(id).replace('comment-', '') : id
 
+  // Find target card info to match across tasks and comments
+  const allCards = totalCardsForCurrentView.value || []
+  const targetCard = allCards.find(c => String(c.id) === String(id) || String(c.id) === String(rawId) || String(c.realCommentId) === String(rawId))
+  const targetTitle = (targetCard?.title || targetCard?.content || '').trim()
+  const targetTaskId = targetCard?.task_id || (!isCommentCard ? rawId : null)
+  const targetCommentId = targetCard?.realCommentId || (isCommentCard ? rawId : null)
+
   try {
     if (isCommentCard) {
       await axios.delete(`/api/comments/${rawId}`)
-      if (activityLogs.value) {
-        activityLogs.value = activityLogs.value.filter(c => c.id != rawId)
-      }
     } else {
       if (typeof rawId === 'number' || !isNaN(Number(rawId))) {
         await axios.delete(`/api/tasks/${rawId}`)
       }
-      if (project.value && project.value.tasks) {
-        project.value.tasks = project.value.tasks.filter(t => t.id != id && t.id != rawId)
-      }
-      if (selectedMilestone.value && selectedMilestone.value.tasks) {
-        selectedMilestone.value.tasks = selectedMilestone.value.tasks.filter(t => t.id != id && t.id != rawId)
-        selectedMilestone.value.tasks_count = Math.max(0, (selectedMilestone.value.tasks_count || 1) - 1)
-      }
-      if (activityLogs.value) {
-        activityLogs.value = activityLogs.value.filter(c => c.task_id != rawId && c.id != rawId)
-      }
     }
+
+    // 1. Filter project.value.tasks
+    if (project.value && project.value.tasks) {
+      project.value.tasks = project.value.tasks.filter(t => {
+        if (String(t.id) === String(id) || String(t.id) === String(rawId)) return false
+        if (targetTaskId && String(t.id) === String(targetTaskId)) return false
+        if (targetTitle && (t.title || '').trim() === targetTitle) return false
+        return true
+      })
+    }
+
+    // 2. Filter project.value.milestones
+    if (project.value && project.value.milestones) {
+      project.value.milestones.forEach(ms => {
+        if (ms.tasks && Array.isArray(ms.tasks)) {
+          ms.tasks = ms.tasks.filter(t => {
+            if (String(t.id) === String(id) || String(t.id) === String(rawId)) return false
+            if (targetTaskId && String(t.id) === String(targetTaskId)) return false
+            if (targetTitle && (t.title || '').trim() === targetTitle) return false
+            return true
+          })
+        }
+      })
+    }
+
+    // 3. Filter selectedMilestone.value.tasks
+    if (selectedMilestone.value && selectedMilestone.value.tasks) {
+      selectedMilestone.value.tasks = selectedMilestone.value.tasks.filter(t => {
+        if (String(t.id) === String(id) || String(t.id) === String(rawId)) return false
+        if (targetTaskId && String(t.id) === String(targetTaskId)) return false
+        if (targetTitle && (t.title || '').trim() === targetTitle) return false
+        return true
+      })
+      selectedMilestone.value.tasks_count = Math.max(0, (selectedMilestone.value.tasks_count || 1) - 1)
+    }
+
+    // 4. Filter activityLogs.value
+    if (activityLogs.value) {
+      activityLogs.value = activityLogs.value.filter(c => {
+        if (String(c.id) === String(rawId) || String(c.id) === String(targetCommentId)) return false
+        if (targetTaskId && String(c.task_id) === String(targetTaskId)) return false
+        if (targetTitle && (c.content || '').trim() === targetTitle) return false
+        return true
+      })
+    }
+
     toast.success('Đã xóa hoạt động!')
     broadcastLocalUpdate({ projectId: projectId.value, deletedId: id })
   } catch (err) {
