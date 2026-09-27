@@ -56,4 +56,27 @@ class MultiDeviceAuthenticationTest extends TestCase
         $this->getJson('/api/me', ['Authorization' => "Bearer {$token}"])->assertUnauthorized();
         $this->assertDatabaseCount('api_tokens', 0);
     }
+
+    public function test_a_session_remains_active_indefinitely_without_expiration(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'member@example.test',
+            'password' => Hash::make('secret123'),
+        ]);
+
+        $token = $this->postJson('/api/login', [
+            'username' => $user->email,
+            'password' => 'secret123',
+        ])->assertOk()->json('token');
+
+        $this->assertDatabaseHas('api_tokens', [
+            'token_hash' => hash('sha256', $token),
+            'expires_at' => null,
+        ]);
+
+        // Simulating travel in time 30 days later
+        $this->travel(30)->days();
+
+        $this->getJson('/api/me', ['Authorization' => "Bearer {$token}"])->assertOk();
+    }
 }

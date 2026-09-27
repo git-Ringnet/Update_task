@@ -13,7 +13,7 @@ class ApiTokenService
 
         $user->apiTokens()->create([
             'token_hash' => hash('sha256', $token),
-            'expires_at' => now()->addHours(24),
+            'expires_at' => null,
             'last_used_at' => now(),
         ]);
 
