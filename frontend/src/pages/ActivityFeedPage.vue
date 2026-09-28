@@ -422,7 +422,7 @@
           :projects="projectStore.projects" :users="projectStore.users" :groups="mentionGroups"
           :replying-to="replyingToActivity"
           :reply-text="replyingToActivity?.text || parseCommentText(replyingToActivity?.content)"
-          :editing-comment="editingCommentLog" :submitting="isSubmittingChat" @submit="submitChat"
+          :editing-comment="editingCommentLog" :submitting="isSubmittingChat" :rounded-bottom="true" @submit="submitChat"
           @cancel-reply="cancelReply" @cancel-edit="cancelEdit" />
       </div>
     </main>

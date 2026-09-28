@@ -90,20 +90,20 @@
         </button>
       </div>
 
-      <!-- Top Toolbar Row: Paperclip (File & Image), Emoji, Project Selector Pill -->
-      <div class="flex items-center justify-between px-4 py-2 bg-[#F9F4EE] border-b border-gray-300/50 select-none"
+      <!-- Top Toolbar Row: Paperclip (File & Image), Emoji, Date/Action, Project Selector Pill -->
+      <div class="flex items-center gap-2 sm:gap-2.5 px-4 py-2 bg-[#F9F4EE] border-b border-gray-300/50 select-none text-gray-700"
         :class="{ 'rounded-t-[14px]': !replyingTo && !editingComment }">
-        <div class="flex items-center gap-2 sm:gap-2.5 text-gray-700 relative">
-          <input ref="fileInputRef" type="file" multiple
-            accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.7z,.csv,*/*" class="hidden" @change="handleFileSelection" />
+        <input ref="fileInputRef" type="file" multiple
+          accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.7z,.csv,*/*" class="hidden" @change="handleFileSelection" />
 
-          <!-- Paperclip button (Tệp & Ảnh) - Exactly centered on avatar line (px-4 + w-8 center = 32px) -->
-          <button type="button" title="Đính kèm tệp hoặc ảnh" @click="fileInputRef?.click()"
-            class="w-8 h-8 rounded-lg flex items-center justify-center text-[#4a4a4a] hover:text-[#1A7A56] hover:bg-[#eae4dc] active:bg-[#dfd8ce] transition-all cursor-pointer active:scale-95">
-            <i class="fa-solid fa-paperclip text-[19px] sm:text-[18px]"></i>
-          </button>
+        <!-- Paperclip button (Tệp & Ảnh) - Exactly centered on avatar line (px-4 + w-8 center = 32px) -->
+        <button type="button" title="Đính kèm tệp hoặc ảnh" @click="fileInputRef?.click()"
+          class="w-8 h-8 rounded-lg flex items-center justify-center text-[#4a4a4a] hover:text-[#1A7A56] hover:bg-[#eae4dc] active:bg-[#dfd8ce] transition-all cursor-pointer active:scale-95 shrink-0">
+          <i class="fa-solid fa-paperclip text-[19px] sm:text-[18px]"></i>
+        </button>
 
-          <!-- Emoji Picker button -->
+        <!-- Emoji Picker button -->
+        <div class="relative shrink-0">
           <button type="button" title="Biểu tượng cảm xúc" @click="toggleEmojiPicker"
             class="w-8 h-8 rounded-lg flex items-center justify-center text-[#4a4a4a] hover:text-[#1A7A56] hover:bg-[#eae4dc] active:bg-[#dfd8ce] transition-all cursor-pointer active:scale-95"
             :class="{ 'text-[#1A7A56] bg-[#eae4dc]': isEmojiPickerOpen }">
@@ -135,8 +135,10 @@
               @select="onSelectEmoji"
             />
           </div>
+        </div>
 
-          <!-- Date Picker Button (Hành động tiếp theo) -->
+        <!-- Date Picker Button (Hành động tiếp theo) -->
+        <div class="relative shrink-0">
           <button type="button" title="Đặt ngày hành động tiếp theo" @click="toggleDatePicker"
             class="w-8 h-8 rounded-lg flex items-center justify-center text-[#4a4a4a] hover:text-[#1A7A56] hover:bg-[#eae4dc] active:bg-[#dfd8ce] transition-all cursor-pointer active:scale-95 relative"
             :class="{ 'text-[#1A7A56] bg-emerald-50 ring-1.5 ring-emerald-500 font-black': isDatePickerOpen || selectedDueDate }">
@@ -204,13 +206,13 @@
           </div>
         </div>
 
-        <!-- Project Selector Pill (No folder icon, equal right-aligned padding) -->
-        <div class="relative min-w-0 max-w-[190px] sm:max-w-[270px]">
+        <!-- Project Selector Pill (Right-aligned, distance to border equals paperclip button) -->
+        <div class="relative min-w-0 max-w-[155px] sm:max-w-[185px] ml-auto">
           <button type="button" @click="toggleProjectPicker"
-            class="h-8 sm:h-8 px-3 bg-[#e6f4ea] hover:bg-[#d8edd9] border border-emerald-400/60 rounded-full flex items-center gap-1 cursor-pointer text-[#1A7A56] font-extrabold text-[14px] sm:text-[13.5px] transition-all max-w-full shadow-3xs active:scale-95"
+            class="h-8 sm:h-8 px-2.5 sm:px-3 bg-[#e6f4ea] hover:bg-[#d8edd9] border border-emerald-400/60 rounded-full flex items-center gap-1 cursor-pointer text-[#1A7A56] font-extrabold text-[13.5px] sm:text-[13px] transition-all max-w-full shadow-3xs active:scale-95"
             :title="selectedProject ? selectedProject.title : 'Chọn dự án'">
             <span class="truncate font-extrabold">{{ selectedProject ? selectedProject.title : 'Chọn dự án...' }}</span>
-            <i class="fa-solid fa-chevron-down text-[11px] shrink-0 transition-transform opacity-75 ml-0.5"
+            <i class="fa-solid fa-chevron-down text-[10px] shrink-0 transition-transform opacity-75 ml-0.5"
               :class="isProjectPickerOpen ? 'rotate-180' : ''"></i>
           </button>
 
@@ -361,7 +363,10 @@
 
       <!-- Textarea Input Area & Right Action Column (Vertically aligned) -->
       <div class="relative flex gap-2 bg-[#ebe6df] px-3.5 sm:px-4 py-2 cursor-text transition-all"
-        :class="canShowExpandButton ? 'items-stretch' : 'items-center'"
+        :class="[
+          canShowExpandButton ? 'items-stretch' : 'items-center',
+          roundedBottom ? 'rounded-b-[14px]' : ''
+        ]"
         @click="focusTextarea"
         @dragenter.prevent="handleDragEnter"
         @dragover.prevent="handleDragOver"
@@ -443,6 +448,7 @@ const props = defineProps({
   editingComment: { type: Object, default: null },
   submitting: { type: Boolean, default: false },
   replyText: { type: String, default: '' },
+  roundedBottom: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['update:modelValue', 'update:projectId', 'submit', 'cancel-reply', 'cancel-edit'])
