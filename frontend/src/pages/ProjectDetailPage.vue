@@ -2400,8 +2400,6 @@ const formatTitleWithMentions = (titleText) => {
       }
     })
   }
-  // Generic fallback for any "word private mention
-  escaped = escaped.replace(/(?<=^|\s)(?:"|&quot;|[“])([^\s"“”<]+)(?![^<]*>|[^<>]*<\/span>)/g, '<span class="text-[#ea580c] font-bold">"$1</span>')
 
   // Format public mentions @Group and @all (green)
   const groupList = (mentionGroups && mentionGroups.value) ? mentionGroups.value : []
@@ -2427,7 +2425,6 @@ const formatTitleWithMentions = (titleText) => {
       }
     })
   }
-  escaped = escaped.replace(/@([^\s@,.:;!?()\n]+)(?![^<]*>|[^<>]*<\/span>)/g, '<span class="text-[#1A7A56] font-bold">@$1</span>')
 
   // 7) Restore all protected HTML blocks
   protectedBlocks.forEach((block, idx) => {
@@ -3049,6 +3046,11 @@ const getPrivateRecipientsForTask = (task) => {
     })
   }
 
+  const currentUserId = Number(authStore.user?.id || 0)
+  if (currentUserId) {
+    recipientIds.delete(currentUserId)
+  }
+
   return Array.from(recipientIds).map(id => {
     return users.value?.find(u => Number(u.id) === Number(id)) || { id, name: `Thành viên #${id}` }
   }).filter(Boolean)
@@ -3078,10 +3080,13 @@ const handleReplyToTask = (t) => {
 const handlePrivateReplyToTask = (t, replyToAll = false) => {
   if (!t) return
   editingTaskId.value = null
-  const authorName = getCreatorDisplayName(t)
+  const currentUserId = Number(authStore.user?.id || 0)
+  const authorId = t.user_id || t.user?.id || t.created_by || t.creator_id || t.creator?.id
+  const isAuthorSelf = authorId && Number(authorId) === currentUserId
+  const authorName = !isAuthorSelf ? getCreatorDisplayName(t) : ''
 
   if (replyToAll) {
-    const recipients = getPrivateRecipientsForTask(t)
+    const recipients = getPrivateRecipientsForTask(t).filter(u => Number(u.id) !== currentUserId)
     const recipientNames = recipients.map(u => u.name).join(', ')
     replyingToLog.value = {
       id: t.id,
@@ -3089,7 +3094,8 @@ const handlePrivateReplyToTask = (t, replyToAll = false) => {
       user: { name: recipientNames || authorName },
       title: t.title || t.content || '',
       milestone_id: t.milestone_id,
-      is_private_reply: true
+      is_private_reply: true,
+      reply_to_names: recipientNames || authorName
     }
     if (recipients.length > 0) {
       newStageTaskTitle.value = recipients.map(u => `"${u.name}`).join(' ') + ' '
@@ -3103,7 +3109,8 @@ const handlePrivateReplyToTask = (t, replyToAll = false) => {
       user: { name: authorName },
       title: t.title || t.content || '',
       milestone_id: t.milestone_id,
-      is_private_reply: true
+      is_private_reply: true,
+      reply_to_names: authorName
     }
     newStageTaskTitle.value = authorName ? `"${authorName} ` : ''
   }
@@ -3118,7 +3125,6 @@ const handlePrivateReplyToTask = (t, replyToAll = false) => {
 
 const cancelReply = () => {
   replyingToLog.value = null
-  newStageTaskTitle.value = ''
 }
 
 const openEditStageTaskForm = (task) => {

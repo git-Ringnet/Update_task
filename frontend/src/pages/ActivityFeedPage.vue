@@ -1353,6 +1353,11 @@ const getPrivateRecipientsForActivity = (activity) => {
     })
   }
 
+  const currentUserId = Number(authStore.user?.id || 0)
+  if (currentUserId) {
+    recipientIds.delete(currentUserId)
+  }
+
   return Array.from(recipientIds).map(id => {
     return projectStore.users?.find(u => Number(u.id) === Number(id)) || { id, name: `Thành viên #${id}` }
   }).filter(Boolean)
@@ -1361,18 +1366,21 @@ const getPrivateRecipientsForActivity = (activity) => {
 const handlePrivateReplyToAllInActivity = (activity) => {
   activeActivityIdForMobileActions.value = null
   editingCommentLog.value = null
-  const recipients = getPrivateRecipientsForActivity(activity)
+  const currentUserId = Number(authStore.user?.id || 0)
+  const recipients = getPrivateRecipientsForActivity(activity).filter(u => Number(u.id) !== currentUserId)
   const recipientNames = recipients.map(u => u.name).join(', ')
+  const authorId = activity.user_id || activity.user?.id || activity.created_by || activity.creator_id || activity.creator?.id
+  const isAuthorSelf = authorId && Number(authorId) === currentUserId
 
   replyingToActivity.value = {
     ...activity,
     is_private_reply: true,
-    reply_to_names: recipientNames || activity.user?.name
+    reply_to_names: recipientNames || (!isAuthorSelf ? activity.user?.name : '')
   }
   chatProjectId.value = activity.project_id || activity.project?.id || projectStore.projects[0]?.id
   if (recipients.length > 0) {
     chatMessage.value = recipients.map(u => `"${u.name}`).join(' ') + ' '
-  } else if (activity.user?.name) {
+  } else if (activity.user?.name && !isAuthorSelf) {
     chatMessage.value = `"${activity.user.name} `
   } else {
     chatMessage.value = ''
@@ -1383,12 +1391,16 @@ const handlePrivateReplyToAllInActivity = (activity) => {
 const handlePrivateReplyToActivity = (activity) => {
   activeActivityIdForMobileActions.value = null
   editingCommentLog.value = null
+  const currentUserId = Number(authStore.user?.id || 0)
+  const isSelf = activity.user?.id && Number(activity.user.id) === currentUserId
+
   replyingToActivity.value = {
     ...activity,
-    is_private_reply: true
+    is_private_reply: true,
+    reply_to_names: isSelf ? '' : activity.user?.name
   }
   chatProjectId.value = activity.project_id || activity.project?.id || projectStore.projects[0]?.id
-  chatMessage.value = activity.user?.name ? `"${activity.user.name} ` : ''
+  chatMessage.value = (activity.user?.name && !isSelf) ? `"${activity.user.name} ` : ''
   activityComposerRef.value?.focus()
 }
 
@@ -1737,7 +1749,6 @@ const cancelReply = () => {
     return
   }
   replyingToActivity.value = null
-  chatMessage.value = ''
 }
 
 const submitChat = async (payload = null) => {

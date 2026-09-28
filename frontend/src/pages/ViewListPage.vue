@@ -4179,6 +4179,11 @@ const getPrivateRecipientsForActivity = (activity) => {
     })
   }
 
+  const currentUserId = Number(authStore.user?.id || 0)
+  if (currentUserId) {
+    recipientIds.delete(currentUserId)
+  }
+
   return Array.from(recipientIds).map(id => {
     return projectStore.users?.find(u => Number(u.id) === Number(id)) || { id, name: `Thành viên #${id}` }
   }).filter(Boolean)
@@ -4186,19 +4191,22 @@ const getPrivateRecipientsForActivity = (activity) => {
 
 const handlePrivateReplyToAllInActivity = (log) => {
   editingCommentLog.value = null
-  const recipients = getPrivateRecipientsForActivity(log)
+  const currentUserId = Number(authStore.user?.id || 0)
+  const recipients = getPrivateRecipientsForActivity(log).filter(u => Number(u.id) !== currentUserId)
   const recipientNames = recipients.map(u => u.name).join(', ')
+  const authorId = log.user_id || log.user?.id || log.created_by || log.creator_id || log.creator?.id
+  const isAuthorSelf = authorId && Number(authorId) === currentUserId
 
   replyingToLog.value = {
     ...log,
     is_private_reply: true,
-    reply_to_names: recipientNames || log.user?.name
+    reply_to_names: recipientNames || (!isAuthorSelf ? log.user?.name : '')
   }
   chatProjectId.value = log.project_id || log.project?.id || followingProjects.value[0]?.id
 
   if (recipients.length > 0) {
     chatMessage.value = recipients.map(u => `"${u.name}`).join(' ') + ' '
-  } else if (log.user?.name) {
+  } else if (log.user?.name && !isAuthorSelf) {
     chatMessage.value = `"${log.user.name} `
   } else {
     chatMessage.value = ''
@@ -4211,14 +4219,18 @@ const handlePrivateReplyToAllInActivity = (log) => {
 
 const handlePrivateReplyToActivity = (log) => {
   editingCommentLog.value = null
+  const currentUserId = Number(authStore.user?.id || 0)
+  const isSelf = log.user?.id && Number(log.user.id) === currentUserId
+
   replyingToLog.value = {
     ...log,
-    is_private_reply: true
+    is_private_reply: true,
+    reply_to_names: isSelf ? '' : log.user?.name
   }
   chatProjectId.value = log.project_id || log.project?.id || followingProjects.value[0]?.id
 
   let mention = ''
-  if (log.user) {
+  if (log.user?.name && !isSelf) {
     mention = `"${log.user.name} `
   }
 
@@ -4235,7 +4247,6 @@ const cancelReply = () => {
     return
   }
   replyingToLog.value = null
-  chatMessage.value = ''
 }
 
 const isSubmittingChat = ref(false)

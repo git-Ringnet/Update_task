@@ -1,6 +1,16 @@
 import { defineStore } from 'pinia'
 import axios from 'axios'
 
+const getCachedUsers = () => {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = localStorage.getItem('cached_users_list')
+    return raw ? JSON.parse(raw) : []
+  } catch (e) {
+    return []
+  }
+}
+
 export const useProjectStore = defineStore('project', {
   state: () => ({
     projects: [],
@@ -13,7 +23,7 @@ export const useProjectStore = defineStore('project', {
     searchQuery: '',
     isLoading: false,
     customers: [],
-    users: [],
+    users: getCachedUsers(),
     pinningProjectIds: {},
     lastRequestId: 0,
     lastAppliedRequestId: 0,
@@ -188,7 +198,12 @@ export const useProjectStore = defineStore('project', {
           axios.get('/api/users'),
         ])
         this.customers = cRes.data.customers || cRes.data
-        this.users = uRes.data
+        this.users = uRes.data || []
+        try {
+          if (Array.isArray(uRes.data) && uRes.data.length > 0) {
+            localStorage.setItem('cached_users_list', JSON.stringify(uRes.data))
+          }
+        } catch (e) {}
       } catch (err) {
         console.error('Failed to fetch customers/users:', err)
       }

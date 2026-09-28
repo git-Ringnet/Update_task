@@ -45,9 +45,6 @@ export const formatCommentTextWithMentions = (content, usersList = [], groupsLis
     }
   })
 
-  // Generic fallback for any "word private mention
-  escaped = escaped.replace(/(?<=^|\s)(?:"|&quot;|[“])([^\s"“”<]+)(?![^<]*>|[^<>]*<\/span>)/g, '<span class="text-[#ea580c] font-bold">"$1</span>')
-
   // 2. Format public mentions: @all and @Group
   escaped = escaped.replace(/(?<=^|\s)@all\b/gi, '<span class="text-[#1A7A56] font-bold">@all</span>')
 
@@ -67,9 +64,6 @@ export const formatCommentTextWithMentions = (content, usersList = [], groupsLis
       escaped = escaped.replace(reg, `<span class="text-[#1A7A56] font-bold">@${u.name}</span>`)
     }
   })
-
-  // Generic fallback for any @word
-  escaped = escaped.replace(/(?<=^|\s)@([^\s@,.:;!?()\n]+)(?![^<]*>|[^<>]*<\/span>)/g, '<span class="text-[#1A7A56] font-bold">@$1</span>')
 
   return escaped
 }

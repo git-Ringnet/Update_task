@@ -206,12 +206,12 @@
           </div>
         </div>
 
-        <!-- Project Selector Pill (Right-aligned, distance to border equals paperclip button) -->
-        <div class="relative min-w-0 max-w-[155px] sm:max-w-[185px] ml-auto">
+        <!-- Project Selector Pill (Fixed width, right-aligned) -->
+        <div class="relative w-[145px] sm:w-[165px] shrink-0 ml-auto">
           <button type="button" @click="toggleProjectPicker"
-            class="h-8 sm:h-8 px-2.5 sm:px-3 bg-[#e6f4ea] hover:bg-[#d8edd9] border border-emerald-400/60 rounded-full flex items-center gap-1 cursor-pointer text-[#1A7A56] font-extrabold text-[13.5px] sm:text-[13px] transition-all max-w-full shadow-3xs active:scale-95"
+            class="w-full h-8 px-2.5 sm:px-3 bg-[#e6f4ea] hover:bg-[#d8edd9] border border-emerald-400/60 rounded-full flex items-center justify-between gap-1.5 cursor-pointer text-[#1A7A56] font-extrabold text-[13.5px] sm:text-[13px] transition-all shadow-3xs active:scale-95"
             :title="selectedProject ? selectedProject.title : 'Chọn dự án'">
-            <span class="truncate font-extrabold">{{ selectedProject ? selectedProject.title : 'Chọn dự án...' }}</span>
+            <span class="truncate font-extrabold flex-1 text-left min-w-0">{{ selectedProject ? selectedProject.title : 'Chọn dự án...' }}</span>
             <i class="fa-solid fa-chevron-down text-[10px] shrink-0 transition-transform opacity-75 ml-0.5"
               :class="isProjectPickerOpen ? 'rotate-180' : ''"></i>
           </button>
