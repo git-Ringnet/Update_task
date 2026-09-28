@@ -360,7 +360,8 @@
       </div>
 
       <!-- Textarea Input Area & Right Action Column (Vertically aligned) -->
-      <div class="relative flex items-stretch gap-2 bg-[#ebe6df] rounded-b-[14px] px-3.5 sm:px-4 py-2 cursor-text transition-all"
+      <div class="relative flex gap-2 bg-[#ebe6df] px-3.5 sm:px-4 py-2 cursor-text transition-all"
+        :class="canShowExpandButton ? 'items-stretch' : 'items-center'"
         @click="focusTextarea"
         @dragenter.prevent="handleDragEnter"
         @dragover.prevent="handleDragOver"
@@ -392,17 +393,18 @@
             name="chat_activity_message"
             id="activity-composer-textarea"
             :placeholder="editingComment ? 'Chỉnh sửa nội dung hoạt động...' : 'Báo thông tin cho đồng đội'"
-            :class="isExpanded ? 'h-[190px] sm:h-[220px] max-h-[35vh]' : 'min-h-[36px] max-h-[140px]'"
-            class="w-full overflow-y-auto scrollbar-hover bg-transparent border-0 focus:ring-0 focus:outline-none text-[16px] sm:text-[18px] font-normal text-gray-900 resize-none p-0 placeholder-gray-500 leading-relaxed transition-[height] duration-150 block"
+            :class="isExpanded ? 'h-[190px] sm:h-[220px] max-h-[35vh]' : 'min-h-[34px] max-h-[140px]'"
+            class="w-full overflow-y-auto scrollbar-hover bg-transparent border-0 focus:ring-0 focus:outline-none text-[16px] sm:text-[17px] font-normal text-gray-900 resize-none py-1 px-0 placeholder-gray-500 leading-normal transition-[height] duration-150 block"
             autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
             data-lpignore="true" data-1p-ignore="true" data-form-type="other" aria-autocomplete="none"></textarea>
         </div>
 
-        <!-- Right: Action Column (Expand button at top, Send button at bottom, vertically aligned) -->
-        <div class="flex flex-col items-center justify-between shrink-0 self-stretch select-none gap-1.5 min-w-[34px]">
+        <!-- Right: Action Column (Expand button at top, Send button centered/bottom) -->
+        <div class="flex flex-col items-center shrink-0 select-none gap-1.5 min-w-[34px]"
+          :class="canShowExpandButton ? 'justify-between self-stretch' : 'justify-center self-center'">
           <!-- Top: Expand/Collapse Button (Straight in the same vertical column with send button) -->
-          <div class="flex items-center justify-center">
-            <button v-if="canShowExpandButton"
+          <div v-if="canShowExpandButton" class="flex items-center justify-center">
+            <button
               type="button"
               @click.stop="toggleExpand"
               :title="isExpanded ? 'Thu gọn khung nhập' : 'Mở rộng khung nhập'"
@@ -411,8 +413,8 @@
             </button>
           </div>
 
-          <!-- Bottom: Send Button (Original Position) -->
-          <div class="flex items-center justify-center mt-auto">
+          <!-- Bottom: Send Button (Vertically centered with text in 1-line mode, bottom in multi-line) -->
+          <div class="flex items-center justify-center" :class="canShowExpandButton ? 'mt-auto' : ''">
             <button @click="handleSubmit" :disabled="submitting || !canSend" type="button"
               :title="editingComment ? 'Lưu thay đổi' : 'Gửi cập nhật (Hú hú)'"
               class="w-8.5 h-8.5 rounded-xl flex items-center justify-center text-white shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
@@ -457,9 +459,10 @@ const isAutoExpanded = ref(false)
 const isTextareaMultiline = ref(false)
 
 const canShowExpandButton = computed(() => {
+  const text = (rawInputText.value || messageModel.value || textareaRef.value?.value || '').trim()
+  if (!text) return false
   if (isExpanded.value) return true
-  const text = (rawInputText.value || messageModel.value || textareaRef.value?.value || '')
-  return text.includes('\n') || text.trim().length >= 40 || isTextareaMultiline.value
+  return text.includes('\n') || text.length >= 40 || isTextareaMultiline.value
 })
 
 const toggleExpand = () => {
@@ -803,10 +806,7 @@ const mobileSearchInputRef = ref(null)
 
 const rawInputText = ref(messageModel.value || '')
 const canSend = computed(() => {
-  const domText = textareaRef.value?.value || ''
-  const rawText = rawInputText.value || ''
-  const modelText = messageModel.value || ''
-  const currentText = (domText || rawText || modelText).trim()
+  const currentText = (rawInputText.value || messageModel.value || textareaRef.value?.value || '').trim()
   return Boolean(currentText.length > 0 || attachments.value.length > 0)
 })
 const hasText = canSend
@@ -817,15 +817,24 @@ const resizeTextarea = () => {
   const textarea = textareaRef.value
   if (!textarea) return
   textarea.style.height = 'auto'
+
+  const currentText = (rawInputText.value || messageModel.value || textarea.value || '').trim()
+  if (!currentText) {
+    isTextareaMultiline.value = false
+    isExpanded.value = false
+    textarea.style.height = '34px'
+    return
+  }
+
   const contentHeight = textarea.scrollHeight
-  isTextareaMultiline.value = contentHeight > 42
+  isTextareaMultiline.value = contentHeight > 38
 
   if (isExpanded.value) {
     const maxViewportHeight = typeof window !== 'undefined' ? Math.round(window.innerHeight * 0.35) : 210
     const targetHeight = Math.min(230, Math.max(170, maxViewportHeight))
     textarea.style.height = `${targetHeight}px`
   } else {
-    const targetHeight = Math.min(100, Math.max(36, contentHeight))
+    const targetHeight = Math.min(100, Math.max(34, contentHeight))
     textarea.style.height = `${targetHeight}px`
   }
 }
@@ -1293,10 +1302,15 @@ watch(() => props.projects, projects => {
 }, { immediate: true })
 
 watch(messageModel, value => {
-  rawInputText.value = value || ''
-  if (!String(value || '').trim()) {
+  const cleanVal = value || ''
+  rawInputText.value = cleanVal
+  if (textareaRef.value && textareaRef.value.value !== cleanVal) {
+    textareaRef.value.value = cleanVal
+  }
+  if (!cleanVal.trim()) {
     isAutoExpanded.value = false
     isExpanded.value = false
+    isTextareaMultiline.value = false
   }
   nextTick(resizeTextarea)
 })
