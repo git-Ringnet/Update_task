@@ -2527,11 +2527,35 @@ const scrollToTask = async (reply) => {
   await nextTick()
 
   // 5. Scroll smoothly and flash targeted card
-  let el = document.getElementById(`task-card-${foundCardId}`)
-  if (!el && cleanTargetId) {
-    el = document.getElementById(`task-card-${cleanTargetId}`) || document.getElementById(`task-card-comment-${cleanTargetId}`)
+  const findElement = () => {
+    let el = document.getElementById(`task-card-${foundCardId}`)
+    if (!el && cleanTargetId) {
+      el = document.getElementById(`task-card-${cleanTargetId}`) || document.getElementById(`task-card-comment-${cleanTargetId}`)
+    }
+    return el
   }
 
+  const pollForElement = (maxRetries = 15, interval = 50) => {
+    return new Promise((resolve) => {
+      let retries = 0
+      const check = () => {
+        const el = findElement()
+        if (el) {
+          resolve(el)
+          return
+        }
+        retries++
+        if (retries < maxRetries) {
+          setTimeout(check, interval)
+        } else {
+          resolve(null)
+        }
+      }
+      check()
+    })
+  }
+
+  const el = await pollForElement(15, 50)
   if (el) {
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     el.classList.add('task-card-highlight')

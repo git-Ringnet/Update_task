@@ -46,28 +46,6 @@ class CommentController extends Controller
             $query->whereIn('project_id', $projectIds);
         } elseif ($request->has('project_id')) {
             $query->where('project_id', $request->project_id);
-        } elseif (!$user->is_admin && !$user->isSystemAdmin()) {
-            // The activity feed is an inbox, not the project's history. A member
-            // only starts seeing project updates from the moment they join. The
-            // project-specific endpoint deliberately remains unfiltered so its
-            // detail page can still provide the full project context.
-            $query->where(function ($visibleComments) use ($user) {
-                $visibleComments
-                    ->where('comments.user_id', $user->id)
-                    ->orWhereJsonContains('comments.private_user_ids', (int) $user->id)
-                    ->orWhereJsonContains('comments.private_user_ids', (string) $user->id)
-                    ->orWhereHas('project', function ($projects) use ($user) {
-                        $projects->where('created_by', $user->id)
-                            ->orWhere('lead_id', $user->id);
-                    })
-                    ->orWhereHas('project.members', function ($members) use ($user) {
-                        $members->where('users.id', $user->id)
-                            ->where(function ($m) {
-                                $m->whereColumn('project_members.created_at', '<=', 'comments.created_at')
-                                  ->orWhereRaw('TIMESTAMPDIFF(MINUTE, comments.created_at, project_members.created_at) <= 1');
-                            });
-                    });
-            });
         }
 
         if ($request->has('task_id')) {
@@ -112,7 +90,7 @@ class CommentController extends Controller
 
     public function show($id)
     {
-        // Strip out any non-numeric prefix like 'comment-'
+        // Strip out any non-numeric prefix like 'comment-' or 'task-'
         $commentId = is_numeric($id) ? (int) $id : (int) preg_replace('/\D/', '', (string) $id);
         abort_unless($commentId > 0, 404, 'Không tìm thấy bình luận.');
 
@@ -120,7 +98,45 @@ class CommentController extends Controller
             'user:id,name,avatar',
             'project:id,customer_id,title',
             'project.customer:id,name',
-        ])->findOrFail($commentId);
+        ])->find($commentId);
+
+        if (!$comment) {
+            $comment = Comment::with([
+                'user:id,name,avatar',
+                'project:id,customer_id,title',
+                'project.customer:id,name',
+            ])->where('task_id', $commentId)->first();
+        }
+
+        if (!$comment) {
+            $task = Task::with([
+                'creator:id,name,avatar',
+                'project:id,customer_id,title',
+                'project.customer:id,name',
+            ])->find($commentId);
+
+            if ($task) {
+                $comment = Comment::firstOrCreate(
+                    ['task_id' => $task->id],
+                    [
+                        'project_id' => $task->project_id,
+                        'user_id' => $task->created_by,
+                        'content' => $task->title,
+                        'is_private' => (bool) $task->is_private,
+                        'private_user_ids' => $task->private_user_ids,
+                        'created_at' => $task->created_at,
+                        'updated_at' => $task->updated_at,
+                    ]
+                );
+                $comment->load([
+                    'user:id,name,avatar',
+                    'project:id,customer_id,title',
+                    'project.customer:id,name',
+                ]);
+            }
+        }
+
+        abort_unless($comment, 404, 'Không tìm thấy bình luận.');
 
         $user = auth()->user();
         abort_unless($comment->project?->isVisibleTo($user), 403, 'Bạn không có quyền xem bình luận này.');

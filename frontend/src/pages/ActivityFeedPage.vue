@@ -2688,14 +2688,45 @@ const scrollToComment = async (reply) => {
     return
   }
 
-  // 1. Try to find in current DOM
-  let el = document.getElementById(`activity-feed-item-${targetId}`)
-  if (el) {
+  const highlightElement = (el) => {
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     el.classList.add('activity-card-highlight')
     setTimeout(() => {
       el.classList.remove('activity-card-highlight')
     }, 2500)
+  }
+
+  const findElement = () => {
+    return document.getElementById(`activity-feed-item-${targetId}`) ||
+      document.getElementById(`activity-log-item-${targetId}`) ||
+      document.getElementById(`task-card-${targetId}`) ||
+      document.getElementById(`task-card-comment-${targetId}`)
+  }
+
+  const pollForElement = (maxRetries = 15, interval = 50) => {
+    return new Promise((resolve) => {
+      let retries = 0
+      const check = () => {
+        const el = findElement()
+        if (el) {
+          resolve(el)
+          return
+        }
+        retries++
+        if (retries < maxRetries) {
+          setTimeout(check, interval)
+        } else {
+          resolve(null)
+        }
+      }
+      check()
+    })
+  }
+
+  // 1. Try to find in current DOM
+  let el = findElement()
+  if (el) {
+    highlightElement(el)
     return
   }
 
@@ -2711,20 +2742,42 @@ const scrollToComment = async (reply) => {
       }
 
       await nextTick()
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          const targetEl = document.getElementById(`activity-feed-item-${targetId}`)
-          if (targetEl) {
-            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
-            targetEl.classList.add('activity-card-highlight')
-            setTimeout(() => {
-              targetEl.classList.remove('activity-card-highlight')
-            }, 2500)
-          } else {
-            toast.warning('Tin nhắn gốc có thể đã bị xóa hoặc không còn tồn tại.')
+      const findFetchedElement = () => {
+        return findElement() ||
+          document.getElementById(`activity-feed-item-${targetComment.id}`) ||
+          (targetComment.task_id ? document.getElementById(`activity-feed-item-${targetComment.task_id}`) : null) ||
+          document.getElementById(`activity-log-item-${targetComment.id}`) ||
+          (targetComment.task_id ? document.getElementById(`activity-log-item-${targetComment.task_id}`) : null) ||
+          document.getElementById(`task-card-${targetComment.id}`) ||
+          (targetComment.task_id ? document.getElementById(`task-card-${targetComment.task_id}`) : null)
+      }
+
+      const pollForFetchedElement = (maxRetries = 20, interval = 50) => {
+        return new Promise((resolve) => {
+          let retries = 0
+          const check = () => {
+            const el = findFetchedElement()
+            if (el) {
+              resolve(el)
+              return
+            }
+            retries++
+            if (retries < maxRetries) {
+              setTimeout(check, interval)
+            } else {
+              resolve(null)
+            }
           }
-        }, 60)
-      })
+          check()
+        })
+      }
+
+      const targetEl = await pollForFetchedElement(20, 50)
+      if (targetEl) {
+        highlightElement(targetEl)
+      } else {
+        toast.warning('Tin nhắn gốc có thể đã bị xóa hoặc không còn tồn tại.')
+      }
     } else {
       toast.warning('Tin nhắn gốc có thể đã bị xóa hoặc không còn tồn tại.')
     }
