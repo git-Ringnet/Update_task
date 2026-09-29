@@ -117,7 +117,7 @@
 
           <div v-if="hasOpenedEmojiPicker"
             v-show="isEmojiPickerOpen"
-            class="absolute bottom-full left-0 mb-2 z-50 rounded-2xl shadow-2xl overflow-hidden flex flex-col w-[min(340px,calc(100vw-24px))] sm:w-[330px] animate-fade-in-up border border-gray-200 bg-white"
+            class="absolute bottom-full -left-11 sm:-left-11 mb-2 z-50 rounded-2xl shadow-2xl overflow-hidden flex flex-col w-[min(330px,calc(100vw-24px))] sm:w-[325px] animate-fade-in-up border border-gray-200 bg-white"
             @click.stop>
             <div class="px-3 py-1.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
               <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Biểu tượng cảm xúc</span>
@@ -152,7 +152,7 @@
             @click="dismissDatePicker"></div>
 
           <div v-if="isDatePickerOpen"
-            class="absolute bottom-full left-0 mb-2 z-50 rounded-2xl shadow-2xl overflow-hidden flex flex-col w-[min(320px,calc(100vw-24px))] sm:w-[310px] animate-fade-in-up border border-gray-200 bg-white"
+            class="absolute bottom-full -left-20 sm:-left-20 mb-2 z-50 rounded-2xl shadow-2xl overflow-hidden flex flex-col w-[min(320px,calc(100vw-24px))] sm:w-[310px] animate-fade-in-up border border-gray-200 bg-white"
             @click.stop>
             <div class="px-3.5 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
               <span class="text-xs font-black text-gray-800 uppercase tracking-wider flex items-center gap-1.5">

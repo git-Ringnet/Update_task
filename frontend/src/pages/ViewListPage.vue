@@ -2088,24 +2088,37 @@ const fetchScheduleTasks = async (silent = false) => {
     const data = res.data?.tasks || (Array.isArray(res.data) ? res.data : [])
     hasMorePastTasks.value = Boolean(res.data?.has_more_past)
     hasMoreFutureTasks.value = Boolean(res.data?.has_more_future)
-    scheduleTasks.value = data
-    setCachedScheduleTasks(data)
-    scrollToTodayOrNearestSchedule()
-    setTimeout(() => scrollToTodayOrNearestSchedule(), 100)
+    if (silent && scheduleTasks.value.length > 0) {
+      const dataMap = new Map(data.map(t => [t.id, t]))
+      const updated = scheduleTasks.value.map(t => dataMap.get(t.id) || t)
+      const existingIds = new Set(scheduleTasks.value.map(t => t.id))
+      const newItems = data.filter(t => !existingIds.has(t.id))
+      scheduleTasks.value = [...updated, ...newItems]
+      setCachedScheduleTasks(scheduleTasks.value)
+    } else {
+      scheduleTasks.value = data
+      setCachedScheduleTasks(data)
+      scrollToTodayOrNearestSchedule()
+      setTimeout(() => scrollToTodayOrNearestSchedule(), 100)
+    }
   } catch (err) {
     console.error('Failed to fetch schedule tasks:', err)
   } finally {
-    isScheduleLoading.value = false
+    if (!silent) isScheduleLoading.value = false
   }
 }
 
 const loadOlderScheduleTasks = async () => {
   if (isLoadingPastTasks.value || !hasMorePastTasks.value || scheduleTasks.value.length === 0) return
 
-  // Find oldest task
-  const activeTasks = [...scheduleTasks.value].sort((a, b) => {
-    return new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
-  })
+  // Find oldest task by due_date and ID
+  const activeTasks = [...scheduleTasks.value]
+    .filter(t => Boolean(t.due_date))
+    .sort((a, b) => {
+      const dateDiff = new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+      if (dateDiff !== 0) return dateDiff
+      return (Number(a.id) || 0) - (Number(b.id) || 0)
+    })
   const oldestTask = activeTasks[0]
   if (!oldestTask) return
 
@@ -2136,6 +2149,10 @@ const loadOlderScheduleTasks = async () => {
 
         // Keep scroll anchor so screen doesn't jump
         await nextTick()
+        if (container) {
+          const heightDiff = container.scrollHeight - prevScrollHeight
+          container.scrollTop = prevScrollTop + heightDiff
+        }
         requestAnimationFrame(() => {
           if (container) {
             const heightDiff = container.scrollHeight - prevScrollHeight
@@ -2147,7 +2164,9 @@ const loadOlderScheduleTasks = async () => {
   } catch (err) {
     console.error('Failed to load older schedule tasks:', err)
   } finally {
-    isLoadingPastTasks.value = false
+    setTimeout(() => {
+      isLoadingPastTasks.value = false
+    }, 250)
   }
 }
 
@@ -3750,8 +3769,15 @@ const loadOlderActivities = async () => {
   if (isLoadingOlderActivities.value || !hasMoreOlderActivities.value || activities.value.length === 0) return
 
   isLoadingOlderActivities.value = true
-  const minId = Math.min(...activities.value.map(a => Number(a.id) || Infinity))
-  if (!minId || minId === Infinity) {
+  const sorted = [...activities.value]
+    .filter(a => Boolean(a.created_at))
+    .sort((a, b) => {
+      const timeDiff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      if (timeDiff !== 0) return timeDiff
+      return (Number(a.id) || 0) - (Number(b.id) || 0)
+    })
+  const oldestComment = sorted[0]
+  if (!oldestComment) {
     isLoadingOlderActivities.value = false
     return
   }
@@ -3762,8 +3788,8 @@ const loadOlderActivities = async () => {
 
   try {
     const params = selectedProjectIds.value.length > 0
-      ? { project_ids: selectedProjectIds.value, days: 7, before_id: minId, limit: 30 }
-      : { before_id: minId, limit: 30 }
+      ? { project_ids: selectedProjectIds.value, days: 7, before_date: oldestComment.created_at, before_id: oldestComment.id, limit: 30 }
+      : { before_date: oldestComment.created_at, before_id: oldestComment.id, limit: 30 }
 
     const res = await axios.get('/api/comments', { params })
     const olderComments = (res.data || []).filter(c => Boolean(c.project_id))
@@ -3783,10 +3809,14 @@ const loadOlderActivities = async () => {
 
         // Maintain visual scroll position so content prepended above does not cause a visual jump
         await nextTick()
+        if (container) {
+          const heightDiff = container.scrollHeight - previousScrollHeight
+          container.scrollTop = previousScrollTop + heightDiff
+        }
         requestAnimationFrame(() => {
           if (container) {
-            const newScrollHeight = container.scrollHeight
-            container.scrollTop = (newScrollHeight - previousScrollHeight) + previousScrollTop
+            const heightDiff = container.scrollHeight - previousScrollHeight
+            container.scrollTop = previousScrollTop + heightDiff
           }
         })
       }
@@ -3794,7 +3824,9 @@ const loadOlderActivities = async () => {
   } catch (err) {
     console.error('Failed to load older activities:', err)
   } finally {
-    isLoadingOlderActivities.value = false
+    setTimeout(() => {
+      isLoadingOlderActivities.value = false
+    }, 250)
   }
 }
 
@@ -4424,7 +4456,11 @@ const handleRealtimeChannelMessage = (event) => {
   if (!data) return
   if (data.sourceId === realtimeSourceId) return
   if (data.type === 'PUSH_RECEIVED' || data.type === 'NOTIFICATION_CLICKED' || data.type === 'PROJECT_UPDATED') {
-    fetchActivities?.(true)
+    if (activities.value.length > 0) {
+      fetchLatestActivities()
+    } else {
+      fetchActivities?.(true)
+    }
     fetchScheduleTasks?.()
     projectStore.fetchProjects(true)
   }
@@ -4434,7 +4470,11 @@ const handleServiceWorkerMessage = (event) => {
   const data = event.data
   if (!data) return
   if (data.type === 'PUSH_RECEIVED' || data.type === 'NOTIFICATION_CLICKED' || data.type === 'PROJECT_UPDATED') {
-    fetchActivities?.(true)
+    if (activities.value.length > 0) {
+      fetchLatestActivities()
+    } else {
+      fetchActivities?.(true)
+    }
     fetchScheduleTasks?.()
     projectStore.fetchProjects(true)
   }
@@ -4521,8 +4561,6 @@ async function fetchActivities(isManualRefresh = false) {
   const isFiltered = selectedProjectIds.value.length > 0
   const requestId = ++activityRequestId
   try {
-    // The unfiltered dashboard stays compact. Once projects are selected, show
-    // their complete activity window for the last seven days instead.
     const params = isFiltered
       ? { project_ids: selectedProjectIds.value, days: 7 }
       : { limit: 30 }
@@ -4531,8 +4569,6 @@ async function fetchActivities(isManualRefresh = false) {
       return Boolean(c.project_id)
     })
 
-    // Ignore a slower response for an older request and avoid rebuilding the
-    // timeline every four seconds when its records have not changed.
     if (requestId < lastAppliedActivityRequestId) return
     lastAppliedActivityRequestId = requestId
 
@@ -4541,19 +4577,19 @@ async function fetchActivities(isManualRefresh = false) {
       setCachedActivities(filtered)
     }
 
-    const isUnchanged = !isManualRefresh && filtered.length === activities.value.length && filtered.every((activity, index) => {
-      const current = activities.value[index]
-      return current
-        && activity.id === current.id
-        && activity.updated_at === current.updated_at
-        && activity.content === current.content
-    })
-    if (!isUnchanged || isManualRefresh) {
+    if (!isManualRefresh && activities.value.length > 0) {
+      const incomingMap = new Map(filtered.map(c => [c.id, c]))
+      const updated = activities.value.map(c => incomingMap.get(c.id) || c)
+      const existingIds = new Set(activities.value.map(c => c.id))
+      const newItems = filtered.filter(c => !existingIds.has(c.id))
+      activities.value = [...newItems, ...updated]
+    } else {
       activities.value = filtered
       hasMoreOlderActivities.value = filtered.length >= (params.limit || 30)
+      if (!showScrollToBottom.value && !isLoadingOlderActivities.value) {
+        scrollToBottom(false)
+      }
     }
-    // Always ensure the activity feed is scrolled to bottom on initial load / refresh
-    scrollToBottom(false)
   } catch (err) {
     console.error('Failed to load activities:', err)
   } finally {
@@ -4563,7 +4599,7 @@ async function fetchActivities(isManualRefresh = false) {
 
 let latestActivityRequest = null
 const fetchLatestActivities = () => {
-  if (latestActivityRequest || activities.value.length === 0) return latestActivityRequest
+  if (latestActivityRequest || activities.value.length === 0 || isLoadingOlderActivities.value) return latestActivityRequest
   const isFiltered = selectedProjectIds.value.length > 0
   const afterId = Math.max(...activities.value.map(activity => Number(activity.id) || 0))
   const params = isFiltered
@@ -4576,9 +4612,9 @@ const fetchLatestActivities = () => {
     const incomingIds = new Set(incoming.map(comment => comment.id))
 
     const container = activityScrollContainer.value
-    const isNearBottom = container
-      ? (container.scrollHeight - container.scrollTop - container.clientHeight <= 150)
-      : true
+    const isNearBottom = !showScrollToBottom.value && container
+      ? (container.scrollHeight - container.scrollTop - container.clientHeight <= 80)
+      : false
 
     const updated = [...incoming, ...activities.value.filter(comment => !incomingIds.has(comment.id))]
     activities.value = updated
@@ -4586,7 +4622,7 @@ const fetchLatestActivities = () => {
       defaultActivities.value = [...incoming, ...defaultActivities.value.filter(comment => !incomingIds.has(comment.id))]
     }
 
-    if (isNearBottom) {
+    if (isNearBottom && !isLoadingOlderActivities.value) {
       scrollToBottom(true)
     }
   }).catch(err => {
@@ -4737,6 +4773,17 @@ let pollTimer = null
 let broadcastRotationTimer = null
 let pollTick = 0
 
+const handleVisibilityOrFocus = () => {
+  if (document.visibilityState === 'visible') {
+    if (viewMode.value !== 'notes') {
+      fetchLatestActivities()
+    }
+    if (viewMode.value === 'actions' || viewMode.value === 'schedule') {
+      fetchScheduleTasks?.(true)
+    }
+  }
+}
+
 // Infinite scroll handler
 const handleScroll = (event) => {
   const container = event.target
@@ -4821,16 +4868,23 @@ onMounted(() => {
   window.addEventListener('mouseup', endSelection)
   window.addEventListener('resize', updateTvPosition)
 
+  document.addEventListener('visibilitychange', handleVisibilityOrFocus)
+  window.addEventListener('focus', handleVisibilityOrFocus)
+
   pollTimer = setInterval(() => {
     if (document.visibilityState !== 'visible') return
-    fetchLatestActivities()
+    if (viewMode.value !== 'notes') {
+      fetchLatestActivities()
+    }
+    if (viewMode.value === 'actions' || viewMode.value === 'schedule') {
+      fetchScheduleTasks?.()
+    }
     pollTick += 1
-    if (pollTick % 4 === 0) {
-      fetchActivities(true)
+    if (pollTick % 5 === 0) {
       projectStore.fetchProjects(true)
       fetchBroadcasts()
     }
-  }, 5000)
+  }, 3000)
 
   broadcastRotationTimer = setInterval(() => {
     if (broadcasts.value.length > 1) {
@@ -4862,6 +4916,8 @@ onUnmounted(() => {
   window.removeEventListener('resize', updateTvPosition)
   document.removeEventListener('focusin', handleVirtualKeyboardFocusIn)
   document.removeEventListener('focusout', handleVirtualKeyboardFocusOut)
+  document.removeEventListener('visibilitychange', handleVisibilityOrFocus)
+  window.removeEventListener('focus', handleVisibilityOrFocus)
   if (window.visualViewport) {
     window.visualViewport.removeEventListener('resize', handleVisualViewportResize)
     window.visualViewport.removeEventListener('scroll', handleVisualViewportResize)

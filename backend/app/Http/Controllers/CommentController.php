@@ -23,7 +23,34 @@ class CommentController extends Controller
         ])->orderByDesc('created_at');
 
         $user = auth()->user();
-        $query->whereHas('project', fn ($q) => $q->visibleTo($user));
+        $isSpecificProject = ($request->has('project_id') && !empty($request->project_id)) || $request->has('task_id');
+
+        if ($user->isSystemAdmin()) {
+            // System Admin has global visibility across all projects
+        } elseif ($user->is_admin) {
+            $query->whereHas('project', fn ($q) => $q->where('hidden_from_admin', false));
+        } else {
+            if ($isSpecificProject) {
+                // When explicitly viewing a specific project/task, all authorized members see full discussion history
+                $query->whereHas('project', fn ($q) => $q->visibleTo($user));
+            } else {
+                // On the team activity feed: newly added members only see comments created after they were added to the project
+                $query->where(function ($q) use ($user) {
+                    $q->where('comments.user_id', $user->id)
+                        ->orWhereHas('project', function ($pq) use ($user) {
+                            $pq->where('created_by', $user->id)
+                                ->orWhere('lead_id', $user->id);
+                        })
+                        ->orWhereExists(function ($sub) use ($user) {
+                            $sub->selectRaw(1)
+                                ->from('project_members')
+                                ->whereColumn('project_members.project_id', 'comments.project_id')
+                                ->where('project_members.user_id', $user->id)
+                                ->whereColumn('project_members.created_at', '<=', 'comments.created_at');
+                        });
+                });
+            }
+        }
 
         // Privacy filter: Private comments are only visible to system-admin, sender, and private recipients
         if (!$user->isSystemAdmin()) {
@@ -61,8 +88,19 @@ class CommentController extends Controller
         }
 
         // Backward pagination path: load older comments when scrolling up
+        $beforeDate = $request->get('before_date');
         $beforeId = $request->integer('before_id');
-        if ($beforeId > 0) {
+        if ($beforeDate && $beforeId > 0) {
+            $query->where(function ($q) use ($beforeDate, $beforeId) {
+                $q->where('comments.created_at', '<', $beforeDate)
+                  ->orWhere(function ($sub) use ($beforeDate, $beforeId) {
+                      $sub->where('comments.created_at', '=', $beforeDate)
+                          ->where('comments.id', '<', $beforeId);
+                  });
+            });
+        } elseif ($beforeDate) {
+            $query->where('comments.created_at', '<', $beforeDate);
+        } elseif ($beforeId > 0) {
             $query->where('comments.id', '<', $beforeId);
         }
 
